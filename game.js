@@ -30,9 +30,24 @@ const WORLD = { width: 960, height: 640 };
 const PLAYER_SPEED = 92;
 const INTERACTION_RADIUS = 30;
 const PLAYER_FOOTPRINT = { width: 8, height: 6, offsetY: 7 };
+const PLAYER_SPRITE = {
+  frameWidth: 96,
+  frameHeight: 80,
+  cropX: 34,
+  cropY: 24,
+  cropWidth: 30,
+  cropHeight: 38,
+  drawWidth: 30,
+  drawHeight: 38,
+  drawOffsetX: -15,
+  drawOffsetY: -24,
+  frameCount: 8,
+  idleFrameDuration: 180,
+};
 const VILLAGE_SKYLINE_Y = 148;
 
 const keys = new Set();
+const playerSprites = loadPlayerSprites();
 
 const state = {
   mode: "start",
@@ -122,6 +137,41 @@ function createPlayer() {
     walkTime: 0,
     isMoving: false,
   };
+}
+
+function loadPlayerSprites() {
+  return {
+    run: loadDirectionalSprites("run"),
+    idle: loadDirectionalSprites("idle"),
+  };
+}
+
+function loadDirectionalSprites(prefix) {
+  return {
+    up: loadSprite(`assets/player/${prefix}_up.png`),
+    down: loadSprite(`assets/player/${prefix}_down.png`),
+    left: loadSprite(`assets/player/${prefix}_left.png`),
+    right: loadSprite(`assets/player/${prefix}_right.png`),
+  };
+}
+
+function loadSprite(src) {
+  const image = new Image();
+  image.src = src;
+  return image;
+}
+
+function getPlayerSpriteSheet() {
+  const animationSet = player.isMoving ? playerSprites.run : playerSprites.idle;
+  return animationSet[player.direction] ?? animationSet.down;
+}
+
+function getPlayerFrameIndex() {
+  if (player.isMoving) {
+    return Math.floor(player.walkTime) % PLAYER_SPRITE.frameCount;
+  }
+
+  return Math.floor(state.lastTimestamp / PLAYER_SPRITE.idleFrameDuration) % PLAYER_SPRITE.frameCount;
 }
 
 function createVillageLevel() {
@@ -1909,12 +1959,33 @@ function drawPlayer() {
   ctx.save();
   ctx.translate(Math.round(player.x - camera.x), Math.round(player.y - camera.y));
 
+  ctx.fillStyle = "rgba(10, 12, 16, 0.32)";
+  ctx.fillRect(-7, 9, 14, 4);
+
+  const sheet = getPlayerSpriteSheet();
+
+  if (sheet.complete && sheet.naturalWidth > 0) {
+    const frameIndex = getPlayerFrameIndex();
+    const sourceX = frameIndex * PLAYER_SPRITE.frameWidth + PLAYER_SPRITE.cropX;
+
+    ctx.drawImage(
+      sheet,
+      sourceX,
+      PLAYER_SPRITE.cropY,
+      PLAYER_SPRITE.cropWidth,
+      PLAYER_SPRITE.cropHeight,
+      PLAYER_SPRITE.drawOffsetX,
+      PLAYER_SPRITE.drawOffsetY,
+      PLAYER_SPRITE.drawWidth,
+      PLAYER_SPRITE.drawHeight
+    );
+    ctx.restore();
+    return;
+  }
+
   const walkFrame = player.isMoving ? Math.floor(player.walkTime % 2) : 0;
   const legOffset = player.isMoving ? (walkFrame === 0 ? -1 : 1) : 0;
   const armOffset = player.isMoving ? (walkFrame === 0 ? 1 : -1) : 0;
-
-  ctx.fillStyle = "rgba(10, 12, 16, 0.32)";
-  ctx.fillRect(-7, 9, 14, 4);
 
   ctx.fillStyle = "#443338";
   ctx.fillRect(-6, -11, 12, 4);
