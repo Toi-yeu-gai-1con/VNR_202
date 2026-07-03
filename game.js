@@ -44,10 +44,78 @@ const PLAYER_SPRITE = {
   frameCount: 8,
   idleFrameDuration: 180,
 };
+const NPC_SPRITE = {
+  frameWidth: 96,
+  frameHeight: 96,
+  cropX: 30,
+  cropY: 18,
+  cropWidth: 36,
+  cropHeight: 62,
+  drawWidth: 24,
+  drawHeight: 40,
+  idleFrames: 4,
+  walkFrames: 8,
+  idleFrameDuration: 240,
+  walkFrameDuration: 150,
+};
+const ENVIRONMENT_SPRITES = {
+  deadBranches: [
+    { x: 0, y: 0, width: 28, height: 44 },
+    { x: 6, y: 56, width: 56, height: 24 },
+    { x: 0, y: 86, width: 82, height: 42 },
+  ],
+  dryGrass: [
+    { x: 0, y: 72, width: 24, height: 28 },
+    { x: 34, y: 68, width: 28, height: 30 },
+    { x: 22, y: 102, width: 24, height: 26 },
+    { x: 0, y: 112, width: 16, height: 16 },
+    { x: 58, y: 118, width: 40, height: 10 },
+  ],
+  barkStrip: { x: 0, y: 0, width: 24, height: 256 },
+};
+const TILECRAFT_TERRAIN = {
+  tileSize: 16,
+  dirt: [
+    { col: 0, row: 3 },
+    { col: 1, row: 3 },
+    { col: 2, row: 3 },
+    { col: 0, row: 4 },
+    { col: 1, row: 4 },
+    { col: 2, row: 4 },
+  ],
+  water: [
+    { col: 3, row: 3 },
+    { col: 4, row: 3 },
+    { col: 3, row: 4 },
+    { col: 4, row: 4 },
+  ],
+  grass: [
+    { col: 5, row: 3 },
+    { col: 5, row: 4 },
+    { col: 6, row: 4 },
+    { col: 4, row: 7 },
+    { col: 5, row: 7 },
+    { col: 4, row: 8 },
+    { col: 5, row: 8 },
+    { col: 6, row: 8 },
+  ],
+  stone: [
+    { col: 7, row: 3 },
+    { col: 8, row: 3 },
+    { col: 7, row: 4 },
+    { col: 8, row: 4 },
+    { col: 2, row: 7 },
+    { col: 3, row: 7 },
+    { col: 2, row: 8 },
+    { col: 3, row: 8 },
+  ],
+};
 const VILLAGE_SKYLINE_Y = 148;
 
 const keys = new Set();
 const playerSprites = loadPlayerSprites();
+const npcSprites = loadVillageNpcSprites();
+const environmentSprites = loadEnvironmentSprites();
 
 const state = {
   mode: "start",
@@ -146,6 +214,27 @@ function loadPlayerSprites() {
   };
 }
 
+function loadVillageNpcSprites() {
+  return {
+    npc01: loadNpcSpriteSet("npc01"),
+    npc02: loadNpcSpriteSet("npc02"),
+    npc03: loadNpcSpriteSet("npc03"),
+    npc04: loadNpcSpriteSet("npc04"),
+    npc05: loadNpcSpriteSet("npc05"),
+    npc06: loadNpcSpriteSet("npc06"),
+  };
+}
+
+function loadEnvironmentSprites() {
+  return {
+    deadBranches: loadSprite("assets/environment/dead-aspen/Trees1Alpha128.png"),
+    dryGrass: loadSprite("assets/environment/dead-aspen/grass128.png"),
+    barkTexture: loadSprite("assets/environment/dead-aspen/Tree1Diff256.png"),
+    tilecraftGround: loadSprite("assets/environment/tilecraft/TileCraftGroundSetVersion2.png"),
+    archiveParquet: loadSprite("assets/environment/archive/Birch_Parquet_01_basecolor.png"),
+  };
+}
+
 function loadDirectionalSprites(prefix) {
   return {
     up: loadSprite(`assets/player/${prefix}_up.png`),
@@ -155,10 +244,276 @@ function loadDirectionalSprites(prefix) {
   };
 }
 
+function loadNpcSpriteSet(id) {
+  const basePath = `assets/npcs/village-vol1/${id}`;
+
+  return {
+    down: loadSprite(`${basePath}/down.png`),
+    downleft: loadSprite(`${basePath}/downleft.png`),
+    left: loadSprite(`${basePath}/left.png`),
+    up: loadSprite(`${basePath}/up.png`),
+    upleft: loadSprite(`${basePath}/upleft.png`),
+  };
+}
+
 function loadSprite(src) {
   const image = new Image();
   image.src = src;
   return image;
+}
+
+function canDrawSprite(image) {
+  return Boolean(image?.complete && image.naturalWidth > 0);
+}
+
+function resolveNpcDirection(direction = "down") {
+  switch (direction) {
+    case "right":
+      return { key: "left", flipX: true };
+    case "upright":
+      return { key: "upleft", flipX: true };
+    case "downright":
+      return { key: "downleft", flipX: true };
+    case "up":
+    case "upleft":
+    case "left":
+    case "downleft":
+    case "down":
+      return { key: direction, flipX: false };
+    default:
+      return { key: "down", flipX: false };
+  }
+}
+
+function getNpcFrame(actor) {
+  const animation = actor.animation === "walk" ? "walk" : "idle";
+  const frameCount = animation === "walk" ? NPC_SPRITE.walkFrames : NPC_SPRITE.idleFrames;
+  const duration =
+    animation === "walk" ? NPC_SPRITE.walkFrameDuration : NPC_SPRITE.idleFrameDuration;
+  const frameOffset = actor.frameOffset ?? 0;
+  const frameTime = state.lastTimestamp + frameOffset * duration * 4;
+
+  return {
+    animation,
+    index: Math.floor(frameTime / duration) % frameCount,
+  };
+}
+
+function drawNpcSpriteActor(actor) {
+  const spriteSet = npcSprites[actor.spriteKey];
+
+  if (!spriteSet) {
+    return false;
+  }
+
+  const direction = resolveNpcDirection(actor.direction);
+  const sheet = spriteSet[direction.key];
+
+  if (!canDrawSprite(sheet)) {
+    return false;
+  }
+
+  const frame = getNpcFrame(actor);
+  const scale = actor.scale ?? 1;
+  const sourceY = frame.animation === "walk" ? NPC_SPRITE.frameHeight : 0;
+  const sourceX = frame.index * NPC_SPRITE.frameWidth + NPC_SPRITE.cropX;
+  const drawWidth = Math.max(1, Math.round(NPC_SPRITE.drawWidth * scale));
+  const drawHeight = Math.max(1, Math.round(NPC_SPRITE.drawHeight * scale));
+
+  ctx.save();
+  ctx.translate(Math.round(actor.x), Math.round(actor.y));
+  ctx.scale(direction.flipX ? -1 : 1, 1);
+  ctx.drawImage(
+    sheet,
+    sourceX,
+    sourceY + NPC_SPRITE.cropY,
+    NPC_SPRITE.cropWidth,
+    NPC_SPRITE.cropHeight,
+    Math.round(-drawWidth / 2),
+    -drawHeight + 8,
+    drawWidth,
+    drawHeight
+  );
+  ctx.restore();
+  return true;
+}
+
+function drawSheetSprite(image, sprite, x, y, scale = 1, options = {}) {
+  if (!canDrawSprite(image)) {
+    return false;
+  }
+
+  const drawWidth = Math.max(1, Math.round(sprite.width * scale));
+  const drawHeight = Math.max(1, Math.round(sprite.height * scale));
+  const anchorX = options.anchorX ?? Math.round(drawWidth / 2);
+  const anchorY = options.anchorY ?? drawHeight;
+
+  ctx.save();
+  ctx.translate(Math.round(x), Math.round(y));
+  ctx.rotate(options.rotation ?? 0);
+  ctx.globalAlpha = options.alpha ?? 1;
+  ctx.drawImage(
+    image,
+    sprite.x,
+    sprite.y,
+    sprite.width,
+    sprite.height,
+    -anchorX,
+    -anchorY,
+    drawWidth,
+    drawHeight
+  );
+  ctx.restore();
+  return true;
+}
+
+function drawBarkOverlay(x, y, width, height, alpha = 0.36) {
+  if (!canDrawSprite(environmentSprites.barkTexture)) {
+    return;
+  }
+
+  const strip = ENVIRONMENT_SPRITES.barkStrip;
+
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.drawImage(
+    environmentSprites.barkTexture,
+    strip.x,
+    strip.y,
+    strip.width,
+    strip.height,
+    x,
+    y,
+    width,
+    height
+  );
+  ctx.restore();
+}
+
+function drawTerrainFill(tiles, x, y, width, height, options = {}) {
+  if (!canDrawSprite(environmentSprites.tilecraftGround)) {
+    return false;
+  }
+
+  const tileSize = TILECRAFT_TERRAIN.tileSize;
+  const scale = options.scale ?? 1;
+  const drawSize = tileSize * scale;
+  const seed = options.seed ?? 0;
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(x, y, width, height);
+  ctx.clip();
+  ctx.globalAlpha = options.alpha ?? 1;
+
+  for (let drawY = y; drawY < y + height + drawSize; drawY += drawSize) {
+    for (let drawX = x; drawX < x + width + drawSize; drawX += drawSize) {
+      const columnIndex = Math.floor((drawX - x) / drawSize);
+      const rowIndex = Math.floor((drawY - y) / drawSize);
+      const tile = tiles[Math.abs((columnIndex * 3 + rowIndex * 5 + seed) % tiles.length)];
+
+      ctx.drawImage(
+        environmentSprites.tilecraftGround,
+        tile.col * tileSize,
+        tile.row * tileSize,
+        tileSize,
+        tileSize,
+        drawX,
+        drawY,
+        drawSize,
+        drawSize
+      );
+    }
+  }
+
+  ctx.restore();
+  return true;
+}
+
+function getPixelTextureCanvas(image, sampleSize = 32) {
+  if (!canDrawSprite(image)) {
+    return null;
+  }
+
+  const cacheKey = `pixelTexture${sampleSize}`;
+
+  if (!image[cacheKey]) {
+    const canvas = document.createElement("canvas");
+    canvas.width = sampleSize;
+    canvas.height = sampleSize;
+    const context = canvas.getContext("2d");
+    context.imageSmoothingEnabled = false;
+    context.drawImage(image, 0, 0, sampleSize, sampleSize);
+    image[cacheKey] = canvas;
+  }
+
+  return image[cacheKey];
+}
+
+function drawPixelTextureFill(image, x, y, width, height, options = {}) {
+  const sampleSize = options.sampleSize ?? 32;
+  const tileDrawSize = options.tileDrawSize ?? 48;
+  const textureCanvas = getPixelTextureCanvas(image, sampleSize);
+
+  if (!textureCanvas) {
+    return false;
+  }
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(x, y, width, height);
+  ctx.clip();
+  ctx.globalAlpha = options.alpha ?? 1;
+
+  for (let drawY = y; drawY < y + height + tileDrawSize; drawY += tileDrawSize) {
+    for (let drawX = x; drawX < x + width + tileDrawSize; drawX += tileDrawSize) {
+      ctx.drawImage(textureCanvas, drawX, drawY, tileDrawSize, tileDrawSize);
+    }
+  }
+
+  ctx.restore();
+  return true;
+}
+
+function drawArchiveFloor(room, beams) {
+  const floor = {
+    x: room.x + 16,
+    y: room.y + 100,
+    width: room.width - 32,
+    height: room.height - 160,
+  };
+
+  if (!drawPixelTextureFill(environmentSprites.archiveParquet, floor.x, floor.y, floor.width, floor.height, {
+    sampleSize: 28,
+    tileDrawSize: 56,
+    alpha: 0.96,
+  })) {
+    ctx.fillStyle = "#7a593e";
+    ctx.fillRect(floor.x, floor.y, floor.width, floor.height);
+
+    for (let y = floor.y; y < floor.y + floor.height - 58; y += 20) {
+      ctx.fillStyle = y % 40 === 0 ? "#815f42" : "#6d5038";
+      ctx.fillRect(floor.x, y, floor.width, 16);
+    }
+    return;
+  }
+
+  ctx.fillStyle = "rgba(104, 70, 46, 0.18)";
+  ctx.fillRect(floor.x, floor.y, floor.width, floor.height);
+
+  for (let y = floor.y; y < floor.y + floor.height; y += 20) {
+    ctx.fillStyle = Math.floor((y - floor.y) / 20) % 2 === 0 ? "rgba(83, 56, 39, 0.18)" : "rgba(138, 95, 66, 0.06)";
+    ctx.fillRect(floor.x, y, floor.width, 12);
+  }
+
+  for (const x of beams) {
+    ctx.fillStyle = "rgba(33, 20, 14, 0.12)";
+    ctx.fillRect(x - 6, floor.y, 18, floor.height);
+  }
+
+  ctx.fillStyle = "rgba(28, 18, 13, 0.16)";
+  ctx.fillRect(floor.x, floor.y + floor.height - 20, floor.width, 20);
+  ctx.fillRect(floor.x, floor.y, floor.width, 14);
 }
 
 function getPlayerSpriteSheet() {
@@ -210,10 +565,14 @@ function createVillageLevel() {
         id: "old-peasant",
         x: 324,
         y: 366,
-        width: 18,
-        height: 20,
+        width: 22,
+        height: 42,
         kind: "npc",
         variant: "peasant",
+        spriteKey: "npc02",
+        direction: "down",
+        animation: "idle",
+        frameOffset: 0.8,
         prompt: "speak with the tired peasant",
         slide: {
           kicker: "Level 1",
@@ -486,6 +845,29 @@ function createVillageDecorations() {
     { x: 836, y: 248, height: 42, spread: 16 },
   ];
 
+  const dryGrass = [
+    { x: 86, y: 320, variant: 0, scale: 0.82 },
+    { x: 142, y: 312, variant: 1, scale: 0.86 },
+    { x: 324, y: 322, variant: 2, scale: 0.78 },
+    { x: 414, y: 304, variant: 4, scale: 0.92 },
+    { x: 598, y: 322, variant: 0, scale: 0.86 },
+    { x: 706, y: 296, variant: 1, scale: 0.82 },
+    { x: 860, y: 324, variant: 2, scale: 0.76 },
+    { x: 250, y: 446, variant: 3, scale: 0.92 },
+    { x: 398, y: 486, variant: 0, scale: 0.88 },
+    { x: 748, y: 486, variant: 1, scale: 0.84 },
+  ];
+
+  const branchDebris = [
+    { x: 126, y: 308, variant: 1, scale: 0.44, rotation: -0.26 },
+    { x: 222, y: 286, variant: 0, scale: 0.48, rotation: 0.22 },
+    { x: 384, y: 326, variant: 1, scale: 0.42, rotation: -0.12 },
+    { x: 494, y: 286, variant: 2, scale: 0.36, rotation: 0.18 },
+    { x: 592, y: 352, variant: 0, scale: 0.46, rotation: -0.3 },
+    { x: 734, y: 286, variant: 1, scale: 0.4, rotation: 0.08 },
+    { x: 812, y: 414, variant: 2, scale: 0.34, rotation: -0.16 },
+  ];
+
   const brokenCarts = [
     { x: 236, y: 384, width: 30, height: 16, brokenSide: "left" },
     { x: 528, y: 360, width: 28, height: 16, brokenSide: "right" },
@@ -538,6 +920,8 @@ function createVillageDecorations() {
   return {
     houses,
     deadTrees,
+    dryGrass,
+    branchDebris,
     brokenCarts,
     fenceSegments,
     puddles,
@@ -604,6 +988,16 @@ function createCrossroadsDecorations() {
     { x: 356, y: 430, size: 18 },
   ];
 
+  const dryGrass = [
+    { x: 74, y: 282, variant: 0, scale: 0.8, rotation: -0.08 },
+    { x: 132, y: 346, variant: 1, scale: 0.76, rotation: 0.12 },
+    { x: 198, y: 520, variant: 2, scale: 0.74, rotation: -0.05 },
+    { x: 258, y: 308, variant: 3, scale: 0.9, rotation: 0.16 },
+    { x: 324, y: 452, variant: 0, scale: 0.78, rotation: -0.1 },
+    { x: 386, y: 274, variant: 1, scale: 0.72, rotation: 0.06 },
+    { x: 428, y: 404, variant: 4, scale: 0.82, rotation: -0.18 },
+  ];
+
   const flags = [
     { x: 622, y: 214, height: 54, width: 24 },
     { x: 746, y: 196, height: 62, width: 26 },
@@ -611,16 +1005,116 @@ function createCrossroadsDecorations() {
   ];
 
   const crowdOffsets = [
-    { x: -28, y: 6, shirt: "#8d6a42", pants: "#2e3440" },
-    { x: -16, y: 0, shirt: "#486b91", pants: "#28303a" },
-    { x: -4, y: 8, shirt: "#7f4a68", pants: "#2d2d38" },
-    { x: 8, y: -2, shirt: "#6c8446", pants: "#29323b" },
-    { x: 20, y: 6, shirt: "#a35f46", pants: "#2c3140" },
-    { x: 30, y: 1, shirt: "#4c6f8a", pants: "#2a2e36" },
-    { x: -22, y: 16, shirt: "#597747", pants: "#242b31" },
-    { x: -8, y: 18, shirt: "#8d6b3e", pants: "#282d35" },
-    { x: 8, y: 16, shirt: "#6e4b79", pants: "#242933" },
-    { x: 24, y: 17, shirt: "#54718b", pants: "#252b35" },
+    {
+      x: -28,
+      y: 6,
+      spriteKey: "npc01",
+      direction: "downleft",
+      animation: "idle",
+      frameOffset: 0.1,
+      scale: 0.88,
+      shirt: "#8d6a42",
+      pants: "#2e3440",
+    },
+    {
+      x: -16,
+      y: 0,
+      spriteKey: "npc02",
+      direction: "down",
+      animation: "walk",
+      frameOffset: 0.8,
+      scale: 0.88,
+      shirt: "#486b91",
+      pants: "#28303a",
+    },
+    {
+      x: -4,
+      y: 8,
+      spriteKey: "npc03",
+      direction: "right",
+      animation: "idle",
+      frameOffset: 1.3,
+      scale: 0.9,
+      shirt: "#7f4a68",
+      pants: "#2d2d38",
+    },
+    {
+      x: 8,
+      y: -2,
+      spriteKey: "npc04",
+      direction: "down",
+      animation: "walk",
+      frameOffset: 2.2,
+      scale: 0.92,
+      shirt: "#6c8446",
+      pants: "#29323b",
+    },
+    {
+      x: 20,
+      y: 6,
+      spriteKey: "npc05",
+      direction: "left",
+      animation: "idle",
+      frameOffset: 0.5,
+      scale: 0.9,
+      shirt: "#a35f46",
+      pants: "#2c3140",
+    },
+    {
+      x: 30,
+      y: 1,
+      spriteKey: "npc06",
+      direction: "downright",
+      animation: "walk",
+      frameOffset: 3.1,
+      scale: 0.9,
+      shirt: "#4c6f8a",
+      pants: "#2a2e36",
+    },
+    {
+      x: -22,
+      y: 16,
+      spriteKey: "npc03",
+      direction: "up",
+      animation: "idle",
+      frameOffset: 1.9,
+      scale: 0.84,
+      shirt: "#597747",
+      pants: "#242b31",
+    },
+    {
+      x: -8,
+      y: 18,
+      spriteKey: "npc04",
+      direction: "downleft",
+      animation: "walk",
+      frameOffset: 2.8,
+      scale: 0.84,
+      shirt: "#8d6b3e",
+      pants: "#282d35",
+    },
+    {
+      x: 8,
+      y: 16,
+      spriteKey: "npc01",
+      direction: "upright",
+      animation: "idle",
+      frameOffset: 0.4,
+      scale: 0.84,
+      shirt: "#6e4b79",
+      pants: "#242933",
+    },
+    {
+      x: 24,
+      y: 17,
+      spriteKey: "npc06",
+      direction: "upleft",
+      animation: "walk",
+      frameOffset: 4.2,
+      scale: 0.84,
+      shirt: "#54718b",
+      pants: "#252b35",
+    },
   ];
 
   const motes = Array.from({ length: 32 }, (_, index) => ({
@@ -636,6 +1130,7 @@ function createCrossroadsDecorations() {
   return {
     cracks,
     rocks,
+    dryGrass,
     flags,
     crowdOffsets,
     motes,
@@ -1119,9 +1614,11 @@ function drawVillageWorld(decorations) {
   drawVillageRuins(decorations);
   drawVillageRoads();
   drawPuddles(decorations.puddles);
+  drawDryGrassPatches(decorations.dryGrass);
   drawFenceRemains(decorations.fenceSegments);
   drawBrokenCarts(decorations.brokenCarts);
   drawDeadTrees(decorations.deadTrees);
+  drawBranchDebris(decorations.branchDebris);
   drawRubble(decorations.rubble);
   drawVillageExitGate();
 }
@@ -1151,6 +1648,23 @@ function drawStormSky(decorations) {
 }
 
 function drawVillageGroundBase() {
+  if (drawTerrainFill(TILECRAFT_TERRAIN.stone, 0, VILLAGE_SKYLINE_Y, WORLD.width, WORLD.height - VILLAGE_SKYLINE_Y, { seed: 2 })) {
+    drawTerrainFill(TILECRAFT_TERRAIN.dirt, 0, 500, WORLD.width, WORLD.height - 500, {
+      seed: 4,
+      alpha: 0.55,
+    });
+
+    ctx.fillStyle = "rgba(24, 31, 40, 0.48)";
+    ctx.fillRect(0, VILLAGE_SKYLINE_Y, WORLD.width, WORLD.height - VILLAGE_SKYLINE_Y);
+    ctx.fillStyle = "rgba(9, 12, 17, 0.18)";
+    for (let x = 0; x < WORLD.width; x += 32) {
+      ctx.fillRect(x, VILLAGE_SKYLINE_Y, 16, WORLD.height - VILLAGE_SKYLINE_Y);
+    }
+    ctx.fillStyle = "rgba(10, 12, 15, 0.26)";
+    ctx.fillRect(0, 500, WORLD.width, WORLD.height - 500);
+    return;
+  }
+
   ctx.fillStyle = "#2a343d";
   ctx.fillRect(0, VILLAGE_SKYLINE_Y, WORLD.width, WORLD.height - VILLAGE_SKYLINE_Y);
 
@@ -1194,10 +1708,21 @@ function drawVillageRuins(decorations) {
 }
 
 function drawVillageRoads() {
+  if (canDrawSprite(environmentSprites.tilecraftGround)) {
+    drawTerrainFill(TILECRAFT_TERRAIN.dirt, 0, 330, WORLD.width, 60, { seed: 0 });
+    drawTerrainFill(TILECRAFT_TERRAIN.dirt, 474, 228, 44, 102, { seed: 1 });
+    drawTerrainFill(TILECRAFT_TERRAIN.dirt, WORLD.width - 170, 314, 170, 92, { seed: 2 });
+
+    ctx.fillStyle = "rgba(70, 57, 50, 0.3)";
+    ctx.fillRect(0, 330, WORLD.width, 60);
+    ctx.fillRect(474, 228, 44, 102);
+    ctx.fillRect(WORLD.width - 170, 314, 170, 92);
+  } else {
   ctx.fillStyle = "#50494d";
   ctx.fillRect(0, 330, WORLD.width, 60);
   ctx.fillRect(474, 228, 44, 102);
   ctx.fillRect(WORLD.width - 170, 314, 170, 92);
+  }
 
   ctx.fillStyle = "#655d62";
   ctx.fillRect(0, 340, WORLD.width, 8);
@@ -1214,7 +1739,12 @@ function drawVillageRoads() {
 
 function drawPuddles(puddles) {
   for (const puddle of puddles) {
-    ctx.fillStyle = "#32465b";
+    if (!drawTerrainFill(TILECRAFT_TERRAIN.water, puddle.x, puddle.y, puddle.width, puddle.height, { seed: 3 })) {
+      ctx.fillStyle = "#32465b";
+      ctx.fillRect(puddle.x, puddle.y, puddle.width, puddle.height);
+    }
+
+    ctx.fillStyle = "rgba(38, 83, 110, 0.34)";
     ctx.fillRect(puddle.x, puddle.y, puddle.width, puddle.height);
     ctx.fillStyle = "#5f7a94";
     ctx.fillRect(puddle.x + 4, puddle.y + 2, puddle.width - 12, 2);
@@ -1264,9 +1794,11 @@ function drawBrokenCarts(brokenCarts) {
 }
 
 function drawDeadTrees(deadTrees) {
-  for (const tree of deadTrees) {
+  for (let index = 0; index < deadTrees.length; index += 1) {
+    const tree = deadTrees[index];
     ctx.fillStyle = "#292325";
     ctx.fillRect(tree.x - 3, tree.y - tree.height, 6, tree.height);
+    drawBarkOverlay(tree.x - 3, tree.y - tree.height, 6, tree.height, 0.42);
 
     ctx.fillRect(tree.x - tree.spread + 2, tree.y - tree.height + 10, tree.spread, 3);
     ctx.fillRect(tree.x + 2, tree.y - tree.height + 16, tree.spread - 2, 3);
@@ -1275,6 +1807,47 @@ function drawDeadTrees(deadTrees) {
 
     ctx.fillStyle = "#3b3438";
     ctx.fillRect(tree.x - 1, tree.y - tree.height + 8, 2, tree.height - 8);
+
+    const branchSprite = ENVIRONMENT_SPRITES.deadBranches[index % ENVIRONMENT_SPRITES.deadBranches.length];
+    drawSheetSprite(
+      environmentSprites.deadBranches,
+      branchSprite,
+      tree.x - 1,
+      tree.y - tree.height + 28,
+      0.46 + (index % 2) * 0.05,
+      {
+        alpha: 0.72,
+        rotation: index % 2 === 0 ? -0.1 : 0.08,
+      }
+    );
+  }
+}
+
+function drawDryGrassPatches(patches) {
+  if (!patches?.length) {
+    return;
+  }
+
+  for (const patch of patches) {
+    const sprite = ENVIRONMENT_SPRITES.dryGrass[patch.variant % ENVIRONMENT_SPRITES.dryGrass.length];
+    drawSheetSprite(environmentSprites.dryGrass, sprite, patch.x, patch.y, patch.scale ?? 1, {
+      alpha: patch.alpha ?? 0.84,
+      rotation: patch.rotation ?? 0,
+    });
+  }
+}
+
+function drawBranchDebris(branchDebris) {
+  if (!branchDebris?.length) {
+    return;
+  }
+
+  for (const branch of branchDebris) {
+    const sprite = ENVIRONMENT_SPRITES.deadBranches[branch.variant % ENVIRONMENT_SPRITES.deadBranches.length];
+    drawSheetSprite(environmentSprites.deadBranches, sprite, branch.x, branch.y, branch.scale ?? 1, {
+      alpha: branch.alpha ?? 0.68,
+      rotation: branch.rotation ?? 0,
+    });
   }
 }
 
@@ -1348,19 +1921,13 @@ function drawArchiveBackdrop(decorations) {
   ctx.fillStyle = "#1b1310";
   ctx.fillRect(room.x, room.y + room.height - 26, room.width, 26);
 
+  drawArchiveFloor(room, beams);
+
   for (const x of beams) {
     ctx.fillStyle = "#2b1d17";
     ctx.fillRect(x, room.y, 12, room.height);
     ctx.fillStyle = "#4d3327";
     ctx.fillRect(x + 3, room.y, 3, room.height);
-  }
-
-  ctx.fillStyle = "#7a593e";
-  ctx.fillRect(room.x + 16, room.y + 100, room.width - 32, room.height - 160);
-
-  for (let y = room.y + 100; y < room.y + room.height - 58; y += 20) {
-    ctx.fillStyle = y % 40 === 0 ? "#815f42" : "#6d5038";
-    ctx.fillRect(room.x + 16, y, room.width - 32, 16);
   }
 }
 
@@ -1407,8 +1974,26 @@ function drawArchiveRug(rug) {
 function drawArchiveEntry(entry) {
   ctx.fillStyle = "#201510";
   ctx.fillRect(entry.x, entry.y, entry.width, entry.height);
-  ctx.fillStyle = "#35241b";
-  ctx.fillRect(entry.x + 6, entry.y + 8, entry.width - 12, entry.height - 16);
+
+  if (!drawPixelTextureFill(
+    environmentSprites.archiveParquet,
+    entry.x + 6,
+    entry.y + 8,
+    entry.width - 12,
+    entry.height - 16,
+    {
+      sampleSize: 24,
+      tileDrawSize: 24,
+      alpha: 0.84,
+    }
+  )) {
+    ctx.fillStyle = "#35241b";
+    ctx.fillRect(entry.x + 6, entry.y + 8, entry.width - 12, entry.height - 16);
+  } else {
+    ctx.fillStyle = "rgba(44, 28, 19, 0.22)";
+    ctx.fillRect(entry.x + 6, entry.y + 8, entry.width - 12, entry.height - 16);
+  }
+
   ctx.fillStyle = "#704d34";
   ctx.fillRect(entry.x + entry.width - 6, entry.y + 28, 10, 6);
 }
@@ -1493,19 +2078,41 @@ function drawCrossroadsBackdrop(decorations) {
   ctx.fillStyle = "#b7ddf1";
   ctx.fillRect(splitX, 132, WORLD.width - splitX, 84);
 
-  ctx.fillStyle = "#8e968c";
-  ctx.fillRect(0, 216, splitX, WORLD.height - 216);
-  ctx.fillStyle = "#444039";
-  ctx.fillRect(0, 436, splitX, WORLD.height - 436);
+  if (drawTerrainFill(TILECRAFT_TERRAIN.stone, 0, 216, splitX, WORLD.height - 216, { seed: 6 })) {
+    drawTerrainFill(TILECRAFT_TERRAIN.dirt, 0, 436, splitX, WORLD.height - 436, {
+      seed: 8,
+      alpha: 0.5,
+    });
+    drawTerrainFill(TILECRAFT_TERRAIN.grass, splitX, 216, WORLD.width - splitX, WORLD.height - 216, {
+      seed: 3,
+    });
 
-  ctx.fillStyle = "#7ea060";
-  ctx.fillRect(splitX, 216, WORLD.width - splitX, WORLD.height - 216);
-  ctx.fillStyle = "#5d8440";
-  ctx.fillRect(splitX, 470, WORLD.width - splitX, WORLD.height - 470);
+    ctx.fillStyle = "rgba(54, 50, 45, 0.18)";
+    ctx.fillRect(0, 216, splitX, WORLD.height - 216);
+    ctx.fillStyle = "rgba(32, 29, 27, 0.22)";
+    ctx.fillRect(0, 436, splitX, WORLD.height - 436);
+    ctx.fillStyle = "rgba(61, 112, 48, 0.14)";
+    ctx.fillRect(splitX, 216, WORLD.width - splitX, WORLD.height - 216);
+    ctx.fillStyle = "rgba(45, 82, 32, 0.22)";
+    ctx.fillRect(splitX, 470, WORLD.width - splitX, WORLD.height - 470);
 
-  ctx.fillStyle = "#b49a6d";
-  ctx.fillRect(splitX - 28, 540, 56, 100);
-  ctx.fillRect(splitX - 12, 420, 24, 120);
+    drawTerrainFill(TILECRAFT_TERRAIN.dirt, splitX - 28, 540, 56, 100, { seed: 1 });
+    drawTerrainFill(TILECRAFT_TERRAIN.dirt, splitX - 12, 420, 24, 120, { seed: 2 });
+  } else {
+    ctx.fillStyle = "#8e968c";
+    ctx.fillRect(0, 216, splitX, WORLD.height - 216);
+    ctx.fillStyle = "#444039";
+    ctx.fillRect(0, 436, splitX, WORLD.height - 436);
+
+    ctx.fillStyle = "#7ea060";
+    ctx.fillRect(splitX, 216, WORLD.width - splitX, WORLD.height - 216);
+    ctx.fillStyle = "#5d8440";
+    ctx.fillRect(splitX, 470, WORLD.width - splitX, WORLD.height - 470);
+
+    ctx.fillStyle = "#b49a6d";
+    ctx.fillRect(splitX - 28, 540, 56, 100);
+    ctx.fillRect(splitX - 12, 420, 24, 120);
+  }
 }
 
 function drawCrossroadsGlowPath(glowingPath, finalArch) {
@@ -1528,12 +2135,19 @@ function drawCrossroadsGlowPath(glowingPath, finalArch) {
 }
 
 function drawCrossroadsLeftHalf(decorations) {
-  const { barrenTree, brokenBridge, cracks, rocks } = decorations;
+  const { barrenTree, brokenBridge, cracks, rocks, dryGrass } = decorations;
 
-  ctx.fillStyle = "#73766f";
-  ctx.fillRect(0, 250, 452, 170);
-  ctx.fillStyle = "#68635d";
-  ctx.fillRect(0, 420, 452, 144);
+  if (!canDrawSprite(environmentSprites.tilecraftGround)) {
+    ctx.fillStyle = "#73766f";
+    ctx.fillRect(0, 250, 452, 170);
+    ctx.fillStyle = "#68635d";
+    ctx.fillRect(0, 420, 452, 144);
+  } else {
+    ctx.fillStyle = "rgba(44, 42, 39, 0.18)";
+    ctx.fillRect(0, 250, 452, 314);
+  }
+
+  drawDryGrassPatches(dryGrass);
 
   ctx.fillStyle = "#2e2b29";
   ctx.fillRect(brokenBridge.x - 60, brokenBridge.y + 30, brokenBridge.width + 40, 48);
@@ -1555,29 +2169,56 @@ function drawCrossroadsLeftHalf(decorations) {
 
   ctx.fillStyle = "#2a2523";
   ctx.fillRect(barrenTree.x - 4, barrenTree.y - barrenTree.height, 8, barrenTree.height);
+  drawBarkOverlay(barrenTree.x - 4, barrenTree.y - barrenTree.height, 8, barrenTree.height, 0.38);
   ctx.fillRect(barrenTree.x - barrenTree.spread, barrenTree.y - barrenTree.height + 14, barrenTree.spread, 4);
   ctx.fillRect(barrenTree.x + 4, barrenTree.y - barrenTree.height + 8, barrenTree.spread - 6, 4);
   ctx.fillRect(barrenTree.x - 18, barrenTree.y - barrenTree.height + 28, 4, 20);
   ctx.fillRect(barrenTree.x + 18, barrenTree.y - barrenTree.height + 18, 4, 16);
+
+  drawSheetSprite(
+    environmentSprites.deadBranches,
+    ENVIRONMENT_SPRITES.deadBranches[2],
+    barrenTree.x - 2,
+    barrenTree.y - barrenTree.height + 34,
+    0.52,
+    {
+      alpha: 0.7,
+      rotation: -0.16,
+    }
+  );
 }
 
 function drawCrossroadsRightHalf(decorations) {
   const { square, villageHouses, flags } = decorations;
 
-  ctx.fillStyle = "#7aa45d";
-  ctx.fillRect(square.x, square.y, square.width, square.height);
-  ctx.fillStyle = "#86b368";
-  ctx.fillRect(square.x + 10, square.y + 10, square.width - 20, square.height - 20);
+  if (drawTerrainFill(TILECRAFT_TERRAIN.grass, square.x, square.y, square.width, square.height, { seed: 9 })) {
+    ctx.fillStyle = "rgba(114, 176, 83, 0.12)";
+    ctx.fillRect(square.x, square.y, square.width, square.height);
+    ctx.fillStyle = "rgba(146, 199, 103, 0.18)";
+    ctx.fillRect(square.x + 10, square.y + 10, square.width - 20, square.height - 20);
+  } else {
+    ctx.fillStyle = "#7aa45d";
+    ctx.fillRect(square.x, square.y, square.width, square.height);
+    ctx.fillStyle = "#86b368";
+    ctx.fillRect(square.x + 10, square.y + 10, square.width - 20, square.height - 20);
+  }
 
   for (let x = square.x + 20; x < square.x + square.width - 20; x += 28) {
     ctx.fillStyle = "#94ba73";
     ctx.fillRect(x, square.y + 30, 12, square.height - 60);
   }
 
-  ctx.fillStyle = "#c6b08d";
-  ctx.fillRect(square.x + 40, square.y + 156, square.width - 80, 60);
-  ctx.fillStyle = "#d9c39a";
-  ctx.fillRect(square.x + 56, square.y + 172, square.width - 112, 24);
+  if (drawTerrainFill(TILECRAFT_TERRAIN.dirt, square.x + 40, square.y + 156, square.width - 80, 60, { seed: 4 })) {
+    ctx.fillStyle = "rgba(195, 160, 107, 0.18)";
+    ctx.fillRect(square.x + 40, square.y + 156, square.width - 80, 60);
+    ctx.fillStyle = "rgba(225, 199, 148, 0.2)";
+    ctx.fillRect(square.x + 56, square.y + 172, square.width - 112, 24);
+  } else {
+    ctx.fillStyle = "#c6b08d";
+    ctx.fillRect(square.x + 40, square.y + 156, square.width - 80, 60);
+    ctx.fillStyle = "#d9c39a";
+    ctx.fillRect(square.x + 56, square.y + 172, square.width - 112, 24);
+  }
 
   for (const house of villageHouses) {
     ctx.fillStyle = "#c9b286";
@@ -1627,6 +2268,12 @@ function drawSpringSky(clouds) {
 }
 
 function drawSpringGround() {
+  if (drawTerrainFill(TILECRAFT_TERRAIN.grass, 0, 186, WORLD.width, WORLD.height - 186, { seed: 7 })) {
+    ctx.fillStyle = "rgba(111, 180, 71, 0.14)";
+    ctx.fillRect(0, 186, WORLD.width, WORLD.height - 186);
+    return;
+  }
+
   ctx.fillStyle = "#7fc35a";
   ctx.fillRect(0, 186, WORLD.width, WORLD.height - 186);
 
@@ -1637,7 +2284,12 @@ function drawSpringGround() {
 }
 
 function drawSpringPond(pond) {
-  ctx.fillStyle = "#71c8e8";
+  if (!drawTerrainFill(TILECRAFT_TERRAIN.water, pond.x, pond.y, pond.width, pond.height, { seed: 5 })) {
+    ctx.fillStyle = "#71c8e8";
+    ctx.fillRect(pond.x, pond.y, pond.width, pond.height);
+  }
+
+  ctx.fillStyle = "rgba(58, 144, 186, 0.18)";
   ctx.fillRect(pond.x, pond.y, pond.width, pond.height);
   ctx.fillStyle = "#bceefd";
   ctx.fillRect(pond.x + 12, pond.y + 12, pond.width - 28, 10);
@@ -1646,6 +2298,20 @@ function drawSpringPond(pond) {
 }
 
 function drawSpringPath(path, plaza) {
+  if (drawTerrainFill(TILECRAFT_TERRAIN.dirt, path.x, path.y, path.width, path.height, { seed: 10 })) {
+    ctx.fillStyle = "rgba(207, 185, 129, 0.16)";
+    ctx.fillRect(path.x, path.y, path.width, path.height);
+    ctx.fillStyle = "rgba(177, 149, 100, 0.18)";
+    ctx.fillRect(path.x + 12, path.y, path.width - 24, path.height);
+
+    drawTerrainFill(TILECRAFT_TERRAIN.stone, plaza.x, plaza.y, plaza.width, plaza.height, { seed: 11 });
+    ctx.fillStyle = "rgba(219, 209, 178, 0.18)";
+    ctx.fillRect(plaza.x, plaza.y, plaza.width, plaza.height);
+    ctx.fillStyle = "rgba(196, 179, 134, 0.16)";
+    ctx.fillRect(plaza.x + 10, plaza.y + 10, plaza.width - 20, plaza.height - 20);
+    return;
+  }
+
   ctx.fillStyle = "#d7c59b";
   ctx.fillRect(path.x, path.y, path.width, path.height);
   ctx.fillStyle = "#c4b186";
@@ -1737,6 +2403,10 @@ function drawInteractables() {
 function drawNpc(npc) {
   ctx.fillStyle = "rgba(11, 13, 16, 0.35)";
   ctx.fillRect(npc.x - 7, npc.y + 8, 14, 4);
+
+  if (drawNpcSpriteActor(npc)) {
+    return;
+  }
 
   ctx.fillStyle = "#35292b";
   ctx.fillRect(npc.x - 6, npc.y - 10, 12, 4);
@@ -1873,13 +2543,28 @@ function drawCrowdGathering(item) {
     const x = item.x + member.x;
     const y = item.y + member.y;
 
-    ctx.fillStyle = "#ddb99a";
-    ctx.fillRect(x - 2, y - 9, 4, 4);
-    ctx.fillStyle = member.shirt;
-    ctx.fillRect(x - 3, y - 5, 6, 6);
-    ctx.fillStyle = member.pants;
-    ctx.fillRect(x - 3, y + 1, 2, 5);
-    ctx.fillRect(x + 1, y + 1, 2, 5);
+    ctx.fillStyle = "rgba(11, 13, 16, 0.28)";
+    ctx.fillRect(x - 5, y + 7, 10, 3);
+
+    const didDrawSprite = drawNpcSpriteActor({
+      x,
+      y,
+      spriteKey: member.spriteKey,
+      direction: member.direction,
+      animation: member.animation,
+      frameOffset: member.frameOffset,
+      scale: member.scale,
+    });
+
+    if (!didDrawSprite) {
+      ctx.fillStyle = "#ddb99a";
+      ctx.fillRect(x - 2, y - 9, 4, 4);
+      ctx.fillStyle = member.shirt;
+      ctx.fillRect(x - 3, y - 5, 6, 6);
+      ctx.fillStyle = member.pants;
+      ctx.fillRect(x - 3, y + 1, 2, 5);
+      ctx.fillRect(x + 1, y + 1, 2, 5);
+    }
   }
 }
 

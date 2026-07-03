@@ -47,17 +47,24 @@
 
       <section id="slide-modal" class="slide-modal hidden" aria-hidden="true" role="dialog" aria-modal="true">
         <div class="slide-card">
+          <img class="slide-book-art" src="assets/ui/book-open.png" alt="" aria-hidden="true">
           <button id="close-slide-button" class="close-button" type="button" aria-label="Close slide">X</button>
-          <div class="slide-page slide-left">
-            <p id="slide-kicker" class="slide-kicker">Discovery</p>
-            <h2 id="slide-title">Title</h2>
-            <p id="slide-text" class="slide-text">Content</p>
-          </div>
-          <div class="slide-page slide-right">
-            <div class="image-frame">
-              <div id="slide-image" class="slide-image" aria-hidden="true"></div>
+          <div class="slide-spread">
+            <div class="slide-page slide-left">
+              <div class="slide-copy">
+                <p id="slide-kicker" class="slide-kicker">Discovery</p>
+                <h2 id="slide-title">Title</h2>
+                <p id="slide-text" class="slide-text">Content</p>
+              </div>
             </div>
-            <p id="slide-caption" class="slide-caption">Illustration placeholder</p>
+            <div class="slide-page slide-right">
+              <div class="slide-media-stack">
+                <div class="image-frame">
+                  <div id="slide-image" class="slide-image" aria-hidden="true"></div>
+                </div>
+                <p id="slide-caption" class="slide-caption">Illustration placeholder</p>
+              </div>
+            </div>
           </div>
         </div>
       </section>
