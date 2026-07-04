@@ -116,6 +116,8 @@ const keys = new Set();
 const playerSprites = loadPlayerSprites();
 const npcSprites = loadVillageNpcSprites();
 const environmentSprites = loadEnvironmentSprites();
+const uiSounds = loadUiSounds();
+const ambienceSounds = loadAmbienceSounds();
 
 const state = {
   mode: "start",
@@ -136,16 +138,16 @@ const levels = {
   spring: createSpringLevel(),
 };
 
-startButton.addEventListener("click", startGame);
-pauseButton.addEventListener("click", togglePause);
-resumeButton.addEventListener("click", resumeGame);
-restartButton.addEventListener("click", restartGame);
-aboutButton.addEventListener("click", () => {
+startButton.addEventListener("click", withUiClickSound(startGame));
+pauseButton.addEventListener("click", withUiClickSound(togglePause));
+resumeButton.addEventListener("click", withUiClickSound(resumeGame));
+restartButton.addEventListener("click", withUiClickSound(restartGame));
+aboutButton.addEventListener("click", withUiClickSound(() => {
   state.aboutFromPause = true;
   openSlide(currentLevel().aboutSlide);
-});
+}));
 closeSlideButton.addEventListener("click", closeSlide);
-returnStartButton.addEventListener("click", returnToStartScreen);
+returnStartButton.addEventListener("click", withUiClickSound(returnToStartScreen));
 
 window.addEventListener("keydown", (event) => {
   if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " "].includes(event.key)) {
@@ -165,17 +167,20 @@ window.addEventListener("keydown", (event) => {
     }
 
     if (state.mode === "playing" || state.mode === "paused") {
+      playUiSound(uiSounds.pixelClick);
       togglePause();
       return;
     }
   }
 
   if (state.mode === "start" && (key === "enter" || key === "space")) {
+    playUiSound(uiSounds.pixelClick);
     startGame();
     return;
   }
 
   if (state.mode === "ending" && (key === "enter" || key === "space")) {
+    playUiSound(uiSounds.pixelClick);
     returnToStartScreen();
     return;
   }
@@ -235,6 +240,20 @@ function loadEnvironmentSprites() {
   };
 }
 
+function loadUiSounds() {
+  return {
+    bookPageFlip: loadSound("assets/audio/book-page-flip.mp3", 0.42),
+    pixelClick: loadSound("assets/audio/ui-pixel-click.mp3", 0.34),
+  };
+}
+
+function loadAmbienceSounds() {
+  return {
+    rain: loadSound("assets/audio/rain-ambient.mp3", 0.18, { loop: true }),
+    fireplace: loadSound("assets/audio/fireplace-ambient.mp3", 0.14, { loop: true }),
+  };
+}
+
 function loadDirectionalSprites(prefix) {
   return {
     up: loadSprite(`assets/player/${prefix}_up.png`),
@@ -260,6 +279,84 @@ function loadSprite(src) {
   const image = new Image();
   image.src = src;
   return image;
+}
+
+function loadSound(src, volume = 1, options = {}) {
+  const sound = new Audio(src);
+  sound.preload = "auto";
+  sound.volume = volume;
+  sound.loop = Boolean(options.loop);
+  return sound;
+}
+
+function playUiSound(sound) {
+  if (!sound) {
+    return;
+  }
+
+  try {
+    sound.pause();
+    sound.currentTime = 0;
+    const playback = sound.play();
+    playback?.catch(() => {});
+  } catch {
+    // Ignore browsers that temporarily block or delay UI sound playback.
+  }
+}
+
+function withUiClickSound(action) {
+  return (...args) => {
+    playUiSound(uiSounds.pixelClick);
+    action(...args);
+  };
+}
+
+function playLoopingSound(sound) {
+  if (!sound || !sound.paused) {
+    return;
+  }
+
+  try {
+    const playback = sound.play();
+    playback?.catch(() => {});
+  } catch {
+    // Ignore browsers that temporarily block ambient playback.
+  }
+}
+
+function stopSound(sound) {
+  if (!sound) {
+    return;
+  }
+
+  try {
+    sound.pause();
+    sound.currentTime = 0;
+  } catch {
+    // Ignore browsers that do not allow resetting audio immediately.
+  }
+}
+
+function syncAmbienceAudio() {
+  let activeAmbience = null;
+
+  if (state.mode !== "start") {
+    if (state.currentLevelId === "village") {
+      activeAmbience = ambienceSounds.rain;
+    } else if (state.currentLevelId === "archive") {
+      activeAmbience = ambienceSounds.fireplace;
+    }
+  }
+
+  for (const sound of Object.values(ambienceSounds)) {
+    if (sound !== activeAmbience) {
+      stopSound(sound);
+    }
+  }
+
+  if (activeAmbience) {
+    playLoopingSound(activeAmbience);
+  }
 }
 
 function canDrawSprite(image) {
@@ -1262,6 +1359,7 @@ function resumeGame() {
   pauseMenu.classList.add("hidden");
   pauseMenu.setAttribute("aria-hidden", "true");
   updateInteractionPrompt();
+  syncAmbienceAudio();
 }
 
 function restartGame() {
@@ -1298,6 +1396,7 @@ function loadLevel(levelId, spawnOverride) {
   updateCamera();
   updateLevelChrome();
   updateInteractionPrompt();
+  syncAmbienceAudio();
 }
 
 function updateLevelChrome() {
@@ -1322,6 +1421,7 @@ function openSlide(slideData) {
     slideImage.classList.add(`art-${slideData.art}`);
   }
 
+  playUiSound(uiSounds.bookPageFlip);
   slideModal.classList.remove("hidden");
   slideModal.setAttribute("aria-hidden", "false");
   pauseMenu.classList.add("hidden");
@@ -1332,6 +1432,7 @@ function openSlide(slideData) {
 function closeSlide() {
   const shouldEnd = state.pendingEnding;
 
+  playUiSound(uiSounds.bookPageFlip);
   slideModal.classList.add("hidden");
   slideModal.setAttribute("aria-hidden", "true");
   state.activeSlide = null;
