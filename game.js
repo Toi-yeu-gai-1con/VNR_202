@@ -2959,15 +2959,16 @@ function drawArchiveLighting(decorations) {
   ctx.fillRect(0, 0, VIEWPORT.width, VIEWPORT.height);
 
   ctx.globalCompositeOperation = "screen";
-  drawWarmLight(fireplace.x + fireplace.width * 0.66, fireplace.y + fireplace.height * 0.56, 154, 0.9 + flicker);
-  drawWarmLight(fireplace.x + fireplace.width * 0.5, fireplace.y + fireplace.height * 0.82, 94, 0.42 + flicker);
+  drawWarmLight(fireplace.x + fireplace.width * 0.66, fireplace.y + fireplace.height * 0.56, 126, 0.58 + flicker);
+  drawWarmLight(fireplace.x + fireplace.width * 0.5, fireplace.y + fireplace.height * 0.82, 82, 0.26 + flicker);
 
   for (const candle of candles) {
-    drawWarmLight(candle.x + 2, candle.y - 8, 62, 0.36 + Math.abs(flicker));
+    drawWarmLight(candle.x + 2, candle.y - 8, 84, 0.52 + Math.abs(flicker));
+    drawScreenFireBloom(candle.x + 2, candle.y - 8, 34, 0.16);
   }
 
   ctx.globalCompositeOperation = "lighter";
-  drawScreenFireBloom(fireplace.x + fireplace.width * 0.58, fireplace.y + fireplace.height * 0.62, 84, 0.24);
+  drawScreenFireBloom(fireplace.x + fireplace.width * 0.58, fireplace.y + fireplace.height * 0.62, 62, 0.14);
   ctx.restore();
 }
 
