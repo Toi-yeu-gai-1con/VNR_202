@@ -250,6 +250,11 @@ function loadEffectSprites() {
       loadSprite("assets/effects/rain_drops-04.png"),
     ],
     eternalCandle: loadSprite("assets/effects/eternal-ember-candle-1-DEMO.gif"),
+    glow: loadSprite("assets/effects/kenney-particles/light_01.png"),
+    ember: loadSprite("assets/effects/kenney-particles/flame_05.png"),
+    magic: loadSprite("assets/effects/kenney-particles/magic_04.png"),
+    sparkle: loadSprite("assets/effects/kenney-particles/star_04.png"),
+    petal: loadSprite("assets/effects/petal-pink.png"),
   };
 }
 
@@ -2257,6 +2262,16 @@ function drawCrossroadsBackdrop(decorations) {
 }
 
 function drawCrossroadsGlowPath(glowingPath, finalArch) {
+  const glowSprite = effectSprites.glow;
+
+  if (canDrawSprite(glowSprite)) {
+    ctx.save();
+    ctx.globalAlpha = 0.22;
+    ctx.globalCompositeOperation = "screen";
+    ctx.drawImage(glowSprite, glowingPath.x - 132, glowingPath.y + 18, glowingPath.width + 264, glowingPath.height + 96);
+    ctx.restore();
+  }
+
   ctx.fillStyle = "#ffe391";
   ctx.fillRect(glowingPath.x, glowingPath.y + 34, glowingPath.width, glowingPath.height - 34);
   ctx.fillStyle = "#fff5c5";
@@ -2643,6 +2658,14 @@ function drawFragmentTable(item) {
     ctx.fillRect(fragment.x + 1, fragment.y - 2, 2, 2);
     ctx.fillStyle = "rgba(135, 236, 255, 0.28)";
     ctx.fillRect(fragment.x - 2, fragment.y - 2, 8, 8);
+
+    if (canDrawSprite(effectSprites.sparkle)) {
+      ctx.save();
+      ctx.globalAlpha = 0.5 + Math.sin(state.lastTimestamp * 0.005 + fragment.x) * 0.18;
+      ctx.globalCompositeOperation = "screen";
+      ctx.drawImage(effectSprites.sparkle, fragment.x - 6, fragment.y - 8, 16, 16);
+      ctx.restore();
+    }
   }
 }
 
@@ -2929,8 +2952,15 @@ function drawEmbers(embers) {
     const x = ember.x + sway;
     const y = ember.y - lift;
 
-    ctx.fillStyle = `rgba(255, 190, 96, ${ember.alpha})`;
-    ctx.fillRect(Math.round(x), Math.round(y), ember.size, ember.size);
+    if (canDrawSprite(effectSprites.ember)) {
+      const size = 8 + ember.size * 3;
+      ctx.globalAlpha = Math.min(0.85, ember.alpha * 2.4);
+      ctx.globalCompositeOperation = "lighter";
+      ctx.drawImage(effectSprites.ember, Math.round(x - size / 2), Math.round(y - size / 2), size, size);
+    } else {
+      ctx.fillStyle = `rgba(255, 190, 96, ${ember.alpha})`;
+      ctx.fillRect(Math.round(x), Math.round(y), ember.size, ember.size);
+    }
   }
 
   ctx.restore();
@@ -2945,8 +2975,15 @@ function drawGlowMotes(motes) {
     const x = mote.x + sway;
     const y = mote.y - lift;
 
-    ctx.fillStyle = `rgba(255, 236, 140, ${mote.alpha})`;
-    ctx.fillRect(Math.round(x), Math.round(y), mote.size, mote.size);
+    if (canDrawSprite(effectSprites.magic)) {
+      const size = 9 + mote.size * 4;
+      ctx.globalAlpha = Math.min(0.72, mote.alpha * 2.1);
+      ctx.globalCompositeOperation = "screen";
+      ctx.drawImage(effectSprites.magic, Math.round(x - size / 2), Math.round(y - size / 2), size, size);
+    } else {
+      ctx.fillStyle = `rgba(255, 236, 140, ${mote.alpha})`;
+      ctx.fillRect(Math.round(x), Math.round(y), mote.size, mote.size);
+    }
   }
 
   ctx.restore();
@@ -2960,8 +2997,18 @@ function drawPetals(petals) {
     const x = (petal.x + Math.sin(travel * 0.08) * 6 + travel * petal.drift) % (VIEWPORT.width + 40) - 20;
     const y = (petal.y + travel) % (VIEWPORT.height + 36) - 18;
 
-    ctx.fillStyle = `rgba(247, 201, 222, ${petal.alpha})`;
-    ctx.fillRect(Math.round(x), Math.round(y), petal.size, petal.size + 1);
+    if (canDrawSprite(effectSprites.petal)) {
+      const size = 5 + petal.size * 3;
+      ctx.save();
+      ctx.globalAlpha = Math.min(0.9, petal.alpha * 2.5);
+      ctx.translate(Math.round(x), Math.round(y));
+      ctx.rotate(Math.sin(travel * 0.06 + petal.x) * 0.9);
+      ctx.drawImage(effectSprites.petal, -size / 2, -size / 2, size, Math.round(size * 1.25));
+      ctx.restore();
+    } else {
+      ctx.fillStyle = `rgba(247, 201, 222, ${petal.alpha})`;
+      ctx.fillRect(Math.round(x), Math.round(y), petal.size, petal.size + 1);
+    }
   }
 
   ctx.restore();
