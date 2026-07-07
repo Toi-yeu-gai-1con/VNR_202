@@ -111,6 +111,20 @@ const TILECRAFT_TERRAIN = {
   ],
 };
 const VILLAGE_SKYLINE_Y = 148;
+const VILLAGE_PROP_SPRITES = {
+  fenceVine: { x: 0, y: 184, width: 760, height: 190 },
+  gate: { x: 232, y: 510, width: 300, height: 154 },
+  carts: [
+    { x: 128, y: 0, width: 16, height: 16 },
+    { x: 128, y: 16, width: 16, height: 16 },
+    { x: 128, y: 32, width: 16, height: 16 },
+  ],
+  crates: [
+    { x: 0, y: 32, width: 16, height: 16 },
+    { x: 16, y: 32, width: 16, height: 16 },
+    { x: 32, y: 32, width: 16, height: 16 },
+  ],
+};
 
 const keys = new Set();
 const playerSprites = loadPlayerSprites();
@@ -238,6 +252,14 @@ function loadEnvironmentSprites() {
     barkTexture: loadSprite("assets/environment/dead-aspen/Tree1Diff256.png"),
     tilecraftGround: loadSprite("assets/environment/tilecraft/TileCraftGroundSetVersion2.png"),
     archiveParquet: loadSprite("assets/environment/archive/Birch_Parquet_01_basecolor.png"),
+    ruinedVillageBuildings: Array.from({ length: 7 }, (_, index) =>
+      loadSprite(`assets/environment/mutterpixel-ruined-village/spr_old_building_${index + 1}.png`)
+    ),
+    villageProps: {
+      fencesWallsGate: loadSprite("assets/environment/village-props/fences-walls-gate.png"),
+      boxesCrates: loadSprite("assets/environment/village-props/boxes-crates.png"),
+      fantasyVehicles: loadSprite("assets/environment/village-props/fantasy-vehicles.png"),
+    },
   };
 }
 
@@ -483,6 +505,29 @@ function drawSheetSprite(image, sprite, x, y, scale = 1, options = {}) {
   return true;
 }
 
+function drawSpriteRect(image, sprite, x, y, width, height, options = {}) {
+  if (!canDrawSprite(image)) {
+    return false;
+  }
+
+  ctx.save();
+  ctx.globalAlpha = options.alpha ?? 1;
+  ctx.filter = options.filter ?? "none";
+  ctx.drawImage(
+    image,
+    sprite.x,
+    sprite.y,
+    sprite.width,
+    sprite.height,
+    Math.round(x),
+    Math.round(y),
+    Math.round(width),
+    Math.round(height)
+  );
+  ctx.restore();
+  return true;
+}
+
 function drawBarkOverlay(x, y, width, height, alpha = 0.36) {
   if (!canDrawSprite(environmentSprites.barkTexture)) {
     return;
@@ -718,18 +763,47 @@ function createVillageLevel() {
         },
       },
     ],
-    colliders: [
-      { x: 78, y: 184, width: 66, height: 30 },
-      { x: 204, y: 176, width: 70, height: 34 },
-      { x: 360, y: 182, width: 64, height: 28 },
-      { x: 528, y: 178, width: 70, height: 32 },
-      { x: 700, y: 180, width: 68, height: 32 },
-      { x: 232, y: 382, width: 30, height: 10 },
-      { x: 520, y: 356, width: 30, height: 10 },
-      { x: 770, y: 400, width: 32, height: 10 },
-    ],
+    colliders: createVillageColliders(decorations),
     decorations,
   };
+}
+
+function createVillageColliders(decorations) {
+  const houseColliders = decorations.houses.map((house) => {
+    const scale = house.spriteScale ?? 1;
+    const drawWidth = Math.round(128 * scale);
+    const drawHeight = Math.round(128 * scale);
+    const spriteX = house.spriteX ?? house.x + house.width / 2;
+    const spriteY = house.spriteY ?? house.y + house.height;
+    const x = Math.round(spriteX - drawWidth / 2 + 10);
+    const y = Math.round(spriteY - drawHeight + 12);
+    const width = Math.max(24, drawWidth - 20);
+    const height = drawHeight + 16;
+
+    return { x, y, width, height };
+  });
+
+  const fenceColliders = decorations.fenceSegments.map((segment) => ({
+    x: segment.x - 8,
+    y: segment.y + 18,
+    width: segment.posts * 14 + 8,
+    height: 28,
+  }));
+
+  const cartColliders = decorations.brokenCarts.map((cart) => ({
+    x: cart.x - Math.round(cart.width / 2) - 5,
+    y: cart.y - 8,
+    width: cart.width + 12,
+    height: 22,
+  }));
+
+  return [
+    ...houseColliders,
+    ...fenceColliders,
+    ...cartColliders,
+    { x: WORLD.width - 78, y: 266, width: 14, height: 64 },
+    { x: WORLD.width - 40, y: 274, width: 14, height: 58 },
+  ];
 }
 
 function createArchiveLevel() {
@@ -946,11 +1020,11 @@ function createSpringLevel() {
 
 function createVillageDecorations() {
   const houses = [
-    { x: 82, y: 172, width: 58, height: 40, breakSide: "right" },
-    { x: 208, y: 162, width: 62, height: 46, breakSide: "left" },
-    { x: 364, y: 170, width: 56, height: 40, breakSide: "middle" },
-    { x: 532, y: 164, width: 62, height: 44, breakSide: "right" },
-    { x: 704, y: 170, width: 60, height: 42, breakSide: "left" },
+    { x: 78, y: 174, width: 82, height: 62, breakSide: "right", spriteIndex: 0, spriteX: 122, spriteY: 324, spriteScale: 0.88 },
+    { x: 224, y: 168, width: 90, height: 66, breakSide: "left", spriteIndex: 3, spriteX: 268, spriteY: 320, spriteScale: 0.9 },
+    { x: 384, y: 172, width: 94, height: 64, breakSide: "middle", spriteIndex: 5, spriteX: 430, spriteY: 322, spriteScale: 0.88 },
+    { x: 552, y: 174, width: 86, height: 60, breakSide: "right", spriteIndex: 4, spriteX: 596, spriteY: 324, spriteScale: 0.86 },
+    { x: 724, y: 176, width: 78, height: 58, breakSide: "left", spriteIndex: 2, spriteX: 764, spriteY: 320, spriteScale: 0.88 },
   ];
 
   const deadTrees = [
@@ -985,9 +1059,9 @@ function createVillageDecorations() {
   ];
 
   const brokenCarts = [
-    { x: 236, y: 384, width: 30, height: 16, brokenSide: "left" },
-    { x: 528, y: 360, width: 28, height: 16, brokenSide: "right" },
-    { x: 776, y: 404, width: 30, height: 16, brokenSide: "left" },
+    { x: 236, y: 408, width: 30, height: 16, brokenSide: "left" },
+    { x: 548, y: 408, width: 28, height: 16, brokenSide: "right" },
+    { x: 790, y: 430, width: 30, height: 16, brokenSide: "left" },
   ];
 
   const fenceSegments = [
@@ -1731,8 +1805,8 @@ function drawWorld() {
 function drawVillageWorld(decorations) {
   drawStormSky(decorations);
   drawVillageGroundBase();
-  drawVillageRuins(decorations);
   drawVillageRoads();
+  drawVillageRuins(decorations);
   drawPuddles(decorations.puddles);
   drawDryGrassPatches(decorations.dryGrass);
   drawFenceRemains(decorations.fenceSegments);
@@ -1768,37 +1842,59 @@ function drawStormSky(decorations) {
 }
 
 function drawVillageGroundBase() {
-  if (drawTerrainFill(TILECRAFT_TERRAIN.stone, 0, VILLAGE_SKYLINE_Y, WORLD.width, WORLD.height - VILLAGE_SKYLINE_Y, { seed: 2 })) {
-    drawTerrainFill(TILECRAFT_TERRAIN.dirt, 0, 500, WORLD.width, WORLD.height - 500, {
-      seed: 4,
-      alpha: 0.55,
-    });
-
-    ctx.fillStyle = "rgba(24, 31, 40, 0.48)";
-    ctx.fillRect(0, VILLAGE_SKYLINE_Y, WORLD.width, WORLD.height - VILLAGE_SKYLINE_Y);
-    ctx.fillStyle = "rgba(9, 12, 17, 0.18)";
-    for (let x = 0; x < WORLD.width; x += 32) {
-      ctx.fillRect(x, VILLAGE_SKYLINE_Y, 16, WORLD.height - VILLAGE_SKYLINE_Y);
-    }
-    ctx.fillStyle = "rgba(10, 12, 15, 0.26)";
-    ctx.fillRect(0, 500, WORLD.width, WORLD.height - 500);
-    return;
-  }
-
-  ctx.fillStyle = "#2a343d";
+  ctx.fillStyle = "#293039";
   ctx.fillRect(0, VILLAGE_SKYLINE_Y, WORLD.width, WORLD.height - VILLAGE_SKYLINE_Y);
 
-  for (let x = 0; x < WORLD.width; x += 22) {
-    ctx.fillStyle = x % 44 === 0 ? "#303b45" : "#263039";
-    ctx.fillRect(x, VILLAGE_SKYLINE_Y, 22, WORLD.height - VILLAGE_SKYLINE_Y);
+  drawVillageTexture(0, VILLAGE_SKYLINE_Y, WORLD.width, WORLD.height - VILLAGE_SKYLINE_Y, {
+    seed: 3,
+    step: 18,
+    colors: ["#313a43", "#202831", "#3a4148", "#26303a"],
+    alpha: 0.42,
+  });
+
+  ctx.fillStyle = "rgba(16, 21, 27, 0.34)";
+  ctx.fillRect(0, 500, WORLD.width, WORLD.height - 500);
+  drawVillageTexture(0, 500, WORLD.width, WORLD.height - 500, {
+    seed: 8,
+    step: 20,
+    colors: ["#252d34", "#171d24", "#30363a"],
+    alpha: 0.5,
+  });
+
+  ctx.fillStyle = "rgba(94, 81, 64, 0.14)";
+  for (let x = 18; x < WORLD.width; x += 48) {
+    ctx.fillRect(x, VILLAGE_SKYLINE_Y + 8 + ((x * 7) % 26), 20, 2);
+  }
+}
+
+function drawVillageTexture(x, y, width, height, options = {}) {
+  const step = options.step ?? 16;
+  const seed = options.seed ?? 0;
+  const colors = options.colors ?? ["#ffffff"];
+
+  ctx.save();
+  ctx.globalAlpha = options.alpha ?? 1;
+
+  for (let drawY = y; drawY < y + height; drawY += step) {
+    for (let drawX = x; drawX < x + width; drawX += step) {
+      const hash = Math.abs((drawX * 17 + drawY * 31 + seed * 47) % 97);
+      const color = colors[hash % colors.length];
+      const chipWidth = 2 + (hash % 5);
+      const chipHeight = 1 + (hash % 3);
+      ctx.fillStyle = color;
+      ctx.fillRect(drawX + (hash % Math.max(3, step - 4)), drawY + ((hash * 3) % Math.max(3, step - 4)), chipWidth, chipHeight);
+    }
   }
 
-  ctx.fillStyle = "#212930";
-  ctx.fillRect(0, 500, WORLD.width, WORLD.height - 500);
+  ctx.restore();
 }
 
 function drawVillageRuins(decorations) {
   for (const house of decorations.houses) {
+    if (drawRuinedVillageBuilding(house)) {
+      continue;
+    }
+
     ctx.fillStyle = "#2f3741";
     ctx.fillRect(house.x, house.y, house.width, house.height);
 
@@ -1827,89 +1923,250 @@ function drawVillageRuins(decorations) {
   }
 }
 
-function drawVillageRoads() {
-  if (canDrawSprite(environmentSprites.tilecraftGround)) {
-    drawTerrainFill(TILECRAFT_TERRAIN.dirt, 0, 330, WORLD.width, 60, { seed: 0 });
-    drawTerrainFill(TILECRAFT_TERRAIN.dirt, 474, 228, 44, 102, { seed: 1 });
-    drawTerrainFill(TILECRAFT_TERRAIN.dirt, WORLD.width - 170, 314, 170, 92, { seed: 2 });
+function drawRuinedVillageBuilding(house) {
+  const sprite = environmentSprites.ruinedVillageBuildings?.[house.spriteIndex];
 
-    ctx.fillStyle = "rgba(70, 57, 50, 0.3)";
-    ctx.fillRect(0, 330, WORLD.width, 60);
-    ctx.fillRect(474, 228, 44, 102);
-    ctx.fillRect(WORLD.width - 170, 314, 170, 92);
-  } else {
-  ctx.fillStyle = "#50494d";
-  ctx.fillRect(0, 330, WORLD.width, 60);
-  ctx.fillRect(474, 228, 44, 102);
-  ctx.fillRect(WORLD.width - 170, 314, 170, 92);
+  if (!canDrawSprite(sprite)) {
+    return false;
   }
 
-  ctx.fillStyle = "#655d62";
-  ctx.fillRect(0, 340, WORLD.width, 8);
-  ctx.fillRect(0, 372, WORLD.width, 6);
-  ctx.fillRect(WORLD.width - 118, 324, 118, 10);
+  const scale = house.spriteScale ?? 1;
+  const drawWidth = Math.round(sprite.naturalWidth * scale);
+  const drawHeight = Math.round(sprite.naturalHeight * scale);
+  const drawX = Math.round((house.spriteX ?? house.x + house.width / 2) - drawWidth / 2);
+  const drawY = Math.round((house.spriteY ?? house.y + house.height) - drawHeight);
 
-  ctx.fillStyle = "#3d3639";
-  ctx.fillRect(116, 352, 38, 4);
-  ctx.fillRect(286, 372, 54, 4);
-  ctx.fillRect(430, 348, 46, 4);
-  ctx.fillRect(612, 364, 52, 4);
-  ctx.fillRect(804, 348, 48, 4);
+  ctx.save();
+  ctx.globalAlpha = 0.28;
+  ctx.fillStyle = "#080b0e";
+  ctx.fillRect(drawX + 8, drawY + drawHeight - 18, drawWidth - 16, 12);
+  ctx.restore();
+
+  ctx.save();
+  ctx.globalAlpha = 1;
+  ctx.filter = "brightness(0.92) saturate(0.82) contrast(1.06)";
+  ctx.drawImage(sprite, drawX, drawY, drawWidth, drawHeight);
+  ctx.restore();
+
+  return true;
+}
+
+function drawVillageRoads() {
+  drawDirtPath(0, 328, WORLD.width, 64, 0);
+  drawDirtPath(470, 226, 52, 108, 1);
+  drawDirtPath(WORLD.width - 174, 312, 174, 96, 2);
+
+  drawRoadRuts(118, 354, 46, 0);
+  drawRoadRuts(286, 374, 62, 1);
+  drawRoadRuts(430, 350, 54, 2);
+  drawRoadRuts(612, 366, 60, 3);
+  drawRoadRuts(804, 350, 54, 4);
+}
+
+function drawDirtPath(x, y, width, height, seed = 0) {
+  ctx.fillStyle = "#6c5a45";
+  ctx.fillRect(x, y + 6, width, height - 12);
+
+  drawVillageTexture(x, y + 6, width, height - 12, {
+    seed: seed + 12,
+    step: 12,
+    colors: ["#786448", "#584a3d", "#7f715d", "#453b34"],
+    alpha: 0.72,
+  });
+
+  for (let px = x; px < x + width; px += 16) {
+    const topChip = 2 + Math.abs((px * 7 + seed * 13) % 4);
+    const bottomChip = 2 + Math.abs((px * 11 + seed * 17) % 4);
+
+    ctx.fillStyle = "#293039";
+    ctx.fillRect(px, y + 2, 10, topChip);
+    ctx.fillRect(px + 5, y + height - 4, 12, bottomChip);
+
+    ctx.fillStyle = "rgba(41, 32, 27, 0.28)";
+    ctx.fillRect(px + 2, y + 8, 8, 1);
+    ctx.fillRect(px + 5, y + height - 9, 10, 1);
+  }
+
+  ctx.fillStyle = "rgba(31, 25, 23, 0.16)";
+  ctx.fillRect(x, y + 12, width, 1);
+  ctx.fillRect(x, y + height - 14, width, 1);
+}
+
+function drawRoadRuts(x, y, width, seed = 0) {
+  ctx.fillStyle = "rgba(52, 42, 35, 0.5)";
+  ctx.fillRect(x, y, width, 2);
+  ctx.fillStyle = "rgba(132, 111, 87, 0.32)";
+  ctx.fillRect(x + 5, y - 1, Math.max(8, width - 16), 1);
+
+  for (let index = 0; index < 4; index += 1) {
+    const stoneX = x + 8 + ((index * 13 + seed * 7) % Math.max(10, width - 14));
+    const stoneY = y + 5 + ((index * 5 + seed) % 7);
+    drawPixelStone(stoneX, stoneY, 4 + (index % 2), index);
+  }
+}
+
+function drawPixelStone(x, y, size = 4, tone = 0) {
+  ctx.fillStyle = tone % 2 === 0 ? "#4f5658" : "#3e474b";
+  ctx.fillRect(x, y, size, Math.max(2, size - 1));
+  ctx.fillStyle = "#20262a";
+  ctx.fillRect(x, y + size - 1, size, 1);
+  ctx.fillStyle = "rgba(150, 156, 150, 0.32)";
+  ctx.fillRect(x + 1, y, Math.max(1, size - 2), 1);
 }
 
 function drawPuddles(puddles) {
   for (const puddle of puddles) {
-    if (!drawTerrainFill(TILECRAFT_TERRAIN.water, puddle.x, puddle.y, puddle.width, puddle.height, { seed: 3 })) {
-      ctx.fillStyle = "#32465b";
-      ctx.fillRect(puddle.x, puddle.y, puddle.width, puddle.height);
-    }
+    ctx.fillStyle = "rgba(26, 50, 62, 0.58)";
+    ctx.fillRect(puddle.x, puddle.y + 2, puddle.width, Math.max(6, puddle.height - 4));
 
-    ctx.fillStyle = "rgba(38, 83, 110, 0.34)";
-    ctx.fillRect(puddle.x, puddle.y, puddle.width, puddle.height);
-    ctx.fillStyle = "#5f7a94";
-    ctx.fillRect(puddle.x + 4, puddle.y + 2, puddle.width - 12, 2);
-    ctx.fillRect(puddle.x + 10, puddle.y + 5, puddle.width - 18, 2);
+    ctx.fillStyle = "rgba(19, 34, 43, 0.42)";
+    ctx.fillRect(puddle.x + 3, puddle.y + 1, Math.max(8, puddle.width - 8), 2);
+    ctx.fillRect(puddle.x + 6, puddle.y + puddle.height - 3, Math.max(8, puddle.width - 14), 2);
+
+    ctx.fillStyle = "rgba(92, 128, 142, 0.38)";
+    ctx.fillRect(puddle.x + 6, puddle.y + 4, Math.max(6, puddle.width - 18), 1);
+    ctx.fillRect(puddle.x + 14, puddle.y + 8, Math.max(4, puddle.width - 28), 1);
   }
 }
 
 function drawFenceRemains(fenceSegments) {
   for (const segment of fenceSegments) {
+    const drawWidth = segment.posts * 14 + 14;
+    const drawHeight = 22;
+
+    if (drawSpriteRect(
+      environmentSprites.villageProps?.fencesWallsGate,
+      VILLAGE_PROP_SPRITES.fenceVine,
+      segment.x - 8,
+      segment.y - 3,
+      drawWidth,
+      drawHeight,
+      {
+        alpha: 0.9,
+        filter: "brightness(0.72) saturate(0.72) contrast(1.08)",
+      }
+    )) {
+      ctx.fillStyle = "rgba(8, 10, 12, 0.24)";
+      ctx.fillRect(segment.x - 6, segment.y + 19, drawWidth - 10, 4);
+      continue;
+    }
+
+    ctx.fillStyle = "rgba(8, 10, 12, 0.24)";
+    ctx.fillRect(segment.x - 8, segment.y + 19, segment.posts * 12 + 8, 4);
+
     for (let index = 0; index < segment.posts; index += 1) {
       if (index === segment.brokenIndex) {
         continue;
       }
 
       const x = segment.x + index * 12;
-      ctx.fillStyle = "#504240";
-      ctx.fillRect(x, segment.y, 4, 18);
-      ctx.fillRect(x - 4, segment.y + 6, 12, 3);
-      ctx.fillRect(x - 2, segment.y + 11, 10, 3);
+      drawFencePost(x, segment.y, index);
+      drawFencePlank(x - 5, segment.y + 6 + (index % 2), 13, 3);
+      drawFencePlank(x - 3, segment.y + 12 - (index % 2), 12, 3);
     }
 
-    ctx.fillStyle = "#3b302f";
-    ctx.fillRect(segment.x + segment.brokenIndex * 12, segment.y + 12, 8, 3);
+    const brokenX = segment.x + segment.brokenIndex * 12;
+    drawFencePlank(brokenX - 3, segment.y + 15, 10, 3, -0.18);
+    drawPixelStone(brokenX + 6, segment.y + 20, 3, segment.brokenIndex);
   }
 }
 
-function drawBrokenCarts(brokenCarts) {
-  for (const cart of brokenCarts) {
-    ctx.fillStyle = "#65463b";
-    ctx.fillRect(cart.x - cart.width / 2, cart.y - 7, cart.width, 12);
+function drawFencePost(x, y, tone = 0) {
+  ctx.fillStyle = "#231d1c";
+  ctx.fillRect(x - 1, y - 1, 6, 22);
+  ctx.fillStyle = tone % 2 === 0 ? "#5f4c3d" : "#4c3b32";
+  ctx.fillRect(x, y, 4, 19);
+  ctx.fillStyle = "#8a6b51";
+  ctx.fillRect(x + 1, y + 2, 1, 13);
+  ctx.fillStyle = "#2f2725";
+  ctx.fillRect(x, y + 18, 4, 2);
+}
 
-    ctx.fillStyle = "#8f6957";
-    ctx.fillRect(cart.x - cart.width / 2 + 4, cart.y - 5, cart.width - 10, 3);
+function drawFencePlank(x, y, width, height, rotation = 0) {
+  ctx.save();
+  ctx.translate(Math.round(x), Math.round(y));
+  ctx.rotate(rotation);
+  ctx.fillStyle = "#241d1b";
+  ctx.fillRect(-1, -1, width + 2, height + 2);
+  ctx.fillStyle = "#604838";
+  ctx.fillRect(0, 0, width, height);
+  ctx.fillStyle = "#8a6950";
+  ctx.fillRect(1, 0, Math.max(1, width - 3), 1);
+  ctx.fillStyle = "#342925";
+  ctx.fillRect(width - 3, height - 1, 2, 1);
+  ctx.restore();
+}
+
+function drawBrokenCarts(brokenCarts) {
+  for (let index = 0; index < brokenCarts.length; index += 1) {
+    const cart = brokenCarts[index];
+    const cartSprite = VILLAGE_PROP_SPRITES.carts[index % VILLAGE_PROP_SPRITES.carts.length];
+    const crateSprite = VILLAGE_PROP_SPRITES.crates[index % VILLAGE_PROP_SPRITES.crates.length];
+
+    if (drawSpriteRect(
+      environmentSprites.villageProps?.fantasyVehicles,
+      cartSprite,
+      cart.x - 17,
+      cart.y - 17,
+      34,
+      34,
+      {
+        alpha: 0.92,
+        filter: "brightness(0.76) saturate(0.72) contrast(1.08)",
+      }
+    )) {
+      ctx.fillStyle = "rgba(8, 9, 10, 0.28)";
+      ctx.fillRect(cart.x - 17, cart.y + 9, 34, 5);
+      drawSpriteRect(
+        environmentSprites.villageProps?.boxesCrates,
+        crateSprite,
+        cart.x + 8,
+        cart.y - 3,
+        16,
+        16,
+        {
+          alpha: 0.82,
+          filter: "brightness(0.72) saturate(0.72)",
+        }
+      );
+      continue;
+    }
+
+    const left = Math.round(cart.x - cart.width / 2);
+    const top = cart.y - 8;
+
+    ctx.fillStyle = "rgba(8, 9, 10, 0.28)";
+    ctx.fillRect(left - 5, cart.y + 7, cart.width + 11, 5);
+
+    ctx.fillStyle = "#241c1a";
+    ctx.fillRect(left - 1, top - 1, cart.width + 2, 14);
+    ctx.fillStyle = "#674b3d";
+    ctx.fillRect(left, top, cart.width, 12);
+
+    for (let plank = 0; plank < 3; plank += 1) {
+      ctx.fillStyle = plank % 2 === 0 ? "#80604c" : "#563d34";
+      ctx.fillRect(left + 3 + plank * 8, top + 2, 6, 8);
+      ctx.fillStyle = "#9b775e";
+      ctx.fillRect(left + 4 + plank * 8, top + 2, 4, 1);
+    }
 
     ctx.fillStyle = "#352b2c";
     if (cart.brokenSide !== "left") {
-      ctx.fillRect(cart.x - cart.width / 2 - 4, cart.y + 4, 6, 6);
+      ctx.fillRect(left - 4, cart.y + 3, 7, 7);
+      ctx.fillStyle = "#171313";
+      ctx.fillRect(left - 2, cart.y + 5, 3, 3);
     }
     if (cart.brokenSide !== "right") {
-      ctx.fillRect(cart.x + cart.width / 2 - 2, cart.y + 4, 6, 6);
+      ctx.fillStyle = "#352b2c";
+      ctx.fillRect(left + cart.width - 2, cart.y + 3, 7, 7);
+      ctx.fillStyle = "#171313";
+      ctx.fillRect(left + cart.width, cart.y + 5, 3, 3);
     }
 
     ctx.fillStyle = "#2b2425";
-    ctx.fillRect(cart.x - 2, cart.y + 3, 10, 2);
-    ctx.fillRect(cart.x - cart.width / 2 - 8, cart.y - 2, 8, 2);
+    ctx.fillRect(cart.x - 2, cart.y + 2, 12, 2);
+    ctx.fillRect(left - 9, cart.y - 3, 9, 2);
+    drawPixelStone(left + cart.width + 5, cart.y + 8, 4, cart.width);
   }
 }
 
@@ -1973,19 +2230,14 @@ function drawBranchDebris(branchDebris) {
 
 function drawRubble(rubble) {
   for (const piece of rubble) {
-    ctx.fillStyle = piece.tone === 0 ? "#3a444f" : "#4f5c67";
-    ctx.fillRect(piece.x, piece.y, piece.size, piece.size);
-
-    if (piece.size > 2) {
-      ctx.fillStyle = "#1f262d";
-      ctx.fillRect(piece.x + 1, piece.y + piece.size, piece.size + 1, 1);
-    }
+    drawPixelStone(piece.x, piece.y, piece.size + 1, piece.tone);
   }
 
   for (let x = 40; x < WORLD.width; x += 54) {
     const y = 418 + ((x * 3) % 98);
-    ctx.fillStyle = "#485449";
-    ctx.fillRect(x, y, 2, 8);
+    ctx.fillStyle = "#3e4b40";
+    ctx.fillRect(x, y, 2, 7);
+    ctx.fillStyle = "#596a52";
     ctx.fillRect(x - 2, y + 4, 2, 3);
     ctx.fillRect(x + 2, y + 2, 2, 4);
   }
@@ -1995,19 +2247,64 @@ function drawVillageExitGate() {
   const gateX = WORLD.width - 72;
   const gateY = 266;
 
-  ctx.fillStyle = "#272a32";
-  ctx.fillRect(gateX, gateY, 10, 58);
-  ctx.fillRect(gateX + 30, gateY + 6, 10, 52);
-  ctx.fillRect(gateX - 4, gateY, 48, 10);
+  if (drawSpriteRect(
+    environmentSprites.villageProps?.fencesWallsGate,
+    VILLAGE_PROP_SPRITES.gate,
+    gateX - 12,
+    gateY - 4,
+    70,
+    40,
+    {
+      alpha: 0.92,
+      filter: "brightness(0.72) saturate(0.7) contrast(1.08)",
+    }
+  )) {
+    ctx.fillStyle = "rgba(7, 9, 11, 0.32)";
+    ctx.fillRect(gateX - 8, gateY + 36, 74, 8);
 
-  ctx.fillStyle = "#424955";
-  ctx.fillRect(gateX + 2, gateY + 4, 4, 40);
-  ctx.fillRect(gateX + 32, gateY + 10, 4, 30);
+    ctx.fillStyle = "#1d1817";
+    ctx.fillRect(gateX + 47, gateY + 20, 20, 11);
+    ctx.fillStyle = "#8a7b69";
+    ctx.fillRect(gateX + 48, gateY + 20, 17, 8);
+    ctx.fillStyle = "#c1aa86";
+    ctx.fillRect(gateX + 57, gateY + 18, 7, 12);
+    ctx.fillRect(gateX + 64, gateY + 22, 6, 5);
+    ctx.fillStyle = "#5e4d3e";
+    ctx.fillRect(gateX + 50, gateY + 24, 8, 2);
+    return;
+  }
 
-  ctx.fillStyle = "#9aa6bb";
-  ctx.fillRect(gateX + 46, gateY + 18, 18, 8);
-  ctx.fillRect(gateX + 58, gateY + 16, 6, 12);
-  ctx.fillRect(gateX + 64, gateY + 19, 6, 6);
+  ctx.fillStyle = "rgba(7, 9, 11, 0.32)";
+  ctx.fillRect(gateX - 8, gateY + 58, 74, 8);
+
+  drawGatePillar(gateX, gateY, 12, 62, 0);
+  drawGatePillar(gateX + 32, gateY + 8, 12, 54, 1);
+  drawFencePlank(gateX - 5, gateY + 2, 54, 8);
+  drawFencePlank(gateX + 7, gateY + 22, 38, 5, -0.08);
+
+  ctx.fillStyle = "#1d1817";
+  ctx.fillRect(gateX + 47, gateY + 20, 20, 11);
+  ctx.fillStyle = "#8a7b69";
+  ctx.fillRect(gateX + 48, gateY + 20, 17, 8);
+  ctx.fillStyle = "#c1aa86";
+  ctx.fillRect(gateX + 57, gateY + 18, 7, 12);
+  ctx.fillRect(gateX + 64, gateY + 22, 6, 5);
+  ctx.fillStyle = "#5e4d3e";
+  ctx.fillRect(gateX + 50, gateY + 24, 8, 2);
+}
+
+function drawGatePillar(x, y, width, height, tone = 0) {
+  ctx.fillStyle = "#17191d";
+  ctx.fillRect(x - 2, y - 2, width + 4, height + 4);
+
+  for (let blockY = y; blockY < y + height; blockY += 10) {
+    ctx.fillStyle = tone % 2 === 0 ? "#3e454b" : "#373f45";
+    ctx.fillRect(x, blockY, width, 9);
+    ctx.fillStyle = "#5b6268";
+    ctx.fillRect(x + 2, blockY + 1, width - 4, 1);
+    ctx.fillStyle = "#252b31";
+    ctx.fillRect(x, blockY + 8, width, 1);
+  }
 }
 
 function drawArchiveWorld(decorations) {
