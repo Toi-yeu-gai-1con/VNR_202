@@ -250,6 +250,7 @@ function loadEffectSprites() {
       loadSprite("assets/effects/rain_drops-04.png"),
     ],
     eternalCandle: loadSprite("assets/effects/eternal-ember-candle-1-DEMO.gif"),
+    eternalCandleSheet: loadSprite("assets/effects/eternal-ember-sprite-sheet-DEMO.png"),
     glow: loadSprite("assets/effects/kenney-particles/light_01.png"),
     ember: loadSprite("assets/effects/kenney-particles/flame_05.png"),
     magic: loadSprite("assets/effects/kenney-particles/magic_04.png"),
@@ -2170,18 +2171,32 @@ function drawArchiveCandles(candles) {
   for (const candle of candles) {
     const flicker = Math.sin(state.lastTimestamp * 0.006 + candle.x * 0.02) * 1.4;
     const flameHeight = 6 + Math.abs(flicker);
+    const flameX = candle.x + 2;
+    const flameY = candle.y - 8 - flicker;
 
-    ctx.fillStyle = `rgba(255, 191, 84, ${0.16 + Math.abs(Math.sin(state.lastTimestamp * 0.004 + candle.x * 0.01)) * 0.1})`;
-    ctx.beginPath();
-    ctx.arc(candle.x + 2, candle.y - 7 - flicker, 7 + Math.abs(flicker) * 0.6, 0, Math.PI * 2);
-    ctx.fill();
+    drawWorldWarmGlow(flameX, flameY, 18 + Math.abs(flicker) * 2, 0.42);
 
-    ctx.fillStyle = "rgba(255, 161, 60, 0.28)";
-    ctx.fillRect(candle.x - 8, candle.y - 10, 20, 20);
-
+    const eternalCandleSheet = effectSprites.eternalCandleSheet;
     const eternalCandle = effectSprites.eternalCandle;
 
-    if (canDrawSprite(eternalCandle)) {
+    if (canDrawSprite(eternalCandleSheet)) {
+      const frameWidth = eternalCandleSheet.naturalHeight;
+      const frameHeight = eternalCandleSheet.naturalHeight;
+      const frameCount = Math.max(1, Math.floor(eternalCandleSheet.naturalWidth / frameWidth));
+      const frameIndex = Math.floor((state.lastTimestamp + candle.x * 11) / 86) % frameCount;
+
+      ctx.drawImage(
+        eternalCandleSheet,
+        frameIndex * frameWidth,
+        0,
+        frameWidth,
+        frameHeight,
+        candle.x - 12,
+        candle.y + candle.height - 32,
+        28,
+        32
+      );
+    } else if (canDrawSprite(eternalCandle)) {
       ctx.drawImage(eternalCandle, candle.x - 11, candle.y + candle.height - 30, 26, 30);
     } else {
       ctx.fillStyle = "#ead8a8";
@@ -2197,11 +2212,27 @@ function drawArchiveCandles(candles) {
       ctx.fillRect(candle.x + 1, candle.y - 5 - flicker, 2, 2);
     }
 
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
     ctx.fillStyle = "rgba(255, 188, 96, 0.75)";
-    ctx.fillRect(candle.x - 1, candle.y - 12, 1, 1);
-    ctx.fillRect(candle.x + 5, candle.y - 14, 1, 1);
-    ctx.fillRect(candle.x + 3, candle.y - 16, 1, 1);
+    ctx.fillRect(flameX - 2, flameY - 4, 1, 1);
+    ctx.fillRect(flameX + 4, flameY - 6, 1, 1);
+    ctx.fillRect(flameX + 2, flameY - 8, 1, 1);
+    ctx.restore();
   }
+}
+
+function drawWorldWarmGlow(x, y, radius, alpha) {
+  const gradient = ctx.createRadialGradient(x, y, 0, x, y, radius);
+  gradient.addColorStop(0, `rgba(255, 230, 143, ${alpha})`);
+  gradient.addColorStop(0.38, `rgba(255, 130, 35, ${alpha * 0.54})`);
+  gradient.addColorStop(1, "rgba(255, 68, 0, 0)");
+
+  ctx.save();
+  ctx.globalCompositeOperation = "screen";
+  ctx.fillStyle = gradient;
+  ctx.fillRect(x - radius, y - radius, radius * 2, radius * 2);
+  ctx.restore();
 }
 
 function drawCrossroadsWorld(decorations) {
