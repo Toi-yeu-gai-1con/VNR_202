@@ -2895,6 +2895,7 @@ function drawAtmosphere() {
   }
 
   if (state.currentLevelId === "archive") {
+    drawArchiveLighting(currentLevel().decorations);
     drawEmbers(currentLevel().decorations.embers);
     return;
   }
@@ -2941,6 +2942,68 @@ function drawRain(rain) {
   }
 
   ctx.restore();
+}
+
+function drawArchiveLighting(decorations) {
+  const { fireplace, candles } = decorations;
+  const flicker = Math.sin(state.lastTimestamp * 0.008) * 0.04;
+
+  ctx.save();
+  ctx.globalCompositeOperation = "multiply";
+
+  const coolShade = ctx.createLinearGradient(0, 0, VIEWPORT.width, VIEWPORT.height);
+  coolShade.addColorStop(0, "rgba(20, 18, 52, 0.72)");
+  coolShade.addColorStop(0.55, "rgba(43, 21, 39, 0.56)");
+  coolShade.addColorStop(1, "rgba(65, 30, 24, 0.42)");
+  ctx.fillStyle = coolShade;
+  ctx.fillRect(0, 0, VIEWPORT.width, VIEWPORT.height);
+
+  ctx.globalCompositeOperation = "screen";
+  drawWarmLight(fireplace.x + fireplace.width * 0.66, fireplace.y + fireplace.height * 0.56, 154, 0.9 + flicker);
+  drawWarmLight(fireplace.x + fireplace.width * 0.5, fireplace.y + fireplace.height * 0.82, 94, 0.42 + flicker);
+
+  for (const candle of candles) {
+    drawWarmLight(candle.x + 2, candle.y - 8, 62, 0.36 + Math.abs(flicker));
+  }
+
+  ctx.globalCompositeOperation = "lighter";
+  drawScreenFireBloom(fireplace.x + fireplace.width * 0.58, fireplace.y + fireplace.height * 0.62, 84, 0.24);
+  ctx.restore();
+}
+
+function drawWarmLight(worldX, worldY, radius, alpha) {
+  const x = worldX - camera.x;
+  const y = worldY - camera.y;
+
+  if (x < -radius || x > VIEWPORT.width + radius || y < -radius || y > VIEWPORT.height + radius) {
+    return;
+  }
+
+  const gradient = ctx.createRadialGradient(x, y, 0, x, y, radius);
+  gradient.addColorStop(0, `rgba(255, 216, 112, ${alpha})`);
+  gradient.addColorStop(0.2, `rgba(255, 134, 38, ${alpha * 0.72})`);
+  gradient.addColorStop(0.58, `rgba(193, 53, 31, ${alpha * 0.26})`);
+  gradient.addColorStop(1, "rgba(35, 12, 8, 0)");
+
+  ctx.fillStyle = gradient;
+  ctx.fillRect(x - radius, y - radius, radius * 2, radius * 2);
+}
+
+function drawScreenFireBloom(worldX, worldY, radius, alpha) {
+  const x = worldX - camera.x;
+  const y = worldY - camera.y;
+
+  if (x < -radius || x > VIEWPORT.width + radius || y < -radius || y > VIEWPORT.height + radius) {
+    return;
+  }
+
+  const gradient = ctx.createRadialGradient(x, y, 0, x, y, radius);
+  gradient.addColorStop(0, `rgba(255, 238, 162, ${alpha})`);
+  gradient.addColorStop(0.42, `rgba(255, 121, 18, ${alpha * 0.6})`);
+  gradient.addColorStop(1, "rgba(255, 72, 0, 0)");
+
+  ctx.fillStyle = gradient;
+  ctx.fillRect(x - radius, y - radius, radius * 2, radius * 2);
 }
 
 function drawEmbers(embers) {
