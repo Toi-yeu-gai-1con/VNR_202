@@ -116,6 +116,7 @@ const keys = new Set();
 const playerSprites = loadPlayerSprites();
 const npcSprites = loadVillageNpcSprites();
 const environmentSprites = loadEnvironmentSprites();
+const effectSprites = loadEffectSprites();
 const uiSounds = loadUiSounds();
 const ambienceSounds = loadAmbienceSounds();
 
@@ -237,6 +238,19 @@ function loadEnvironmentSprites() {
     barkTexture: loadSprite("assets/environment/dead-aspen/Tree1Diff256.png"),
     tilecraftGround: loadSprite("assets/environment/tilecraft/TileCraftGroundSetVersion2.png"),
     archiveParquet: loadSprite("assets/environment/archive/Birch_Parquet_01_basecolor.png"),
+  };
+}
+
+function loadEffectSprites() {
+  return {
+    rainDrops: [
+      loadSprite("assets/effects/rain_drops-01.png"),
+      loadSprite("assets/effects/rain_drops-02.png"),
+      loadSprite("assets/effects/rain_drops-03.png"),
+      loadSprite("assets/effects/rain_drops-04.png"),
+    ],
+    emberGlow: loadSprite("assets/effects/eternal-ember-candle-1-DEMO.gif"),
+    emberSheet: loadSprite("assets/effects/eternal-ember-sprite-sheet-DEMO.png"),
   };
 }
 
@@ -998,13 +1012,13 @@ function createVillageDecorations() {
     });
   }
 
-  const rain = Array.from({ length: 88 }, (_, index) => ({
-    x: (index * 23) % (VIEWPORT.width + 28),
-    y: (index * 17) % (VIEWPORT.height + 24),
-    speed: 0.8 + (index % 5) * 0.22,
-    drift: 0.7 + (index % 4) * 0.18,
-    length: 8 + (index % 4) * 2,
-    alpha: 0.14 + (index % 3) * 0.05,
+  const rain = Array.from({ length: 160 }, (_, index) => ({
+    x: (index * 17) % (VIEWPORT.width + 34),
+    y: (index * 11) % (VIEWPORT.height + 28),
+    speed: 1.08 + (index % 5) * 0.24,
+    drift: 0.9 + (index % 4) * 0.2,
+    length: 13 + (index % 5) * 2,
+    alpha: 0.22 + (index % 4) * 0.08,
   }));
 
   const clouds = [
@@ -2150,12 +2164,59 @@ function drawArchiveBookStacks(bookStacks) {
 
 function drawArchiveCandles(candles) {
   for (const candle of candles) {
+    const flicker = Math.sin(state.lastTimestamp * 0.006 + candle.x * 0.02) * 1.4;
+    const flameHeight = 6 + Math.abs(flicker);
+
     ctx.fillStyle = "#ead8a8";
     ctx.fillRect(candle.x, candle.y, 4, candle.height);
-    ctx.fillStyle = "#ffca61";
-    ctx.fillRect(candle.x + 1, candle.y - 4, 2, 4);
-    ctx.fillStyle = "rgba(255, 198, 88, 0.2)";
+
+    ctx.fillStyle = "#8a5e3d";
+    ctx.fillRect(candle.x + 1, candle.y - 2, 2, 2);
+
+    const emberSheet = effectSprites.emberSheet;
+    const emberGlow = effectSprites.emberGlow;
+    const emberFrame = Math.floor(state.lastTimestamp / 90) % 4;
+
+    if (canDrawSprite(emberSheet)) {
+      const frameWidth = Math.max(1, Math.floor(emberSheet.naturalWidth / 4));
+      const frameHeight = Math.max(1, emberSheet.naturalHeight);
+      ctx.globalAlpha = 0.95;
+      ctx.drawImage(
+        emberSheet,
+        emberFrame * frameWidth,
+        0,
+        frameWidth,
+        frameHeight,
+        candle.x - 12,
+        candle.y - 28,
+        24,
+        26
+      );
+      ctx.globalAlpha = 1;
+    } else if (canDrawSprite(emberGlow)) {
+      ctx.globalAlpha = 0.85;
+      ctx.drawImage(emberGlow, candle.x - 8, candle.y - 28, 20, 24);
+      ctx.globalAlpha = 1;
+    } else {
+      ctx.fillStyle = "#ffe08a";
+      ctx.fillRect(candle.x + 1, candle.y - 4 - flicker, 2, flameHeight);
+
+      ctx.fillStyle = "#ff9d2f";
+      ctx.fillRect(candle.x + 1, candle.y - 5 - flicker, 2, 2);
+    }
+
+    ctx.fillStyle = `rgba(255, 191, 84, ${0.16 + Math.abs(Math.sin(state.lastTimestamp * 0.004 + candle.x * 0.01)) * 0.1})`;
+    ctx.beginPath();
+    ctx.arc(candle.x + 2, candle.y - 7 - flicker, 7 + Math.abs(flicker) * 0.6, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = "rgba(255, 161, 60, 0.28)";
     ctx.fillRect(candle.x - 8, candle.y - 10, 20, 20);
+
+    ctx.fillStyle = "rgba(255, 188, 96, 0.75)";
+    ctx.fillRect(candle.x - 1, candle.y - 12, 1, 1);
+    ctx.fillRect(candle.x + 5, candle.y - 14, 1, 1);
+    ctx.fillRect(candle.x + 3, candle.y - 16, 1, 1);
   }
 }
 
@@ -2846,18 +2907,35 @@ function drawAtmosphere() {
 
 function drawRain(rain) {
   ctx.save();
-  ctx.lineWidth = 1;
+
+  const rainSprites = effectSprites.rainDrops;
+  const rainFrame = Math.floor(state.lastTimestamp / 120) % rainSprites.length;
+  const rainSprite = rainSprites[rainFrame];
 
   for (const drop of rain) {
     const travel = state.lastTimestamp * 0.15 * drop.speed;
-    const x = (drop.x + travel * drop.drift) % (VIEWPORT.width + 30) - 15;
-    const y = (drop.y + travel) % (VIEWPORT.height + 30) - 15;
+    const x = (drop.x + travel * drop.drift) % (VIEWPORT.width + 34) - 17;
+    const y = (drop.y + travel) % (VIEWPORT.height + 34) - 17;
 
-    ctx.strokeStyle = `rgba(202, 220, 255, ${drop.alpha})`;
-    ctx.beginPath();
-    ctx.moveTo(Math.round(x), Math.round(y));
-    ctx.lineTo(Math.round(x - 3), Math.round(y + drop.length));
-    ctx.stroke();
+    if (canDrawSprite(rainSprite)) {
+      const scale = Math.min(Math.max(drop.length / 24, 1.0), 1.75);
+      const alpha = drop.alpha * 1.1;
+      ctx.globalAlpha = alpha;
+      ctx.drawImage(
+        rainSprite,
+        Math.round(x - 8 * scale),
+        Math.round(y - 6 * scale),
+        Math.round(16 * scale),
+        Math.round(32 * scale)
+      );
+    } else {
+      ctx.strokeStyle = `rgba(202, 220, 255, ${drop.alpha})`;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(Math.round(x), Math.round(y));
+      ctx.lineTo(Math.round(x - 3), Math.round(y + drop.length));
+      ctx.stroke();
+    }
   }
 
   ctx.restore();
