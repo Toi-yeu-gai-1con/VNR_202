@@ -249,8 +249,7 @@ function loadEffectSprites() {
       loadSprite("assets/effects/rain_drops-03.png"),
       loadSprite("assets/effects/rain_drops-04.png"),
     ],
-    emberGlow: loadSprite("assets/effects/eternal-ember-candle-1-DEMO.gif"),
-    emberSheet: loadSprite("assets/effects/eternal-ember-sprite-sheet-DEMO.png"),
+    eternalCandle: loadSprite("assets/effects/eternal-ember-candle-1-DEMO.gif"),
   };
 }
 
@@ -2167,44 +2166,6 @@ function drawArchiveCandles(candles) {
     const flicker = Math.sin(state.lastTimestamp * 0.006 + candle.x * 0.02) * 1.4;
     const flameHeight = 6 + Math.abs(flicker);
 
-    ctx.fillStyle = "#ead8a8";
-    ctx.fillRect(candle.x, candle.y, 4, candle.height);
-
-    ctx.fillStyle = "#8a5e3d";
-    ctx.fillRect(candle.x + 1, candle.y - 2, 2, 2);
-
-    const emberSheet = effectSprites.emberSheet;
-    const emberGlow = effectSprites.emberGlow;
-    const emberFrame = Math.floor(state.lastTimestamp / 90) % 4;
-
-    if (canDrawSprite(emberSheet)) {
-      const frameWidth = Math.max(1, Math.floor(emberSheet.naturalWidth / 4));
-      const frameHeight = Math.max(1, emberSheet.naturalHeight);
-      ctx.globalAlpha = 0.95;
-      ctx.drawImage(
-        emberSheet,
-        emberFrame * frameWidth,
-        0,
-        frameWidth,
-        frameHeight,
-        candle.x - 12,
-        candle.y - 28,
-        24,
-        26
-      );
-      ctx.globalAlpha = 1;
-    } else if (canDrawSprite(emberGlow)) {
-      ctx.globalAlpha = 0.85;
-      ctx.drawImage(emberGlow, candle.x - 8, candle.y - 28, 20, 24);
-      ctx.globalAlpha = 1;
-    } else {
-      ctx.fillStyle = "#ffe08a";
-      ctx.fillRect(candle.x + 1, candle.y - 4 - flicker, 2, flameHeight);
-
-      ctx.fillStyle = "#ff9d2f";
-      ctx.fillRect(candle.x + 1, candle.y - 5 - flicker, 2, 2);
-    }
-
     ctx.fillStyle = `rgba(255, 191, 84, ${0.16 + Math.abs(Math.sin(state.lastTimestamp * 0.004 + candle.x * 0.01)) * 0.1})`;
     ctx.beginPath();
     ctx.arc(candle.x + 2, candle.y - 7 - flicker, 7 + Math.abs(flicker) * 0.6, 0, Math.PI * 2);
@@ -2212,6 +2173,24 @@ function drawArchiveCandles(candles) {
 
     ctx.fillStyle = "rgba(255, 161, 60, 0.28)";
     ctx.fillRect(candle.x - 8, candle.y - 10, 20, 20);
+
+    const eternalCandle = effectSprites.eternalCandle;
+
+    if (canDrawSprite(eternalCandle)) {
+      ctx.drawImage(eternalCandle, candle.x - 11, candle.y + candle.height - 30, 26, 30);
+    } else {
+      ctx.fillStyle = "#ead8a8";
+      ctx.fillRect(candle.x, candle.y, 4, candle.height);
+
+      ctx.fillStyle = "#8a5e3d";
+      ctx.fillRect(candle.x + 1, candle.y - 2, 2, 2);
+
+      ctx.fillStyle = "#ffe08a";
+      ctx.fillRect(candle.x + 1, candle.y - 4 - flicker, 2, flameHeight);
+
+      ctx.fillStyle = "#ff9d2f";
+      ctx.fillRect(candle.x + 1, candle.y - 5 - flicker, 2, 2);
+    }
 
     ctx.fillStyle = "rgba(255, 188, 96, 0.75)";
     ctx.fillRect(candle.x - 1, candle.y - 12, 1, 1);
