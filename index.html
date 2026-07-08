@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>The Crossroads: A Historical Journey</title>
+  <title>Nếu Không Có Đảng - Hành Trình Qua Những Ngã Rẽ Lịch Sử</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
@@ -13,56 +13,88 @@
   <div class="page-shell">
     <main class="game-shell">
       <div class="game-frame">
-        <canvas id="game-canvas" width="320" height="180" aria-label="The Dark Village game world"></canvas>
-        <button id="pause-button" class="pixel-button pause-button" type="button" aria-label="Pause game">Pause</button>
+        <canvas id="game-canvas" width="320" height="180" aria-label="Màn chơi lịch sử Việt Nam"></canvas>
+        <button id="pause-button" class="pixel-button pause-button" type="button" aria-label="Tạm dừng trò chơi">Tạm dừng</button>
+        <button id="story-book-button" class="pixel-button story-book-button hidden" type="button" aria-label="Mở các câu chuyện đã mở khóa">
+          <span class="story-book-label">Sách lịch sử</span>
+          <span id="story-book-count" class="story-book-count">0</span>
+        </button>
+        <div id="story-toast" class="story-toast hidden" aria-live="polite" aria-hidden="true"></div>
         <div id="hud" class="hud" aria-live="polite">
-          <div id="level-chip" class="hud-chip level-chip">Level 1: The Dark Village</div>
-          <div class="hud-chip">WASD / Arrows to move</div>
-          <div class="hud-chip">E / Space to interact</div>
-          <div id="interaction-prompt" class="hud-chip prompt hidden">Press E to explore</div>
+          <div id="level-chip" class="hud-chip level-chip">Màn 1: Đêm mưa thuộc địa</div>
+          <div class="hud-chip">WASD / Mũi tên để di chuyển</div>
+          <div class="hud-chip">E / Phím cách để tương tác</div>
+          <div id="interaction-prompt" class="hud-chip prompt hidden">Nhấn E để quan sát</div>
         </div>
+        <section id="dialogue-box" class="dialogue-box hidden" aria-hidden="true" role="dialog" aria-live="polite">
+          <div class="dialogue-header">
+            <p id="dialogue-speaker" class="dialogue-speaker">Người dẫn chuyện</p>
+            <p id="dialogue-progress" class="dialogue-progress">1 / 1</p>
+          </div>
+          <p id="dialogue-text" class="dialogue-text">Ngôi làng cất kín câu chuyện của nó trong màn mưa.</p>
+          <div class="dialogue-footer">
+            <p class="dialogue-hint">E / Phím cách để tiếp tục</p>
+            <button id="dialogue-next-button" class="pixel-button dialogue-next-button" type="button">Tiếp tục</button>
+          </div>
+        </section>
       </div>
 
       <section id="start-screen" class="overlay start-screen">
         <div class="title-card">
           <div class="title-glow"></div>
-          <p class="kicker">Level 1 // Rain over the ruins</p>
-          <h1>THE CROSSROADS:<br> A Historical Journey</h1>
+          <p class="kicker">Trò chơi tương tác lịch sử</p>
+          <h1>NẾU KHÔNG CÓ<br>ĐẢNG CỘNG SẢN VIỆT NAM</h1>
+          <p class="start-question">Lịch sử dân tộc sẽ đi về đâu?</p>
           <p class="intro-copy">
-            Step into a ruined village under cold rain, uncover the crisis before 1930, and open story slides as you explore.
+            Bước qua 4 màn chơi, đối thoại với nhân vật và dấu tích lịch sử, mở khóa 5 câu chuyện then chốt rồi dùng cuốn sách bên cạnh để thuyết trình lại hành trình của dân tộc.
           </p>
-          <button id="start-button" class="pixel-button hero-button" type="button">Press START to Play</button>
+          <div class="start-objectives" aria-hidden="true">
+            <p>Khám phá những ngã rẽ lịch sử</p>
+            <p>Mở khóa từng chương chuyện</p>
+            <p>Tìm câu trả lời cho giả thuyết lớn</p>
+          </div>
+          <p class="start-controls">WASD / Mũi tên di chuyển • E / Phím cách tương tác • B mở sách</p>
+          <button id="start-button" class="pixel-button hero-button" type="button">Bắt đầu hành trình</button>
         </div>
       </section>
 
       <section id="pause-menu" class="overlay menu-overlay hidden" aria-hidden="true">
         <div class="menu-card">
-          <p class="menu-label">Game Paused</p>
-          <h2 id="pause-title">The Dark Village</h2>
-          <button id="resume-button" class="pixel-button" type="button">Resume</button>
-          <button id="restart-button" class="pixel-button" type="button">Restart</button>
-          <button id="about-button" class="pixel-button" type="button">About</button>
+          <p class="menu-label">Đang tạm dừng</p>
+          <h2 id="pause-title">Đêm mưa thuộc địa</h2>
+          <button id="resume-button" class="pixel-button" type="button">Tiếp tục</button>
+          <button id="restart-button" class="pixel-button" type="button">Chơi lại</button>
+          <button id="about-button" class="pixel-button" type="button">Bối cảnh</button>
         </div>
       </section>
 
       <section id="slide-modal" class="slide-modal hidden" aria-hidden="true" role="dialog" aria-modal="true">
         <div class="slide-card">
           <img class="slide-book-art" src="assets/ui/book-open.png" alt="" aria-hidden="true">
-          <button id="close-slide-button" class="close-button" type="button" aria-label="Close slide">X</button>
+          <div id="book-controls" class="book-controls hidden" aria-hidden="true">
+            <button id="story-prev-button" class="pixel-button book-nav-button" type="button">Trước</button>
+            <div class="book-progress">
+              <p class="book-progress-label">Chương đã mở</p>
+              <p id="book-page-indicator" class="book-page-indicator">1 / 1</p>
+            </div>
+            <button id="story-next-button" class="pixel-button book-nav-button" type="button">Sau</button>
+          </div>
+          <button id="close-slide-button" class="close-button" type="button" aria-label="Đóng sách">X</button>
           <div class="slide-spread">
             <div class="slide-page slide-left">
               <div class="slide-copy">
-                <p id="slide-kicker" class="slide-kicker">Discovery</p>
-                <h2 id="slide-title">Title</h2>
-                <p id="slide-text" class="slide-text">Content</p>
+                <p id="slide-kicker" class="slide-kicker">Khám phá</p>
+                <h2 id="slide-title">Tiêu đề</h2>
+                <p id="slide-text" class="slide-text">Nội dung</p>
               </div>
             </div>
             <div class="slide-page slide-right">
               <div class="slide-media-stack">
-                <div class="image-frame">
+                <div id="slide-image-frame" class="image-frame">
                   <div id="slide-image" class="slide-image" aria-hidden="true"></div>
                 </div>
-                <p id="slide-caption" class="slide-caption">Illustration placeholder</p>
+                <p id="slide-caption" class="slide-caption">Hình minh họa</p>
+                <div id="slide-gallery" class="slide-gallery hidden" aria-live="polite"></div>
               </div>
             </div>
           </div>
@@ -71,12 +103,12 @@
 
       <section id="end-overlay" class="overlay end-overlay hidden" aria-hidden="true" role="dialog" aria-modal="true">
         <div class="end-card">
-          <p class="menu-label">Congratulations</p>
-          <h2>The End</h2>
+          <p class="menu-label">Hành trình hoàn tất</p>
+          <h2>LỊCH SỬ ĐÃ TRẢ LỜI</h2>
           <p class="end-copy">
-            Peace has taken root. The journey through struggle, unity, and renewal is complete.
+            Bạn đã đi qua 5 ngã rẽ để thấy rằng nếu không có Đảng Cộng sản Việt Nam, dân tộc có thể chìm trong bế tắc, chia cắt và khủng hoảng. Chính đường lối đúng đắn đã mở ra con đường độc lập, thống nhất và đổi mới.
           </p>
-          <button id="return-start-button" class="pixel-button" type="button">Return to Start Screen</button>
+          <button id="return-start-button" class="pixel-button" type="button">Về màn hình đầu</button>
         </div>
       </section>
     </main>

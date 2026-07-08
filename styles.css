@@ -117,6 +117,142 @@ button {
   min-width: 104px;
 }
 
+.story-book-button {
+  position: absolute;
+  top: 50%;
+  right: 14px;
+  z-index: 4;
+  min-width: 168px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 18px 14px 54px;
+  pointer-events: auto;
+  transform: translateY(-50%);
+  background-image:
+    url("assets/ui/book-open.png"),
+    url("assets/ui/kenney-rpg/buttonLong_brown.png"),
+    linear-gradient(180deg, #b27e4c 0%, #7d5736 100%);
+  background-position: 16px center, center, center;
+  background-size: 24px 24px, 100% 100%, 100% 100%;
+  background-repeat: no-repeat;
+}
+
+.story-book-button:active {
+  background-image:
+    url("assets/ui/book-open.png"),
+    url("assets/ui/kenney-rpg/buttonLong_brown_pressed.png"),
+    linear-gradient(180deg, #8b6040 0%, #6f4b2e 100%);
+}
+
+.story-book-label {
+  display: block;
+  line-height: 1.35;
+}
+
+.story-book-count {
+  min-width: 30px;
+  min-height: 30px;
+  padding: 2px 6px;
+  border: 2px solid rgba(56, 32, 22, 0.72);
+  border-radius: 8px;
+  background: rgba(250, 236, 196, 0.9);
+  color: #4a2b20;
+  font-family: "VT323", monospace;
+  font-size: 1.38rem;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+}
+
+.story-toast {
+  position: absolute;
+  top: 74px;
+  right: 18px;
+  z-index: 4;
+  max-width: min(240px, calc(100% - 36px));
+  padding: 10px 14px;
+  border: 3px solid rgba(52, 33, 24, 0.88);
+  background:
+    linear-gradient(180deg, rgba(250, 239, 209, 0.96), rgba(232, 205, 147, 0.96));
+  color: #40271f;
+  box-shadow:
+    0 8px 0 rgba(40, 24, 18, 0.45),
+    0 14px 24px rgba(0, 0, 0, 0.2);
+  font-size: clamp(1.08rem, 1.75vw, 1.34rem);
+  line-height: 1.18;
+  pointer-events: none;
+}
+
+.dialogue-box {
+  position: absolute;
+  left: 18px;
+  right: 18px;
+  bottom: 18px;
+  z-index: 4;
+  display: grid;
+  gap: 12px;
+  padding: 16px 18px;
+  border: 0;
+  background:
+    linear-gradient(180deg, rgba(251, 241, 215, 0.94), rgba(231, 204, 162, 0.88)),
+    url("assets/ui/kenney-rpg/panel_beige.png") center / 100% 100% no-repeat,
+    linear-gradient(180deg, rgba(255, 255, 255, 0.16), transparent);
+  box-shadow:
+    0 12px 30px rgba(15, 15, 18, 0.36),
+    inset 0 0 0 3px rgba(103, 72, 52, 0.28);
+  color: var(--ink);
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+.dialogue-header,
+.dialogue-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.dialogue-speaker,
+.dialogue-progress,
+.dialogue-text,
+.dialogue-hint {
+  margin: 0;
+}
+
+.dialogue-speaker,
+.dialogue-progress {
+  color: #8e562f;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.dialogue-speaker {
+  font-size: clamp(1.02rem, 1.6vw, 1.22rem);
+}
+
+.dialogue-progress {
+  color: #775743;
+  font-size: clamp(0.98rem, 1.45vw, 1.16rem);
+}
+
+.dialogue-text {
+  font-size: clamp(1.4rem, 2.2vw, 1.78rem);
+  line-height: 1.22;
+  color: #513d35;
+}
+
+.dialogue-hint {
+  color: #79685b;
+  font-size: clamp(1.04rem, 1.7vw, 1.26rem);
+}
+
+.dialogue-next-button {
+  min-width: 162px;
+}
+
 .pixel-button,
 .close-button {
   border: 0;
@@ -159,11 +295,15 @@ button {
 }
 
 .start-screen {
+  position: relative;
   display: grid;
   place-items: center;
   padding: 30px;
+  overflow: hidden;
   background:
-    linear-gradient(180deg, rgba(12, 16, 24, 0.5), rgba(12, 16, 24, 0.82)),
+    radial-gradient(circle at 50% 14%, rgba(237, 184, 88, 0.18), transparent 22%),
+    linear-gradient(135deg, rgba(123, 22, 22, 0.22), transparent 46%),
+    linear-gradient(180deg, rgba(11, 13, 19, 0.44), rgba(9, 11, 16, 0.9)),
     repeating-linear-gradient(
       135deg,
       rgba(255, 255, 255, 0.04) 0 12px,
@@ -171,17 +311,40 @@ button {
     );
 }
 
+.start-screen::before,
+.start-screen::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.start-screen::before {
+  inset: -16%;
+  background:
+    radial-gradient(circle at 20% 30%, rgba(234, 110, 61, 0.16), transparent 26%),
+    radial-gradient(circle at 80% 72%, rgba(243, 195, 102, 0.18), transparent 24%);
+  animation: start-screen-pulse 7s ease-in-out infinite;
+}
+
+.start-screen::after {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05), transparent 22%),
+    linear-gradient(0deg, rgba(0, 0, 0, 0.32), transparent 28%);
+}
+
 .title-card {
   position: relative;
-  width: min(92%, 700px);
-  padding: clamp(28px, 5vw, 54px);
+  z-index: 1;
+  width: min(92%, 760px);
+  padding: clamp(28px, 5vw, 52px);
   border: 0;
   background:
-    linear-gradient(180deg, rgba(39, 29, 26, 0.76), rgba(22, 18, 17, 0.9)),
+    linear-gradient(180deg, rgba(115, 28, 24, 0.18), rgba(21, 17, 16, 0.92)),
     url("assets/ui/kenney-rpg/panel_brown.png") center / 100% 100% no-repeat,
-    linear-gradient(180deg, rgba(30, 37, 51, 0.92), rgba(15, 18, 25, 0.98));
+    linear-gradient(180deg, rgba(34, 24, 24, 0.96), rgba(14, 16, 23, 0.98));
   box-shadow:
-    0 18px 40px rgba(7, 9, 12, 0.5),
+    0 22px 50px rgba(7, 9, 12, 0.58),
     inset 0 0 0 4px rgba(153, 105, 64, 0.42);
   text-align: center;
   image-rendering: pixelated;
@@ -192,7 +355,9 @@ button {
   position: absolute;
   inset: 12px;
   pointer-events: none;
-  background: radial-gradient(circle at top, rgba(255, 194, 111, 0.18), transparent 56%);
+  background:
+    radial-gradient(circle at top, rgba(255, 194, 111, 0.22), transparent 48%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 35%);
 }
 
 .kicker,
@@ -206,26 +371,71 @@ button {
 }
 
 .title-card h1 {
-  margin: 18px 0 20px;
+  margin: 12px 0 0;
   color: #fff7df;
   font-family: "Press Start 2P", cursive;
-  font-size: clamp(1.1rem, 2.6vw, 2rem);
-  line-height: 1.5;
+  font-size: clamp(1.12rem, 2.8vw, 2.18rem);
+  line-height: 1.56;
   text-shadow:
     0 3px 0 rgba(96, 47, 33, 0.95),
-    0 0 18px rgba(248, 198, 120, 0.16);
+    0 0 22px rgba(248, 198, 120, 0.18);
+}
+
+.start-question {
+  margin: 18px auto 0;
+  max-width: 29ch;
+  padding: 12px 16px;
+  border: 2px solid rgba(238, 193, 108, 0.4);
+  background:
+    linear-gradient(180deg, rgba(132, 31, 28, 0.34), rgba(64, 21, 20, 0.42)),
+    rgba(28, 18, 20, 0.88);
+  color: #fff1cd;
+  font-family: "Press Start 2P", cursive;
+  font-size: clamp(0.76rem, 1.6vw, 0.98rem);
+  line-height: 1.8;
+  text-transform: uppercase;
+  box-shadow:
+    0 10px 22px rgba(0, 0, 0, 0.22),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.06);
 }
 
 .intro-copy {
-  max-width: 28ch;
-  margin: 0 auto 26px;
+  max-width: 32ch;
+  margin: 18px auto 0;
   color: #f6efdb;
-  font-size: clamp(1.28rem, 2.2vw, 1.7rem);
-  line-height: 1.25;
+  font-size: clamp(1.24rem, 2.08vw, 1.58rem);
+  line-height: 1.24;
+}
+
+.start-objectives {
+  width: min(100%, 520px);
+  margin: 18px auto 0;
+  display: grid;
+  gap: 10px;
+}
+
+.start-objectives p {
+  margin: 0;
+  padding: 10px 14px;
+  border-left: 4px solid rgba(239, 194, 103, 0.88);
+  background: rgba(245, 230, 197, 0.08);
+  color: #f9efdc;
+  font-size: clamp(1.08rem, 1.8vw, 1.34rem);
+  line-height: 1.14;
+  text-align: left;
+}
+
+.start-controls {
+  margin: 18px auto 0;
+  max-width: 38ch;
+  color: #dbcdb7;
+  font-size: clamp(1.02rem, 1.7vw, 1.26rem);
+  line-height: 1.24;
 }
 
 .hero-button {
-  min-width: min(100%, 320px);
+  min-width: min(100%, 380px);
+  margin-top: 22px;
 }
 
 .menu-overlay,
@@ -311,6 +521,19 @@ button {
   line-height: 1.24;
 }
 
+@keyframes start-screen-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.84;
+  }
+
+  50% {
+    transform: scale(1.04);
+    opacity: 1;
+  }
+}
+
 .slide-card {
   position: relative;
   width: min(94vw, calc(86vh * 0.98125), 860px);
@@ -329,6 +552,65 @@ button {
   image-rendering: pixelated;
   pointer-events: none;
   user-select: none;
+}
+
+.book-controls {
+  position: absolute;
+  top: 7.5%;
+  left: 50%;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transform: translateX(-50%);
+}
+
+.book-nav-button {
+  min-width: 102px;
+  padding: 10px 14px;
+}
+
+.book-nav-button:disabled {
+  cursor: default;
+  opacity: 0.72;
+  filter: saturate(0.55) brightness(0.92);
+}
+
+.book-nav-button:disabled:active {
+  transform: none;
+  box-shadow:
+    0 6px 0 rgba(46, 24, 18, 0.7);
+  background-image:
+    url("assets/ui/kenney-rpg/buttonLong_brown.png"),
+    linear-gradient(180deg, #b27e4c 0%, #7d5736 100%);
+}
+
+.book-progress {
+  min-width: 180px;
+  padding: 8px 16px;
+  border: 2px solid rgba(95, 63, 41, 0.18);
+  border-radius: 12px;
+  background: rgba(244, 230, 197, 0.84);
+  text-align: center;
+  color: #5a4036;
+  box-shadow:
+    0 8px 18px rgba(89, 64, 53, 0.08);
+}
+
+.book-progress-label,
+.book-page-indicator {
+  margin: 0;
+}
+
+.book-progress-label {
+  color: #8a644a;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: clamp(0.82rem, 1.05vw, 0.94rem);
+}
+
+.book-page-indicator {
+  font-size: clamp(1.18rem, 1.7vw, 1.42rem);
 }
 
 .slide-spread {
@@ -398,6 +680,7 @@ button {
   font-size: clamp(1.05rem, 1.7vw, 1.28rem);
   line-height: 1.36;
   color: #5f4d44;
+  white-space: pre-line;
 }
 
 .slide-text::-webkit-scrollbar {
@@ -691,6 +974,48 @@ button {
   text-transform: none;
 }
 
+.slide-gallery {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.slide-gallery-item {
+  margin: 0;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 8px;
+  padding: 10px;
+  border: 3px solid rgba(89, 64, 53, 0.42);
+  border-radius: 14px;
+  background:
+    linear-gradient(180deg, rgba(250, 239, 210, 0.84), rgba(237, 218, 176, 0.62));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.36),
+    0 8px 18px rgba(89, 64, 53, 0.08);
+  overflow: hidden;
+}
+
+.slide-gallery-image {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  border: 3px solid rgba(89, 64, 53, 0.45);
+  border-radius: 10px;
+  object-fit: cover;
+  background: #e8dec5;
+}
+
+.slide-gallery-caption {
+  margin: 0;
+  color: #745d4e;
+  font-size: clamp(0.92rem, 1.3vw, 1.02rem);
+  line-height: 1.24;
+}
+
 .close-button {
   position: absolute;
   top: 8%;
@@ -734,6 +1059,59 @@ button {
     right: 10px;
   }
 
+  .story-book-button {
+    top: auto;
+    right: 10px;
+    bottom: 96px;
+    min-width: 148px;
+    padding-left: 48px;
+    transform: none;
+  }
+
+  .story-toast {
+    top: auto;
+    right: 10px;
+    bottom: 160px;
+    max-width: min(220px, calc(100% - 20px));
+  }
+
+  .dialogue-box {
+    left: 10px;
+    right: 10px;
+    bottom: 10px;
+    gap: 10px;
+    padding: 14px;
+  }
+
+  .dialogue-header,
+  .dialogue-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .dialogue-next-button {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .title-card {
+    width: min(100%, 620px);
+    padding: 24px 20px 28px;
+  }
+
+  .start-question {
+    font-size: clamp(0.72rem, 3vw, 0.88rem);
+    line-height: 1.7;
+  }
+
+  .start-objectives p {
+    font-size: clamp(1rem, 4.2vw, 1.2rem);
+  }
+
+  .start-controls {
+    font-size: clamp(0.96rem, 3.6vw, 1.12rem);
+  }
+
   .slide-card {
     width: min(94vw, 640px);
     aspect-ratio: auto;
@@ -744,6 +1122,23 @@ button {
   .slide-book-art {
     opacity: 0.32;
     object-fit: cover;
+  }
+
+  .book-controls {
+    top: 18px;
+    width: calc(100% - 108px);
+    gap: 8px;
+  }
+
+  .book-progress {
+    min-width: 0;
+    flex: 1;
+    padding-inline: 10px;
+  }
+
+  .book-nav-button {
+    min-width: 84px;
+    padding-inline: 10px;
   }
 
   .slide-spread {
@@ -768,6 +1163,10 @@ button {
 
   .image-frame {
     min-height: 200px;
+  }
+
+  .slide-gallery {
+    grid-template-rows: repeat(2, minmax(150px, 1fr));
   }
 
   .slide-image {

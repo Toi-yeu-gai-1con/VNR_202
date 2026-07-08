@@ -10,6 +10,14 @@ const endOverlay = document.getElementById("end-overlay");
 const interactionPrompt = document.getElementById("interaction-prompt");
 const levelChip = document.getElementById("level-chip");
 const pauseTitle = document.getElementById("pause-title");
+const storyBookButton = document.getElementById("story-book-button");
+const storyBookCount = document.getElementById("story-book-count");
+const storyToast = document.getElementById("story-toast");
+const dialogueBox = document.getElementById("dialogue-box");
+const dialogueSpeaker = document.getElementById("dialogue-speaker");
+const dialogueProgress = document.getElementById("dialogue-progress");
+const dialogueText = document.getElementById("dialogue-text");
+const dialogueNextButton = document.getElementById("dialogue-next-button");
 
 const startButton = document.getElementById("start-button");
 const pauseButton = document.getElementById("pause-button");
@@ -23,12 +31,19 @@ const slideKicker = document.getElementById("slide-kicker");
 const slideTitle = document.getElementById("slide-title");
 const slideText = document.getElementById("slide-text");
 const slideCaption = document.getElementById("slide-caption");
+const slideImageFrame = document.getElementById("slide-image-frame");
 const slideImage = document.getElementById("slide-image");
+const slideGallery = document.getElementById("slide-gallery");
+const bookControls = document.getElementById("book-controls");
+const storyPrevButton = document.getElementById("story-prev-button");
+const storyNextButton = document.getElementById("story-next-button");
+const bookPageIndicator = document.getElementById("book-page-indicator");
 
 const VIEWPORT = { width: canvas.width, height: canvas.height };
 const WORLD = { width: 960, height: 640 };
 const PLAYER_SPEED = 92;
 const INTERACTION_RADIUS = 30;
+const STORY_UNLOCK_TOAST_MS = 2800;
 const PLAYER_FOOTPRINT = { width: 8, height: 6, offsetY: 7 };
 const PLAYER_SPRITE = {
   frameWidth: 96,
@@ -126,6 +141,65 @@ const VILLAGE_PROP_SPRITES = {
   ],
 };
 
+const INTERACTION_DIALOGUES = {
+  "old-peasant": {
+    speaker: "Người nông dân",
+    lines: [
+      "Mưa dầm kéo dài, dân làng chỉ còn biết gồng mình sống qua ngày giữa cảnh đói nghèo.",
+      "Bao phong trào yêu nước đã nổi lên rồi lụi tắt, vì vẫn thiếu một con đường đủ đúng để dẫn lối.",
+      "Hãy ghi lại câu chuyện này. Nó cho thấy đất nước đã bế tắc ra sao trước năm 1930.",
+    ],
+  },
+  "scholar-desk": {
+    speaker: "Bàn học bỏ hoang",
+    lines: [
+      "Trên chiếc bàn đổ nát này từng có những người đi tìm lời giải cho vận mệnh dân tộc.",
+      "Nhưng càng tìm, xã hội càng lún sâu vào khủng hoảng đường lối và chưa thấy lối ra rõ ràng.",
+      "Một mảnh câu chuyện mới đã sẵn sàng để cậu mở lại trong cuốn sách của mình.",
+    ],
+  },
+  "glowing-fragments": {
+    speaker: "Mảnh tài liệu",
+    lines: [
+      "Cuối năm 1929, ba tổ chức cộng sản cùng hướng tới cách mạng nhưng vẫn hoạt động biệt lập, tiềm ẩn nguy cơ chia rẽ và công kích lẫn nhau.",
+      "Ngày 3/2/1930 tại Hương Cảng, Nguyễn Ái Quốc đã chủ trì hội nghị hợp nhất, thống nhất các tổ chức thành Đảng Cộng sản Việt Nam.",
+      "Từ đây, phong trào cách mạng có tổ chức thống nhất và một bàn chỉ nam lý luận rõ ràng để dẫn đường.",
+    ],
+  },
+  "guiding-compass": {
+    speaker: "Chiếc la bàn",
+    lines: [
+      "Không có bàn chỉ nam, con thuyền cách mạng chỉ xoay vòng giữa bóng tối và nghi ngờ.",
+      "Sự ra đời của Đảng đã chấm dứt cơn khủng hoảng đường lối và mở ra hướng đi rõ ràng cho dân tộc.",
+      "Câu chuyện này đã được đánh dấu. Cậu có thể mở sách để thuyết trình lại bất cứ lúc nào.",
+    ],
+  },
+  "united-gathering": {
+    speaker: "Khối đoàn kết",
+    lines: [
+      "Từ Hội nghị Trung ương 8 năm 1941, Việt Minh ra đời để quy tụ mọi tầng lớp nhân dân vào mục tiêu giải phóng dân tộc.",
+      "Khi thời cơ đến vào tháng Tám năm 1945, Đảng đã phát động tổng khởi nghĩa với tinh thần tập trung, thống nhất và kịp thời.",
+      "Hãy ghi nhớ khoảnh khắc này. Đây là chương về sức mạnh quần chúng và kỳ tích Cách mạng Tháng Tám.",
+    ],
+  },
+  "broken-bridge": {
+    speaker: "Giới tuyến 17",
+    lines: [
+      "Sau Hiệp định Giơnevơ năm 1954, đất nước tạm thời bị chia cắt hai miền ở vĩ tuyến 17, còn miền Nam đứng trước âm mưu trở thành thuộc địa kiểu mới của đế quốc Mỹ.",
+      "Đại hội III của Đảng năm 1960 đã đề ra một đường lối chiến lược sáng tạo: xây dựng chủ nghĩa xã hội ở miền Bắc, đồng thời tiến hành cách mạng dân tộc dân chủ nhân dân ở miền Nam.",
+      "Cả hai nhiệm vụ ấy đều hướng về mục tiêu chung duy nhất: giải phóng miền Nam, thống nhất đất nước.",
+    ],
+  },
+  "grand-tree": {
+    speaker: "Mùa xuân Đổi Mới",
+    lines: [
+      "Sau năm 1975, đất nước thống nhất nhưng phải đối mặt với hậu quả chiến tranh và cuộc khủng hoảng kinh tế - xã hội kéo dài dưới cơ chế tập trung quan liêu, bao cấp.",
+      "Đại hội VI của Đảng năm 1986 đã thể hiện bản lĩnh của người cầm lái khi dám nhìn thẳng vào sự thật và khởi xướng công cuộc Đổi Mới toàn diện, trọng tâm là đổi mới tư duy kinh tế.",
+      "Từ đây, Việt Nam từng bước vượt qua khủng hoảng, mở rộng hội nhập và hướng tới mục tiêu dân giàu, nước mạnh, dân chủ, công bằng, văn minh.",
+    ],
+  },
+};
+
 const keys = new Set();
 const playerSprites = loadPlayerSprites();
 const npcSprites = loadVillageNpcSprites();
@@ -133,11 +207,17 @@ const environmentSprites = loadEnvironmentSprites();
 const effectSprites = loadEffectSprites();
 const uiSounds = loadUiSounds();
 const ambienceSounds = loadAmbienceSounds();
+let storyToastTimeoutId = 0;
 
 const state = {
   mode: "start",
   currentLevelId: "village",
   activeSlide: null,
+  activeDialogue: null,
+  activeDialogueIndex: 0,
+  activeStoryIds: [],
+  activeStoryIndex: 0,
+  unlockedStoryIds: new Set(),
   activeInteractionId: null,
   aboutFromPause: false,
   pendingEnding: false,
@@ -152,16 +232,23 @@ const levels = {
   crossroads: createCrossroadsLevel(),
   spring: createSpringLevel(),
 };
+const storyRegistry = createStoryRegistry(levels);
 
 startButton.addEventListener("click", withUiClickSound(startGame));
 pauseButton.addEventListener("click", withUiClickSound(togglePause));
 resumeButton.addEventListener("click", withUiClickSound(resumeGame));
 restartButton.addEventListener("click", withUiClickSound(restartGame));
+storyBookButton.addEventListener("click", withUiClickSound(() => openStoryBook()));
 aboutButton.addEventListener("click", withUiClickSound(() => {
   state.aboutFromPause = true;
+  state.activeStoryIds = [];
+  state.activeStoryIndex = 0;
   openSlide(currentLevel().aboutSlide);
 }));
 closeSlideButton.addEventListener("click", closeSlide);
+dialogueNextButton.addEventListener("click", withUiClickSound(advanceDialogue));
+storyPrevButton.addEventListener("click", withUiClickSound(() => showStoryBookEntry(-1)));
+storyNextButton.addEventListener("click", withUiClickSound(() => showStoryBookEntry(1)));
 returnStartButton.addEventListener("click", withUiClickSound(returnToStartScreen));
 
 window.addEventListener("keydown", (event) => {
@@ -176,6 +263,11 @@ window.addEventListener("keydown", (event) => {
   const key = normalizeKey(event.key);
 
   if (key === "escape") {
+    if (state.mode === "dialogue") {
+      cancelDialogue();
+      return;
+    }
+
     if (state.mode === "modal") {
       closeSlide();
       return;
@@ -197,6 +289,36 @@ window.addEventListener("keydown", (event) => {
   if (state.mode === "ending" && (key === "enter" || key === "space")) {
     playUiSound(uiSounds.pixelClick);
     returnToStartScreen();
+    return;
+  }
+
+  if (state.mode === "dialogue" && (key === "enter" || key === "e" || key === "space")) {
+    playUiSound(uiSounds.pixelClick);
+    advanceDialogue();
+    return;
+  }
+
+  if (state.mode === "modal" && key === "arrowleft") {
+    if (state.activeStoryIds.length > 0) {
+      playUiSound(uiSounds.pixelClick);
+      showStoryBookEntry(-1);
+    }
+    return;
+  }
+
+  if (state.mode === "modal" && key === "arrowright") {
+    if (state.activeStoryIds.length > 0) {
+      playUiSound(uiSounds.pixelClick);
+      showStoryBookEntry(1);
+    }
+    return;
+  }
+
+  if (state.mode === "playing" && key === "b") {
+    if (state.unlockedStoryIds.size > 0) {
+      playUiSound(uiSounds.pixelClick);
+      openStoryBook();
+    }
     return;
   }
 
@@ -695,30 +817,41 @@ function createVillageLevel() {
 
   return {
     id: "village",
-    label: "Level 1: The Dark Village",
-    canvasLabel: "The Dark Village game world",
-    pauseTitle: "The Dark Village",
+    label: "Màn 1: Đêm mưa thuộc địa",
+    canvasLabel: "Màn chơi 1: Đêm mưa thuộc địa",
+    pauseTitle: "Đêm mưa thuộc địa",
     spawn: { x: 128, y: 366, direction: "right" },
     bounds: { minX: 15, maxX: 945, minY: 21, maxY: 621 },
     aboutSlide: {
-      kicker: "Level 1",
-      title: "The Dark Village",
+      kicker: "Màn 1",
+      title: "Đêm đen nô lệ",
       text:
-        "A rain-soaked ruined village frames the national crisis before 1930. Two key interactions reveal the darkness of colonial oppression and the dead end of leaderless struggle.",
-      caption: "Cold rain, broken homes, and a road that pushes history forward",
+        "Ngôi làng đổ nát trong mưa gợi lại bối cảnh Việt Nam dưới ách thuộc địa trước năm 1930. Mỗi tương tác ở đây mở ra bóng tối áp bức và sự bế tắc của những con đường cứu nước cũ.",
+      caption: "Mưa lạnh, mái nhà đổ nát và con đường dẫn lịch sử tới một bước ngoặt",
       art: "peasant",
     },
     exits: [
       {
         id: "east-road",
         kind: "edge-right",
-        prompt: "East road -> Level 2",
+        prompt: "Lối phía đông -> Màn 2",
         target: "archive",
         hintMinX: WORLD.width - 128,
         triggerX: 944,
         minY: 294,
         maxY: 414,
         spawn: { x: 110, y: 438, direction: "right" },
+        guide: {
+          color: "#f3d777",
+          glowAlpha: 0.3,
+          markers: [
+            { x: 468, y: 362, direction: "right" },
+            { x: 572, y: 362, direction: "right" },
+            { x: 676, y: 362, direction: "right" },
+            { x: 780, y: 362, direction: "right" },
+            { x: 884, y: 362, direction: "right" },
+          ],
+        },
       },
     ],
     interactables: [
@@ -734,14 +867,25 @@ function createVillageLevel() {
         direction: "down",
         animation: "idle",
         frameOffset: 0.8,
-        prompt: "speak with the tired peasant",
+        prompt: "trò chuyện với người nông dân",
         slide: {
-          kicker: "Level 1",
-          title: "Đêm Đen Nô Lệ (Trước 1930)",
+          kicker: "Màn 1",
+          title: "ĐÊM ĐEN NÔ LỆ & KHỦNG HOẢNG ĐƯỜNG LỐI",
           text:
-            "Đất nước chìm trong đêm đen nô lệ. Các phong trào yêu nước từ Cần Vương đến khuynh hướng tư sản đều thất bại vì thiếu một đường lối đúng đắn.",
-          caption: "Người nông dân mệt mỏi đứng giữa làng hoang tàn",
-          art: "peasant",
+            "- Bối cảnh thuộc địa: Cuối thế kỷ XIX, dưới ách thống trị của thực dân Pháp, Việt Nam từ một quốc gia phong kiến độc lập đã biến thành nước thuộc địa nửa phong kiến. Nhân dân, đặc biệt là giai cấp nông dân, bị bần cùng hóa, phá sản và bóc lột nặng nề.\n\n- Sự bế tắc của các phong trào yêu nước: Với truyền thống yêu nước anh dũng, các phong trào khởi nghĩa nổ ra liên tiếp. Từ phong trào Cần Vương của sĩ phu phong kiến, khởi nghĩa nông dân Yên Thế, đến khuynh hướng dân chủ tư sản như Đông Du, Việt Nam Quang phục Hội. Tuy nhiên, tất cả đều thất bại và bị dìm trong biển máu do thiếu một đường lối chính trị đúng đắn, thiếu tổ chức chặt chẽ và không có cơ sở rộng rãi trong quần chúng.",
+          caption: "Đêm dài thuộc địa và sự bế tắc của những con đường cứu nước đầu thế kỷ XX",
+          gallery: [
+            {
+              src: "assets/story/level1/colonial-exploitation.png",
+              alt: "Người dân Việt Nam lao động khổ cực dưới ách bóc lột của thực dân Pháp",
+              caption: "Người dân Việt Nam bị bóc lột nặng nề dưới ách thống trị của thực dân Pháp.",
+            },
+            {
+              src: "assets/story/level1/patriotic-scholars.png",
+              alt: "Hai chí sĩ yêu nước Phan Bội Châu và Phan Châu Trinh",
+              caption: "Các chí sĩ yêu nước tiêu biểu đầu thế kỷ XX: Phan Bội Châu và Phan Châu Trinh.",
+            },
+          ],
         },
       },
       {
@@ -752,9 +896,9 @@ function createVillageLevel() {
         height: 18,
         kind: "object",
         variant: "desk",
-        prompt: "inspect the ruined scholar's desk",
+        prompt: "xem chiếc bàn học bỏ hoang",
         slide: {
-          kicker: "Level 1",
+          kicker: "Màn 1",
           title: "Khủng hoảng đường lối",
           text:
             "Nhân dân bế tắc, xã hội phân hóa sâu sắc. Nếu cứ tiếp diễn, dân tộc sẽ mãi cam chịu kiếp nô lệ.",
@@ -811,30 +955,41 @@ function createArchiveLevel() {
 
   return {
     id: "archive",
-    label: "Level 2: The Secret Archive",
-    canvasLabel: "The Secret Archive game world",
-    pauseTitle: "The Secret Archive",
+    label: "Màn 2: Hồ sơ năm 1930",
+    canvasLabel: "Màn chơi 2: Hồ sơ năm 1930",
+    pauseTitle: "Hồ sơ năm 1930",
     spawn: { x: 110, y: 438, direction: "right" },
     bounds: { minX: 92, maxX: 868, minY: 88, maxY: 562 },
     aboutSlide: {
-      kicker: "Level 2",
-      title: "The Secret Archive",
+      kicker: "Màn 2",
+      title: "Hồ sơ năm 1930",
       text:
-        "Inside a dim wooden archive, scattered ideas begin to align. Glowing fragments gather on a study table, and a compass on its pedestal points toward a decisive historical direction.",
-      caption: "A quiet room where confusion gives way to convergence",
+        "Trong căn phòng tài liệu tối, những mảnh tư tưởng rời rạc bắt đầu hội tụ. Đây là nơi câu chuyện chuyển từ chia rẽ sang thống nhất và tìm thấy bàn chỉ nam lịch sử.",
+      caption: "Một không gian lặng im, nơi khủng hoảng đường lối dần nhường chỗ cho sự hợp nhất",
       art: "compass",
     },
     exits: [
       {
         id: "north-door",
         kind: "rect",
-        prompt: "North door -> Level 3",
+        prompt: "Cửa phía bắc -> Màn 3",
         x: 430,
         y: 68,
         width: 100,
         height: 64,
         target: "crossroads",
         spawn: { x: 480, y: 548, direction: "up" },
+        guide: {
+          color: "#f0c56c",
+          glowAlpha: 0.26,
+          markers: [
+            { x: 250, y: 476, direction: "right" },
+            { x: 344, y: 476, direction: "right" },
+            { x: 438, y: 476, direction: "right" },
+            { x: 480, y: 392, direction: "up" },
+            { x: 480, y: 308, direction: "up" },
+          ],
+        },
       },
     ],
     interactables: [
@@ -846,14 +1001,25 @@ function createArchiveLevel() {
         height: 18,
         kind: "object",
         variant: "fragment-table",
-        prompt: "study the glowing fragments",
+        prompt: "nghiên cứu những mảnh tài liệu",
         slide: {
-          kicker: "Level 2",
-          title: "Nguy cơ chia rẽ & Sự hội tụ",
+          kicker: "Màn 2",
+          title: "SỰ HỘI TỤ 1930 & BÀN CHỈ NAM CỦA LỊCH SỬ",
           text:
-            "Cuối 1929, 3 tổ chức cộng sản hoạt động biệt lập nguy cơ dẫn đến chia rẽ. Ngày 3/2/1930, lãnh tụ Nguyễn Ái Quốc đã hợp nhất họ thành Đảng Cộng sản Việt Nam.",
-          caption: "Ba mảnh sáng tách rời rồi dần quy tụ trên cùng một mặt bàn",
-          art: "fragments",
+            "- Nguy cơ chia rẽ: Cuối năm 1929, phong trào cách mạng lên cao dẫn đến sự ra đời của 3 tổ chức cộng sản hoạt động biệt lập: Đông Dương Cộng sản Đảng, An Nam Cộng sản Đảng, Đông Dương Cộng sản Liên đoàn. Sự tồn tại biệt lập này có nguy cơ dẫn đến chia rẽ lớn, công kích lẫn nhau, làm suy yếu sức mạnh dân tộc.\n\n- Sự hợp nhất vĩ đại: Ngày 3/2/1930 tại Hương Cảng, lãnh tụ Nguyễn Ái Quốc với tư cách phái viên Quốc tế Cộng sản đã chủ trì hội nghị, gạt bỏ thành kiến, thống nhất các tổ chức thành Đảng Cộng sản Việt Nam. Cương lĩnh chính trị đầu tiên do Người soạn thảo đã xác định mục tiêu làm cách mạng tư sản dân quyền và thổ địa cách mạng để đi tới xã hội cộng sản.\n\n- Chiếc la bàn dẫn đường: Chủ tịch Hồ Chí Minh khẳng định: \"Đảng mà không có chủ nghĩa cũng như tàu không có bàn chỉ nam\". Sự ra đời của Đảng Cộng sản Việt Nam là một bước ngoặt vĩ đại, chấm dứt thời kỳ khủng hoảng đường lối, đáp ứng khát vọng giải phóng dân tộc của nhân dân ta.",
+          caption: "Từ nguy cơ chia rẽ đến sự hợp nhất lịch sử và chiếc la bàn lý luận cho cách mạng Việt Nam",
+          gallery: [
+            {
+              src: "assets/story/level2/party-unification-1930.png",
+              alt: "Nguyễn Ái Quốc chủ trì hội nghị hợp nhất ba tổ chức cộng sản tại Hương Cảng năm 1930",
+              caption: "Hội nghị do Nguyễn Ái Quốc chủ trì tại Hương Cảng, hợp nhất ba tổ chức cộng sản thành Đảng Cộng sản Việt Nam.",
+            },
+            {
+              src: "assets/story/level2/duong-kach-menh.png",
+              alt: "Tác phẩm Đường Kách Mệnh",
+              caption: "Tác phẩm Đường Kách Mệnh - nền tảng lý luận cách mạng, một bàn chỉ nam cho phong trào giải phóng dân tộc.",
+            },
+          ],
         },
       },
       {
@@ -864,9 +1030,9 @@ function createArchiveLevel() {
         height: 28,
         kind: "object",
         variant: "compass-pedestal",
-        prompt: "examine the glowing compass",
+        prompt: "xem chiếc la bàn phát sáng",
         slide: {
-          kicker: "Level 2",
+          kicker: "Màn 2",
           title: "Bàn Chỉ Nam Của Lịch Sử",
           text:
             "Bác Hồ từng nói: Đảng mà không có chủ nghĩa cũng như tàu không có bàn chỉ nam. Sự ra đời của Đảng đã chấm dứt thời kỳ khủng hoảng đường lối, là bước ngoặt vĩ đại của lịch sử dân tộc.",
@@ -891,30 +1057,39 @@ function createCrossroadsLevel() {
 
   return {
     id: "crossroads",
-    label: "Level 3: The Crossroads",
-    canvasLabel: "The Crossroads game world",
-    pauseTitle: "The Crossroads",
+    label: "Màn 3: Hai ngả lịch sử",
+    canvasLabel: "Màn chơi 3: Hai ngả lịch sử",
+    pauseTitle: "Hai ngả lịch sử",
     spawn: { x: 480, y: 548, direction: "up" },
     bounds: { minX: 24, maxX: 936, minY: 20, maxY: 620 },
     aboutSlide: {
-      kicker: "Level 3",
-      title: "The Crossroads",
+      kicker: "Màn 3",
+      title: "Hai ngả lịch sử",
       text:
-        "Here the land visibly splits between despair and solidarity. One side warns of ruin and fragmentation, while the other shows how unity under revolutionary leadership reshaped the nation.",
-      caption: "A divided map where history turns toward collective action",
+        "Vùng đất này tách làm hai nửa sáng - tối. Một bên là sức mạnh quần chúng làm nên Cách mạng Tháng Tám, bên kia là hiểm họa chia cắt và quyết tâm thống nhất đất nước.",
+      caption: "Từ hai nhánh đối lập, lịch sử đi tới lựa chọn quyết định vận mệnh dân tộc",
       art: "crowd",
     },
     exits: [
       {
         id: "final-path",
         kind: "rect",
-        prompt: "Glowing path -> Final level",
+        prompt: "Lối phát sáng -> Màn 4",
         x: 440,
         y: 14,
         width: 80,
         height: 120,
         target: "spring",
         spawn: { x: 480, y: 546, direction: "up" },
+        guide: {
+          color: "#fff09e",
+          glowAlpha: 0.36,
+          markers: [
+            { x: 480, y: 522, direction: "up" },
+            { x: 480, y: 434, direction: "up" },
+            { x: 480, y: 346, direction: "up" },
+          ],
+        },
       },
     ],
     interactables: [
@@ -926,14 +1101,25 @@ function createCrossroadsLevel() {
         height: 28,
         kind: "object",
         variant: "crowd-gathering",
-        prompt: "join the united gathering",
+        prompt: "bước vào khối đoàn kết",
         slide: {
-          kicker: "Level 3",
-          title: "Khối Đại Đoàn Kết Toàn Dân",
+          kicker: "Màn 3",
+          title: "MẶT TRẬN VIỆT MINH & KỲ TÍCH CÁCH MẠNG THÁNG TÁM",
           text:
-            "Nhờ mặt trận Việt Minh do Đảng lãnh đạo, sức mạnh của toàn dân được quy tụ. Hàng triệu người chung một ý chí làm nên Cách mạng Tháng Tám 1945.",
-          caption: "Nông dân, công nhân và quần chúng đứng cùng nhau dưới những lá cờ đỏ",
-          art: "crowd",
+            "- Quy tụ sức mạnh quần chúng: Chủ nghĩa Mác - Lênin khẳng định: Cách mạng là sự nghiệp của quần chúng nhân dân. Tại Hội nghị Trung ương 8 (tháng 5/1941), Đảng quyết định đặt nhiệm vụ giải phóng dân tộc lên hàng đầu và thành lập Mặt trận Việt Nam Độc lập Đồng minh (Việt Minh) để quy tụ khối đại đoàn kết toàn dân tộc.\n\n- Nghệ thuật chớp thời cơ: Khi phát xít Nhật đầu hàng Đồng minh, Đảng đã kịp thời phát động cuộc Tổng khởi nghĩa Tháng Tám năm 1945. Lệnh Tổng khởi nghĩa nhấn mạnh nguyên tắc \"tập trung - thống nhất - kịp thời\".\n\n- Thành quả vĩ đại: Chỉ 15 năm sau khi thành lập, một Đảng Cộng sản non trẻ đã lãnh đạo nhân dân làm nên kỳ tích, xóa bỏ tận gốc chế độ thuộc địa nửa phong kiến, lập ra nước Việt Nam Dân chủ Cộng hòa, mở ra kỷ nguyên độc lập tự do.",
+          caption: "Từ Mặt trận Việt Minh đến kỳ tích Tháng Tám 1945: sức mạnh quần chúng được tổ chức thành sức mạnh cách mạng",
+          gallery: [
+            {
+              src: "assets/story/level3/viet-minh-1941.png",
+              alt: "Lực lượng Việt Minh trong những năm đầu thành lập năm 1941",
+              caption: "Mặt trận Việt Minh năm 1941 - hạt nhân quy tụ khối đại đoàn kết toàn dân vì mục tiêu giải phóng dân tộc.",
+            },
+            {
+              src: "assets/story/level3/august-revolution-1945.png",
+              alt: "Quần chúng và lực lượng cách mạng trong Cách mạng Tháng Tám năm 1945",
+              caption: "Cách mạng Tháng Tám 1945 - cuộc tổng khởi nghĩa giành chính quyền, mở ra kỷ nguyên độc lập cho dân tộc.",
+            },
+          ],
         },
       },
       {
@@ -944,14 +1130,20 @@ function createCrossroadsLevel() {
         height: 28,
         kind: "object",
         variant: "broken-bridge",
-        prompt: "inspect the broken bridge",
+        prompt: "xem vùng đất bị chia cắt",
         slide: {
-          kicker: "Level 3",
-          title: "Viễn cảnh chia cắt vĩnh viễn",
+          kicker: "Màn 3",
+          title: "VƯỢT QUA GIỚI TUYẾN - VIỄN CẢNH CHIA CẮT VÀ SỰ THỐNG NHẤT",
           text:
-            "Nếu không có Đảng chớp thời cơ và đường lối kháng chiến trường kỳ, đất nước có thể bị các cường quốc chia cắt vĩnh viễn trên bản đồ thế giới, hoặc mãi là thuộc địa kiểu mới.",
-          caption: "Chiếc cầu gãy và biển báo dừng lại như một lời cảnh báo lịch sử",
-          art: "bridge",
+            "- Hiểm hoạ chia cắt vĩnh viễn: Sau cuộc kháng chiến chống Pháp, theo Hiệp định Giơnevơ (1954), đất nước ta bị chia cắt làm 2 miền, lấy vĩ tuyến 17 làm giới tuyến quân sự tạm thời. Tuy nhiên, đế quốc Mỹ đã hất cẳng Pháp hòng độc chiếm miền Nam, âm mưu biến nơi đây thành thuộc địa kiểu mới, chia cắt lâu dài đất nước ta.\n\n- Đường lối sáng tạo cứu vãn dân tộc: Đứng trước nguy cơ mất nước một nửa, Đại hội III của Đảng (1960) đã vạch ra đường lối chiến lược vô cùng độc đáo: tiến hành đồng thời hai nhiệm vụ chiến lược là cách mạng XHCN ở miền Bắc và cách mạng dân tộc dân chủ nhân dân ở miền Nam. Cả hai nhiệm vụ này đều phục vụ mục đích chung duy nhất: giải phóng miền Nam, thống nhất đất nước.",
+          caption: "Từ giới tuyến chia cắt tạm thời đến quyết tâm chiến lược vì một Việt Nam thống nhất",
+          gallery: [
+            {
+              src: "assets/story/level3/vietnam-divided-17th-parallel.png",
+              alt: "Bản đồ Việt Nam bị chia cắt bởi vĩ tuyến 17 sau Hiệp định Giơnevơ năm 1954",
+              caption: "Bản đồ Việt Nam tạm thời bị chia cắt tại vĩ tuyến 17 sau Hiệp định Giơnevơ năm 1954.",
+            },
+          ],
         },
       },
     ],
@@ -971,17 +1163,17 @@ function createSpringLevel() {
 
   return {
     id: "spring",
-    label: "Level 4: The Spring Valley",
-    canvasLabel: "The Spring Valley game world",
-    pauseTitle: "The Spring Valley",
+    label: "Màn 4: Mùa xuân Đổi Mới",
+    canvasLabel: "Màn chơi 4: Mùa xuân Đổi Mới",
+    pauseTitle: "Mùa xuân Đổi Mới",
     spawn: { x: 480, y: 546, direction: "up" },
     bounds: { minX: 28, maxX: 932, minY: 18, maxY: 618 },
     aboutSlide: {
-      kicker: "Level 4",
-      title: "The Spring Valley",
+      kicker: "Màn 4",
+      title: "Mùa xuân Đổi Mới",
       text:
-        "The journey ends in a bright valley of peace, cultivation, and renewal. Blooming trees, healthy crops, and open sky reflect the prosperity built from hard-won independence and unity.",
-      caption: "A peaceful valley where the future feels rooted and alive",
+        "Chặng cuối mở ra trong một thung lũng sáng, nơi hòa bình, phát triển và đổi mới thay cho đổ nát. Đây là câu chuyện về bản lĩnh người cầm lái và con đường hướng tới tương lai.",
+      caption: "Một miền sáng của đổi mới, nơi thành quả lịch sử hiện lên bằng nhịp sống và sức sống mới",
       art: "spring",
     },
     exits: [],
@@ -996,14 +1188,25 @@ function createSpringLevel() {
         height: 56,
         kind: "object",
         variant: "grand-tree",
-        prompt: "stand before the grand tree",
+        prompt: "đứng trước cây đại thụ",
         slide: {
-          kicker: "Level 4",
-          title: "Trái Ngọt Độc Lập & Tương Lai",
+          kicker: "Màn 4",
+          title: "KHỞI XƯỚNG ĐỔI MỚI & BẢN LĨNH NGƯỜI CẦM LÁI",
           text:
-            "Lịch sử đã chọn Đảng. Nhờ có Đảng, chúng ta mới có một Việt Nam hòa bình, thống nhất, đổi mới và đang hội nhập sâu rộng với quốc tế. Sự lãnh đạo của Đảng là nhân tố hàng đầu bảo đảm mọi thắng lợi của cách mạng Việt Nam.",
-          caption: "Cội cây lớn đứng giữa mùa xuân như biểu tượng của hòa bình và tương lai",
-          art: "spring",
+            "- Vượt qua khủng hoảng: Sau năm 1975, cả nước đi lên Chủ nghĩa Xã hội nhưng gặp phải vô vàn khó khăn do hậu quả chiến tranh và cơ chế tập trung quan liêu, bao cấp, dẫn đến cuộc khủng hoảng kinh tế - xã hội trầm trọng.\n\n- Công cuộc Đổi Mới toàn diện: Với bản lĩnh kiên cường dám nhìn thẳng vào sự thật, Đại hội VI của Đảng (1986) đã đề ra đường lối Đổi mới toàn diện, trọng tâm là đổi mới tư duy kinh tế.\n\n- Vững bước tương lai: Chuyển sang nền kinh tế thị trường định hướng XHCN và chủ động hội nhập quốc tế, Đảng đã đưa đất nước thoát khỏi khủng hoảng. Thực tiễn lịch sử chứng minh: Sự lãnh đạo đúng đắn của Đảng là nhân tố hàng đầu bảo đảm mọi thắng lợi của cách mạng Việt Nam, hướng tới mục tiêu \"Dân giàu, nước mạnh, xã hội công bằng, dân chủ, văn minh\".",
+          caption: "Từ bản lĩnh đổi mới đến một Việt Nam hiện đại, hội nhập và vững bước trong tương lai",
+          gallery: [
+            {
+              src: "assets/story/level4/doi-moi-typography.png",
+              alt: "Typography cổ động với thông điệp dân giàu nước mạnh, dân chủ, công bằng, văn minh",
+              caption: "Hình ảnh cổ động thể hiện khát vọng xây dựng một Việt Nam dân giàu, nước mạnh, dân chủ, công bằng, văn minh.",
+            },
+            {
+              src: "assets/story/level4/modern-infrastructure.png",
+              alt: "Cơ sở hạ tầng đô thị hiện đại của Việt Nam ngày nay",
+              caption: "Diện mạo hạ tầng hiện đại hôm nay là một minh chứng cho chặng đường đổi mới, phát triển và hội nhập của đất nước.",
+            },
+          ],
           endsGame: true,
         },
       },
@@ -1384,6 +1587,22 @@ function createSpringDecorations() {
   };
 }
 
+function createStoryRegistry(levelMap) {
+  const registry = {};
+
+  for (const level of Object.values(levelMap)) {
+    for (const item of level.interactables ?? []) {
+      registry[item.id] = {
+        id: item.id,
+        levelId: level.id,
+        ...item.slide,
+      };
+    }
+  }
+
+  return registry;
+}
+
 function currentLevel() {
   return levels[state.currentLevelId];
 }
@@ -1401,10 +1620,214 @@ function frame(timestamp) {
   requestAnimationFrame(frame);
 }
 
+function resetStoryProgress() {
+  state.activeSlide = null;
+  state.activeDialogue = null;
+  state.activeDialogueIndex = 0;
+  state.activeStoryIds = [];
+  state.activeStoryIndex = 0;
+  state.unlockedStoryIds.clear();
+  state.pendingEnding = false;
+  hideDialogue();
+  hideStoryToast();
+  updateBookControls();
+  updateStoryBookButton();
+}
+
+function updateStoryBookButton() {
+  const unlockedCount = state.unlockedStoryIds.size;
+  const shouldShow = unlockedCount > 0 && state.mode === "playing";
+
+  storyBookCount.textContent = String(unlockedCount);
+  storyBookButton.classList.toggle("hidden", !shouldShow);
+  storyBookButton.setAttribute("aria-hidden", shouldShow ? "false" : "true");
+}
+
+function updateBookControls() {
+  const hasUnlockedBook = state.activeStoryIds.length > 0;
+
+  bookControls.classList.toggle("hidden", !hasUnlockedBook);
+  bookControls.setAttribute("aria-hidden", hasUnlockedBook ? "false" : "true");
+
+  if (!hasUnlockedBook) {
+    storyPrevButton.disabled = true;
+    storyNextButton.disabled = true;
+    bookPageIndicator.textContent = "1 / 1";
+    return;
+  }
+
+  storyPrevButton.disabled = state.activeStoryIndex === 0;
+  storyNextButton.disabled = state.activeStoryIndex === state.activeStoryIds.length - 1;
+  bookPageIndicator.textContent = `${state.activeStoryIndex + 1} / ${state.activeStoryIds.length}`;
+}
+
+function showStoryToast(message) {
+  window.clearTimeout(storyToastTimeoutId);
+  storyToast.textContent = message;
+  storyToast.classList.remove("hidden");
+  storyToast.setAttribute("aria-hidden", "false");
+
+  storyToastTimeoutId = window.setTimeout(() => {
+    hideStoryToast();
+  }, STORY_UNLOCK_TOAST_MS);
+}
+
+function hideStoryToast() {
+  window.clearTimeout(storyToastTimeoutId);
+  storyToast.classList.add("hidden");
+  storyToast.setAttribute("aria-hidden", "true");
+}
+
+function hideDialogue() {
+  dialogueBox.classList.add("hidden");
+  dialogueBox.setAttribute("aria-hidden", "true");
+}
+
+function getInteractionDialogue(item) {
+  return INTERACTION_DIALOGUES[item.id] ?? {
+    speaker: item.kind === "npc" ? "Nhân chứng" : "Dấu tích",
+    lines: [item.slide.caption, item.slide.text],
+  };
+}
+
+function renderDialogue() {
+  const dialogue = state.activeDialogue;
+
+  if (!dialogue) {
+    hideDialogue();
+    return;
+  }
+
+  const currentLine = dialogue.lines[state.activeDialogueIndex];
+  const lastLineIndex = dialogue.lines.length - 1;
+  const storySeen = state.unlockedStoryIds.has(dialogue.storyId);
+
+  dialogueSpeaker.textContent = dialogue.speaker;
+  dialogueProgress.textContent = `${state.activeDialogueIndex + 1} / ${dialogue.lines.length}`;
+  dialogueText.textContent = currentLine;
+  dialogueNextButton.textContent = state.activeDialogueIndex === lastLineIndex
+    ? (storySeen ? "Đóng" : "Mở khóa chuyện")
+    : "Tiếp tục";
+  dialogueBox.classList.remove("hidden");
+  dialogueBox.setAttribute("aria-hidden", "false");
+}
+
+function unlockStory(storyId) {
+  if (state.unlockedStoryIds.has(storyId)) {
+    return false;
+  }
+
+  const story = storyRegistry[storyId];
+
+  state.unlockedStoryIds.add(storyId);
+  updateStoryBookButton();
+
+  if (story) {
+    showStoryToast(`Đã mở khóa: ${story.title}`);
+  }
+
+  return true;
+}
+
+function startDialogue(item) {
+  const dialogue = getInteractionDialogue(item);
+
+  state.mode = "dialogue";
+  state.activeDialogue = {
+    storyId: item.id,
+    speaker: dialogue.speaker,
+    lines: dialogue.lines.filter(Boolean),
+  };
+  state.activeDialogueIndex = 0;
+  interactionPrompt.classList.add("hidden");
+  hideStoryToast();
+  renderDialogue();
+  updateStoryBookButton();
+}
+
+function finishDialogue() {
+  const storyId = state.activeDialogue?.storyId;
+
+  if (storyId) {
+    unlockStory(storyId);
+  }
+
+  state.activeDialogue = null;
+  state.activeDialogueIndex = 0;
+  hideDialogue();
+  state.mode = "playing";
+  updateInteractionPrompt();
+  updateStoryBookButton();
+}
+
+function advanceDialogue() {
+  const dialogue = state.activeDialogue;
+
+  if (!dialogue) {
+    return;
+  }
+
+  if (state.activeDialogueIndex < dialogue.lines.length - 1) {
+    state.activeDialogueIndex += 1;
+    renderDialogue();
+    return;
+  }
+
+  finishDialogue();
+}
+
+function cancelDialogue() {
+  state.activeDialogue = null;
+  state.activeDialogueIndex = 0;
+  hideDialogue();
+
+  if (state.mode !== "start") {
+    state.mode = "playing";
+    updateInteractionPrompt();
+  }
+
+  updateStoryBookButton();
+}
+
+function getActiveStorySlide() {
+  const storyId = state.activeStoryIds[state.activeStoryIndex];
+
+  return storyId ? storyRegistry[storyId] : null;
+}
+
+function openStoryBook(preferredStoryId = null) {
+  const unlockedStoryIds = Array.from(state.unlockedStoryIds);
+
+  if (unlockedStoryIds.length === 0 || state.mode !== "playing") {
+    return;
+  }
+
+  const preferredIndex = preferredStoryId ? unlockedStoryIds.indexOf(preferredStoryId) : -1;
+
+  state.activeStoryIds = unlockedStoryIds;
+  state.activeStoryIndex = preferredIndex >= 0 ? preferredIndex : unlockedStoryIds.length - 1;
+
+  openSlide(getActiveStorySlide());
+}
+
+function showStoryBookEntry(direction) {
+  if (state.activeStoryIds.length === 0) {
+    return;
+  }
+
+  const nextIndex = clamp(state.activeStoryIndex + direction, 0, state.activeStoryIds.length - 1);
+
+  if (nextIndex === state.activeStoryIndex) {
+    return;
+  }
+
+  state.activeStoryIndex = nextIndex;
+  openSlide(getActiveStorySlide());
+}
+
 function startGame() {
   state.mode = "playing";
   state.aboutFromPause = false;
-  state.pendingEnding = false;
   keys.clear();
   hideEndOverlay();
   startScreen.classList.add("hidden");
@@ -1413,15 +1836,14 @@ function startGame() {
   interactionPrompt.classList.add("hidden");
   pauseMenu.setAttribute("aria-hidden", "true");
   slideModal.setAttribute("aria-hidden", "true");
+  resetStoryProgress();
   loadLevel("village");
 }
 
 function returnToStartScreen() {
   state.mode = "start";
-  state.activeSlide = null;
   state.activeInteractionId = null;
   state.aboutFromPause = false;
-  state.pendingEnding = false;
   keys.clear();
   hideEndOverlay();
   slideModal.classList.add("hidden");
@@ -1429,6 +1851,7 @@ function returnToStartScreen() {
   interactionPrompt.classList.add("hidden");
   slideModal.setAttribute("aria-hidden", "true");
   pauseMenu.setAttribute("aria-hidden", "true");
+  resetStoryProgress();
   loadLevel("village");
   startScreen.classList.remove("hidden");
 }
@@ -1438,6 +1861,7 @@ function togglePause() {
     state.mode = "paused";
     pauseMenu.classList.remove("hidden");
     pauseMenu.setAttribute("aria-hidden", "false");
+    updateStoryBookButton();
     return;
   }
 
@@ -1453,14 +1877,13 @@ function resumeGame() {
   pauseMenu.setAttribute("aria-hidden", "true");
   updateInteractionPrompt();
   syncAmbienceAudio();
+  updateStoryBookButton();
 }
 
 function restartGame() {
   state.mode = "playing";
-  state.activeSlide = null;
   state.activeInteractionId = null;
   state.aboutFromPause = false;
-  state.pendingEnding = false;
   keys.clear();
   hideEndOverlay();
   startScreen.classList.add("hidden");
@@ -1469,6 +1892,7 @@ function restartGame() {
   interactionPrompt.classList.add("hidden");
   pauseMenu.setAttribute("aria-hidden", "true");
   slideModal.setAttribute("aria-hidden", "true");
+  resetStoryProgress();
   loadLevel("village");
 }
 
@@ -1490,6 +1914,7 @@ function loadLevel(levelId, spawnOverride) {
   updateLevelChrome();
   updateInteractionPrompt();
   syncAmbienceAudio();
+  updateStoryBookButton();
 }
 
 function updateLevelChrome() {
@@ -1500,7 +1925,32 @@ function updateLevelChrome() {
   canvas.setAttribute("aria-label", level.canvasLabel);
 }
 
+function renderSlideGallery(galleryItems) {
+  slideGallery.replaceChildren();
+
+  for (const item of galleryItems) {
+    const figure = document.createElement("figure");
+    figure.className = "slide-gallery-item";
+
+    const image = document.createElement("img");
+    image.className = "slide-gallery-image";
+    image.src = item.src;
+    image.alt = item.alt ?? item.caption ?? "";
+
+    const caption = document.createElement("p");
+    caption.className = "slide-gallery-caption";
+    caption.textContent = item.caption ?? "";
+
+    figure.append(image, caption);
+    slideGallery.append(figure);
+  }
+}
+
 function openSlide(slideData) {
+  if (!slideData) {
+    return;
+  }
+
   state.activeSlide = slideData;
   state.pendingEnding = Boolean(slideData.endsGame);
   state.mode = "modal";
@@ -1509,8 +1959,20 @@ function openSlide(slideData) {
   slideText.textContent = slideData.text;
   slideCaption.textContent = slideData.caption;
   slideImage.className = "slide-image";
+  slideGallery.replaceChildren();
 
-  if (slideData.art) {
+  const hasGallery = Array.isArray(slideData.gallery) && slideData.gallery.length > 0;
+
+  slideGallery.classList.toggle("hidden", !hasGallery);
+  slideGallery.setAttribute("aria-hidden", hasGallery ? "false" : "true");
+  slideImageFrame.classList.toggle("hidden", hasGallery);
+  slideCaption.classList.toggle("hidden", hasGallery);
+
+  if (hasGallery) {
+    renderSlideGallery(slideData.gallery);
+  }
+
+  if (!hasGallery && slideData.art) {
     slideImage.classList.add(`art-${slideData.art}`);
   }
 
@@ -1520,6 +1982,8 @@ function openSlide(slideData) {
   pauseMenu.classList.add("hidden");
   pauseMenu.setAttribute("aria-hidden", "true");
   interactionPrompt.classList.add("hidden");
+  updateBookControls();
+  updateStoryBookButton();
 }
 
 function closeSlide() {
@@ -1529,7 +1993,10 @@ function closeSlide() {
   slideModal.classList.add("hidden");
   slideModal.setAttribute("aria-hidden", "true");
   state.activeSlide = null;
+  state.activeStoryIds = [];
+  state.activeStoryIndex = 0;
   state.pendingEnding = false;
+  updateBookControls();
 
   if (state.aboutFromPause) {
     state.mode = "paused";
@@ -1545,6 +2012,7 @@ function closeSlide() {
 
   state.mode = "playing";
   updateInteractionPrompt();
+  updateStoryBookButton();
 }
 
 function showEndOverlay() {
@@ -1552,11 +2020,13 @@ function showEndOverlay() {
   interactionPrompt.classList.add("hidden");
   endOverlay.classList.remove("hidden");
   endOverlay.setAttribute("aria-hidden", "false");
+  updateStoryBookButton();
 }
 
 function hideEndOverlay() {
   endOverlay.classList.add("hidden");
   endOverlay.setAttribute("aria-hidden", "true");
+  updateStoryBookButton();
 }
 
 function updatePlayer(deltaSeconds) {
@@ -1686,7 +2156,7 @@ function updateInteractionPrompt() {
 
   if (candidate) {
     state.activeInteractionId = candidate.id;
-    interactionPrompt.textContent = `Press E to ${candidate.prompt}`;
+    interactionPrompt.textContent = `Nhấn E để ${candidate.prompt}`;
     interactionPrompt.classList.remove("hidden");
     return;
   }
@@ -1745,7 +2215,7 @@ function handleInteraction() {
     return;
   }
 
-  openSlide(candidate.slide);
+  startDialogue(candidate);
 }
 
 function getInteractionPoint(item) {
@@ -1799,7 +2269,101 @@ function drawWorld() {
     drawSpringWorld(currentLevel().decorations);
   }
 
+  drawExitGuides(currentLevel().exits);
   ctx.restore();
+}
+
+function drawExitGuides(exits) {
+  for (const exit of exits) {
+    if (!exit.guide?.markers?.length) {
+      continue;
+    }
+
+    for (let index = 0; index < exit.guide.markers.length; index += 1) {
+      drawExitGuideMarker(exit.guide, exit.guide.markers[index], index);
+    }
+  }
+}
+
+function drawExitGuideMarker(guide, marker, index) {
+  const direction = marker.direction ?? "right";
+  const size = marker.size ?? 3;
+  const travel = 2 + (marker.travel ?? 0);
+  const pulsePhase = state.lastTimestamp * 0.006 + index * 0.85;
+  const pulse = 0.74 + (Math.sin(pulsePhase) + 1) * 0.13;
+  const travelOffset = Math.round(Math.sin(pulsePhase) * travel);
+  let drawX = marker.x;
+  let drawY = marker.y;
+
+  if (direction === "right") {
+    drawX += travelOffset;
+  } else if (direction === "left") {
+    drawX -= travelOffset;
+  } else if (direction === "up") {
+    drawY -= travelOffset;
+  } else {
+    drawY += travelOffset;
+  }
+
+  const glowRadius = 16 + size * 6;
+  const glowAlpha = guide.glowAlpha ?? 0.28;
+  drawWorldWarmGlow(drawX, drawY, glowRadius, glowAlpha * pulse);
+
+  ctx.save();
+  ctx.globalAlpha = 0.28 * pulse;
+  drawPixelExitArrow(drawX + size, drawY + size, direction, size, "#1a1614");
+  ctx.restore();
+
+  drawPixelExitArrow(drawX, drawY, direction, size, "#2b2019");
+  drawPixelExitArrow(drawX, drawY, direction, size - 1, guide.color ?? "#f3d777");
+  drawPixelExitArrow(drawX, drawY, direction, Math.max(1, size - 2), "#fff9d1");
+}
+
+function drawPixelExitArrow(centerX, centerY, direction, cellSize, color) {
+  if (cellSize <= 0) {
+    return;
+  }
+
+  const pattern = [
+    "1100000000000",
+    "1111000000000",
+    "1111111000000",
+    "1111111111111",
+    "1111111000000",
+    "1111000000000",
+    "1100000000000",
+  ];
+  const width = pattern[0].length;
+  const height = pattern.length;
+  const originX = (width - 1) / 2;
+  const originY = (height - 1) / 2;
+
+  ctx.fillStyle = color;
+
+  for (let row = 0; row < height; row += 1) {
+    for (let col = 0; col < width; col += 1) {
+      if (pattern[row][col] !== "1") {
+        continue;
+      }
+
+      const localX = (col - originX) * cellSize;
+      const localY = (row - originY) * cellSize;
+      let drawX = centerX + localX;
+      let drawY = centerY + localY;
+
+      if (direction === "left") {
+        drawX = centerX - localX;
+      } else if (direction === "up") {
+        drawX = centerX + localY;
+        drawY = centerY - localX;
+      } else if (direction === "down") {
+        drawX = centerX + localY;
+        drawY = centerY + localX;
+      }
+
+      ctx.fillRect(Math.round(drawX), Math.round(drawY), cellSize, cellSize);
+    }
+  }
 }
 
 function drawVillageWorld(decorations) {
