@@ -77,6 +77,17 @@ const MONSTER_SPEED = 38;
 const MONSTER_TOUCH_RANGE = 18;
 const MONSTER_CONTACT_DAMAGE_COOLDOWN_MS = 900;
 const RELIC_TARGET_COUNT = 5;
+const NAVIGATION_ASSIST = {
+  objectiveGlowRadius: 18,
+  playerGlowRadius: 18,
+  edgeGlowRadius: 16,
+  objectiveCellSize: 2,
+  playerCellSize: 1,
+  edgeCellSize: 1,
+  exitGuideMaxCellSize: 2,
+  playerArrowOffset: 30,
+  playerArrowYOffset: -24,
+};
 const REQUIRED_RELIC_IDS = [
   "red-compass",
   "unified-emblem",
@@ -165,6 +176,33 @@ const TILECRAFT_TERRAIN = {
     { col: 3, row: 8 },
   ],
 };
+const PIXEL_CRAWLER_TERRAIN = {
+  tileSize: 16,
+  grass: [
+    { col: 1, row: 10 },
+    { col: 2, row: 10 },
+    { col: 1, row: 11 },
+    { col: 2, row: 11 },
+  ],
+  dirt: [
+    { col: 10, row: 10 },
+    { col: 11, row: 10 },
+    { col: 12, row: 10 },
+    { col: 11, row: 11 },
+  ],
+  stone: [
+    { col: 6, row: 10 },
+    { col: 7, row: 10 },
+    { col: 8, row: 10 },
+    { col: 7, row: 11 },
+  ],
+  brick: [
+    { col: 16, row: 1 },
+    { col: 17, row: 1 },
+    { col: 18, row: 1 },
+    { col: 17, row: 2 },
+  ],
+};
 const VILLAGE_SKYLINE_Y = 148;
 const VILLAGE_PROP_SPRITES = {
   fenceVine: { x: 0, y: 184, width: 760, height: 190 },
@@ -180,6 +218,9 @@ const VILLAGE_PROP_SPRITES = {
     { x: 32, y: 32, width: 16, height: 16 },
   ],
 };
+const PIXEL_CRAWLER_BUILDING_SPRITES = {
+  historyGateDoor: { x: 128, y: 64, width: 64, height: 32 },
+};
 const HUB_PORTAL_SPRITE = {
   frameSize: 64,
   columns: 3,
@@ -188,9 +229,31 @@ const HUB_PORTAL_SPRITE = {
   drawSize: 68,
 };
 const PIXEL_CRAWLER_TREE_SPRITE = {
-  frameWidth: 52,
-  frameHeight: 64,
-  columns: 4,
+  frameWidth: 64,
+  frameHeight: 96,
+  columns: 3,
+  displayVariants: [0, 1, 3, 4],
+};
+const KENNEY_ROGUELIKE_TILE = {
+  size: 16,
+  spacing: 17,
+  margin: 1,
+};
+const KENNEY_ROGUELIKE_SPRITES = {
+  torch: { col: 18, row: 7 },
+  candle: { col: 21, row: 7 },
+  treeGreen: { col: 13, row: 9 },
+  treeOrange: { col: 14, row: 9 },
+  treeTeal: { col: 15, row: 9 },
+  treePineGreen: { col: 16, row: 9 },
+  treePineOrange: { col: 17, row: 9 },
+  bush: { col: 28, row: 10 },
+  flowerPink: { col: 33, row: 10 },
+  fenceHorizontal: { col: 47, row: 23 },
+  fencePost: { col: 50, row: 23 },
+  crate: { col: 24, row: 0 },
+  barrel: { col: 22, row: 0 },
+  redFlag: { col: 52, row: 0 },
 };
 const PIXEL_CRAWLER_VEGETATION_SPRITES = [
   { x: 0, y: 0, width: 48, height: 48 },
@@ -207,8 +270,8 @@ const PIXEL_CRAWLER_VEGETATION_SPRITES = [
   { x: 144, y: 96, width: 48, height: 48 },
 ];
 const PIXEL_CRAWLER_TOOL_CLUSTER_SPRITES = [
-  { x: 0, y: 0, width: 96, height: 64 },
-  { x: 0, y: 64, width: 96, height: 64 },
+  { x: 16, y: 28, width: 48, height: 32 },
+  { x: 80, y: 24, width: 32, height: 42 },
 ];
 const CAINOS_PROP_SPRITES = {
   cargoStack: { x: 64, y: 0, width: 64, height: 64, shadowWidth: 40, shadowHeight: 8, shadowOffsetY: 56 },
@@ -636,9 +699,17 @@ function loadEnvironmentSprites() {
     ),
     hubPortalSheet: loadSprite("assets/environment/portal/portal-spinning.png"),
     pixelCrawler: {
+      floorTiles: loadSprite("assets/Pixel Crawler - Free Pack/Environment/Tilesets/Floors_Tiles.png"),
       vegetation: loadSprite("assets/environment/pixel-crawler/vegetation.png"),
       tools: loadSprite("assets/environment/pixel-crawler/tools.png"),
-      trees: loadSprite("assets/environment/pixel-crawler/tree-model-01-size-03.png"),
+      trees: loadSprite("assets/Pixel Crawler - Free Pack/Environment/Props/Static/Trees/Model_03/Size_03.png"),
+      buildingProps: loadSprite("assets/Pixel Crawler - Free Pack/Environment/Structures/Buildings/Props.png"),
+    },
+    kenneyRoguelike: {
+      spritesheet: loadSprite("assets/kenney-roguelike-rpg/Spritesheet/roguelikeSheet_transparent.png"),
+    },
+    openGameArt: {
+      historyDoor: loadSprite("assets/environment/opengameart/pixel_door.png"),
     },
     cainos: {
       props: loadSprite("assets/environment/cainos/tx-props.png"),
@@ -932,6 +1003,34 @@ function drawSpriteRect(image, sprite, x, y, width, height, options = {}) {
   return true;
 }
 
+function drawKenneyRoguelikeSprite(sprite, x, y, width = 16, height = 16, options = {}) {
+  const sheet = environmentSprites.kenneyRoguelike?.spritesheet;
+
+  if (!sprite || !canDrawSprite(sheet)) {
+    return false;
+  }
+
+  const sourceX = KENNEY_ROGUELIKE_TILE.margin + sprite.col * KENNEY_ROGUELIKE_TILE.spacing;
+  const sourceY = KENNEY_ROGUELIKE_TILE.margin + sprite.row * KENNEY_ROGUELIKE_TILE.spacing;
+
+  ctx.save();
+  ctx.globalAlpha = options.alpha ?? 1;
+  ctx.filter = options.filter ?? "none";
+  ctx.drawImage(
+    sheet,
+    sourceX,
+    sourceY,
+    KENNEY_ROGUELIKE_TILE.size,
+    KENNEY_ROGUELIKE_TILE.size,
+    Math.round(x),
+    Math.round(y),
+    Math.round(width),
+    Math.round(height)
+  );
+  ctx.restore();
+  return true;
+}
+
 function drawBarkOverlay(x, y, width, height, alpha = 0.36) {
   if (!canDrawSprite(environmentSprites.barkTexture)) {
     return;
@@ -979,6 +1078,48 @@ function drawTerrainFill(tiles, x, y, width, height, options = {}) {
 
       ctx.drawImage(
         environmentSprites.tilecraftGround,
+        tile.col * tileSize,
+        tile.row * tileSize,
+        tileSize,
+        tileSize,
+        drawX,
+        drawY,
+        drawSize,
+        drawSize
+      );
+    }
+  }
+
+  ctx.restore();
+  return true;
+}
+
+function drawPixelCrawlerTerrainFill(tiles, x, y, width, height, options = {}) {
+  const sheet = environmentSprites.pixelCrawler?.floorTiles;
+
+  if (!canDrawSprite(sheet)) {
+    return false;
+  }
+
+  const tileSize = PIXEL_CRAWLER_TERRAIN.tileSize;
+  const scale = options.scale ?? 1;
+  const drawSize = tileSize * scale;
+  const seed = options.seed ?? 0;
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(x, y, width, height);
+  ctx.clip();
+  ctx.globalAlpha = options.alpha ?? 1;
+
+  for (let drawY = y; drawY < y + height + drawSize; drawY += drawSize) {
+    for (let drawX = x; drawX < x + width + drawSize; drawX += drawSize) {
+      const columnIndex = Math.floor((drawX - x) / drawSize);
+      const rowIndex = Math.floor((drawY - y) / drawSize);
+      const tile = tiles[Math.abs((columnIndex * 5 + rowIndex * 7 + seed) % tiles.length)];
+
+      ctx.drawImage(
+        sheet,
         tile.col * tileSize,
         tile.row * tileSize,
         tileSize,
@@ -2129,7 +2270,11 @@ function createHubLevel() {
       },
     ],
     colliders: [
-      { x: 448, y: 196, width: 64, height: 62 },
+      { x: 450, y: 198, width: 60, height: 86 },
+      { x: 352, y: 246, width: 28, height: 30 },
+      { x: 584, y: 246, width: 28, height: 30 },
+      { x: 314, y: 414, width: 52, height: 18 },
+      { x: 598, y: 414, width: 52, height: 18 },
     ],
     decorations,
   };
@@ -2180,8 +2325,8 @@ function createPortMazeLevel() {
     interactables: [
       {
         id: "nguyen-ai-quoc",
-        x: 544,
-        y: 520,
+        x: 536,
+        y: 516,
         width: 22,
         height: 40,
         kind: "npc",
@@ -2200,8 +2345,8 @@ function createPortMazeLevel() {
       },
       {
         id: "le-paria-stack",
-        x: 502,
-        y: 538,
+        x: 490,
+        y: 548,
         width: 18,
         height: 18,
         kind: "object",
@@ -2211,8 +2356,8 @@ function createPortMazeLevel() {
       },
       {
         id: "worker-harbor-1",
-        x: 386,
-        y: 520,
+        x: 414,
+        y: 528,
         width: 20,
         height: 38,
         kind: "npc",
@@ -2225,8 +2370,8 @@ function createPortMazeLevel() {
       },
       {
         id: "worker-harbor-2",
-        x: 650,
-        y: 538,
+        x: 684,
+        y: 530,
         width: 20,
         height: 38,
         kind: "npc",
@@ -2239,8 +2384,8 @@ function createPortMazeLevel() {
       },
       {
         id: "worker-harbor-3",
-        x: 742,
-        y: 500,
+        x: 764,
+        y: 510,
         width: 20,
         height: 38,
         kind: "npc",
@@ -2306,18 +2451,17 @@ function createPortMazeLevel() {
       },
     ],
     colliders: [
-      { x: 82, y: 92, width: 30, height: 360 },
-      { x: 82, y: 450, width: 248, height: 28 },
-      { x: 178, y: 132, width: 198, height: 28 },
-      { x: 346, y: 132, width: 28, height: 170 },
-      { x: 178, y: 278, width: 172, height: 28 },
-      { x: 440, y: 88, width: 28, height: 206 },
-      { x: 438, y: 266, width: 148, height: 28 },
-      { x: 560, y: 174, width: 28, height: 176 },
-      { x: 220, y: 378, width: 248, height: 24 },
+      { x: 86, y: 96, width: 22, height: 350 },
+      { x: 90, y: 454, width: 232, height: 20 },
+      { x: 184, y: 136, width: 186, height: 20 },
+      { x: 350, y: 136, width: 20, height: 160 },
+      { x: 184, y: 282, width: 160, height: 20 },
+      { x: 444, y: 94, width: 20, height: 194 },
+      { x: 444, y: 270, width: 136, height: 20 },
+      { x: 564, y: 180, width: 20, height: 164 },
+      { x: 226, y: 382, width: 236, height: 18 },
       { x: 0, y: 562, width: WORLD.width, height: 24 },
-      { x: 760, y: 144, width: 150, height: 120 },
-      { x: 342, y: 486, width: 464, height: 16 },
+      { x: 766, y: 150, width: 138, height: 104 },
     ],
     decorations,
   };
@@ -2397,7 +2541,7 @@ function createUnityHouseLevel() {
       {
         id: "delegate-north",
         x: 482,
-        y: 116,
+        y: 218,
         width: 22,
         height: 40,
         kind: "npc",
@@ -2893,12 +3037,12 @@ function createHubDecorations() {
       { x: 802, y: 482, color: "#d9f0a7", glow: "#6db05a", title: "Khu 4", subtitle: "Doi Moi", labelOffsetY: -62 },
     ],
     plaza: { x: 238, y: 146, width: 484, height: 354 },
-    gate: { x: 436, y: 170, width: 88, height: 120 },
+    gate: { x: 445, y: 198, width: 70, height: 82 },
     cainosProps: [
-      { sprite: "statue", x: 336, y: 186, scale: 1 },
-      { sprite: "statue", x: 560, y: 186, scale: 1 },
-      { sprite: "bench", x: 306, y: 378, scale: 0.94 },
-      { sprite: "bench", x: 590, y: 378, scale: 0.94 },
+      { sprite: "statue", x: 342, y: 216, scale: 0.62 },
+      { sprite: "statue", x: 582, y: 216, scale: 0.62 },
+      { sprite: "bench", x: 314, y: 382, scale: 0.72 },
+      { sprite: "bench", x: 598, y: 382, scale: 0.72 },
     ],
   };
 }
@@ -2906,11 +3050,11 @@ function createHubDecorations() {
 function createPortMazeDecorations() {
   return {
     fogBands: Array.from({ length: 10 }, (_, index) => ({
-      x: 40 + index * 96,
-      y: 68 + ((index * 27) % 222),
-      width: 132,
-      height: 28 + (index % 3) * 10,
-      alpha: 0.08 + (index % 3) * 0.04,
+      x: -60 + index * 108,
+      y: 72 + ((index * 31) % 270),
+      width: 150 + (index % 3) * 30,
+      height: 34 + (index % 3) * 12,
+      alpha: 0.035 + (index % 3) * 0.018,
     })),
     mazeShrubs: [
       { x: 106, y: 106, width: 282, height: 30 },
@@ -2929,28 +3073,28 @@ function createPortMazeDecorations() {
       { x: 736, y: 476 },
     ],
     crawlerBushes: [
-      { x: 84, y: 164, variant: 0, scale: 0.86 },
-      { x: 604, y: 156, variant: 5, scale: 0.84 },
-      { x: 676, y: 270, variant: 8, scale: 0.78 },
-      { x: 904, y: 284, variant: 7, scale: 0.74 },
-      { x: 274, y: 454, variant: 2, scale: 0.9 },
+      { x: 62, y: 176, variant: 0, scale: 0.72 },
+      { x: 612, y: 154, variant: 5, scale: 0.66 },
+      { x: 704, y: 284, variant: 8, scale: 0.58 },
+      { x: 916, y: 282, variant: 7, scale: 0.6 },
+      { x: 274, y: 446, variant: 2, scale: 0.68 },
     ],
     crawlerTrees: [
-      { x: 662, y: 268, variant: 2, scale: 1 },
-      { x: 904, y: 274, variant: 6, scale: 1.04 },
-      { x: 76, y: 452, variant: 1, scale: 0.92 },
+      { x: 646, y: 222, variant: 0, scale: 0.76 },
+      { x: 922, y: 342, variant: 1, scale: 0.74 },
+      { x: 56, y: 422, variant: 3, scale: 0.72 },
     ],
     crawlerTools: [
-      { x: 372, y: 542, variant: 0, scale: 0.72 },
-      { x: 648, y: 540, variant: 1, scale: 0.76 },
-      { x: 830, y: 286, variant: 0, scale: 0.62 },
+      { x: 356, y: 554, variant: 0, scale: 0.32, alpha: 0.78 },
+      { x: 804, y: 552, variant: 1, scale: 0.3, alpha: 0.72 },
+      { x: 880, y: 292, variant: 0, scale: 0.26, alpha: 0.68 },
     ],
     cainosProps: [
-      { sprite: "cargoStack", x: 350, y: 490, scale: 0.92 },
-      { sprite: "barrel", x: 440, y: 520, scale: 1.15 },
-      { sprite: "cargoStack", x: 610, y: 492, scale: 0.92 },
-      { sprite: "barrel", x: 720, y: 520, scale: 1.15 },
-      { sprite: "bench", x: 778, y: 182, scale: 0.82 },
+      { sprite: "cargoStack", x: 334, y: 500, scale: 0.62 },
+      { sprite: "barrel", x: 456, y: 532, scale: 0.82 },
+      { sprite: "cargoStack", x: 598, y: 502, scale: 0.62 },
+      { sprite: "barrel", x: 724, y: 532, scale: 0.82 },
+      { sprite: "bench", x: 794, y: 190, scale: 0.58 },
     ],
   };
 }
@@ -2976,8 +3120,8 @@ function createUnityHouseDecorations() {
       { sprite: "deskCompact", x: 142, y: 192, scale: 0.84 },
       { sprite: "bookshelfTall", x: 718, y: 102, scale: 0.78 },
       { sprite: "deskArchive", x: 730, y: 192, scale: 0.84 },
-      { sprite: "chalkboard", x: 430, y: 90, scale: 0.92 },
-      { sprite: "deskWide", x: 408, y: 278, scale: 0.9 },
+      { sprite: "chalkboard", x: 448, y: 104, scale: 0.64 },
+      { sprite: "deskWide", x: 432, y: 292, scale: 0.68 },
       { sprite: "sofaSet", x: 418, y: 384, scale: 0.84 },
     ],
   };
@@ -3134,8 +3278,9 @@ function updateProgressHud() {
   saDoaFill.style.width = `${saDoaPercent}%`;
   saDoaValue.textContent = `${state.saDoa}%`;
   inventoryValue.textContent = `${state.inventory.size} / ${RELIC_TARGET_COUNT}`;
-  skillValue.textContent =
-    `${formatCooldownLabel("J", strikeCooldown)} | ${formatCooldownLabel("K", purifyCooldown)}`;
+  skillValue.textContent = strikeCooldown <= 0 && purifyCooldown <= 0
+    ? "J/K OK"
+    : `${formatCooldownLabel("J", strikeCooldown)} | ${formatCooldownLabel("K", purifyCooldown)}`;
 }
 
 function getRemainingCooldownMs(readyAt) {
@@ -3144,10 +3289,10 @@ function getRemainingCooldownMs(readyAt) {
 
 function formatCooldownLabel(key, remainingMs) {
   if (remainingMs <= 0) {
-    return `${key}: San sang`;
+    return `${key} OK`;
   }
 
-  return `${key}: ${(remainingMs / 1000).toFixed(1)}s`;
+  return `${key} ${(remainingMs / 1000).toFixed(1)}s`;
 }
 
 function currentLevel() {
@@ -4070,14 +4215,6 @@ function updateInteractionPrompt() {
     return;
   }
 
-  const navigationPrompt = getNavigationStatusPrompt();
-
-  if (navigationPrompt) {
-    interactionPrompt.textContent = navigationPrompt;
-    interactionPrompt.classList.remove("hidden");
-    return;
-  }
-
   interactionPrompt.classList.add("hidden");
 }
 
@@ -4103,18 +4240,8 @@ function updateQuestChip() {
   const objective = getNavigationObjective();
 
   questChip.textContent = objective
-    ? `Quest Nav: ${objective.label} (${formatNavigationDistance(objective.distance)})`
-    : "Quest Nav: Tu do tham hiem";
-}
-
-function getNavigationStatusPrompt() {
-  const objective = getNavigationObjective();
-
-  if (!objective) {
-    return "";
-  }
-
-  return `Muc tieu: ${objective.label} (${formatNavigationDistance(objective.distance)})`;
+    ? `${objective.label} - ${formatNavigationDistance(objective.distance)}`
+    : "Tu do tham hiem";
 }
 
 function isExitNear(exit) {
@@ -4558,41 +4685,44 @@ function drawObjectiveBeacon(objective, pulse) {
 
   ctx.save();
   ctx.translate(-camera.x, -camera.y);
-  drawWorldWarmGlow(markerX, markerY, 26, 0.24 * pulse);
+  drawWorldWarmGlow(markerX, markerY, NAVIGATION_ASSIST.objectiveGlowRadius, 0.14 * pulse);
 
   ctx.save();
-  ctx.globalAlpha = 0.24 * pulse;
-  drawPixelExitArrow(markerX + 2, markerY + 2, "down", 3, "#17120f");
+  ctx.globalAlpha = 0.18 * pulse;
+  drawPixelExitArrow(markerX + 1, markerY + 1, "down", NAVIGATION_ASSIST.objectiveCellSize, "#17120f");
   ctx.restore();
 
-  drawPixelExitArrow(markerX, markerY, "down", 3, "#2b2019");
-  drawPixelExitArrow(markerX, markerY, "down", 2, objective.color);
-  drawPixelExitArrow(markerX, markerY, "down", 1, "#fff8d5");
+  drawPixelExitArrow(markerX, markerY, "down", NAVIGATION_ASSIST.objectiveCellSize, "#2b2019");
+  drawPixelExitArrow(markerX, markerY, "down", NAVIGATION_ASSIST.playerCellSize, objective.color);
   ctx.restore();
 }
 
 function drawPlayerNavigationArrow(objective, pulse) {
-  const offset = 38;
+  const offset = NAVIGATION_ASSIST.playerArrowOffset;
   const arrowX = player.x + (objective.dx / objective.distance) * offset;
-  const arrowY = player.y - 28 + (objective.dy / objective.distance) * offset;
+  const arrowY = player.y + NAVIGATION_ASSIST.playerArrowYOffset + (objective.dy / objective.distance) * offset;
 
   ctx.save();
   ctx.translate(-camera.x, -camera.y);
-  drawWorldWarmGlow(arrowX, arrowY, 34, 0.22 * pulse);
+  drawWorldWarmGlow(arrowX, arrowY, NAVIGATION_ASSIST.playerGlowRadius, 0.12 * pulse);
 
   ctx.save();
-  ctx.globalAlpha = 0.24 * pulse;
-  drawPixelExitArrow(Math.round(arrowX + 3), Math.round(arrowY + 3), objective.direction, 3, "#17120f");
+  ctx.globalAlpha = 0.16 * pulse;
+  drawPixelExitArrow(
+    Math.round(arrowX + 1),
+    Math.round(arrowY + 1),
+    objective.direction,
+    NAVIGATION_ASSIST.playerCellSize,
+    "#17120f"
+  );
   ctx.restore();
 
-  drawPixelExitArrow(Math.round(arrowX), Math.round(arrowY), objective.direction, 3, "#2b2019");
-  drawPixelExitArrow(Math.round(arrowX), Math.round(arrowY), objective.direction, 2, objective.color);
-  drawPixelExitArrow(Math.round(arrowX), Math.round(arrowY), objective.direction, 1, "#fff8d5");
+  drawPixelExitArrow(Math.round(arrowX), Math.round(arrowY), objective.direction, NAVIGATION_ASSIST.playerCellSize, objective.color);
   ctx.restore();
 }
 
 function drawScreenEdgeNavigationArrow(objective, pulse) {
-  const margin = 28;
+  const margin = 18;
   const centerX = VIEWPORT.width / 2;
   const centerY = VIEWPORT.height / 2;
   const unitX = objective.dx / objective.distance;
@@ -4606,16 +4736,14 @@ function drawScreenEdgeNavigationArrow(objective, pulse) {
   const arrowY = Math.round(centerY + unitY * scale);
 
   ctx.save();
-  drawWorldWarmGlow(arrowX, arrowY, 28, 0.18 * pulse);
+  drawWorldWarmGlow(arrowX, arrowY, NAVIGATION_ASSIST.edgeGlowRadius, 0.12 * pulse);
 
   ctx.save();
-  ctx.globalAlpha = 0.24 * pulse;
-  drawPixelExitArrow(arrowX + 2, arrowY + 2, objective.direction, 3, "#17120f");
+  ctx.globalAlpha = 0.18 * pulse;
+  drawPixelExitArrow(arrowX + 1, arrowY + 1, objective.direction, NAVIGATION_ASSIST.edgeCellSize, "#17120f");
   ctx.restore();
 
-  drawPixelExitArrow(arrowX, arrowY, objective.direction, 3, "#2b2019");
-  drawPixelExitArrow(arrowX, arrowY, objective.direction, 2, objective.color);
-  drawPixelExitArrow(arrowX, arrowY, objective.direction, 1, "#fff8d5");
+  drawPixelExitArrow(arrowX, arrowY, objective.direction, NAVIGATION_ASSIST.edgeCellSize, objective.color);
   ctx.restore();
 }
 
@@ -4974,7 +5102,7 @@ function drawExitGuides(exits) {
 
 function drawExitGuideMarker(guide, marker, index) {
   const direction = marker.direction ?? "right";
-  const size = marker.size ?? guide.size ?? 3;
+  const size = Math.min(marker.size ?? guide.size ?? 2, NAVIGATION_ASSIST.exitGuideMaxCellSize);
   const travel = 2 + (marker.travel ?? 0);
   const pulsePhase = state.lastTimestamp * 0.006 + index * 0.85;
   const pulse = 0.74 + (Math.sin(pulsePhase) + 1) * 0.13;
@@ -4992,18 +5120,17 @@ function drawExitGuideMarker(guide, marker, index) {
     drawY += travelOffset;
   }
 
-  const glowRadius = 16 + size * 6;
-  const glowAlpha = guide.glowAlpha ?? 0.28;
+  const glowRadius = 14 + size * 4;
+  const glowAlpha = guide.glowAlpha ?? 0.16;
   drawWorldWarmGlow(drawX, drawY, glowRadius, glowAlpha * pulse);
 
   ctx.save();
-  ctx.globalAlpha = 0.28 * pulse;
-  drawPixelExitArrow(drawX + size, drawY + size, direction, size, "#1a1614");
+  ctx.globalAlpha = 0.18 * pulse;
+  drawPixelExitArrow(drawX + 1, drawY + 1, direction, size, "#1a1614");
   ctx.restore();
 
   drawPixelExitArrow(drawX, drawY, direction, size, "#2b2019");
   drawPixelExitArrow(drawX, drawY, direction, size - 1, guide.color ?? "#f3d777");
-  drawPixelExitArrow(drawX, drawY, direction, Math.max(1, size - 2), "#fff9d1");
 }
 
 function shouldDrawExitGuide(exit) {
@@ -5074,6 +5201,13 @@ function drawHubWorld(decorations) {
   ctx.fillRect(0, 0, WORLD.width, WORLD.height);
   ctx.fillStyle = "#18263a";
   ctx.fillRect(0, 160, WORLD.width, WORLD.height - 160);
+  drawPixelCrawlerTerrainFill(PIXEL_CRAWLER_TERRAIN.stone, 0, 160, WORLD.width, WORLD.height - 160, {
+    seed: 5,
+    scale: 2.25,
+    alpha: 0.18,
+  });
+  ctx.fillStyle = "rgba(13, 20, 35, 0.66)";
+  ctx.fillRect(0, 160, WORLD.width, WORLD.height - 160);
 
   for (const star of decorations.stars) {
     ctx.fillStyle = "#e8f0ff";
@@ -5082,28 +5216,75 @@ function drawHubWorld(decorations) {
 
   ctx.fillStyle = "#314765";
   ctx.fillRect(decorations.plaza.x, decorations.plaza.y, decorations.plaza.width, decorations.plaza.height);
-  ctx.fillStyle = "#435c7d";
+  drawPixelCrawlerTerrainFill(
+    PIXEL_CRAWLER_TERRAIN.brick,
+    decorations.plaza.x + 18,
+    decorations.plaza.y + 18,
+    decorations.plaza.width - 36,
+    decorations.plaza.height - 36,
+    { seed: 6, scale: 2.25, alpha: 0.24 }
+  );
+  ctx.fillStyle = "rgba(54, 76, 105, 0.64)";
   ctx.fillRect(decorations.plaza.x + 18, decorations.plaza.y + 18, decorations.plaza.width - 36, decorations.plaza.height - 36);
   ctx.fillStyle = "#506685";
-  ctx.fillRect(454, 136, 52, 370);
+  ctx.fillRect(454, 300, 52, 196);
   ctx.fillRect(246, 300, 468, 40);
   ctx.fillStyle = "#6b82a2";
-  ctx.fillRect(464, 146, 32, 350);
+  ctx.fillRect(464, 312, 32, 184);
   ctx.fillRect(264, 310, 432, 20);
 
-  ctx.fillStyle = "#223046";
-  ctx.fillRect(decorations.gate.x, decorations.gate.y, decorations.gate.width, decorations.gate.height);
-  ctx.fillStyle = "#42526a";
-  ctx.fillRect(decorations.gate.x + 8, decorations.gate.y + 12, decorations.gate.width - 16, decorations.gate.height - 12);
-  ctx.fillStyle = "#1a2434";
-  ctx.fillRect(decorations.gate.x + 20, decorations.gate.y + 22, decorations.gate.width - 40, decorations.gate.height - 26);
-  drawWorldWarmGlow(decorations.gate.x + decorations.gate.width / 2, decorations.gate.y + 28, 88, 0.24);
+  drawHistoryGateSprite(decorations.gate);
 
   drawCainosOutdoorProps(decorations.cainosProps);
 
   for (const portal of decorations.portals) {
     drawHubPortal(portal);
   }
+}
+
+function drawHistoryGateSprite(gate) {
+  drawWorldWarmGlow(gate.x + gate.width / 2, gate.y + 26, 46, 0.12);
+  const onlineDoor = environmentSprites.openGameArt?.historyDoor;
+
+  ctx.save();
+  ctx.fillStyle = "rgba(8, 12, 19, 0.42)";
+  ctx.fillRect(gate.x - 10, gate.y + gate.height - 2, gate.width + 20, 8);
+  ctx.fillStyle = "#1b2638";
+  ctx.fillRect(gate.x - 10, gate.y + 8, gate.width + 20, gate.height - 2);
+  ctx.fillStyle = "#25364f";
+  ctx.fillRect(gate.x - 4, gate.y + 14, gate.width + 8, gate.height - 12);
+  ctx.fillStyle = "#111927";
+  ctx.fillRect(gate.x + 8, gate.y + 24, gate.width - 16, gate.height - 24);
+  ctx.restore();
+
+  if (canDrawSprite(onlineDoor)) {
+    return;
+  }
+
+  if (drawSpriteRect(
+    environmentSprites.pixelCrawler?.buildingProps,
+    PIXEL_CRAWLER_BUILDING_SPRITES.historyGateDoor,
+    gate.x + 8,
+    gate.y + 24,
+    gate.width - 16,
+    gate.height - 28,
+    {
+      filter: "brightness(1.22) saturate(0.78)",
+    }
+  )) {
+    ctx.save();
+    ctx.fillStyle = "rgba(192, 222, 250, 0.12)";
+    ctx.fillRect(gate.x + 32, gate.y + 48, gate.width - 64, gate.height - 82);
+    ctx.restore();
+    return;
+  }
+
+  ctx.fillStyle = "#223046";
+  ctx.fillRect(gate.x, gate.y, gate.width, gate.height);
+  ctx.fillStyle = "#42526a";
+  ctx.fillRect(gate.x + 8, gate.y + 12, gate.width - 16, gate.height - 12);
+  ctx.fillStyle = "#1a2434";
+  ctx.fillRect(gate.x + 20, gate.y + 22, gate.width - 40, gate.height - 26);
 }
 
 function drawHubPortal(portal) {
@@ -5221,12 +5402,13 @@ function drawPixelCrawlerTrees(trees = []) {
   const sortedTrees = [...trees].sort((left, right) => left.y - right.y);
 
   for (const tree of sortedTrees) {
-    const variant = tree.variant ?? 0;
+    const displayVariants = PIXEL_CRAWLER_TREE_SPRITE.displayVariants;
+    const variant = displayVariants[Math.abs(tree.variant ?? 0) % displayVariants.length];
     const sourceCol = variant % PIXEL_CRAWLER_TREE_SPRITE.columns;
     const sourceRow = Math.floor(variant / PIXEL_CRAWLER_TREE_SPRITE.columns);
     const sourceX = sourceCol * PIXEL_CRAWLER_TREE_SPRITE.frameWidth;
     const sourceY = sourceRow * PIXEL_CRAWLER_TREE_SPRITE.frameHeight;
-    const scale = tree.scale ?? 1;
+    const scale = clamp(tree.scale ?? 1, 0.72, 0.92);
     const drawWidth = Math.round(PIXEL_CRAWLER_TREE_SPRITE.frameWidth * scale);
     const drawHeight = Math.round(PIXEL_CRAWLER_TREE_SPRITE.frameHeight * scale);
     const drawX = Math.round(tree.x - drawWidth / 2);
@@ -5333,38 +5515,216 @@ function drawCainosOutdoorProps(placements = []) {
   drawPlacedSpriteClusters(environmentSprites.cainos?.props, CAINOS_PROP_SPRITES, placements);
 }
 
+function drawKenneyLampPost(lamp) {
+  drawWorldWarmGlow(lamp.x, lamp.y - 30, 24, 0.26);
+
+  ctx.save();
+  ctx.fillStyle = "rgba(10, 8, 6, 0.18)";
+  ctx.fillRect(lamp.x - 9, lamp.y - 2, 18, 5);
+  ctx.restore();
+
+  const drewPost = drawKenneyRoguelikeSprite(
+    KENNEY_ROGUELIKE_SPRITES.torch,
+    lamp.x - 10,
+    lamp.y - 34,
+    20,
+    32,
+    { filter: "brightness(0.9) saturate(0.92)" }
+  );
+
+  if (drewPost) {
+    drawKenneyRoguelikeSprite(KENNEY_ROGUELIKE_SPRITES.candle, lamp.x - 5, lamp.y - 41, 10, 14, {
+      alpha: 0.82,
+      filter: "brightness(1.25) saturate(1.1)",
+    });
+    return true;
+  }
+
+  return false;
+}
+
+function drawKenneyFenceSegment(segment) {
+  const segmentWidth = segment.posts * 14 + 14;
+
+  if (!canDrawSprite(environmentSprites.kenneyRoguelike?.spritesheet)) {
+    return false;
+  }
+
+  ctx.save();
+  ctx.fillStyle = "rgba(8, 10, 12, 0.2)";
+  ctx.fillRect(segment.x - 8, segment.y + 19, segmentWidth - 8, 4);
+  ctx.restore();
+
+  for (let index = 0; index < segment.posts; index += 1) {
+    if (index === segment.brokenIndex) {
+      drawKenneyRoguelikeSprite(
+        KENNEY_ROGUELIKE_SPRITES.crate,
+        segment.x + index * 14 - 2,
+        segment.y + 7,
+        14,
+        14,
+        { alpha: 0.72, filter: "brightness(0.62) saturate(0.68)" }
+      );
+      continue;
+    }
+
+    const x = segment.x + index * 14 - 8;
+    const y = segment.y + (index % 2);
+    drawKenneyRoguelikeSprite(KENNEY_ROGUELIKE_SPRITES.fenceHorizontal, x, y, 24, 22, {
+      filter: "brightness(0.78) saturate(0.84) contrast(1.06)",
+    });
+
+    if (index % 3 === 0) {
+      drawKenneyRoguelikeSprite(KENNEY_ROGUELIKE_SPRITES.fencePost, x + 10, y + 1, 14, 20, {
+        alpha: 0.86,
+        filter: "brightness(0.72) saturate(0.82)",
+      });
+    }
+  }
+
+  return true;
+}
+
+function drawKenneyMicroTree(tree) {
+  const variants = [
+    KENNEY_ROGUELIKE_SPRITES.treeGreen,
+    KENNEY_ROGUELIKE_SPRITES.treeOrange,
+    KENNEY_ROGUELIKE_SPRITES.treeTeal,
+    KENNEY_ROGUELIKE_SPRITES.treePineGreen,
+    KENNEY_ROGUELIKE_SPRITES.treePineOrange,
+  ];
+  const sprite = variants[Math.abs(tree.variant ?? 0) % variants.length];
+  const scale = tree.scale ?? 1;
+  const width = Math.round(44 * scale);
+  const height = Math.round(44 * scale);
+  const x = Math.round(tree.x - width / 2);
+  const y = Math.round(tree.y - height);
+
+  ctx.save();
+  ctx.fillStyle = "rgba(10, 12, 10, 0.16)";
+  ctx.fillRect(x + 7, y + height - 8, Math.max(12, width - 14), 6);
+  ctx.restore();
+
+  return drawKenneyRoguelikeSprite(sprite, x, y, width, height, {
+    alpha: tree.alpha ?? 0.98,
+    filter: tree.filter ?? "brightness(0.98) saturate(0.94)",
+  });
+}
+
 function drawLimezuInteriorProps(placements = []) {
   drawPlacedSpriteClusters(environmentSprites.limezu?.interiors, LIMEZU_INTERIOR_SPRITES, placements);
+}
+
+function drawPortForestGround() {
+  ctx.fillStyle = "#243b2f";
+  ctx.fillRect(0, 108, WORLD.width, 356);
+
+  if (drawPixelCrawlerTerrainFill(PIXEL_CRAWLER_TERRAIN.grass, 0, 108, WORLD.width, 356, {
+    seed: 21,
+    scale: 2.75,
+    alpha: 0.18,
+  })) {
+    ctx.fillStyle = "rgba(18, 39, 32, 0.46)";
+    ctx.fillRect(0, 108, WORLD.width, 356);
+  }
+
+  ctx.save();
+  ctx.globalAlpha = 0.28;
+  for (let index = 0; index < 90; index += 1) {
+    const x = 18 + ((index * 53) % (WORLD.width - 36));
+    const y = 122 + ((index * 37) % 320);
+    const tone = index % 3;
+    ctx.fillStyle = tone === 0 ? "#31513d" : tone === 1 ? "#1d332b" : "#406044";
+    ctx.fillRect(x, y, 12 + (index % 4) * 4, 2);
+  }
+  ctx.restore();
+}
+
+function drawPortMazeHedge(shrub) {
+  ctx.save();
+  ctx.fillStyle = "#172b22";
+  ctx.fillRect(shrub.x - 2, shrub.y - 2, shrub.width + 4, shrub.height + 4);
+  ctx.fillStyle = "#31523c";
+  ctx.fillRect(shrub.x, shrub.y, shrub.width, shrub.height);
+  ctx.fillStyle = "#203d30";
+  ctx.fillRect(shrub.x + 5, shrub.y + 5, Math.max(4, shrub.width - 10), Math.max(4, shrub.height - 10));
+
+  for (let x = shrub.x + 4; x < shrub.x + shrub.width - 4; x += 14) {
+    const y = shrub.y + 3 + ((x + shrub.y) % Math.max(4, shrub.height - 8));
+    ctx.fillStyle = (x / 14) % 2 < 1 ? "#466b4a" : "#274633";
+    ctx.fillRect(x, y, 8, 3);
+  }
+
+  ctx.restore();
+}
+
+function drawSoftFogBand(fog) {
+  ctx.save();
+  ctx.globalCompositeOperation = "screen";
+  ctx.filter = "blur(4px)";
+
+  for (let index = 0; index < 4; index += 1) {
+    const centerX = fog.x + fog.width * (0.18 + index * 0.22);
+    const centerY = fog.y + fog.height * (0.45 + ((index % 2) - 0.5) * 0.28);
+    const radiusX = fog.width * (0.18 + (index % 2) * 0.04);
+    const radiusY = fog.height * (0.42 + (index % 3) * 0.08);
+    const gradient = ctx.createRadialGradient(centerX, centerY, 2, centerX, centerY, radiusX);
+    gradient.addColorStop(0, `rgba(218, 235, 232, ${fog.alpha * 0.8})`);
+    gradient.addColorStop(0.6, `rgba(218, 235, 232, ${fog.alpha * 0.36})`);
+    gradient.addColorStop(1, "rgba(218, 235, 232, 0)");
+
+    ctx.fillStyle = gradient;
+    ctx.beginPath();
+    ctx.ellipse(centerX, centerY, radiusX, radiusY, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  ctx.restore();
 }
 
 function drawPortMazeWorld(decorations) {
   ctx.fillStyle = "#172235";
   ctx.fillRect(0, 0, WORLD.width, WORLD.height);
-  ctx.fillStyle = "#2f3f49";
-  ctx.fillRect(0, 108, WORLD.width, WORLD.height - 108);
-  ctx.fillStyle = "#253329";
-  ctx.fillRect(0, 108, WORLD.width, 356);
-  ctx.fillStyle = "#213143";
-  ctx.fillRect(0, 464, WORLD.width, 176);
+
+  drawPortForestGround();
+
+  if (drawPixelCrawlerTerrainFill(PIXEL_CRAWLER_TERRAIN.stone, 0, 464, WORLD.width, 98, {
+    seed: 32,
+    scale: 2.25,
+    alpha: 0.26,
+  })) {
+    ctx.fillStyle = "rgba(15, 26, 34, 0.5)";
+    ctx.fillRect(0, 464, WORLD.width, 98);
+  } else {
+    ctx.fillStyle = "#213143";
+    ctx.fillRect(0, 464, WORLD.width, 98);
+  }
+
   ctx.fillStyle = "#0f1925";
   ctx.fillRect(0, 562, WORLD.width, 78);
 
   for (const shrub of decorations.mazeShrubs) {
-    ctx.fillStyle = "#37523e";
-    ctx.fillRect(shrub.x, shrub.y, shrub.width, shrub.height);
-    ctx.fillStyle = "#2a3d30";
-    ctx.fillRect(shrub.x + 6, shrub.y + 4, shrub.width - 12, shrub.height - 8);
+    drawPortMazeHedge(shrub);
   }
 
   drawPixelCrawlerVegetation(decorations.crawlerBushes);
   drawPixelCrawlerTrees(decorations.crawlerTrees);
 
   for (const fog of decorations.fogBands) {
-    ctx.fillStyle = `rgba(225, 238, 248, ${fog.alpha})`;
-    ctx.fillRect(fog.x, fog.y, fog.width, fog.height);
+    drawSoftFogBand(fog);
   }
 
-  ctx.fillStyle = "#67778a";
+  ctx.fillStyle = "#485b68";
+  ctx.fillRect(decorations.port.x, decorations.port.y, decorations.port.width, decorations.port.height);
+  drawPixelCrawlerTerrainFill(
+    PIXEL_CRAWLER_TERRAIN.brick,
+    decorations.port.x,
+    decorations.port.y,
+    decorations.port.width,
+    decorations.port.height,
+    { seed: 43, scale: 1.5, alpha: 0.62 }
+  );
+  ctx.fillStyle = "rgba(22, 28, 33, 0.24)";
   ctx.fillRect(decorations.port.x, decorations.port.y, decorations.port.width, decorations.port.height);
   ctx.fillStyle = "#8c6a4c";
   ctx.fillRect(decorations.port.x, decorations.port.y + 12, decorations.port.width, 18);
@@ -5382,6 +5742,10 @@ function drawPortMazeWorld(decorations) {
   drawCainosOutdoorProps(decorations.cainosProps);
 
   for (const lamp of decorations.lampPosts) {
+    if (drawKenneyLampPost(lamp)) {
+      continue;
+    }
+
     drawWorldWarmGlow(lamp.x, lamp.y - 30, 24, 0.28);
     ctx.fillStyle = "#44382d";
     ctx.fillRect(lamp.x - 2, lamp.y - 26, 4, 30);
@@ -5399,12 +5763,36 @@ function drawUnityHouseWorld(decorations) {
   ctx.fillRect(decorations.house.x, decorations.house.y, decorations.house.width, decorations.house.height);
   ctx.fillStyle = "#6b5038";
   ctx.fillRect(decorations.house.x + 12, decorations.house.y + 12, decorations.house.width - 24, decorations.house.height - 24);
+  if (drawPixelTextureFill(
+    environmentSprites.archiveParquet,
+    decorations.house.x + 12,
+    decorations.house.y + 12,
+    decorations.house.width - 24,
+    decorations.house.height - 24,
+    {
+      sampleSize: 28,
+      tileDrawSize: 64,
+      alpha: 0.46,
+    }
+  )) {
+    ctx.fillStyle = "rgba(82, 55, 35, 0.42)";
+    ctx.fillRect(decorations.house.x + 12, decorations.house.y + 12, decorations.house.width - 24, decorations.house.height - 24);
+  }
 
   for (const room of decorations.rooms) {
     ctx.fillStyle = "#5e4432";
     ctx.fillRect(room.x, room.y, room.width, room.height);
-    ctx.fillStyle = "#7a5a42";
-    ctx.fillRect(room.x + 10, room.y + 10, room.width - 20, room.height - 20);
+    if (drawPixelTextureFill(environmentSprites.archiveParquet, room.x + 10, room.y + 10, room.width - 20, room.height - 20, {
+      sampleSize: 28,
+      tileDrawSize: 48,
+      alpha: 0.38,
+    })) {
+      ctx.fillStyle = "rgba(86, 59, 39, 0.38)";
+      ctx.fillRect(room.x + 10, room.y + 10, room.width - 20, room.height - 20);
+    } else {
+      ctx.fillStyle = "#7a5a42";
+      ctx.fillRect(room.x + 10, room.y + 10, room.width - 20, room.height - 20);
+    }
     ctx.fillStyle = "#2a1f18";
     ctx.fillRect(room.x + Math.floor(room.width / 2) - 14, room.y + room.height - 20, 28, 20);
   }
@@ -5433,10 +5821,25 @@ function drawRedSquareWorld(decorations) {
   ctx.fillRect(0, 120, WORLD.width, decorations.splitY - 120);
   ctx.fillStyle = "#7ba953";
   ctx.fillRect(0, decorations.splitY, WORLD.width, WORLD.height - decorations.splitY);
+  drawPixelCrawlerTerrainFill(PIXEL_CRAWLER_TERRAIN.grass, 0, decorations.splitY, WORLD.width, WORLD.height - decorations.splitY, {
+    seed: 61,
+    scale: 1.5,
+    alpha: 0.28,
+  });
+  ctx.fillStyle = "rgba(88, 132, 61, 0.2)";
+  ctx.fillRect(0, decorations.splitY, WORLD.width, WORLD.height - decorations.splitY);
 
   ctx.fillStyle = "#c8b38c";
   ctx.fillRect(decorations.northSquare.x, decorations.northSquare.y, decorations.northSquare.width, decorations.northSquare.height);
-  ctx.fillStyle = "#d8c5a1";
+  drawPixelCrawlerTerrainFill(
+    PIXEL_CRAWLER_TERRAIN.stone,
+    decorations.northSquare.x + 20,
+    decorations.northSquare.y + 20,
+    decorations.northSquare.width - 40,
+    decorations.northSquare.height - 40,
+    { seed: 62, scale: 1.5, alpha: 0.42 }
+  );
+  ctx.fillStyle = "rgba(220, 201, 160, 0.32)";
   ctx.fillRect(decorations.northSquare.x + 20, decorations.northSquare.y + 20, decorations.northSquare.width - 40, decorations.northSquare.height - 40);
   ctx.fillStyle = "#bfa16b";
   for (let x = decorations.northSquare.x + 40; x < decorations.northSquare.x + decorations.northSquare.width - 32; x += 38) {
@@ -5456,7 +5859,15 @@ function drawRedSquareWorld(decorations) {
 
   ctx.fillStyle = "#9a815e";
   ctx.fillRect(decorations.southTown.x, decorations.southTown.y, decorations.southTown.width, decorations.southTown.height);
-  ctx.fillStyle = "#806449";
+  drawPixelCrawlerTerrainFill(
+    PIXEL_CRAWLER_TERRAIN.dirt,
+    decorations.southTown.x + 24,
+    decorations.southTown.y + 24,
+    decorations.southTown.width - 48,
+    decorations.southTown.height - 48,
+    { seed: 63, scale: 1.5, alpha: 0.42 }
+  );
+  ctx.fillStyle = "rgba(92, 69, 48, 0.28)";
   ctx.fillRect(decorations.southTown.x + 24, decorations.southTown.y + 24, decorations.southTown.width - 48, decorations.southTown.height - 48);
   ctx.fillStyle = "#6f523c";
   for (let index = 0; index < 4; index += 1) {
@@ -5501,10 +5912,22 @@ function drawDoiMoiValleyWorld(decorations) {
 
   ctx.fillStyle = "#7abf53";
   ctx.fillRect(0, 220, WORLD.width, WORLD.height - 220);
+  drawPixelCrawlerTerrainFill(PIXEL_CRAWLER_TERRAIN.grass, 0, 220, WORLD.width, WORLD.height - 220, {
+    seed: 74,
+    scale: 1.5,
+    alpha: 0.36,
+  });
+  ctx.fillStyle = "rgba(91, 156, 65, 0.22)";
+  ctx.fillRect(0, 220, WORLD.width, WORLD.height - 220);
 
   for (const plot of decorations.riceFields) {
     ctx.fillStyle = "#cba854";
     ctx.fillRect(plot.x, plot.y, plot.width, plot.height);
+    drawPixelCrawlerTerrainFill(PIXEL_CRAWLER_TERRAIN.dirt, plot.x, plot.y, plot.width, plot.height, {
+      seed: Math.round(plot.x + plot.y),
+      scale: 1.5,
+      alpha: 0.22,
+    });
     ctx.fillStyle = "#efd77b";
     for (let row = 0; row < 5; row += 1) {
       ctx.fillRect(plot.x + 10, plot.y + 8 + row * 18, plot.width - 20, 4);
@@ -5583,24 +6006,32 @@ function drawVillageGroundBase() {
   ctx.fillStyle = "#293039";
   ctx.fillRect(0, VILLAGE_SKYLINE_Y, WORLD.width, WORLD.height - VILLAGE_SKYLINE_Y);
 
-  drawVillageTexture(0, VILLAGE_SKYLINE_Y, WORLD.width, WORLD.height - VILLAGE_SKYLINE_Y, {
-    seed: 3,
-    step: 18,
-    colors: ["#313a43", "#202831", "#3a4148", "#26303a"],
-    alpha: 0.42,
-  });
+  if (drawPixelCrawlerTerrainFill(PIXEL_CRAWLER_TERRAIN.stone, 0, VILLAGE_SKYLINE_Y, WORLD.width, WORLD.height - VILLAGE_SKYLINE_Y, {
+    seed: 13,
+    scale: 1.5,
+    alpha: 0.34,
+  })) {
+    ctx.fillStyle = "rgba(18, 25, 31, 0.56)";
+    ctx.fillRect(0, VILLAGE_SKYLINE_Y, WORLD.width, WORLD.height - VILLAGE_SKYLINE_Y);
+  } else {
+    drawVillageTexture(0, VILLAGE_SKYLINE_Y, WORLD.width, WORLD.height - VILLAGE_SKYLINE_Y, {
+      seed: 3,
+      step: 22,
+      colors: ["#313a43", "#202831", "#3a4148", "#26303a"],
+      alpha: 0.28,
+    });
+  }
 
   ctx.fillStyle = "rgba(16, 21, 27, 0.34)";
   ctx.fillRect(0, 500, WORLD.width, WORLD.height - 500);
-  drawVillageTexture(0, 500, WORLD.width, WORLD.height - 500, {
-    seed: 8,
-    step: 20,
-    colors: ["#252d34", "#171d24", "#30363a"],
-    alpha: 0.5,
+  drawPixelCrawlerTerrainFill(PIXEL_CRAWLER_TERRAIN.dirt, 0, 500, WORLD.width, WORLD.height - 500, {
+    seed: 18,
+    scale: 1.5,
+    alpha: 0.18,
   });
 
   ctx.fillStyle = "rgba(94, 81, 64, 0.14)";
-  for (let x = 18; x < WORLD.width; x += 48) {
+  for (let x = 18; x < WORLD.width; x += 72) {
     ctx.fillRect(x, VILLAGE_SKYLINE_Y + 8 + ((x * 7) % 26), 20, 2);
   }
 }
@@ -5705,12 +6136,21 @@ function drawDirtPath(x, y, width, height, seed = 0) {
   ctx.fillStyle = "#6c5a45";
   ctx.fillRect(x, y + 6, width, height - 12);
 
-  drawVillageTexture(x, y + 6, width, height - 12, {
-    seed: seed + 12,
-    step: 12,
-    colors: ["#786448", "#584a3d", "#7f715d", "#453b34"],
-    alpha: 0.72,
-  });
+  if (drawPixelCrawlerTerrainFill(PIXEL_CRAWLER_TERRAIN.dirt, x, y + 6, width, height - 12, {
+    seed: seed + 52,
+    scale: 1.5,
+    alpha: 0.5,
+  })) {
+    ctx.fillStyle = "rgba(55, 43, 34, 0.36)";
+    ctx.fillRect(x, y + 6, width, height - 12);
+  } else {
+    drawVillageTexture(x, y + 6, width, height - 12, {
+      seed: seed + 12,
+      step: 16,
+      colors: ["#786448", "#584a3d", "#7f715d", "#453b34"],
+      alpha: 0.42,
+    });
+  }
 
   for (let px = x; px < x + width; px += 16) {
     const topChip = 2 + Math.abs((px * 7 + seed * 13) % 4);
@@ -5771,6 +6211,10 @@ function drawFenceRemains(fenceSegments) {
   for (const segment of fenceSegments) {
     const drawWidth = segment.posts * 14 + 14;
     const drawHeight = 22;
+
+    if (drawKenneyFenceSegment(segment)) {
+      continue;
+    }
 
     if (drawSpriteRect(
       environmentSprites.villageProps?.fencesWallsGate,
@@ -6511,6 +6955,16 @@ function drawSpringSky(clouds) {
 }
 
 function drawSpringGround() {
+  if (drawPixelCrawlerTerrainFill(PIXEL_CRAWLER_TERRAIN.grass, 0, 186, WORLD.width, WORLD.height - 186, {
+    seed: 87,
+    scale: 1.5,
+    alpha: 0.54,
+  })) {
+    ctx.fillStyle = "rgba(101, 168, 74, 0.24)";
+    ctx.fillRect(0, 186, WORLD.width, WORLD.height - 186);
+    return;
+  }
+
   if (drawTerrainFill(TILECRAFT_TERRAIN.grass, 0, 186, WORLD.width, WORLD.height - 186, { seed: 7 })) {
     ctx.fillStyle = "rgba(111, 180, 71, 0.14)";
     ctx.fillRect(0, 186, WORLD.width, WORLD.height - 186);
@@ -6541,17 +6995,32 @@ function drawSpringPond(pond) {
 }
 
 function drawSpringPath(path, plaza) {
-  if (drawTerrainFill(TILECRAFT_TERRAIN.dirt, path.x, path.y, path.width, path.height, { seed: 10 })) {
+  if (drawPixelCrawlerTerrainFill(PIXEL_CRAWLER_TERRAIN.dirt, path.x, path.y, path.width, path.height, {
+    seed: 91,
+    scale: 1.5,
+    alpha: 0.52,
+  })) {
     ctx.fillStyle = "rgba(207, 185, 129, 0.16)";
     ctx.fillRect(path.x, path.y, path.width, path.height);
     ctx.fillStyle = "rgba(177, 149, 100, 0.18)";
     ctx.fillRect(path.x + 12, path.y, path.width - 24, path.height);
 
-    drawTerrainFill(TILECRAFT_TERRAIN.stone, plaza.x, plaza.y, plaza.width, plaza.height, { seed: 11 });
+    drawPixelCrawlerTerrainFill(PIXEL_CRAWLER_TERRAIN.stone, plaza.x, plaza.y, plaza.width, plaza.height, {
+      seed: 92,
+      scale: 1.5,
+      alpha: 0.46,
+    });
     ctx.fillStyle = "rgba(219, 209, 178, 0.18)";
     ctx.fillRect(plaza.x, plaza.y, plaza.width, plaza.height);
     ctx.fillStyle = "rgba(196, 179, 134, 0.16)";
     ctx.fillRect(plaza.x + 10, plaza.y + 10, plaza.width - 20, plaza.height - 20);
+    return;
+  }
+
+  if (drawTerrainFill(TILECRAFT_TERRAIN.dirt, path.x, path.y, path.width, path.height, { seed: 10 })) {
+    ctx.fillStyle = "rgba(207, 185, 129, 0.16)";
+    ctx.fillRect(path.x, path.y, path.width, path.height);
+    drawTerrainFill(TILECRAFT_TERRAIN.stone, plaza.x, plaza.y, plaza.width, plaza.height, { seed: 11 });
     return;
   }
 
@@ -6570,6 +7039,11 @@ function drawSpringCropPlots(cropPlots) {
   for (const plot of cropPlots) {
     ctx.fillStyle = plot.soil;
     ctx.fillRect(plot.x, plot.y, plot.width, plot.height);
+    drawPixelCrawlerTerrainFill(PIXEL_CRAWLER_TERRAIN.dirt, plot.x, plot.y, plot.width, plot.height, {
+      seed: Math.round(plot.x + plot.y * 2),
+      scale: 1.5,
+      alpha: 0.24,
+    });
 
     for (let row = 0; row < 4; row += 1) {
       const y = plot.y + 8 + row * 14;
@@ -6607,21 +7081,54 @@ function drawSpringFlowers(flowers) {
 }
 
 function drawSpringBlossomTrees(blossomTrees) {
-  for (const tree of blossomTrees) {
-    ctx.fillStyle = "#6b4a2f";
-    ctx.fillRect(tree.x - 4, tree.y - tree.height, 8, tree.height);
-    ctx.fillRect(tree.x - 12, tree.y - tree.height + 20, 6, 12);
-    ctx.fillRect(tree.x + 6, tree.y - tree.height + 14, 6, 16);
+  for (let index = 0; index < blossomTrees.length; index += 1) {
+    const tree = blossomTrees[index];
+    const scale = Math.max(0.9, tree.height / 42);
 
-    ctx.fillStyle = tree.leaf;
-    ctx.fillRect(tree.x - 22, tree.y - tree.height - 2, 44, 28);
-    ctx.fillRect(tree.x - 28, tree.y - tree.height + 8, 56, 18);
+    if (drawKenneyMicroTree({ ...tree, variant: index, scale, filter: "brightness(1.04) saturate(0.96)" })) {
+      ctx.save();
+      ctx.fillStyle = tree.bloom;
+      const canopyY = tree.y - Math.round(36 * scale);
+      const petalSize = Math.max(2, Math.round(3 * scale));
+      const petalOffsets = [
+        [-17, 4],
+        [-6, -5],
+        [9, 1],
+        [18, 9],
+        [-2, 11],
+      ];
 
-    ctx.fillStyle = tree.bloom;
-    ctx.fillRect(tree.x - 18, tree.y - tree.height + 2, 8, 6);
-    ctx.fillRect(tree.x - 2, tree.y - tree.height - 4, 8, 6);
-    ctx.fillRect(tree.x + 12, tree.y - tree.height + 4, 8, 6);
+      for (const [offsetX, offsetY] of petalOffsets) {
+        ctx.fillRect(
+          Math.round(tree.x + offsetX * scale),
+          Math.round(canopyY + offsetY * scale),
+          petalSize + (offsetX % 2 === 0 ? 1 : 0),
+          petalSize
+        );
+      }
+
+      ctx.restore();
+      continue;
+    }
+
+    drawFallbackBlossomTree(tree);
   }
+}
+
+function drawFallbackBlossomTree(tree) {
+  ctx.fillStyle = "#6b4a2f";
+  ctx.fillRect(tree.x - 4, tree.y - tree.height, 8, tree.height);
+  ctx.fillRect(tree.x - 12, tree.y - tree.height + 20, 6, 12);
+  ctx.fillRect(tree.x + 6, tree.y - tree.height + 14, 6, 16);
+
+  ctx.fillStyle = tree.leaf;
+  ctx.fillRect(tree.x - 22, tree.y - tree.height - 2, 44, 28);
+  ctx.fillRect(tree.x - 28, tree.y - tree.height + 8, 56, 18);
+
+  ctx.fillStyle = tree.bloom;
+  ctx.fillRect(tree.x - 18, tree.y - tree.height + 2, 8, 6);
+  ctx.fillRect(tree.x - 2, tree.y - tree.height - 4, 8, 6);
+  ctx.fillRect(tree.x + 12, tree.y - tree.height + 4, 8, 6);
 }
 
 function drawInteractables() {
@@ -6776,6 +7283,36 @@ function drawObject(item) {
 
 function drawFinalHistoryGate(item) {
   const ready = REQUIRED_RELIC_IDS.every((itemId) => state.inventory.has(itemId)) && state.saDoa < SA_DOA_BAD_ENDING;
+  const onlineDoor = environmentSprites.openGameArt?.historyDoor;
+
+  if (canDrawSprite(onlineDoor)) {
+    const doorHeight = 72;
+    const doorWidth = Math.round(doorHeight * (onlineDoor.naturalWidth / onlineDoor.naturalHeight));
+    const doorX = Math.round(item.x - doorWidth / 2);
+    const doorY = Math.round(item.y - 32);
+
+    drawWorldWarmGlow(item.x, item.y - 18, ready ? 46 : 38, ready ? 0.18 : 0.11);
+
+    ctx.save();
+    ctx.fillStyle = ready ? "rgba(255, 229, 142, 0.18)" : "rgba(116, 146, 184, 0.12)";
+    ctx.fillRect(item.x - 30, item.y - 34, 60, 64);
+    ctx.fillStyle = "#131b2a";
+    ctx.fillRect(item.x - 25, item.y - 36, 50, 70);
+    ctx.restore();
+
+    ctx.save();
+    ctx.filter = ready ? "brightness(1.18) saturate(1.02)" : "brightness(1.04) saturate(0.88)";
+    ctx.drawImage(onlineDoor, doorX, doorY, doorWidth, doorHeight);
+    ctx.restore();
+
+    ctx.save();
+    ctx.fillStyle = "#7f6545";
+    ctx.fillRect(item.x - 24, item.y + 26, 48, 6);
+    ctx.fillStyle = "rgba(17, 20, 26, 0.22)";
+    ctx.fillRect(item.x - 28, item.y + 32, 56, 4);
+    ctx.restore();
+    return;
+  }
 
   ctx.fillStyle = ready ? "rgba(255, 229, 142, 0.28)" : "rgba(158, 186, 220, 0.18)";
   ctx.fillRect(item.x - 52, item.y - 72, 104, 120);
@@ -7395,6 +7932,7 @@ function drawHubAtmosphere(decorations) {
 
 function drawFogDrift(fogBands) {
   ctx.save();
+  ctx.globalCompositeOperation = "screen";
 
   for (let index = 0; index < fogBands.length; index += 1) {
     const fog = fogBands[index];
@@ -7405,10 +7943,14 @@ function drawFogDrift(fogBands) {
     const width = fog.width + 24;
     const height = fog.height;
 
-    ctx.fillStyle = `rgba(221, 232, 242, ${fog.alpha * 1.8})`;
+    const gradient = ctx.createLinearGradient(x, y, x + width, y + height);
+    gradient.addColorStop(0, "rgba(226, 238, 242, 0)");
+    gradient.addColorStop(0.3, `rgba(226, 238, 242, ${fog.alpha * 0.95})`);
+    gradient.addColorStop(0.7, `rgba(250, 252, 255, ${fog.alpha * 0.62})`);
+    gradient.addColorStop(1, "rgba(226, 238, 242, 0)");
+
+    ctx.fillStyle = gradient;
     ctx.fillRect(Math.round(x), Math.round(y), width, height);
-    ctx.fillStyle = `rgba(250, 252, 255, ${fog.alpha * 0.75})`;
-    ctx.fillRect(Math.round(x + 18), Math.round(y + 6), Math.max(24, width - 40), Math.max(6, height - 16));
   }
 
   ctx.restore();

@@ -79,33 +79,38 @@ button {
 
 .hud {
   position: absolute;
-  left: 16px;
-  right: 16px;
-  bottom: 14px;
+  left: 12px;
+  right: 12px;
+  bottom: 10px;
   display: block;
   pointer-events: none;
 }
 
 .action-panel {
   display: grid;
-  gap: 10px;
-  padding: 14px 16px 12px;
-  border: 3px solid rgba(22, 20, 27, 0.88);
-  border-radius: 16px;
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1.65fr);
+  grid-template-areas:
+    "overview meters"
+    "footer meters";
+  gap: 6px 8px;
+  padding: 8px 10px 9px;
+  border: 2px solid rgba(22, 20, 27, 0.88);
+  border-radius: 10px;
   background:
-    linear-gradient(180deg, rgba(247, 236, 214, 0.16), rgba(43, 34, 40, 0.06)),
+    linear-gradient(180deg, rgba(247, 236, 214, 0.14), rgba(43, 34, 40, 0.03)),
     url("assets/ui/kenney-rpg/panel_brown.png") center / 100% 100% no-repeat,
-    linear-gradient(180deg, rgba(72, 52, 43, 0.92), rgba(38, 28, 28, 0.96));
+    linear-gradient(180deg, rgba(72, 52, 43, 0.82), rgba(38, 28, 28, 0.9));
   box-shadow:
-    0 10px 0 rgba(23, 18, 18, 0.68),
-    0 18px 30px rgba(7, 8, 11, 0.38),
+    0 6px 0 rgba(23, 18, 18, 0.58),
+    0 12px 22px rgba(7, 8, 11, 0.28),
     inset 0 0 0 2px rgba(226, 198, 149, 0.16);
 }
 
 .action-overview {
+  grid-area: overview;
   display: grid;
-  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.45fr);
-  gap: 10px;
+  grid-template-columns: minmax(0, 0.86fr) minmax(0, 1.34fr);
+  gap: 6px;
 }
 
 .action-block {
@@ -119,39 +124,40 @@ button {
 }
 
 .action-status-grid {
+  grid-area: meters;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
+  gap: 6px;
 }
 
 .hud-chip {
   min-width: 0;
-  padding: 8px 10px;
+  padding: 5px 7px;
   border: 2px solid rgba(19, 16, 21, 0.82);
-  border-radius: 10px;
+  border-radius: 7px;
   background: rgba(232, 227, 215, 0.92);
   color: #172130;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.24),
-    0 4px 0 rgba(18, 19, 25, 0.54);
-  letter-spacing: 0.03em;
-  font-size: clamp(0.96rem, 1.45vw, 1.16rem);
-  line-height: 1.12;
+    0 3px 0 rgba(18, 19, 25, 0.5);
+  letter-spacing: 0;
+  font-size: clamp(0.88rem, 1.16vw, 1.02rem);
+  line-height: 1.08;
 }
 
 .status-chip,
 .meter-chip {
   display: grid;
-  gap: 6px;
+  gap: 4px;
   align-content: start;
-  min-height: 62px;
+  min-height: 42px;
 }
 
 .status-label {
   color: #a98f74;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+  font-size: 0.66rem;
   line-height: 1;
 }
 
@@ -162,8 +168,8 @@ button {
 
 .meter-track {
   width: 100%;
-  min-width: 78px;
-  height: 10px;
+  min-width: 52px;
+  height: 8px;
   border: 2px solid rgba(27, 32, 40, 0.85);
   background: rgba(44, 53, 67, 0.24);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.24);
@@ -186,7 +192,7 @@ button {
 }
 
 .meter-value {
-  min-width: 38px;
+  min-width: 32px;
   text-align: right;
 }
 
@@ -204,27 +210,28 @@ button {
 
 .quest-chip {
   background: rgba(206, 229, 215, 0.97);
-  min-height: 42px;
+  min-height: 30px;
 }
 
 .prompt {
-  min-width: min(100%, 270px);
+  min-width: min(100%, 224px);
   background: rgba(219, 194, 132, 0.96);
 }
 
 .action-footer {
+  grid-area: footer;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 8px;
 }
 
 .action-hint {
   margin: 0;
   padding: 0 2px;
   color: rgba(244, 232, 207, 0.9);
-  font-size: clamp(0.96rem, 1.4vw, 1.12rem);
-  letter-spacing: 0.04em;
+  font-size: clamp(0.82rem, 1.08vw, 0.98rem);
+  letter-spacing: 0;
   text-shadow: 0 1px 0 rgba(18, 12, 12, 0.6);
 }
 
@@ -1438,30 +1445,76 @@ button {
   }
 
   .hud {
-    left: 10px;
-    right: 10px;
-    bottom: 10px;
+    left: 8px;
+    right: 8px;
+    bottom: 8px;
   }
 
   .action-panel {
-    gap: 8px;
-    padding: 12px;
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "overview"
+      "meters"
+      "footer";
+    gap: 6px;
+    padding: 8px;
+    border-radius: 9px;
   }
 
   .action-overview {
     grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .action-overview .action-block:first-child {
+    display: none;
   }
 
   .action-status-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .hud-chip {
+    padding: 5px 7px;
+    font-size: clamp(0.84rem, 3.1vw, 1rem);
+  }
+
+  .status-label {
+    font-size: clamp(0.58rem, 2.1vw, 0.68rem);
+  }
+
+  .action-status-grid .status-label {
+    display: none;
+  }
+
+  .status-chip,
+  .meter-chip {
+    min-height: 34px;
+  }
+
+  .meter-chip {
+    grid-template-columns: 1fr;
+  }
+
+  .meter-value {
+    min-width: 0;
+    text-align: left;
+    font-size: clamp(0.76rem, 2.8vw, 0.9rem);
+  }
+
+  .skill-chip {
+    font-size: clamp(0.74rem, 2.7vw, 0.88rem);
   }
 
   .action-footer {
     align-items: stretch;
     flex-direction: column;
+    gap: 6px;
   }
 
   .action-hint {
+    font-size: clamp(0.78rem, 3vw, 0.92rem);
     text-align: center;
   }
 
@@ -1481,10 +1534,11 @@ button {
   }
 
   .story-toast {
-    top: auto;
+    top: 76px;
     right: 10px;
-    bottom: 160px;
-    max-width: min(220px, calc(100% - 20px));
+    bottom: auto;
+    max-width: min(210px, calc(100% - 20px));
+    font-size: clamp(0.9rem, 3.5vw, 1.08rem);
   }
 
   .dialogue-box {
@@ -1534,7 +1588,7 @@ button {
   }
 
   .meter-track {
-    min-width: 72px;
+    min-width: 48px;
   }
 
   .title-card {

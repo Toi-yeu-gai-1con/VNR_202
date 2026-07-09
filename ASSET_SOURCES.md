@@ -8,6 +8,18 @@ This project uses a small subset of free game assets:
 - Kenney Particle Pack: https://kenney.nl/assets/particle-pack
   - License: Creative Commons CC0
   - Used for glow, ember, magic, and sparkle effect sprites.
+- Kenney Roguelike/RPG Pack: https://kenney.nl/assets/roguelike-rpg-pack
+  - License: Creative Commons CC0
+  - Used for cleaner prop, lamp, fence, tree, and small terrain-detail sprites.
+- Pixel Crawler Free Pack by Anokolisa: https://anokolisa.itch.io/free-pixel-art-asset-pack-topdown-tileset-rpg-16x16-sprites
+  - License/terms: included in `assets/Pixel Crawler - Free Pack/Terms.txt`
+  - Used for character, monster, vegetation, prop, and terrain tile sprites.
+- Pixel Art Top Down - Basic by Cainos: https://cainos.itch.io/pixel-art-top-down-basic
+  - License/terms: free and commercial use, modification allowed, no credit required; redistribution/resale not allowed.
+  - Used for outdoor cargo, barrel, bench, and statue props.
+- Pixel Art Door by bonzille: https://opengameart.org/content/pixel-art-door
+  - License: Creative Commons CC0
+  - Used for the large History Gate door in the hub.
 - MutterPixel Ruined Village Buildings - Pixel Art Assets: https://mutterpixel-studio.itch.io/ruined-village-buildings-pixel-art-assets
   - License: included in `assets/environment/mutterpixel-ruined-village/README.txt`
   - Used for ruined village building sprites in Level 1.
