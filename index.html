@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Neu Khong Co Dang - Hanh Trinh Qua Nhung Nga Re Lich Su</title>
+  <title>Nếu Không Có Đảng - Hành Trình Qua Những Ngã Rẽ Lịch Sử</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
@@ -13,10 +13,10 @@
   <div class="page-shell">
     <main class="game-shell">
       <div class="game-frame">
-        <canvas id="game-canvas" width="320" height="180" aria-label="Man choi lich su Viet Nam"></canvas>
-        <button id="pause-button" class="pixel-button pause-button" type="button" aria-label="Tam dung tro choi">Tam dung</button>
-        <button id="story-book-button" class="pixel-button story-book-button hidden" type="button" aria-label="Mo cac cau chuyen da mo khoa">
-          <span class="story-book-label">Sach lich su</span>
+        <canvas id="game-canvas" width="320" height="180" aria-label="Màn chơi lịch sử Việt Nam"></canvas>
+        <button id="pause-button" class="pixel-button pause-button" type="button" aria-label="Tạm dừng trò chơi">Tạm dừng</button>
+        <button id="story-book-button" class="pixel-button story-book-button hidden" type="button" aria-label="Mở các câu chuyện đã mở khóa">
+          <span class="story-book-label">Sách lịch sử</span>
           <span id="story-book-count" class="story-book-count">0</span>
         </button>
         <div id="story-toast" class="story-toast hidden" aria-live="polite" aria-hidden="true"></div>
@@ -24,49 +24,49 @@
           <div class="action-panel">
             <div class="action-overview">
               <div class="action-block">
-                <span class="status-label">Vi tri</span>
-                <div id="level-chip" class="hud-chip level-chip">Man 1: Dem mua thuoc dia</div>
+                <span class="status-label">Vị trí</span>
+                <div id="level-chip" class="hud-chip level-chip">Màn 1: Đêm mưa thuộc địa</div>
               </div>
               <div class="action-block action-block--wide">
-                <span class="status-label">Muc tieu</span>
-                <div id="quest-chip" class="hud-chip quest-chip">Quest Nav: Dang xac dinh muc tieu...</div>
+                <span class="status-label">Mục tiêu</span>
+                <div id="quest-chip" class="hud-chip quest-chip">Quest Nav: Đang xác định mục tiêu...</div>
               </div>
             </div>
             <div class="action-status-grid">
               <div class="hud-chip meter-chip">
-                <span class="status-label">Sinh luc</span>
+                <span class="status-label">Sinh lực</span>
                 <span class="meter-track hp-meter"><span id="hp-fill" class="meter-fill hp-fill"></span></span>
                 <span id="hp-value" class="meter-value">5 / 5</span>
               </div>
               <div class="hud-chip meter-chip corruption-chip">
-                <span class="status-label">Tha hoa</span>
+                <span class="status-label">Tha hóa</span>
                 <span class="meter-track corruption-meter"><span id="sa-doa-fill" class="meter-fill corruption-fill"></span></span>
                 <span id="sa-doa-value" class="meter-value">0%</span>
               </div>
               <div class="hud-chip status-chip">
-                <span class="status-label">Tin vat</span>
+                <span class="status-label">Tín vật</span>
                 <span id="inventory-value">0 / 5</span>
               </div>
               <div class="hud-chip status-chip skill-chip">
-                <span class="status-label">Ky nang</span>
+                <span class="status-label">Kỹ năng</span>
                 <span id="skill-value">J/K OK</span>
               </div>
             </div>
             <div class="action-footer">
-              <p class="action-hint">E tuong tac | J/K | B sach</p>
-              <div id="interaction-prompt" class="hud-chip prompt hidden">Nhan E de quan sat</div>
+              <p class="action-hint">E tương tác | J/K | B sách</p>
+              <div id="interaction-prompt" class="hud-chip prompt hidden">Nhấn E để quan sát</div>
             </div>
           </div>
         </div>
         <section id="dialogue-box" class="dialogue-box hidden" aria-hidden="true" role="dialog" aria-live="polite">
           <div class="dialogue-header">
-            <p id="dialogue-speaker" class="dialogue-speaker">Nguoi dan chuyen</p>
+            <p id="dialogue-speaker" class="dialogue-speaker">Người dẫn chuyện</p>
             <p id="dialogue-progress" class="dialogue-progress">1 / 1</p>
           </div>
-          <p id="dialogue-text" class="dialogue-text">Ngoi lang cat kin cau chuyen cua no trong man mua.</p>
+          <p id="dialogue-text" class="dialogue-text">Ngôi làng cất kín câu chuyện của nó trong màn mưa.</p>
           <div class="dialogue-footer">
-            <p class="dialogue-hint">E / Phim cach de tiep tuc</p>
-            <button id="dialogue-next-button" class="pixel-button dialogue-next-button" type="button">Tiep tuc</button>
+            <p class="dialogue-hint">E / Phím cách để tiếp tục</p>
+            <button id="dialogue-next-button" class="pixel-button dialogue-next-button" type="button">Tiếp tục</button>
           </div>
         </section>
       </div>
@@ -74,46 +74,46 @@
       <section id="start-screen" class="overlay start-screen">
         <div class="title-card">
           <div class="title-glow"></div>
-          <p class="kicker">Tro choi tuong tac lich su</p>
-          <h1>NEU KHONG CO<br>DANG CONG SAN VIET NAM</h1>
-          <p class="start-question">Lich su dan toc se di ve dau?</p>
+          <p class="kicker">Trò chơi tương tác lịch sử</p>
+          <h1>NẾU KHÔNG CÓ<br>ĐẢNG CỘNG SẢN VIỆT NAM</h1>
+          <p class="start-question">Lịch sử dân tộc sẽ đi về đâu?</p>
           <p class="intro-copy">
-            Kham pha 4 khu vuc lon noi voi Canh Cua Lich Su o trung tam, thu thap du 5 vat pham then chot va giu thanh Tha hoa o muc an toan de mo ra Good Ending that su.
+            Khám phá 4 khu vực lớn nối với Cánh Cửa Lịch Sử ở trung tâm, thu thập đủ 5 vật phẩm then chốt và giữ thanh Tha hóa ở mức an toàn để mở ra Good Ending thật sự.
           </p>
           <div class="start-objectives" aria-hidden="true">
-            <p>Di qua 4 khu vuc bang cac cong chuyen canh</p>
-            <p>Thu thap du 5 vat pham de mo Canh Cua Lich Su</p>
-            <p>Giu thanh Tha hoa o muc thap de tranh Bad Ending</p>
+            <p>Đi qua 4 khu vực bằng các cổng chuyển cảnh</p>
+            <p>Thu thập đủ 5 vật phẩm để mở Cánh Cửa Lịch Sử</p>
+            <p>Giữ thanh Tha hóa ở mức thấp để tránh Bad Ending</p>
           </div>
-          <p class="start-controls">WASD / Mui ten di chuyen | E / Phim cach tuong tac | J tan cong | K thanh tay | B mo sach</p>
-          <button id="start-button" class="pixel-button hero-button" type="button">Bat dau hanh trinh</button>
+          <p class="start-controls">WASD / Mũi tên di chuyển | E / Phím cách tương tác | J tấn công | K thanh tẩy | B mở sách</p>
+          <button id="start-button" class="pixel-button hero-button" type="button">Bắt đầu hành trình</button>
         </div>
       </section>
 
       <section id="opening-intro" class="overlay intro-overlay hidden" aria-hidden="true" role="dialog" aria-modal="true">
         <div class="intro-card">
-          <p class="intro-kicker">Loi dan nhap</p>
+          <p class="intro-kicker">Lời dẫn nhập</p>
           <div class="intro-header">
-            <p id="opening-speaker" class="intro-speaker">Nguoi ke su</p>
+            <p id="opening-speaker" class="intro-speaker">Người kể sử</p>
             <p id="opening-progress" class="intro-progress">1 / 4</p>
           </div>
           <p id="opening-text" class="intro-text">
-            Hoi lu khach vo danh, truoc mat nguoi la canh cua dan vao nhung nga re lich su.
+            Hỡi lữ khách vô danh, trước mặt người là cánh cửa dẫn vào những ngã rẽ lịch sử.
           </p>
           <div class="intro-footer">
-            <p class="intro-hint">E / Phim cach de tiep tuc</p>
-            <button id="opening-next-button" class="pixel-button intro-next-button" type="button">Tiep tuc</button>
+            <p class="intro-hint">E / Phím cách để tiếp tục</p>
+            <button id="opening-next-button" class="pixel-button intro-next-button" type="button">Tiếp tục</button>
           </div>
         </div>
       </section>
 
       <section id="pause-menu" class="overlay menu-overlay hidden" aria-hidden="true">
         <div class="menu-card">
-          <p class="menu-label">Dang tam dung</p>
-          <h2 id="pause-title">Dem mua thuoc dia</h2>
-          <button id="resume-button" class="pixel-button" type="button">Tiep tuc</button>
-          <button id="restart-button" class="pixel-button" type="button">Choi lai</button>
-          <button id="about-button" class="pixel-button" type="button">Boi canh</button>
+          <p class="menu-label">Đang tạm dừng</p>
+          <h2 id="pause-title">Đêm mưa thuộc địa</h2>
+          <button id="resume-button" class="pixel-button" type="button">Tiếp tục</button>
+          <button id="restart-button" class="pixel-button" type="button">Chơi lại</button>
+          <button id="about-button" class="pixel-button" type="button">Bối cảnh</button>
         </div>
       </section>
 

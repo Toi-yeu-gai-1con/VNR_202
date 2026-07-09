@@ -397,8 +397,8 @@ button {
   padding: 12px 18px;
   cursor: pointer;
   transition: transform 120ms ease, filter 120ms ease;
-  font-family: "Press Start 2P", cursive;
-  font-size: clamp(0.62rem, 1.6vw, 0.82rem);
+  font-family: "VT323", monospace;
+  font-size: clamp(1rem, 1.9vw, 1.24rem);
   image-rendering: pixelated;
   image-rendering: crisp-edges;
 }
@@ -434,6 +434,7 @@ button {
     radial-gradient(circle at 50% 14%, rgba(237, 184, 88, 0.18), transparent 22%),
     linear-gradient(135deg, rgba(123, 22, 22, 0.22), transparent 46%),
     linear-gradient(180deg, rgba(11, 13, 19, 0.44), rgba(9, 11, 16, 0.9)),
+    url("assets/ui/generated/start-screen-hero.png") center 34% / cover no-repeat,
     repeating-linear-gradient(
       135deg,
       rgba(255, 255, 255, 0.04) 0 12px,
@@ -508,9 +509,10 @@ button {
 .title-card h1 {
   margin: 0;
   color: #fff7df;
-  font-family: "Press Start 2P", cursive;
-  font-size: clamp(0.96rem, 2.35vw, 1.82rem);
-  line-height: 1.34;
+  font-family: "VT323", monospace;
+  font-size: clamp(2.62rem, 6.4vw, 4.36rem);
+  line-height: 0.94;
+  letter-spacing: 0.06em;
   text-shadow:
     0 3px 0 rgba(96, 47, 33, 0.95),
     0 0 22px rgba(248, 198, 120, 0.18);
@@ -525,10 +527,10 @@ button {
     linear-gradient(180deg, rgba(132, 31, 28, 0.34), rgba(64, 21, 20, 0.42)),
     rgba(28, 18, 20, 0.88);
   color: #fff1cd;
-  font-family: "Press Start 2P", cursive;
-  font-size: clamp(0.66rem, 1.3vw, 0.84rem);
-  line-height: 1.42;
-  text-transform: uppercase;
+  font-family: "VT323", monospace;
+  font-size: clamp(1.16rem, 2.2vw, 1.48rem);
+  line-height: 1.08;
+  text-transform: none;
   box-shadow:
     0 10px 22px rgba(0, 0, 0, 0.22),
     inset 0 0 0 1px rgba(255, 255, 255, 0.06);

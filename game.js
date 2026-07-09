@@ -231,6 +231,13 @@ const HUB_PORTAL_SPRITE = {
   frameDuration: 90,
   drawSize: 68,
 };
+const SWORD_SLASH_SPRITE = {
+  frames: [
+    { x: 64, y: 0, width: 58, height: 68, anchorX: 28, anchorY: 21, scale: 0.64 },
+    { x: 143, y: 0, width: 43, height: 74, anchorX: 24, anchorY: 23, scale: 0.62 },
+    { x: 205, y: 42, width: 35, height: 24, anchorX: 10, anchorY: 10, scale: 0.74 },
+  ],
+};
 const PIXEL_CRAWLER_TREE_SPRITE = {
   frameWidth: 64,
   frameHeight: 96,
@@ -290,6 +297,27 @@ const LIMEZU_INTERIOR_SPRITES = {
   deskWide: { x: 96, y: 1728, width: 144, height: 96, shadowWidth: 104, shadowHeight: 8, shadowOffsetY: 88 },
   deskArchive: { x: 384, y: 1728, width: 96, height: 96, shadowWidth: 60, shadowHeight: 8, shadowOffsetY: 88 },
   chalkboard: { x: 480, y: 1920, width: 96, height: 96, shadowWidth: 60, shadowHeight: 8, shadowOffsetY: 88 },
+};
+const HOUSE_INTERIOR_A_SPRITES = {
+  cabinetTall: { x: 32, y: 0, width: 32, height: 32, shadowWidth: 20, shadowHeight: 6, shadowOffsetY: 28 },
+  chairDark: { x: 64, y: 0, width: 32, height: 32, shadowWidth: 14, shadowHeight: 5, shadowOffsetY: 28 },
+  chairWood: { x: 96, y: 0, width: 32, height: 32, shadowWidth: 14, shadowHeight: 5, shadowOffsetY: 28 },
+  chairRed: { x: 128, y: 0, width: 32, height: 32, shadowWidth: 16, shadowHeight: 5, shadowOffsetY: 28 },
+  chairScarlet: { x: 192, y: 0, width: 32, height: 32, shadowWidth: 14, shadowHeight: 5, shadowOffsetY: 28 },
+  writingTable: { x: 32, y: 32, width: 64, height: 32, shadowWidth: 44, shadowHeight: 7, shadowOffsetY: 26 },
+  dividerCabinet: { x: 96, y: 32, width: 32, height: 32, shadowWidth: 18, shadowHeight: 6, shadowOffsetY: 28 },
+  sideDesk: { x: 160, y: 32, width: 32, height: 32, shadowWidth: 18, shadowHeight: 6, shadowOffsetY: 28 },
+  cupboard: { x: 192, y: 32, width: 32, height: 32, shadowWidth: 20, shadowHeight: 6, shadowOffsetY: 28 },
+  stoveCabinet: { x: 224, y: 32, width: 32, height: 32, shadowWidth: 20, shadowHeight: 6, shadowOffsetY: 28 },
+  bookStack: { x: 0, y: 64, width: 32, height: 32, shadowWidth: 16, shadowHeight: 4, shadowOffsetY: 28 },
+  bench: { x: 32, y: 64, width: 32, height: 32, shadowWidth: 22, shadowHeight: 5, shadowOffsetY: 28 },
+  drawerCabinet: { x: 64, y: 64, width: 32, height: 32, shadowWidth: 18, shadowHeight: 5, shadowOffsetY: 28 },
+  chestSmall: { x: 160, y: 64, width: 32, height: 32, shadowWidth: 16, shadowHeight: 5, shadowOffsetY: 28 },
+  barrel: { x: 224, y: 64, width: 32, height: 32, shadowWidth: 18, shadowHeight: 6, shadowOffsetY: 28 },
+  mirror: { x: 96, y: 128, width: 32, height: 32, shadowWidth: 12, shadowHeight: 4, shadowOffsetY: 28 },
+  chestLarge: { x: 96, y: 192, width: 32, height: 32, shadowWidth: 18, shadowHeight: 5, shadowOffsetY: 28 },
+  crateOpen: { x: 128, y: 192, width: 32, height: 32, shadowWidth: 18, shadowHeight: 5, shadowOffsetY: 28 },
+  doorPanel: { x: 160, y: 192, width: 32, height: 32, shadowWidth: 18, shadowHeight: 5, shadowOffsetY: 28 },
 };
 const MONSTER_SPRITE_CONFIG = {
   wraith: {
@@ -424,20 +452,20 @@ const ENDING_DEFINITIONS = {
 
 const OPENING_DIALOGUE = [
   {
-    speaker: "Canh 1",
-    text: "Suong mu dang phu kin nhung nga re lich su.",
+    speaker: "Cảnh 1",
+    text: "Sương mù đang phủ kín những ngã rẽ lịch sử.",
   },
   {
-    speaker: "Canh 2",
-    text: "Bon khu vuc dang mo ra. Nam tin vat dang cho duoc tap hop.",
+    speaker: "Cảnh 2",
+    text: "Bốn khu vực đang mở ra. Năm tín vật đang chờ được tập hợp.",
   },
   {
-    speaker: "Canh 3",
-    text: "Moi loi hua vinh hoa deu co gia cua no: thanh Tha hoa se day len.",
+    speaker: "Cảnh 3",
+    text: "Mọi lời hứa vinh hoa đều có giá của nó: thanh Tha hóa sẽ dâng lên.",
   },
   {
-    speaker: "Canh 4",
-    text: "Neu giu vung chinh khi, nguoi co the mo Canh Cua Lich Su va viet den Good Ending.",
+    speaker: "Cảnh 4",
+    text: "Nếu giữ vững chính khí, ngươi có thể mở Cánh Cửa Lịch Sử và viết nên Good Ending.",
   },
 ];
 
@@ -459,22 +487,22 @@ function createQuestState() {
 }
 
 function configureOpeningCopy() {
-  startQuestion.textContent = "Neu lich su re sang huong khac, Viet Nam se ve dau?";
-  startCopy.textContent = "4 khu vuc. 5 tin vat. 1 Canh Cua Lich Su dang cho duoc mo.";
-  startControls.textContent = "WASD di chuyen • E tuong tac • J/K ky nang • B mo sach";
+  startQuestion.textContent = "Nếu lịch sử rẽ sang hướng khác, Việt Nam sẽ về đâu?";
+  startCopy.textContent = "4 khu vực. 5 tín vật. 1 Cánh Cửa Lịch Sử đang chờ được mở.";
+  startControls.textContent = "WASD di chuyển • E tương tác • J/K kỹ năng • B mở sách";
 
   const objectiveLabels = [
-    "Tien qua 4 khu vuc",
-    "Tim du 5 tin vat",
-    "Giu Tha hoa thap",
+    "Tiến qua 4 khu vực",
+    "Tìm đủ 5 tín vật",
+    "Giữ Tha hóa thấp",
   ];
 
   startObjectiveItems.forEach((item, index) => {
     item.textContent = objectiveLabels[index] ?? "";
   });
 
-  openingKicker.textContent = "Prologue";
-  openingHint.textContent = "E / Space de tiep tuc";
+  openingKicker.textContent = "Dẫn nhập";
+  openingHint.textContent = "E / Phím cách để tiếp tục";
 }
 
 const keys = new Set();
@@ -697,6 +725,27 @@ function loadEnvironmentSprites() {
     barkTexture: loadSprite("assets/environment/dead-aspen/Tree1Diff256.png"),
     tilecraftGround: loadSprite("assets/environment/tilecraft/TileCraftGroundSetVersion2.png"),
     archiveParquet: loadSprite("assets/environment/archive/Birch_Parquet_01_basecolor.png"),
+    archiveHouseInterior: loadSprite("assets/environment/archive/HouseInteriorA.png"),
+    generatedWorlds: {
+      colonialHarbor: loadSprite("assets/environment/generated-worlds/colonial-harbor-hero.png"),
+      archiveInterior: loadSprite("assets/environment/generated-worlds/archive-interior-hero.png"),
+      revolutionSquare: loadSprite("assets/environment/generated-worlds/revolution-square-hero.png"),
+      factoryValley: loadSprite("assets/environment/generated-worlds/factory-valley-hero.png"),
+      historyHub: loadSprite("assets/environment/generated-worlds/history-hub-hero.png"),
+    },
+    generatedObjects: {
+      finalHistoryGate: loadSprite("assets/environment/generated-objects/final-history-gate.png"),
+      paperBundle: loadSprite("assets/environment/generated-objects/paper-bundle.png"),
+      unityTable: loadSprite("assets/environment/generated-objects/unity-table.png"),
+      storyRelic: loadSprite("assets/environment/generated-objects/story-relic.png"),
+      memorySeal: loadSprite("assets/environment/generated-objects/memory-seal.png"),
+      corruptObelisk: loadSprite("assets/environment/generated-objects/corrupt-obelisk.png"),
+      fragmentTable: loadSprite("assets/environment/generated-objects/fragment-table.png"),
+      compassPedestal: loadSprite("assets/environment/generated-objects/compass-pedestal.png"),
+      strategicHamlet: loadSprite("assets/environment/generated-objects/strategic-hamlet.png"),
+      bureaucracyWall: loadSprite("assets/environment/generated-objects/bureaucracy-wall.png"),
+      rationMarket: loadSprite("assets/environment/generated-objects/ration-market.png"),
+    },
     ruinedVillageBuildings: Array.from({ length: 7 }, (_, index) =>
       loadSprite(`assets/environment/mutterpixel-ruined-village/spr_old_building_${index + 1}.png`)
     ),
@@ -760,6 +809,7 @@ function loadEffectSprites() {
     magic: loadSprite("assets/effects/kenney-particles/magic_04.png"),
     sparkle: loadSprite("assets/effects/kenney-particles/star_04.png"),
     petal: loadSprite("assets/effects/petal-pink.png"),
+    swordSlashSheet: loadSprite("assets/effects/combat/sword-slash-sheet.png"),
   };
 }
 
@@ -999,6 +1049,78 @@ function drawSpriteRect(image, sprite, x, y, width, height, options = {}) {
     sprite.height,
     Math.round(x),
     Math.round(y),
+    Math.round(width),
+    Math.round(height)
+  );
+  ctx.restore();
+  return true;
+}
+
+function drawCoverImage(image, x, y, width, height, options = {}) {
+  if (!canDrawSprite(image)) {
+    return false;
+  }
+
+  const sourceWidth = image.naturalWidth;
+  const sourceHeight = image.naturalHeight;
+  const targetAspect = width / height;
+  const sourceAspect = sourceWidth / sourceHeight;
+  let cropX = 0;
+  let cropY = 0;
+  let cropWidth = sourceWidth;
+  let cropHeight = sourceHeight;
+
+  if (sourceAspect > targetAspect) {
+    cropWidth = Math.round(sourceHeight * targetAspect);
+    cropX = Math.round((sourceWidth - cropWidth) / 2);
+  } else if (sourceAspect < targetAspect) {
+    cropHeight = Math.round(sourceWidth / targetAspect);
+    cropY = Math.round((sourceHeight - cropHeight) / 2);
+  }
+
+  ctx.save();
+  ctx.globalAlpha = options.alpha ?? 1;
+  ctx.filter = options.filter ?? "none";
+  ctx.drawImage(
+    image,
+    cropX,
+    cropY,
+    cropWidth,
+    cropHeight,
+    Math.round(x),
+    Math.round(y),
+    Math.round(width),
+    Math.round(height)
+  );
+  ctx.restore();
+
+  if (options.overlayColor) {
+    ctx.save();
+    ctx.fillStyle = options.overlayColor;
+    ctx.fillRect(Math.round(x), Math.round(y), Math.round(width), Math.round(height));
+    ctx.restore();
+  }
+
+  return true;
+}
+
+function drawLooseSprite(image, x, y, width, height, options = {}) {
+  if (!canDrawSprite(image)) {
+    return false;
+  }
+
+  const anchorX = options.anchorX ?? 0.5;
+  const anchorY = options.anchorY ?? 1;
+  const drawX = x - width * anchorX + (options.offsetX ?? 0);
+  const drawY = y - height * anchorY + (options.offsetY ?? 0);
+
+  ctx.save();
+  ctx.globalAlpha = options.alpha ?? 1;
+  ctx.filter = options.filter ?? "none";
+  ctx.drawImage(
+    image,
+    Math.round(drawX),
+    Math.round(drawY),
     Math.round(width),
     Math.round(height)
   );
@@ -1336,8 +1458,8 @@ function createVillageLevel() {
         id: "flame-relic",
         x: 854,
         y: 470,
-        width: 18,
-        height: 18,
+        width: 28,
+        height: 34,
         kind: "object",
         variant: "story-relic",
         prompt: "nhặt Hỏa ấn Dân tộc",
@@ -1348,8 +1470,8 @@ function createVillageLevel() {
         id: "forsaken-idol",
         x: 150,
         y: 430,
-        width: 20,
-        height: 24,
+        width: 34,
+        height: 44,
         kind: "object",
         variant: "corrupt-obelisk",
         prompt: "chạm vào tượng đen nứt vỡ",
@@ -1462,8 +1584,8 @@ function createArchiveLevel() {
         id: "glowing-fragments",
         x: 390,
         y: 314,
-        width: 30,
-        height: 18,
+        width: 46,
+        height: 34,
         kind: "object",
         variant: "fragment-table",
         prompt: "nghiên cứu những mảnh tài liệu",
@@ -1491,8 +1613,8 @@ function createArchiveLevel() {
         id: "guiding-compass",
         x: 694,
         y: 292,
-        width: 22,
-        height: 28,
+        width: 38,
+        height: 46,
         kind: "object",
         variant: "compass-pedestal",
         prompt: "xem chiếc la bàn phát sáng",
@@ -1509,8 +1631,8 @@ function createArchiveLevel() {
         id: "archive-seal-1",
         x: 244,
         y: 478,
-        width: 18,
-        height: 20,
+        width: 28,
+        height: 30,
         kind: "object",
         variant: "memory-seal",
         prompt: "kích hoạt ấn tín thứ nhất",
@@ -1522,8 +1644,8 @@ function createArchiveLevel() {
         id: "archive-seal-2",
         x: 480,
         y: 236,
-        width: 18,
-        height: 20,
+        width: 28,
+        height: 30,
         kind: "object",
         variant: "memory-seal",
         prompt: "kích hoạt ấn tín thứ hai",
@@ -1535,8 +1657,8 @@ function createArchiveLevel() {
         id: "archive-seal-3",
         x: 706,
         y: 478,
-        width: 18,
-        height: 20,
+        width: 28,
+        height: 30,
         kind: "object",
         variant: "memory-seal",
         prompt: "kích hoạt ấn tín cuối",
@@ -1654,8 +1776,8 @@ function createCrossroadsLevel() {
         id: "split-obelisk",
         x: 124,
         y: 206,
-        width: 22,
-        height: 26,
+        width: 34,
+        height: 44,
         kind: "object",
         variant: "corrupt-obelisk",
         prompt: "đụng vào trụ đá méo mó",
@@ -2350,8 +2472,8 @@ function createPortMazeLevel() {
         id: "le-paria-stack",
         x: 490,
         y: 548,
-        width: 18,
-        height: 18,
+        width: 28,
+        height: 34,
         kind: "object",
         variant: "paper-bundle",
         prompt: "nhận các tờ báo Người Cùng Khổ",
@@ -2570,8 +2692,8 @@ function createUnityHouseLevel() {
         id: "split-blade",
         x: 610,
         y: 420,
-        width: 18,
-        height: 18,
+        width: 34,
+        height: 44,
         kind: "object",
         variant: "corrupt-obelisk",
         prompt: "dùng vũ lực để chia rẽ ba tổ chức",
@@ -2825,9 +2947,9 @@ function createRedSquareLevel() {
     colliders: [
       { x: 0, y: 300, width: 420, height: 56 },
       { x: 540, y: 300, width: WORLD.width - 540, height: 56 },
-      { x: 188, y: 448, width: 110, height: 48 },
-      { x: 420, y: 500, width: 126, height: 48 },
-      { x: 690, y: 438, width: 112, height: 48 },
+      { x: 206, y: 456, width: 86, height: 34, hamletId: "hamlet-1" },
+      { x: 442, y: 508, width: 80, height: 34, hamletId: "hamlet-2" },
+      { x: 684, y: 444, width: 80, height: 34, hamletId: "hamlet-3" },
       { x: 408, y: 22, width: 152, height: 26 },
     ],
     decorations,
@@ -3015,12 +3137,12 @@ function createDoiMoiValleyLevel() {
     ],
     monsters: [],
     colliders: [
-      { x: 106, y: 230, width: 82, height: 78 },
+      { x: 98, y: 242, width: 66, height: 48 },
       { x: 788, y: 152, width: 112, height: 82 },
       { x: 784, y: 280, width: 118, height: 82 },
-      { x: 244, y: 382, width: 76, height: 34 },
-      { x: 438, y: 366, width: 86, height: 34 },
-      { x: 634, y: 382, width: 76, height: 34 },
+      { x: 252, y: 390, width: 68, height: 24, barrierId: "wall-1" },
+      { x: 446, y: 374, width: 68, height: 24, barrierId: "wall-2" },
+      { x: 642, y: 390, width: 68, height: 24, barrierId: "wall-3" },
     ],
     decorations,
   };
@@ -3034,7 +3156,7 @@ function createHubDecorations() {
       size: 1 + (index % 2),
     })),
     portals: [
-      { x: 154, y: 154, color: "#cdd7ef", glow: "#7ea3d7", title: "Khu 1", subtitle: "Suong mu", labelOffsetY: 38 },
+      { x: 154, y: 154, color: "#cdd7ef", glow: "#7ea3d7", title: "Khu 1", subtitle: "Sương mù", labelOffsetY: 38 },
       { x: 806, y: 154, color: "#efd6ab", glow: "#d59f62", title: "Khu 2", subtitle: "Nha go", labelOffsetY: 38 },
       { x: 162, y: 482, color: "#f3d85b", glow: "#bf4739", title: "Khu 3", subtitle: "Cau gay", labelOffsetY: -62 },
       { x: 802, y: 482, color: "#d9f0a7", glow: "#6db05a", title: "Khu 4", subtitle: "Doi Moi", labelOffsetY: -62 },
@@ -3118,14 +3240,29 @@ function createUnityHouseDecorations() {
     limezuFloorProps: [
       { sprite: "rugGold", x: 418, y: 336, scale: 0.84 },
     ],
-    limezuFurnitureProps: [
-      { sprite: "bookshelfTall", x: 128, y: 102, scale: 0.78 },
-      { sprite: "deskCompact", x: 142, y: 192, scale: 0.84 },
-      { sprite: "bookshelfTall", x: 718, y: 102, scale: 0.78 },
-      { sprite: "deskArchive", x: 730, y: 192, scale: 0.84 },
-      { sprite: "chalkboard", x: 448, y: 104, scale: 0.64 },
-      { sprite: "deskWide", x: 432, y: 292, scale: 0.68 },
-      { sprite: "sofaSet", x: 418, y: 384, scale: 0.84 },
+    houseInteriorFurnitureProps: [
+      { sprite: "cabinetTall", x: 126, y: 100, scale: 1.34, filter: "brightness(0.96) saturate(0.9)" },
+      { sprite: "writingTable", x: 126, y: 188, scale: 1.24, filter: "brightness(0.97) saturate(0.9)" },
+      { sprite: "chairDark", x: 198, y: 194, scale: 1.08, filter: "brightness(0.94) saturate(0.88)" },
+      { sprite: "bookStack", x: 128, y: 246, scale: 1.02, filter: "brightness(1.02) saturate(0.92)" },
+      { sprite: "drawerCabinet", x: 198, y: 242, scale: 1.04, filter: "brightness(0.97) saturate(0.9)" },
+
+      { sprite: "cupboard", x: 718, y: 98, scale: 1.26, filter: "brightness(0.97) saturate(0.88)" },
+      { sprite: "writingTable", x: 710, y: 188, scale: 1.24, filter: "brightness(0.97) saturate(0.9)" },
+      { sprite: "chairWood", x: 780, y: 194, scale: 1.08, filter: "brightness(0.97) saturate(0.9)" },
+      { sprite: "bookStack", x: 716, y: 246, scale: 1.02, filter: "brightness(1.02) saturate(0.92)" },
+      { sprite: "chestLarge", x: 778, y: 242, scale: 1.04, filter: "brightness(0.98) saturate(0.9)" },
+
+      { sprite: "cabinetTall", x: 392, y: 96, scale: 1.26, filter: "brightness(0.97) saturate(0.88)" },
+      { sprite: "writingTable", x: 436, y: 106, scale: 1.2, filter: "brightness(0.97) saturate(0.9)" },
+      { sprite: "chairScarlet", x: 516, y: 112, scale: 1.08, filter: "brightness(1.02) saturate(0.94)" },
+      { sprite: "cupboard", x: 560, y: 96, scale: 1.18, filter: "brightness(0.97) saturate(0.88)" },
+
+      { sprite: "bench", x: 196, y: 366, scale: 1.14, filter: "brightness(0.98) saturate(0.88)" },
+      { sprite: "crateOpen", x: 430, y: 364, scale: 1.04, filter: "brightness(0.98) saturate(0.9)" },
+      { sprite: "doorPanel", x: 480, y: 362, scale: 1.04, filter: "brightness(0.98) saturate(0.88)" },
+      { sprite: "bench", x: 648, y: 366, scale: 1.14, filter: "brightness(0.98) saturate(0.88)" },
+      { sprite: "barrel", x: 744, y: 364, scale: 1.02, filter: "brightness(0.97) saturate(0.9)" },
     ],
   };
 }
@@ -3408,8 +3545,8 @@ function renderOpeningIntro() {
   openingProgress.textContent = `${state.openingStep + 1} / ${OPENING_DIALOGUE.length}`;
   openingText.textContent = entry.text;
   openingNextButton.textContent = state.openingStep === OPENING_DIALOGUE.length - 1
-    ? "Bat dau"
-    : "Tiep tuc";
+    ? "Bắt đầu"
+    : "Tiếp tục";
   openingIntro.classList.remove("hidden");
   openingIntro.setAttribute("aria-hidden", "false");
 }
@@ -3640,7 +3777,7 @@ function beginGameSession() {
   slideModal.setAttribute("aria-hidden", "true");
   resetStoryProgress();
   loadLevel("hub");
-  showStoryToast("Muc tieu moi: di qua 4 khu vuc, tim du 5 vat pham va giu thanh Tha hoa o muc an toan.");
+  showStoryToast("Mục tiêu mới: đi qua 4 khu vực, tìm đủ 5 vật phẩm và giữ thanh Tha hóa ở mức an toàn.");
 }
 
 function startGame() {
@@ -4136,7 +4273,7 @@ function resolveLevelCollisions(axis, delta) {
     return;
   }
 
-  const colliders = currentLevel().colliders ?? [];
+  const colliders = getActiveColliders();
   const halfWidth = PLAYER_FOOTPRINT.width / 2;
   const halfHeight = PLAYER_FOOTPRINT.height / 2;
 
@@ -4159,6 +4296,20 @@ function resolveLevelCollisions(axis, delta) {
   }
 
   applyLevelBounds();
+}
+
+function getActiveColliders(level = currentLevel()) {
+  return (level.colliders ?? []).filter((collider) => {
+    if (collider.barrierId && state.quests.zone4Barriers.has(collider.barrierId)) {
+      return false;
+    }
+
+    if (collider.hamletId && state.quests.zone3HamletsFreed.has(collider.hamletId)) {
+      return false;
+    }
+
+    return true;
+  });
 }
 
 function getPlayerFootprint(x, y) {
@@ -4339,7 +4490,7 @@ function getReturnGuidanceForLevel(levelId) {
 }
 
 function formatNavigationDistance(distance) {
-  return `${Math.max(1, Math.round(distance / 18))} buoc`;
+  return `${Math.max(1, Math.round(distance / 18))} bước`;
 }
 
 function getDirectionFromVector(dx, dy) {
@@ -4491,13 +4642,13 @@ function getHubNavigationTarget() {
 
   switch (nextExitId) {
     case "to-fog-port":
-      return createExitNavigationTarget(getLevelExit(nextExitId), "Tien vao Khu vuc 1", "#d7ebff");
+      return createExitNavigationTarget(getLevelExit(nextExitId), "Tiến vào Khu vực 1", "#d7ebff");
     case "to-three-room-house":
-      return createExitNavigationTarget(getLevelExit(nextExitId), "Tien vao Khu vuc 2", "#f4d9af");
+      return createExitNavigationTarget(getLevelExit(nextExitId), "Tiến vào Khu vực 2", "#f4d9af");
     case "to-red-square":
-      return createExitNavigationTarget(getLevelExit(nextExitId), "Tien vao Khu vuc 3", "#f3dc7f");
+      return createExitNavigationTarget(getLevelExit(nextExitId), "Tiến vào Khu vực 3", "#f3dc7f");
     case "to-doi-moi-valley":
-      return createExitNavigationTarget(getLevelExit(nextExitId), "Tien vao Khu vuc 4", "#d7efab");
+      return createExitNavigationTarget(getLevelExit(nextExitId), "Tiến vào Khu vực 4", "#d7efab");
     default:
       return null;
   }
@@ -5240,43 +5391,50 @@ function drawPixelExitArrow(centerX, centerY, direction, cellSize, color) {
 function drawHubWorld(decorations) {
   ctx.fillStyle = "#0d1423";
   ctx.fillRect(0, 0, WORLD.width, WORLD.height);
-  ctx.fillStyle = "#18263a";
-  ctx.fillRect(0, 160, WORLD.width, WORLD.height - 160);
-  drawPixelCrawlerTerrainFill(PIXEL_CRAWLER_TERRAIN.stone, 0, 160, WORLD.width, WORLD.height - 160, {
-    seed: 5,
-    scale: 2.25,
-    alpha: 0.18,
+  const hasHubHero = drawCoverImage(environmentSprites.generatedWorlds?.historyHub, 0, 0, WORLD.width, WORLD.height, {
+    alpha: 0.92,
+    filter: "saturate(0.82) brightness(0.7) contrast(1.03)",
+    overlayColor: "rgba(9, 14, 24, 0.18)",
   });
-  ctx.fillStyle = "rgba(13, 20, 35, 0.66)";
-  ctx.fillRect(0, 160, WORLD.width, WORLD.height - 160);
 
-  for (const star of decorations.stars) {
-    ctx.fillStyle = "#e8f0ff";
-    ctx.fillRect(star.x, star.y, star.size, star.size);
+  if (!hasHubHero) {
+    ctx.fillStyle = "#18263a";
+    ctx.fillRect(0, 160, WORLD.width, WORLD.height - 160);
+    drawPixelCrawlerTerrainFill(PIXEL_CRAWLER_TERRAIN.stone, 0, 160, WORLD.width, WORLD.height - 160, {
+      seed: 5,
+      scale: 2.25,
+      alpha: 0.18,
+    });
+    ctx.fillStyle = "rgba(13, 20, 35, 0.66)";
+    ctx.fillRect(0, 160, WORLD.width, WORLD.height - 160);
+
+    for (const star of decorations.stars) {
+      ctx.fillStyle = "#e8f0ff";
+      ctx.fillRect(star.x, star.y, star.size, star.size);
+    }
+
+    ctx.fillStyle = "#314765";
+    ctx.fillRect(decorations.plaza.x, decorations.plaza.y, decorations.plaza.width, decorations.plaza.height);
+    drawPixelCrawlerTerrainFill(
+      PIXEL_CRAWLER_TERRAIN.brick,
+      decorations.plaza.x + 18,
+      decorations.plaza.y + 18,
+      decorations.plaza.width - 36,
+      decorations.plaza.height - 36,
+      { seed: 6, scale: 2.25, alpha: 0.24 }
+    );
+    ctx.fillStyle = "rgba(54, 76, 105, 0.64)";
+    ctx.fillRect(decorations.plaza.x + 18, decorations.plaza.y + 18, decorations.plaza.width - 36, decorations.plaza.height - 36);
+    ctx.fillStyle = "#506685";
+    ctx.fillRect(454, 300, 52, 196);
+    ctx.fillRect(246, 300, 468, 40);
+    ctx.fillStyle = "#6b82a2";
+    ctx.fillRect(464, 312, 32, 184);
+    ctx.fillRect(264, 310, 432, 20);
+
+    drawHistoryGateSprite(decorations.gate);
+    drawCainosOutdoorProps(decorations.cainosProps);
   }
-
-  ctx.fillStyle = "#314765";
-  ctx.fillRect(decorations.plaza.x, decorations.plaza.y, decorations.plaza.width, decorations.plaza.height);
-  drawPixelCrawlerTerrainFill(
-    PIXEL_CRAWLER_TERRAIN.brick,
-    decorations.plaza.x + 18,
-    decorations.plaza.y + 18,
-    decorations.plaza.width - 36,
-    decorations.plaza.height - 36,
-    { seed: 6, scale: 2.25, alpha: 0.24 }
-  );
-  ctx.fillStyle = "rgba(54, 76, 105, 0.64)";
-  ctx.fillRect(decorations.plaza.x + 18, decorations.plaza.y + 18, decorations.plaza.width - 36, decorations.plaza.height - 36);
-  ctx.fillStyle = "#506685";
-  ctx.fillRect(454, 300, 52, 196);
-  ctx.fillRect(246, 300, 468, 40);
-  ctx.fillStyle = "#6b82a2";
-  ctx.fillRect(464, 312, 32, 184);
-  ctx.fillRect(264, 310, 432, 20);
-
-  drawHistoryGateSprite(decorations.gate);
-
-  drawCainosOutdoorProps(decorations.cainosProps);
 
   for (const portal of decorations.portals) {
     drawHubPortal(portal);
@@ -5656,6 +5814,10 @@ function drawLimezuInteriorProps(placements = []) {
   drawPlacedSpriteClusters(environmentSprites.limezu?.interiors, LIMEZU_INTERIOR_SPRITES, placements);
 }
 
+function drawArchiveHouseInteriorProps(placements = []) {
+  drawPlacedSpriteClusters(environmentSprites.archiveHouseInterior, HOUSE_INTERIOR_A_SPRITES, placements);
+}
+
 function drawPortForestGround() {
   ctx.fillStyle = "#243b2f";
   ctx.fillRect(0, 108, WORLD.width, 356);
@@ -5780,6 +5942,19 @@ function drawPortMazeWorld(decorations) {
   ctx.fillRect(decorations.mansion.x + 26, decorations.mansion.y + 40, 34, 54);
   ctx.fillRect(decorations.mansion.x + 104, decorations.mansion.y + 42, 42, 46);
 
+  drawCoverImage(
+    environmentSprites.generatedWorlds?.colonialHarbor,
+    286,
+    88,
+    646,
+    474,
+    {
+      alpha: 0.68,
+      filter: "saturate(0.76) brightness(0.8) contrast(1.04)",
+      overlayColor: "rgba(13, 20, 28, 0.18)",
+    }
+  );
+
   drawCainosOutdoorProps(decorations.cainosProps);
 
   for (const lamp of decorations.lampPosts) {
@@ -5843,6 +6018,19 @@ function drawUnityHouseWorld(decorations) {
     ctx.fillRect(beamX, decorations.house.y, 10, decorations.house.height);
   }
 
+  drawCoverImage(
+    environmentSprites.generatedWorlds?.archiveInterior,
+    decorations.house.x + 14,
+    decorations.house.y + 12,
+    decorations.house.width - 28,
+    decorations.house.height - 18,
+    {
+      alpha: 0.74,
+      filter: "saturate(0.84) brightness(0.76) contrast(1.02)",
+      overlayColor: "rgba(24, 16, 12, 0.14)",
+    }
+  );
+
   drawLimezuInteriorProps(decorations.limezuFloorProps);
 
   for (const rug of decorations.rugs) {
@@ -5852,7 +6040,7 @@ function drawUnityHouseWorld(decorations) {
     ctx.fillRect(rug.x + 10, rug.y + 10, rug.width - 20, rug.height - 20);
   }
 
-  drawLimezuInteriorProps(decorations.limezuFurnitureProps);
+  drawArchiveHouseInteriorProps(decorations.houseInteriorFurnitureProps);
 }
 
 function drawRedSquareWorld(decorations) {
@@ -5919,6 +6107,12 @@ function drawRedSquareWorld(decorations) {
     ctx.fillStyle = "#6f523c";
   }
 
+  drawCoverImage(environmentSprites.generatedWorlds?.revolutionSquare, 0, 0, WORLD.width, WORLD.height, {
+    alpha: 0.6,
+    filter: "saturate(0.82) brightness(0.9) contrast(1.01)",
+    overlayColor: "rgba(82, 68, 48, 0.08)",
+  });
+
   drawCainosOutdoorProps(decorations.cainosProps);
   drawPixelCrawlerVegetation(decorations.crawlerBushes);
   drawPixelCrawlerTrees(decorations.crawlerTrees);
@@ -5974,6 +6168,12 @@ function drawDoiMoiValleyWorld(decorations) {
       ctx.fillRect(plot.x + 10, plot.y + 8 + row * 18, plot.width - 20, 4);
     }
   }
+
+  drawCoverImage(environmentSprites.generatedWorlds?.factoryValley, 0, 0, WORLD.width, WORLD.height, {
+    alpha: 0.44,
+    filter: "saturate(0.82) brightness(0.98) contrast(0.99)",
+    overlayColor: "rgba(241, 233, 184, 0.1)",
+  });
 
   drawPixelCrawlerVegetation(decorations.crawlerBushes);
   drawPixelCrawlerTrees(decorations.crawlerTrees);
@@ -7324,7 +7524,29 @@ function drawObject(item) {
 
 function drawFinalHistoryGate(item) {
   const ready = REQUIRED_RELIC_IDS.every((itemId) => state.inventory.has(itemId)) && state.saDoa < SA_DOA_BAD_ENDING;
+  const finalGate = environmentSprites.generatedObjects?.finalHistoryGate;
   const onlineDoor = environmentSprites.openGameArt?.historyDoor;
+
+  if (canDrawSprite(finalGate)) {
+    const drawHeight = 126;
+    const drawWidth = Math.round(drawHeight * (finalGate.naturalWidth / finalGate.naturalHeight));
+
+    drawWorldWarmGlow(item.x, item.y + 6, ready ? 66 : 54, ready ? 0.28 : 0.12);
+
+    ctx.save();
+    ctx.fillStyle = ready ? "rgba(255, 213, 110, 0.18)" : "rgba(88, 124, 168, 0.14)";
+    ctx.fillRect(item.x - 46, item.y + 22, 92, 10);
+    ctx.fillStyle = "rgba(10, 14, 20, 0.28)";
+    ctx.fillRect(item.x - 58, item.y + 30, 116, 8);
+    ctx.restore();
+
+    drawLooseSprite(finalGate, item.x, item.y + 48, drawWidth, drawHeight, {
+      filter: ready
+        ? "brightness(1.06) saturate(1.04)"
+        : "brightness(0.9) saturate(0.82) contrast(1.02)",
+    });
+    return;
+  }
 
   if (canDrawSprite(onlineDoor)) {
     const doorHeight = 72;
@@ -7368,6 +7590,15 @@ function drawFinalHistoryGate(item) {
 }
 
 function drawPaperBundle(item) {
+  const paperBundle = environmentSprites.generatedObjects?.paperBundle;
+
+  if (canDrawSprite(paperBundle)) {
+    drawLooseSprite(paperBundle, item.x, item.y + 14, 38, 38, {
+      filter: "brightness(1.02) saturate(0.92)",
+    });
+    return;
+  }
+
   ctx.fillStyle = "#6a4834";
   ctx.fillRect(item.x - 8, item.y + 2, 16, 8);
   ctx.fillStyle = "#efe5c8";
@@ -7378,16 +7609,48 @@ function drawPaperBundle(item) {
 }
 
 function drawUnityTable(item) {
+  const unityTable = environmentSprites.generatedObjects?.unityTable;
+  const unified = state.quests.zone2Fragments.size === 3;
+
+  if (canDrawSprite(unityTable)) {
+    if (unified) {
+      drawWorldWarmGlow(item.x, item.y + 6, 34, 0.12);
+    }
+
+    drawLooseSprite(unityTable, item.x, item.y + 18, 84, 84, {
+      filter: unified
+        ? "brightness(1.06) saturate(0.98)"
+        : "brightness(0.94) saturate(0.82)",
+    });
+    return;
+  }
+
   ctx.fillStyle = "#6b4a34";
   ctx.fillRect(item.x - 22, item.y - 6, 44, 12);
   ctx.fillStyle = "#8b6648";
   ctx.fillRect(item.x - 16, item.y - 12, 32, 8);
-  ctx.fillStyle = state.quests.zone2Fragments.size === 3 ? "#ffd971" : "#9fb7c4";
+  ctx.fillStyle = unified ? "#ffd971" : "#9fb7c4";
   ctx.fillRect(item.x - 6, item.y - 16, 12, 6);
 }
 
 function drawStrategicHamlet(item) {
   const cleared = state.quests.zone3HamletsFreed.has(item.hamletId);
+  const hamletSprite = environmentSprites.generatedObjects?.strategicHamlet;
+
+  if (canDrawSprite(hamletSprite)) {
+    drawLooseSprite(hamletSprite, item.x, item.y + 18, 82, 82, {
+      alpha: cleared ? 0.82 : 1,
+      filter: cleared
+        ? "brightness(1.02) saturate(0.74) sepia(0.1)"
+        : "brightness(0.94) saturate(0.88)",
+    });
+
+    if (cleared) {
+      drawWorldWarmGlow(item.x, item.y + 8, 24, 0.08);
+    }
+    return;
+  }
+
   ctx.fillStyle = cleared ? "#789f54" : "#6b5a4a";
   ctx.fillRect(item.x - 18, item.y - 10, 36, 20);
   ctx.fillStyle = cleared ? "#cfe7a0" : "#c2aa7a";
@@ -7398,6 +7661,18 @@ function drawStrategicHamlet(item) {
 
 function drawBureaucracyWall(item) {
   const broken = state.quests.zone4Barriers.has(item.barrierId);
+  const wallSprite = environmentSprites.generatedObjects?.bureaucracyWall;
+
+  if (canDrawSprite(wallSprite)) {
+    drawLooseSprite(wallSprite, item.x, item.y + 12, 94, 63, {
+      alpha: broken ? 0.62 : 1,
+      filter: broken
+        ? "brightness(1.04) saturate(0.62) sepia(0.12)"
+        : "brightness(0.96) saturate(0.9)",
+    });
+    return;
+  }
+
   ctx.fillStyle = broken ? "#8bc56a" : "#7d6757";
   ctx.fillRect(item.x - 16, item.y - 8, 32, 16);
   ctx.fillStyle = broken ? "#d7f1a8" : "#d2c1a2";
@@ -7407,6 +7682,15 @@ function drawBureaucracyWall(item) {
 }
 
 function drawRationMarket(item) {
+  const rationSprite = environmentSprites.generatedObjects?.rationMarket;
+
+  if (canDrawSprite(rationSprite)) {
+    drawLooseSprite(rationSprite, item.x, item.y + 20, 86, 86, {
+      filter: "brightness(0.96) saturate(0.88)",
+    });
+    return;
+  }
+
   ctx.fillStyle = "#6d4a36";
   ctx.fillRect(item.x - 18, item.y - 10, 36, 20);
   ctx.fillStyle = "#b88e62";
@@ -7417,6 +7701,15 @@ function drawRationMarket(item) {
 
 function drawStoryRelic(item) {
   const glow = 0.42 + Math.sin(state.lastTimestamp * 0.008) * 0.14;
+  const relicSprite = environmentSprites.generatedObjects?.storyRelic;
+
+  if (canDrawSprite(relicSprite)) {
+    drawWorldWarmGlow(item.x, item.y - 4, 24, glow * 0.2);
+    drawLooseSprite(relicSprite, item.x, item.y + 16, 42, 42, {
+      filter: `brightness(${1.02 + glow * 0.08}) saturate(1.02)`,
+    });
+    return;
+  }
 
   ctx.fillStyle = `rgba(255, 218, 121, ${glow})`;
   ctx.fillRect(item.x - 10, item.y - 14, 20, 20);
@@ -7434,6 +7727,18 @@ function drawMemorySeal(item) {
   const active = item.activated;
   const coreColor = active ? "#fff1a9" : "#9bb6cc";
   const glowColor = active ? "rgba(255, 230, 136, 0.26)" : "rgba(137, 199, 240, 0.14)";
+  const sealSprite = environmentSprites.generatedObjects?.memorySeal;
+
+  if (canDrawSprite(sealSprite)) {
+    drawWorldWarmGlow(item.x, item.y + 2, active ? 28 : 20, active ? 0.16 : 0.08);
+    drawLooseSprite(sealSprite, item.x, item.y + 18, 42, 42, {
+      filter: active
+        ? "brightness(1.08) saturate(1.02)"
+        : "brightness(0.94) saturate(0.9)",
+      alpha: active ? 1 : 0.92,
+    });
+    return;
+  }
 
   ctx.fillStyle = glowColor;
   ctx.fillRect(item.x - 12, item.y - 18, 24, 30);
@@ -7448,6 +7753,26 @@ function drawMemorySeal(item) {
 function drawCorruptObelisk(item) {
   const purified = item.purified;
   const used = item.used;
+  const obeliskSprite = environmentSprites.generatedObjects?.corruptObelisk;
+
+  if (canDrawSprite(obeliskSprite)) {
+    if (purified) {
+      drawWorldWarmGlow(item.x, item.y + 2, 26, 0.1);
+    } else if (!used) {
+      drawWorldWarmGlow(item.x, item.y + 4, 24, 0.12);
+    }
+
+    drawLooseSprite(obeliskSprite, item.x, item.y + 20, 58, 58, {
+      alpha: used ? 0.76 : 1,
+      filter: purified
+        ? "hue-rotate(88deg) brightness(1.06) saturate(0.78)"
+        : used
+          ? "brightness(0.82) saturate(0.74)"
+          : "brightness(0.98) saturate(1.02)",
+    });
+    return;
+  }
+
   const glowColor = purified
     ? "rgba(164, 226, 174, 0.22)"
     : used
@@ -7628,6 +7953,16 @@ function drawRuinedDesk(item) {
 }
 
 function drawFragmentTable(item) {
+  const fragmentTable = environmentSprites.generatedObjects?.fragmentTable;
+
+  if (canDrawSprite(fragmentTable)) {
+    drawWorldWarmGlow(item.x, item.y + 4, 28, 0.12);
+    drawLooseSprite(fragmentTable, item.x, item.y + 18, 80, 80, {
+      filter: "brightness(1.02) saturate(0.98)",
+    });
+    return;
+  }
+
   ctx.fillStyle = "rgba(20, 11, 7, 0.24)";
   ctx.fillRect(item.x - 26, item.y + 10, 54, 5);
 
@@ -7663,6 +7998,16 @@ function drawFragmentTable(item) {
 }
 
 function drawCompassPedestal(item) {
+  const compassPedestal = environmentSprites.generatedObjects?.compassPedestal;
+
+  if (canDrawSprite(compassPedestal)) {
+    drawWorldWarmGlow(item.x, item.y + 2, 28, 0.16);
+    drawLooseSprite(compassPedestal, item.x, item.y + 22, 66, 66, {
+      filter: "brightness(1.04) saturate(0.98)",
+    });
+    return;
+  }
+
   ctx.fillStyle = "rgba(20, 11, 7, 0.22)";
   ctx.fillRect(item.x - 14, item.y + 11, 28, 5);
 
@@ -7919,6 +8264,12 @@ function drawAttackSlash(x, y, direction, progress, options = {}) {
   ctx.save();
   ctx.translate(originX, originY);
   ctx.rotate(angle);
+
+  if (options.spriteStyle === "sword" && drawSwordSlashSprite(progress, scale, alpha)) {
+    ctx.restore();
+    return;
+  }
+
   ctx.scale(0.78 + progress * 0.34, 0.78 + progress * 0.2);
   ctx.globalAlpha = alpha;
   ctx.lineCap = "square";
@@ -7949,6 +8300,45 @@ function drawAttackSlash(x, y, direction, progress, options = {}) {
   ctx.restore();
 }
 
+function drawSwordSlashSprite(progress, scale, alpha) {
+  const slashSheet = effectSprites.swordSlashSheet;
+
+  if (!canDrawSprite(slashSheet)) {
+    return false;
+  }
+
+  const frameIndex = Math.min(
+    SWORD_SLASH_SPRITE.frames.length - 1,
+    Math.floor(progress * SWORD_SLASH_SPRITE.frames.length)
+  );
+  const frame = SWORD_SLASH_SPRITE.frames[frameIndex];
+  const pulse = 0.92 + Math.sin(progress * Math.PI) * 0.12;
+  const drawScale = scale * pulse * (frame.scale ?? 1);
+  const drawWidth = Math.max(1, Math.round(frame.width * drawScale));
+  const drawHeight = Math.max(1, Math.round(frame.height * drawScale));
+  const drawX = Math.round(-(frame.anchorX ?? 0) * drawScale);
+  const drawY = Math.round(-(frame.anchorY ?? 0) * drawScale);
+
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.globalCompositeOperation = "screen";
+  ctx.filter = "brightness(1.08) contrast(1.04)";
+  ctx.drawImage(
+    slashSheet,
+    frame.x,
+    frame.y,
+    frame.width,
+    frame.height,
+    drawX,
+    drawY,
+    drawWidth,
+    drawHeight
+  );
+  ctx.restore();
+
+  return true;
+}
+
 function drawSkillEffect() {
   if (!state.activeSkillEffect) {
     return;
@@ -7960,7 +8350,7 @@ function drawSkillEffect() {
   if (state.activeSkillEffect.type === "strike") {
     const { x, y, direction } = state.activeSkillEffect;
     const progress = getTimedProgress(state.activeSkillEffect.startedAt, state.activeSkillEffect.endsAt);
-    drawAttackSlash(x, y, direction, progress, { scale: 0.84 });
+    drawAttackSlash(x, y, direction, progress, { scale: 0.84, spriteStyle: "sword" });
   } else {
     const radius = 22 + Math.sin(state.lastTimestamp * 0.04) * 4;
     ctx.beginPath();
