@@ -9,6 +9,7 @@ const slideModal = document.getElementById("slide-modal");
 const endOverlay = document.getElementById("end-overlay");
 const interactionPrompt = document.getElementById("interaction-prompt");
 const levelChip = document.getElementById("level-chip");
+const questChip = document.getElementById("quest-chip");
 const pauseTitle = document.getElementById("pause-title");
 const storyBookButton = document.getElementById("story-book-button");
 const storyBookCount = document.getElementById("story-book-count");
@@ -18,6 +19,18 @@ const dialogueSpeaker = document.getElementById("dialogue-speaker");
 const dialogueProgress = document.getElementById("dialogue-progress");
 const dialogueText = document.getElementById("dialogue-text");
 const dialogueNextButton = document.getElementById("dialogue-next-button");
+const openingIntro = document.getElementById("opening-intro");
+const openingCard = openingIntro.querySelector(".intro-card");
+const openingSpeaker = document.getElementById("opening-speaker");
+const openingProgress = document.getElementById("opening-progress");
+const openingText = document.getElementById("opening-text");
+const openingNextButton = document.getElementById("opening-next-button");
+const openingKicker = openingIntro.querySelector(".intro-kicker");
+const openingHint = openingIntro.querySelector(".intro-hint");
+const startQuestion = startScreen.querySelector(".start-question");
+const startCopy = startScreen.querySelector(".intro-copy");
+const startObjectiveItems = Array.from(startScreen.querySelectorAll(".start-objectives p"));
+const startControls = startScreen.querySelector(".start-controls");
 
 const startButton = document.getElementById("start-button");
 const pauseButton = document.getElementById("pause-button");
@@ -38,12 +51,39 @@ const bookControls = document.getElementById("book-controls");
 const storyPrevButton = document.getElementById("story-prev-button");
 const storyNextButton = document.getElementById("story-next-button");
 const bookPageIndicator = document.getElementById("book-page-indicator");
+const hpFill = document.getElementById("hp-fill");
+const hpValue = document.getElementById("hp-value");
+const saDoaFill = document.getElementById("sa-doa-fill");
+const saDoaValue = document.getElementById("sa-doa-value");
+const inventoryValue = document.getElementById("inventory-value");
+const skillValue = document.getElementById("skill-value");
+const endTitle = document.getElementById("end-title");
+const endCopy = document.getElementById("end-copy");
+const endSummary = document.getElementById("end-summary");
 
 const VIEWPORT = { width: canvas.width, height: canvas.height };
 const WORLD = { width: 960, height: 640 };
 const PLAYER_SPEED = 92;
 const INTERACTION_RADIUS = 30;
 const STORY_UNLOCK_TOAST_MS = 2800;
+const PLAYER_MAX_HEALTH = 5;
+const SA_DOA_MAX = 100;
+const SA_DOA_BAD_ENDING = 60;
+const STRIKE_COOLDOWN_MS = 420;
+const PURIFY_COOLDOWN_MS = 1800;
+const STRIKE_RANGE = 48;
+const PURIFY_RANGE = 76;
+const MONSTER_SPEED = 38;
+const MONSTER_TOUCH_RANGE = 18;
+const MONSTER_CONTACT_DAMAGE_COOLDOWN_MS = 900;
+const RELIC_TARGET_COUNT = 5;
+const REQUIRED_RELIC_IDS = [
+  "red-compass",
+  "unified-emblem",
+  "vietminh-thread",
+  "healed-map",
+  "doi-moi-gear",
+];
 const PLAYER_FOOTPRINT = { width: 8, height: 6, offsetY: 7 };
 const PLAYER_SPRITE = {
   frameWidth: 96,
@@ -140,6 +180,86 @@ const VILLAGE_PROP_SPRITES = {
     { x: 32, y: 32, width: 16, height: 16 },
   ],
 };
+const HUB_PORTAL_SPRITE = {
+  frameSize: 64,
+  columns: 3,
+  frameCount: 8,
+  frameDuration: 90,
+  drawSize: 68,
+};
+const PIXEL_CRAWLER_TREE_SPRITE = {
+  frameWidth: 52,
+  frameHeight: 64,
+  columns: 4,
+};
+const PIXEL_CRAWLER_VEGETATION_SPRITES = [
+  { x: 0, y: 0, width: 48, height: 48 },
+  { x: 48, y: 0, width: 48, height: 48 },
+  { x: 96, y: 0, width: 48, height: 48 },
+  { x: 144, y: 0, width: 48, height: 48 },
+  { x: 0, y: 48, width: 48, height: 48 },
+  { x: 48, y: 48, width: 48, height: 48 },
+  { x: 96, y: 48, width: 48, height: 48 },
+  { x: 144, y: 48, width: 48, height: 48 },
+  { x: 0, y: 96, width: 48, height: 48 },
+  { x: 48, y: 96, width: 48, height: 48 },
+  { x: 96, y: 96, width: 48, height: 48 },
+  { x: 144, y: 96, width: 48, height: 48 },
+];
+const PIXEL_CRAWLER_TOOL_CLUSTER_SPRITES = [
+  { x: 0, y: 0, width: 96, height: 64 },
+  { x: 0, y: 64, width: 96, height: 64 },
+];
+const CAINOS_PROP_SPRITES = {
+  cargoStack: { x: 64, y: 0, width: 64, height: 64, shadowWidth: 40, shadowHeight: 8, shadowOffsetY: 56 },
+  bench: { x: 288, y: 0, width: 64, height: 64, shadowWidth: 44, shadowHeight: 8, shadowOffsetY: 54 },
+  statue: { x: 448, y: 0, width: 64, height: 96, shadowWidth: 34, shadowHeight: 10, shadowOffsetY: 88 },
+  barrel: { x: 160, y: 96, width: 32, height: 32, shadowWidth: 18, shadowHeight: 6, shadowOffsetY: 28 },
+};
+const LIMEZU_INTERIOR_SPRITES = {
+  bookshelfTall: { x: 240, y: 720, width: 96, height: 144, shadowWidth: 64, shadowHeight: 8, shadowOffsetY: 136 },
+  rugGold: { x: 384, y: 720, width: 144, height: 144, noShadow: true },
+  sofaSet: { x: 384, y: 864, width: 144, height: 96, shadowWidth: 86, shadowHeight: 8, shadowOffsetY: 86 },
+  deskCompact: { x: 0, y: 1728, width: 96, height: 96, shadowWidth: 62, shadowHeight: 8, shadowOffsetY: 88 },
+  deskWide: { x: 96, y: 1728, width: 144, height: 96, shadowWidth: 104, shadowHeight: 8, shadowOffsetY: 88 },
+  deskArchive: { x: 384, y: 1728, width: 96, height: 96, shadowWidth: 60, shadowHeight: 8, shadowOffsetY: 88 },
+  chalkboard: { x: 480, y: 1920, width: 96, height: 96, shadowWidth: 60, shadowHeight: 8, shadowOffsetY: 88 },
+};
+const MONSTER_SPRITE_CONFIG = {
+  wraith: {
+    drawWidth: 34,
+    drawHeight: 34,
+    drawOffsetX: -17,
+    drawOffsetY: -20,
+    shadowWidth: 18,
+    animations: {
+      idle: { frameWidth: 32, frameHeight: 32, frameCount: 4, frameDuration: 180 },
+      run: { frameWidth: 64, frameHeight: 64, frameCount: 6, frameDuration: 110 },
+    },
+  },
+  devourer: {
+    drawWidth: 36,
+    drawHeight: 36,
+    drawOffsetX: -18,
+    drawOffsetY: -22,
+    shadowWidth: 20,
+    animations: {
+      idle: { frameWidth: 32, frameHeight: 32, frameCount: 4, frameDuration: 180 },
+      run: { frameWidth: 64, frameHeight: 64, frameCount: 6, frameDuration: 110 },
+    },
+  },
+  blight: {
+    drawWidth: 36,
+    drawHeight: 36,
+    drawOffsetX: -18,
+    drawOffsetY: -22,
+    shadowWidth: 20,
+    animations: {
+      idle: { frameWidth: 32, frameHeight: 32, frameCount: 4, frameDuration: 180 },
+      run: { frameWidth: 64, frameHeight: 64, frameCount: 6, frameDuration: 110 },
+    },
+  },
+};
 
 const INTERACTION_DIALOGUES = {
   "old-peasant": {
@@ -200,39 +320,153 @@ const INTERACTION_DIALOGUES = {
   },
 };
 
+const RELIC_DEFINITIONS = {
+  "red-compass": {
+    label: "Chiếc La Bàn Đỏ",
+    source: "sau khi phát báo Người Cùng Khổ cho công nhân bến cảng",
+  },
+  "unified-emblem": {
+    label: "Huy hiệu Búa Liềm thống nhất",
+    source: "đặt đủ ba mảnh hợp nhất lên bàn tròn",
+  },
+  "vietminh-thread": {
+    label: "Sợi chỉ đỏ Việt Minh",
+    source: "quy tụ đủ khối đại đoàn kết toàn dân",
+  },
+  "healed-map": {
+    label: "Bản đồ Vĩ tuyến 17 hàn gắn",
+    source: "giải phóng các ấp chiến lược và đẩy lùi thế lực chia cắt",
+  },
+  "doi-moi-gear": {
+    label: "Bánh răng Đổi Mới",
+    source: "phá hàng rào bao cấp và phát Khoán 10 cho nông dân",
+  },
+};
+
+const ENDING_DEFINITIONS = {
+  good: {
+    title: "GOOD ENDING: ĐẠI THẮNG & PHÁT TRIỂN",
+    copy:
+      "Dưới sự lãnh đạo của Đảng Cộng sản Việt Nam, dân tộc ta đã giành lại độc lập, thống nhất và đang vững bước trên con đường dân giàu, nước mạnh. Sự lãnh đạo của Đảng là nhân tố hàng đầu bảo đảm mọi thắng lợi.",
+  },
+  bad: {
+    title: "BAD ENDING: MẤT NƯỚC / CHỆCH HƯỚNG",
+    copy:
+      "Không có ngọn cờ dẫn đường đúng đắn và bản lĩnh kiên định, lịch sử dân tộc đã rẽ sang một bóng đen nô lệ và chia cắt mới. Đất nước tiếp tục bị các thế lực thù địch thao túng hoặc chệch khỏi con đường xã hội chủ nghĩa.",
+  },
+};
+
+const OPENING_DIALOGUE = [
+  {
+    speaker: "Canh 1",
+    text: "Suong mu dang phu kin nhung nga re lich su.",
+  },
+  {
+    speaker: "Canh 2",
+    text: "Bon khu vuc dang mo ra. Nam tin vat dang cho duoc tap hop.",
+  },
+  {
+    speaker: "Canh 3",
+    text: "Moi loi hua vinh hoa deu co gia cua no: thanh Tha hoa se day len.",
+  },
+  {
+    speaker: "Canh 4",
+    text: "Neu giu vung chinh khi, nguoi co the mo Canh Cua Lich Su va viet den Good Ending.",
+  },
+];
+
+function createQuestState() {
+  return {
+    zone1Started: false,
+    zone1Delivered: new Set(),
+    zone1RewardClaimed: false,
+    zone2Fragments: new Set(),
+    zone2RewardClaimed: false,
+    zone3Recruits: new Set(),
+    zone3ThreadClaimed: false,
+    zone3HamletsFreed: new Set(),
+    zone3MapClaimed: false,
+    zone4Barriers: new Set(),
+    zone4Farmers: new Set(),
+    zone4GearClaimed: false,
+  };
+}
+
+function configureOpeningCopy() {
+  startQuestion.textContent = "Neu lich su re sang huong khac, Viet Nam se ve dau?";
+  startCopy.textContent = "4 khu vuc. 5 tin vat. 1 Canh Cua Lich Su dang cho duoc mo.";
+  startControls.textContent = "WASD di chuyen • E tuong tac • J/K ky nang • B mo sach";
+
+  const objectiveLabels = [
+    "Tien qua 4 khu vuc",
+    "Tim du 5 tin vat",
+    "Giu Tha hoa thap",
+  ];
+
+  startObjectiveItems.forEach((item, index) => {
+    item.textContent = objectiveLabels[index] ?? "";
+  });
+
+  openingKicker.textContent = "Prologue";
+  openingHint.textContent = "E / Space de tiep tuc";
+}
+
 const keys = new Set();
 const playerSprites = loadPlayerSprites();
 const npcSprites = loadVillageNpcSprites();
 const environmentSprites = loadEnvironmentSprites();
 const effectSprites = loadEffectSprites();
+const monsterSprites = loadMonsterSprites();
 const uiSounds = loadUiSounds();
 const ambienceSounds = loadAmbienceSounds();
 let storyToastTimeoutId = 0;
 
 const state = {
   mode: "start",
-  currentLevelId: "village",
+  currentLevelId: "hub",
   activeSlide: null,
   activeDialogue: null,
   activeDialogueIndex: 0,
+  openingStep: 0,
   activeStoryIds: [],
   activeStoryIndex: 0,
   unlockedStoryIds: new Set(),
   activeInteractionId: null,
   aboutFromPause: false,
   pendingEnding: false,
+  health: PLAYER_MAX_HEALTH,
+  saDoa: 0,
+  inventory: new Set(),
+  skillCooldowns: {
+    strikeReadyAt: 0,
+    purifyReadyAt: 0,
+  },
+  invulnerableUntil: 0,
+  activeSkillEffect: null,
+  endingId: null,
+  endingSummary: "",
+  blockedExitIds: new Set(),
+  puzzleState: {
+    archiveSequence: 0,
+    archiveSolved: false,
+  },
+  quests: createQuestState(),
   lastTimestamp: 0,
 };
 
 const player = createPlayer();
 const camera = { x: 0, y: 0 };
 const levels = {
-  village: createVillageLevel(),
-  archive: createArchiveLevel(),
-  crossroads: createCrossroadsLevel(),
-  spring: createSpringLevel(),
+  hub: createHubLevel(),
+  village: createPortMazeLevel(),
+  archive: createUnityHouseLevel(),
+  crossroads: createRedSquareLevel(),
+  spring: createDoiMoiValleyLevel(),
 };
 const storyRegistry = createStoryRegistry(levels);
+initializeLevelRuntime();
+configureOpeningCopy();
+updateProgressHud();
 
 startButton.addEventListener("click", withUiClickSound(startGame));
 pauseButton.addEventListener("click", withUiClickSound(togglePause));
@@ -247,6 +481,7 @@ aboutButton.addEventListener("click", withUiClickSound(() => {
 }));
 closeSlideButton.addEventListener("click", closeSlide);
 dialogueNextButton.addEventListener("click", withUiClickSound(advanceDialogue));
+openingNextButton.addEventListener("click", withUiClickSound(advanceOpeningIntro));
 storyPrevButton.addEventListener("click", withUiClickSound(() => showStoryBookEntry(-1)));
 storyNextButton.addEventListener("click", withUiClickSound(() => showStoryBookEntry(1)));
 returnStartButton.addEventListener("click", withUiClickSound(returnToStartScreen));
@@ -263,6 +498,12 @@ window.addEventListener("keydown", (event) => {
   const key = normalizeKey(event.key);
 
   if (key === "escape") {
+    if (state.mode === "opening") {
+      playUiSound(uiSounds.pixelClick);
+      returnToStartScreen();
+      return;
+    }
+
     if (state.mode === "dialogue") {
       cancelDialogue();
       return;
@@ -283,6 +524,12 @@ window.addEventListener("keydown", (event) => {
   if (state.mode === "start" && (key === "enter" || key === "space")) {
     playUiSound(uiSounds.pixelClick);
     startGame();
+    return;
+  }
+
+  if (state.mode === "opening" && (key === "enter" || key === "e" || key === "space")) {
+    playUiSound(uiSounds.pixelClick);
+    advanceOpeningIntro();
     return;
   }
 
@@ -322,6 +569,16 @@ window.addEventListener("keydown", (event) => {
     return;
   }
 
+  if (state.mode === "playing" && key === "j") {
+    useStrikeSkill();
+    return;
+  }
+
+  if (state.mode === "playing" && key === "k") {
+    usePurifySkill();
+    return;
+  }
+
   if (state.mode === "playing" && (key === "e" || key === "space")) {
     handleInteraction();
     return;
@@ -334,7 +591,7 @@ window.addEventListener("keyup", (event) => {
   keys.delete(normalizeKey(event.key));
 });
 
-loadLevel("village");
+loadLevel("hub");
 requestAnimationFrame(frame);
 
 function createPlayer() {
@@ -377,10 +634,39 @@ function loadEnvironmentSprites() {
     ruinedVillageBuildings: Array.from({ length: 7 }, (_, index) =>
       loadSprite(`assets/environment/mutterpixel-ruined-village/spr_old_building_${index + 1}.png`)
     ),
+    hubPortalSheet: loadSprite("assets/environment/portal/portal-spinning.png"),
+    pixelCrawler: {
+      vegetation: loadSprite("assets/environment/pixel-crawler/vegetation.png"),
+      tools: loadSprite("assets/environment/pixel-crawler/tools.png"),
+      trees: loadSprite("assets/environment/pixel-crawler/tree-model-01-size-03.png"),
+    },
+    cainos: {
+      props: loadSprite("assets/environment/cainos/tx-props.png"),
+    },
+    limezu: {
+      interiors: loadSprite("assets/environment/limezu/interiors-free-48x48.png"),
+    },
     villageProps: {
       fencesWallsGate: loadSprite("assets/environment/village-props/fences-walls-gate.png"),
       boxesCrates: loadSprite("assets/environment/village-props/boxes-crates.png"),
       fantasyVehicles: loadSprite("assets/environment/village-props/fantasy-vehicles.png"),
+    },
+  };
+}
+
+function loadMonsterSprites() {
+  return {
+    wraith: {
+      idle: loadSprite("assets/monsters/pixel-crawler/skeleton-rogue-idle.png"),
+      run: loadSprite("assets/monsters/pixel-crawler/skeleton-rogue-run.png"),
+    },
+    devourer: {
+      idle: loadSprite("assets/monsters/pixel-crawler/orc-idle.png"),
+      run: loadSprite("assets/monsters/pixel-crawler/orc-run.png"),
+    },
+    blight: {
+      idle: loadSprite("assets/monsters/pixel-crawler/orc-shaman-idle.png"),
+      run: loadSprite("assets/monsters/pixel-crawler/orc-shaman-run.png"),
     },
   };
 }
@@ -503,12 +789,8 @@ function stopSound(sound) {
 function syncAmbienceAudio() {
   let activeAmbience = null;
 
-  if (state.mode !== "start") {
-    if (state.currentLevelId === "village") {
-      activeAmbience = ambienceSounds.rain;
-    } else if (state.currentLevelId === "archive") {
-      activeAmbience = ambienceSounds.fireplace;
-    }
+  if (state.mode !== "start" && state.currentLevelId === "village") {
+    activeAmbience = ambienceSounds.rain;
   }
 
   for (const sound of Object.values(ambienceSounds)) {
@@ -906,6 +1188,45 @@ function createVillageLevel() {
           art: "desk",
         },
       },
+      {
+        id: "flame-relic",
+        x: 854,
+        y: 470,
+        width: 18,
+        height: 18,
+        kind: "object",
+        variant: "story-relic",
+        prompt: "nhặt Hỏa ấn Dân tộc",
+        interactionType: "pickup",
+        itemId: "flame-of-the-people",
+      },
+      {
+        id: "forsaken-idol",
+        x: 150,
+        y: 430,
+        width: 20,
+        height: 24,
+        kind: "object",
+        variant: "corrupt-obelisk",
+        prompt: "chạm vào tượng đen nứt vỡ",
+        interactionType: "corrupt",
+        saDoaDelta: 18,
+      },
+    ],
+    monsters: [
+      {
+        id: "village-wraith",
+        name: "Bóng đói khát",
+        variant: "wraith",
+        x: 726,
+        y: 380,
+        width: 18,
+        height: 26,
+        maxHealth: 3,
+        damage: 1,
+        aggroRadius: 128,
+        patrolRadius: 20,
+      },
     ],
     colliders: createVillageColliders(decorations),
     decorations,
@@ -1040,6 +1361,45 @@ function createArchiveLevel() {
           art: "compass",
         },
       },
+      {
+        id: "archive-seal-1",
+        x: 244,
+        y: 478,
+        width: 18,
+        height: 20,
+        kind: "object",
+        variant: "memory-seal",
+        prompt: "kích hoạt ấn tín thứ nhất",
+        interactionType: "puzzle",
+        puzzleKey: "archive-sequence",
+        puzzleOrder: 0,
+      },
+      {
+        id: "archive-seal-2",
+        x: 480,
+        y: 236,
+        width: 18,
+        height: 20,
+        kind: "object",
+        variant: "memory-seal",
+        prompt: "kích hoạt ấn tín thứ hai",
+        interactionType: "puzzle",
+        puzzleKey: "archive-sequence",
+        puzzleOrder: 1,
+      },
+      {
+        id: "archive-seal-3",
+        x: 706,
+        y: 478,
+        width: 18,
+        height: 20,
+        kind: "object",
+        variant: "memory-seal",
+        prompt: "kích hoạt ấn tín cuối",
+        interactionType: "puzzle",
+        puzzleKey: "archive-sequence",
+        puzzleOrder: 2,
+      },
     ],
     colliders: [
       { x: 102, y: 128, width: 70, height: 268 },
@@ -1146,6 +1506,34 @@ function createCrossroadsLevel() {
           ],
         },
       },
+      {
+        id: "split-obelisk",
+        x: 124,
+        y: 206,
+        width: 22,
+        height: 26,
+        kind: "object",
+        variant: "corrupt-obelisk",
+        prompt: "đụng vào trụ đá méo mó",
+        interactionType: "corrupt",
+        saDoaDelta: 24,
+      },
+    ],
+    monsters: [
+      {
+        id: "bridge-devourer",
+        name: "Thú nuốt ranh giới",
+        variant: "devourer",
+        x: 286,
+        y: 354,
+        width: 22,
+        height: 24,
+        maxHealth: 4,
+        damage: 1,
+        aggroRadius: 150,
+        patrolRadius: 24,
+        dropItemId: "unity-seal",
+      },
     ],
     colliders: [
       { x: 188, y: 306, width: 116, height: 16 },
@@ -1207,8 +1595,34 @@ function createSpringLevel() {
               caption: "Diện mạo hạ tầng hiện đại hôm nay là một minh chứng cho chặng đường đổi mới, phát triển và hội nhập của đất nước.",
             },
           ],
-          endsGame: true,
         },
+      },
+      {
+        id: "renewal-altar",
+        x: 480,
+        y: 392,
+        width: 26,
+        height: 22,
+        kind: "object",
+        variant: "ending-altar",
+        prompt: "đặt các tín vật vào bệ kết ấn",
+        interactionType: "ending",
+      },
+    ],
+    monsters: [
+      {
+        id: "future-blight",
+        name: "Tàn dư hỗn mang",
+        variant: "blight",
+        x: 692,
+        y: 314,
+        width: 24,
+        height: 28,
+        maxHealth: 4,
+        damage: 1,
+        aggroRadius: 150,
+        patrolRadius: 26,
+        dropItemId: "renewal-seed",
       },
     ],
     colliders: [
@@ -1587,11 +2001,1078 @@ function createSpringDecorations() {
   };
 }
 
+function createHubLevel() {
+  const decorations = createHubDecorations();
+
+  return {
+    id: "hub",
+    label: "Trung tâm: Cánh Cửa Lịch Sử",
+    canvasLabel: "Trung tâm thế giới: Cánh Cửa Lịch Sử",
+    pauseTitle: "Cánh Cửa Lịch Sử",
+    spawn: { x: 480, y: 548, direction: "up" },
+    bounds: { minX: 40, maxX: 920, minY: 34, maxY: 606 },
+    aboutSlide: {
+      kicker: "World Map",
+      title: "Trung tâm của lịch sử",
+      text:
+        "Bốn khu vực lớn của hành trình đều nối về quảng trường trung tâm. Cánh Cửa Lịch Sử ở giữa sẽ chỉ mở khi bạn thu thập đủ 5 vật phẩm then chốt và giữ thanh Tha hóa ở mức an toàn.",
+      caption: "Bốn cổng chuyển cảnh bao quanh một cánh cửa bị phong ấn",
+      art: "bridge",
+    },
+    exits: [
+      {
+        id: "to-fog-port",
+        kind: "rect",
+        prompt: "Cổng Sương Mù -> Khu vực 1",
+        x: 92,
+        y: 102,
+        width: 124,
+        height: 104,
+        target: "village",
+        spawn: { x: 124, y: 104, direction: "down" },
+        guide: {
+          color: "#d7ebff",
+          glowAlpha: 0.36,
+          size: 4,
+          markers: [
+            { x: 388, y: 318, direction: "left" },
+            { x: 308, y: 318, direction: "left" },
+            { x: 228, y: 318, direction: "left" },
+            { x: 162, y: 252, direction: "up" },
+            { x: 162, y: 186, direction: "up" },
+          ],
+        },
+      },
+      {
+        id: "to-three-room-house",
+        kind: "rect",
+        prompt: "Nhà gỗ ba gian -> Khu vực 2",
+        x: 744,
+        y: 102,
+        width: 124,
+        height: 104,
+        target: "archive",
+        spawn: { x: 480, y: 560, direction: "up" },
+        guide: {
+          color: "#f4d9af",
+          glowAlpha: 0.36,
+          size: 4,
+          markers: [
+            { x: 572, y: 318, direction: "right" },
+            { x: 652, y: 318, direction: "right" },
+            { x: 732, y: 318, direction: "right" },
+            { x: 798, y: 252, direction: "up" },
+            { x: 798, y: 186, direction: "up" },
+          ],
+        },
+      },
+      {
+        id: "to-red-square",
+        kind: "rect",
+        prompt: "Quảng trường đỏ -> Khu vực 3",
+        x: 96,
+        y: 430,
+        width: 132,
+        height: 108,
+        target: "crossroads",
+        spawn: { x: 482, y: 88, direction: "down" },
+        guide: {
+          color: "#f3dc7f",
+          glowAlpha: 0.36,
+          size: 4,
+          markers: [
+            { x: 388, y: 336, direction: "left" },
+            { x: 308, y: 336, direction: "left" },
+            { x: 228, y: 336, direction: "left" },
+            { x: 170, y: 404, direction: "down" },
+            { x: 170, y: 468, direction: "down" },
+          ],
+        },
+      },
+      {
+        id: "to-doi-moi-valley",
+        kind: "rect",
+        prompt: "Thung lũng Đổi Mới -> Khu vực 4",
+        x: 736,
+        y: 430,
+        width: 132,
+        height: 108,
+        target: "spring",
+        spawn: { x: 482, y: 560, direction: "up" },
+        guide: {
+          color: "#d7efab",
+          glowAlpha: 0.36,
+          size: 4,
+          markers: [
+            { x: 572, y: 336, direction: "right" },
+            { x: 652, y: 336, direction: "right" },
+            { x: 732, y: 336, direction: "right" },
+            { x: 792, y: 404, direction: "down" },
+            { x: 792, y: 468, direction: "down" },
+          ],
+        },
+      },
+    ],
+    interactables: [
+      {
+        id: "final-history-gate",
+        x: 480,
+        y: 246,
+        width: 72,
+        height: 88,
+        kind: "object",
+        variant: "final-history-gate",
+        prompt: "đặt 5 vật phẩm lên Cánh Cửa Lịch Sử",
+        interactionType: "ending",
+        interactionRadius: 76,
+        interactionOffsetY: 18,
+      },
+    ],
+    colliders: [
+      { x: 448, y: 196, width: 64, height: 62 },
+    ],
+    decorations,
+  };
+}
+
+function createPortMazeLevel() {
+  const decorations = createPortMazeDecorations();
+
+  return {
+    id: "village",
+    label: "Khu vực 1: Mê cung sương mù & Bến cảng",
+    canvasLabel: "Khu vực 1: Mê cung sương mù và Bến cảng",
+    pauseTitle: "Mê cung sương mù & Bến cảng",
+    spawn: { x: 124, y: 104, direction: "down" },
+    bounds: { minX: 24, maxX: 936, minY: 24, maxY: 616 },
+    aboutSlide: {
+      kicker: "Khu vực 1",
+      title: "Bế tắc trước 1930",
+      text:
+        "Khu rừng sương mù với những lối cụt tượng trưng cho sự bế tắc của các phong trào cứu nước cũ, còn bến cảng phơi bày cảnh bóc lột, sưu cao thuế nặng dưới ách thực dân.",
+      caption: "Từ mê cung bế tắc tới bến cảng của những người lao động bị áp bức",
+      art: "peasant",
+    },
+    exits: [
+      {
+        id: "back-to-hub-1",
+        kind: "rect",
+        prompt: "Lối quay lại trung tâm",
+        x: 70,
+        y: 36,
+        width: 96,
+        height: 70,
+        target: "hub",
+        spawn: { x: 156, y: 156, direction: "down" },
+        guide: {
+          color: "#f3d777",
+          glowAlpha: 0.34,
+          size: 3,
+          visibleWhen: () => state.quests.zone1RewardClaimed,
+          markers: [
+            { x: 204, y: 176, direction: "left", size: 2 },
+            { x: 154, y: 136, direction: "up", size: 2 },
+            { x: 122, y: 86, direction: "up", size: 2 },
+          ],
+        },
+      },
+    ],
+    interactables: [
+      {
+        id: "nguyen-ai-quoc",
+        x: 544,
+        y: 520,
+        width: 22,
+        height: 40,
+        kind: "npc",
+        spriteKey: "npc06",
+        direction: "left",
+        animation: "idle",
+        prompt: "trò chuyện với Nguyễn Ái Quốc",
+        slide: {
+          kicker: "Khu vực 1",
+          title: "Người mang ngọn đèn dẫn đường",
+          text:
+            "Nguyễn Ái Quốc đem đến cho những người lao động bị áp bức một con đường mới: cách mạng vô sản, tổ chức quần chúng và giác ngộ bằng báo chí cách mạng.",
+          caption: "Le Paria đến tay công nhân như một ánh lửa mở đường",
+          art: "desk",
+        },
+      },
+      {
+        id: "le-paria-stack",
+        x: 502,
+        y: 538,
+        width: 18,
+        height: 18,
+        kind: "object",
+        variant: "paper-bundle",
+        prompt: "nhận các tờ báo Người Cùng Khổ",
+        interactionType: "startPapers",
+      },
+      {
+        id: "worker-harbor-1",
+        x: 386,
+        y: 520,
+        width: 20,
+        height: 38,
+        kind: "npc",
+        spriteKey: "npc01",
+        direction: "right",
+        animation: "idle",
+        prompt: "đưa báo cho công nhân bốc vác",
+        interactionType: "deliverPaper",
+        workerId: "worker-1",
+      },
+      {
+        id: "worker-harbor-2",
+        x: 650,
+        y: 538,
+        width: 20,
+        height: 38,
+        kind: "npc",
+        spriteKey: "npc03",
+        direction: "left",
+        animation: "idle",
+        prompt: "đưa báo cho công nhân bến tàu",
+        interactionType: "deliverPaper",
+        workerId: "worker-2",
+      },
+      {
+        id: "worker-harbor-3",
+        x: 742,
+        y: 500,
+        width: 20,
+        height: 38,
+        kind: "npc",
+        spriteKey: "npc05",
+        direction: "left",
+        animation: "idle",
+        prompt: "đưa báo cho người phu khuân vác",
+        interactionType: "deliverPaper",
+        workerId: "worker-3",
+      },
+      {
+        id: "red-compass-reward",
+        x: 560,
+        y: 476,
+        width: 18,
+        height: 18,
+        kind: "object",
+        variant: "story-relic",
+        prompt: "nhận Chiếc La Bàn Đỏ",
+        interactionType: "rewardCompass",
+      },
+      {
+        id: "puppet-mandarin",
+        x: 832,
+        y: 210,
+        width: 22,
+        height: 40,
+        kind: "npc",
+        spriteKey: "npc04",
+        direction: "left",
+        animation: "idle",
+        prompt: "nghe lời dụ dỗ của quan lại bù nhìn",
+        interactionType: "offerBribe",
+      },
+      {
+        id: "tenant-farmer",
+        x: 786,
+        y: 296,
+        width: 20,
+        height: 38,
+        kind: "npc",
+        spriteKey: "npc02",
+        direction: "down",
+        animation: "idle",
+        prompt: "an ủi người nông dân bị bóc lột",
+        attackPenalty: 18,
+        attackPenaltyMessage: "Bạn quay lưng với dân nghèo đang trông chờ được giải cứu.",
+      },
+    ],
+    monsters: [
+      {
+        id: "colonial-overseer",
+        name: "Lính canh thực dân",
+        variant: "devourer",
+        x: 700,
+        y: 498,
+        width: 22,
+        height: 24,
+        maxHealth: 3,
+        damage: 1,
+        aggroRadius: 116,
+        patrolRadius: 18,
+      },
+    ],
+    colliders: [
+      { x: 82, y: 92, width: 30, height: 360 },
+      { x: 82, y: 450, width: 248, height: 28 },
+      { x: 178, y: 132, width: 198, height: 28 },
+      { x: 346, y: 132, width: 28, height: 170 },
+      { x: 178, y: 278, width: 172, height: 28 },
+      { x: 440, y: 88, width: 28, height: 206 },
+      { x: 438, y: 266, width: 148, height: 28 },
+      { x: 560, y: 174, width: 28, height: 176 },
+      { x: 220, y: 378, width: 248, height: 24 },
+      { x: 0, y: 562, width: WORLD.width, height: 24 },
+      { x: 760, y: 144, width: 150, height: 120 },
+      { x: 342, y: 486, width: 464, height: 16 },
+    ],
+    decorations,
+  };
+}
+
+function createUnityHouseLevel() {
+  const decorations = createUnityHouseDecorations();
+
+  return {
+    id: "archive",
+    label: "Khu vực 2: Căn nhà gỗ ba gian",
+    canvasLabel: "Khu vực 2: Căn nhà gỗ ba gian",
+    pauseTitle: "Căn nhà gỗ ba gian",
+    spawn: { x: 480, y: 560, direction: "up" },
+    bounds: { minX: 76, maxX: 884, minY: 64, maxY: 578 },
+    aboutSlide: {
+      kicker: "Khu vực 2",
+      title: "Ba tổ chức và một bàn tròn",
+      text:
+        "Ba căn phòng khóa kín tượng trưng cho ba tổ chức cộng sản hoạt động biệt lập. Chỉ bằng thuyết phục, gạt bỏ thành kiến và hợp nhất lực lượng, bạn mới tạo được biểu tượng thống nhất.",
+      caption: "Ngôi nhà gỗ ba gian là thử thách của sự đoàn kết",
+      art: "compass",
+    },
+    exits: [
+      {
+        id: "back-to-hub-2",
+        kind: "rect",
+        prompt: "Lối quay lại trung tâm",
+        x: 430,
+        y: 548,
+        width: 100,
+        height: 56,
+        target: "hub",
+        spawn: { x: 804, y: 172, direction: "down" },
+        guide: {
+          color: "#f3d777",
+          glowAlpha: 0.34,
+          size: 3,
+          visibleWhen: () => state.quests.zone2RewardClaimed,
+          markers: [
+            { x: 480, y: 404, direction: "down", size: 2 },
+            { x: 480, y: 468, direction: "down", size: 2 },
+            { x: 480, y: 522, direction: "down", size: 2 },
+          ],
+        },
+      },
+    ],
+    interactables: [
+      {
+        id: "delegate-east",
+        x: 734,
+        y: 178,
+        width: 22,
+        height: 40,
+        kind: "npc",
+        spriteKey: "npc01",
+        direction: "left",
+        animation: "idle",
+        prompt: "thuyết phục nhóm An Nam Cộng sản Đảng",
+        interactionType: "collectFragment",
+        fragmentId: "east",
+      },
+      {
+        id: "delegate-west",
+        x: 232,
+        y: 180,
+        width: 22,
+        height: 40,
+        kind: "npc",
+        spriteKey: "npc03",
+        direction: "right",
+        animation: "idle",
+        prompt: "thuyết phục nhóm Đông Dương Cộng sản Đảng",
+        interactionType: "collectFragment",
+        fragmentId: "west",
+      },
+      {
+        id: "delegate-north",
+        x: 482,
+        y: 116,
+        width: 22,
+        height: 40,
+        kind: "npc",
+        spriteKey: "npc05",
+        direction: "down",
+        animation: "idle",
+        prompt: "thuyết phục nhóm Đông Dương Cộng sản Liên đoàn",
+        interactionType: "collectFragment",
+        fragmentId: "north",
+      },
+      {
+        id: "unity-round-table",
+        x: 480,
+        y: 344,
+        width: 34,
+        height: 18,
+        kind: "object",
+        variant: "unity-table",
+        prompt: "đặt ba mảnh vỡ lên bàn tròn",
+        interactionType: "rewardEmblem",
+      },
+      {
+        id: "split-blade",
+        x: 610,
+        y: 420,
+        width: 18,
+        height: 18,
+        kind: "object",
+        variant: "corrupt-obelisk",
+        prompt: "dùng vũ lực để chia rẽ ba tổ chức",
+        interactionType: "splitChoice",
+      },
+    ],
+    monsters: [],
+    colliders: [
+      { x: 110, y: 88, width: 154, height: 16 },
+      { x: 110, y: 88, width: 16, height: 214 },
+      { x: 248, y: 88, width: 16, height: 214 },
+      { x: 110, y: 286, width: 63, height: 16 },
+      { x: 201, y: 286, width: 63, height: 16 },
+      { x: 704, y: 88, width: 154, height: 16 },
+      { x: 704, y: 88, width: 16, height: 214 },
+      { x: 842, y: 88, width: 16, height: 214 },
+      { x: 704, y: 286, width: 63, height: 16 },
+      { x: 795, y: 286, width: 63, height: 16 },
+      { x: 372, y: 74, width: 214, height: 16 },
+      { x: 372, y: 74, width: 16, height: 126 },
+      { x: 570, y: 74, width: 16, height: 126 },
+      { x: 372, y: 184, width: 93, height: 16 },
+      { x: 493, y: 184, width: 93, height: 16 },
+      { x: 294, y: 230, width: 28, height: 194 },
+      { x: 640, y: 230, width: 28, height: 194 },
+      { x: 178, y: 452, width: 228, height: 26 },
+      { x: 554, y: 452, width: 244, height: 26 },
+    ],
+    decorations,
+  };
+}
+
+function createRedSquareLevel() {
+  const decorations = createRedSquareDecorations();
+
+  return {
+    id: "crossroads",
+    label: "Khu vực 3: Quảng trường đỏ & Chiếc cầu gãy",
+    canvasLabel: "Khu vực 3: Quảng trường đỏ và Chiếc cầu gãy",
+    pauseTitle: "Quảng trường đỏ & Chiếc cầu gãy",
+    spawn: { x: 482, y: 88, direction: "down" },
+    bounds: { minX: 26, maxX: 934, minY: 24, maxY: 618 },
+    aboutSlide: {
+      kicker: "Khu vực 3",
+      title: "Vĩ tuyến 17 và khối đại đoàn kết",
+      text:
+        "Đây là khu vực rộng lớn nhất: nửa trên là quảng trường Việt Minh quy tụ toàn dân, nửa dưới là miền Nam bị đàn áp, ấp chiến lược và một lời dụ dỗ chia cắt vĩnh viễn đất nước.",
+      caption: "Một dòng sông xiết chia đôi đất nước tại vĩ tuyến 17",
+      art: "crowd",
+    },
+    exits: [
+      {
+        id: "back-to-hub-3",
+        kind: "rect",
+        prompt: "Lối quay lại trung tâm",
+        x: 432,
+        y: 28,
+        width: 96,
+        height: 56,
+        target: "hub",
+        spawn: { x: 164, y: 484, direction: "right" },
+        guide: {
+          color: "#f3d777",
+          glowAlpha: 0.34,
+          size: 3,
+          visibleWhen: () => state.quests.zone3ThreadClaimed && state.quests.zone3MapClaimed,
+          markers: [
+            { x: 480, y: 180, direction: "up", size: 2 },
+            { x: 480, y: 124, direction: "up", size: 2 },
+            { x: 480, y: 74, direction: "up", size: 2 },
+          ],
+        },
+      },
+    ],
+    interactables: [
+      {
+        id: "vietminh-cadre",
+        x: 482,
+        y: 160,
+        width: 22,
+        height: 40,
+        kind: "npc",
+        spriteKey: "npc06",
+        direction: "down",
+        animation: "idle",
+        prompt: "gặp cán bộ Mặt trận",
+        interactionType: "rewardThread",
+      },
+      {
+        id: "recruit-farmer",
+        x: 214,
+        y: 182,
+        width: 20,
+        height: 38,
+        kind: "npc",
+        spriteKey: "npc02",
+        direction: "right",
+        animation: "idle",
+        prompt: "mời người nông dân về Quảng trường Đỏ",
+        interactionType: "recruit",
+        recruitId: "farmer",
+      },
+      {
+        id: "recruit-worker",
+        x: 724,
+        y: 208,
+        width: 20,
+        height: 38,
+        kind: "npc",
+        spriteKey: "npc01",
+        direction: "left",
+        animation: "idle",
+        prompt: "mời người công nhân gia nhập khối đoàn kết",
+        interactionType: "recruit",
+        recruitId: "worker",
+      },
+      {
+        id: "recruit-intellectual",
+        x: 312,
+        y: 108,
+        width: 20,
+        height: 38,
+        kind: "npc",
+        spriteKey: "npc05",
+        direction: "down",
+        animation: "idle",
+        prompt: "thuyết phục trí thức yêu nước",
+        interactionType: "recruit",
+        recruitId: "intellectual",
+      },
+      {
+        id: "recruit-bourgeois",
+        x: 656,
+        y: 124,
+        width: 20,
+        height: 38,
+        kind: "npc",
+        spriteKey: "npc03",
+        direction: "down",
+        animation: "idle",
+        prompt: "mời tư sản dân tộc đứng vào mặt trận",
+        interactionType: "recruit",
+        recruitId: "bourgeois",
+      },
+      {
+        id: "landlord-patriot",
+        x: 144,
+        y: 256,
+        width: 20,
+        height: 38,
+        kind: "npc",
+        spriteKey: "npc04",
+        direction: "right",
+        animation: "idle",
+        prompt: "liên hiệp với địa chủ kháng chiến",
+        attackPenalty: 32,
+        attackPenaltyMessage: "Bạn mắc sai lầm tả khuynh, tấn công cả lực lượng có thể liên hiệp.",
+      },
+      {
+        id: "middle-peasant",
+        x: 800,
+        y: 256,
+        width: 20,
+        height: 38,
+        kind: "npc",
+        spriteKey: "npc05",
+        direction: "left",
+        animation: "idle",
+        prompt: "trấn an trung nông đang hoang mang",
+        attackPenalty: 24,
+        attackPenaltyMessage: "Bạn đàn áp sai người và làm tổn hại niềm tin của quần chúng.",
+      },
+      {
+        id: "hamlet-1",
+        x: 250,
+        y: 478,
+        width: 28,
+        height: 24,
+        kind: "object",
+        variant: "strategic-hamlet",
+        prompt: "phá một ấp chiến lược",
+        interactionType: "rescueHamlet",
+        hamletId: "hamlet-1",
+      },
+      {
+        id: "hamlet-2",
+        x: 482,
+        y: 528,
+        width: 28,
+        height: 24,
+        kind: "object",
+        variant: "strategic-hamlet",
+        prompt: "phá ấp chiến lược gần vĩ tuyến",
+        interactionType: "rescueHamlet",
+        hamletId: "hamlet-2",
+      },
+      {
+        id: "hamlet-3",
+        x: 720,
+        y: 460,
+        width: 28,
+        height: 24,
+        kind: "object",
+        variant: "strategic-hamlet",
+        prompt: "giải cứu dân khỏi ấp chiến lược",
+        interactionType: "rescueHamlet",
+        hamletId: "hamlet-3",
+      },
+      {
+        id: "resistance-commander",
+        x: 832,
+        y: 566,
+        width: 22,
+        height: 40,
+        kind: "npc",
+        spriteKey: "npc06",
+        direction: "left",
+        animation: "idle",
+        prompt: "nhận Bản đồ hàn gắn",
+        interactionType: "rewardMap",
+      },
+      {
+        id: "foreign-advisor",
+        x: 112,
+        y: 566,
+        width: 22,
+        height: 40,
+        kind: "npc",
+        spriteKey: "npc01",
+        direction: "right",
+        animation: "idle",
+        prompt: "ký hiệp ước chia cắt vĩnh viễn",
+        interactionType: "permanentDivision",
+      },
+    ],
+    monsters: [
+      {
+        id: "southern-tyrant",
+        name: "Bộ máy áp bức miền Nam",
+        variant: "blight",
+        x: 542,
+        y: 480,
+        width: 28,
+        height: 28,
+        maxHealth: 5,
+        damage: 1,
+        aggroRadius: 150,
+        patrolRadius: 30,
+      },
+    ],
+    colliders: [
+      { x: 0, y: 300, width: 420, height: 56 },
+      { x: 540, y: 300, width: WORLD.width - 540, height: 56 },
+      { x: 188, y: 448, width: 110, height: 48 },
+      { x: 420, y: 500, width: 126, height: 48 },
+      { x: 690, y: 438, width: 112, height: 48 },
+      { x: 408, y: 22, width: 152, height: 26 },
+    ],
+    decorations,
+  };
+}
+
+function createDoiMoiValleyLevel() {
+  const decorations = createDoiMoiValleyDecorations();
+
+  return {
+    id: "spring",
+    label: "Khu vực 4: Thung lũng Đổi Mới",
+    canvasLabel: "Khu vực 4: Thung lũng Đổi Mới",
+    pauseTitle: "Thung lũng Đổi Mới",
+    spawn: { x: 482, y: 560, direction: "up" },
+    bounds: { minX: 26, maxX: 934, minY: 26, maxY: 618 },
+    aboutSlide: {
+      kicker: "Khu vực 4",
+      title: "Phá rào bao cấp, mở đường đổi mới",
+      text:
+        "Thung lũng sáng bừng lên bởi ruộng đồng, nhà máy và chợ mới. Nhưng ở góc cũ kỹ vẫn còn khu chợ tem phiếu, lạm phát và hàng rào cơ chế quan liêu bao cấp cản lối phát triển.",
+      caption: "Khoảnh khắc chuyển mình từ trì trệ sang tự chủ sản xuất",
+      art: "spring",
+    },
+    exits: [
+      {
+        id: "back-to-hub-4",
+        kind: "rect",
+        prompt: "Lối quay lại trung tâm",
+        x: 434,
+        y: 550,
+        width: 96,
+        height: 56,
+        target: "hub",
+        spawn: { x: 800, y: 486, direction: "left" },
+        guide: {
+          color: "#f3d777",
+          glowAlpha: 0.34,
+          size: 3,
+          visibleWhen: () => state.quests.zone4GearClaimed,
+          markers: [
+            { x: 480, y: 422, direction: "down", size: 2 },
+            { x: 480, y: 482, direction: "down", size: 2 },
+            { x: 480, y: 536, direction: "down", size: 2 },
+          ],
+        },
+      },
+    ],
+    interactables: [
+      {
+        id: "bao-cap-wall-1",
+        x: 286,
+        y: 386,
+        width: 26,
+        height: 22,
+        kind: "object",
+        variant: "bureaucracy-wall",
+        prompt: "phá hàng rào cơ chế quan liêu",
+        interactionType: "breakBarrier",
+        barrierId: "wall-1",
+      },
+      {
+        id: "bao-cap-wall-2",
+        x: 480,
+        y: 370,
+        width: 26,
+        height: 22,
+        kind: "object",
+        variant: "bureaucracy-wall",
+        prompt: "tháo một rào cản bao cấp",
+        interactionType: "breakBarrier",
+        barrierId: "wall-2",
+      },
+      {
+        id: "bao-cap-wall-3",
+        x: 674,
+        y: 386,
+        width: 26,
+        height: 22,
+        kind: "object",
+        variant: "bureaucracy-wall",
+        prompt: "dỡ bỏ cơ chế trì trệ",
+        interactionType: "breakBarrier",
+        barrierId: "wall-3",
+      },
+      {
+        id: "farmer-khoan-1",
+        x: 190,
+        y: 476,
+        width: 20,
+        height: 38,
+        kind: "npc",
+        spriteKey: "npc02",
+        direction: "right",
+        animation: "idle",
+        prompt: "trao Khoán 10 cho hộ nông dân",
+        interactionType: "deliverKhoan10",
+        farmerId: "farmer-1",
+      },
+      {
+        id: "farmer-khoan-2",
+        x: 480,
+        y: 470,
+        width: 20,
+        height: 38,
+        kind: "npc",
+        spriteKey: "npc03",
+        direction: "down",
+        animation: "idle",
+        prompt: "trao Khoán 10 cho người sản xuất",
+        interactionType: "deliverKhoan10",
+        farmerId: "farmer-2",
+      },
+      {
+        id: "farmer-khoan-3",
+        x: 780,
+        y: 476,
+        width: 20,
+        height: 38,
+        kind: "npc",
+        spriteKey: "npc01",
+        direction: "left",
+        animation: "idle",
+        prompt: "phát Khoán 10 cho hộ nông dân cuối",
+        interactionType: "deliverKhoan10",
+        farmerId: "farmer-3",
+      },
+      {
+        id: "doi-moi-leader",
+        x: 486,
+        y: 270,
+        width: 22,
+        height: 40,
+        kind: "npc",
+        spriteKey: "npc06",
+        direction: "down",
+        animation: "idle",
+        prompt: "gặp nhà lãnh đạo để nhận Bánh răng Đổi Mới",
+        interactionType: "rewardGear",
+        slide: {
+          kicker: "Khu vực 4",
+          title: "Khoán 10 và bước ngoặt Đổi Mới",
+          text:
+            "Phá bỏ cơ chế quan liêu bao cấp, giao quyền chủ động sản xuất cho nông dân và giải phóng sức sản xuất là bước mở đầu để nền kinh tế bung ra và Đổi Mới thành công.",
+          caption: "Từ kho tem phiếu sang cánh đồng tự chủ sản xuất",
+          art: "spring",
+        },
+      },
+      {
+        id: "ration-market",
+        x: 118,
+        y: 262,
+        width: 24,
+        height: 22,
+        kind: "object",
+        variant: "ration-market",
+        prompt: "xem khu chợ tem phiếu cũ",
+      },
+      {
+        id: "corrupt-official",
+        x: 842,
+        y: 196,
+        width: 22,
+        height: 40,
+        kind: "npc",
+        spriteKey: "npc04",
+        direction: "left",
+        animation: "idle",
+        prompt: "tham nhũng, bòn rút của công",
+        interactionType: "fillCorruption",
+      },
+      {
+        id: "pluralism-broker",
+        x: 832,
+        y: 318,
+        width: 22,
+        height: 40,
+        kind: "npc",
+        spriteKey: "npc05",
+        direction: "left",
+        animation: "idle",
+        prompt: "nghe lời dụ dỗ từ bỏ con đường xã hội chủ nghĩa",
+        interactionType: "ideologyTrap",
+      },
+    ],
+    monsters: [],
+    colliders: [
+      { x: 106, y: 230, width: 82, height: 78 },
+      { x: 788, y: 152, width: 112, height: 82 },
+      { x: 784, y: 280, width: 118, height: 82 },
+      { x: 244, y: 382, width: 76, height: 34 },
+      { x: 438, y: 366, width: 86, height: 34 },
+      { x: 634, y: 382, width: 76, height: 34 },
+    ],
+    decorations,
+  };
+}
+
+function createHubDecorations() {
+  return {
+    stars: Array.from({ length: 44 }, (_, index) => ({
+      x: 48 + ((index * 73) % 860),
+      y: 42 + ((index * 37) % 180),
+      size: 1 + (index % 2),
+    })),
+    portals: [
+      { x: 154, y: 154, color: "#cdd7ef", glow: "#7ea3d7", title: "Khu 1", subtitle: "Suong mu", labelOffsetY: 38 },
+      { x: 806, y: 154, color: "#efd6ab", glow: "#d59f62", title: "Khu 2", subtitle: "Nha go", labelOffsetY: 38 },
+      { x: 162, y: 482, color: "#f3d85b", glow: "#bf4739", title: "Khu 3", subtitle: "Cau gay", labelOffsetY: -62 },
+      { x: 802, y: 482, color: "#d9f0a7", glow: "#6db05a", title: "Khu 4", subtitle: "Doi Moi", labelOffsetY: -62 },
+    ],
+    plaza: { x: 238, y: 146, width: 484, height: 354 },
+    gate: { x: 436, y: 170, width: 88, height: 120 },
+    cainosProps: [
+      { sprite: "statue", x: 336, y: 186, scale: 1 },
+      { sprite: "statue", x: 560, y: 186, scale: 1 },
+      { sprite: "bench", x: 306, y: 378, scale: 0.94 },
+      { sprite: "bench", x: 590, y: 378, scale: 0.94 },
+    ],
+  };
+}
+
+function createPortMazeDecorations() {
+  return {
+    fogBands: Array.from({ length: 10 }, (_, index) => ({
+      x: 40 + index * 96,
+      y: 68 + ((index * 27) % 222),
+      width: 132,
+      height: 28 + (index % 3) * 10,
+      alpha: 0.08 + (index % 3) * 0.04,
+    })),
+    mazeShrubs: [
+      { x: 106, y: 106, width: 282, height: 30 },
+      { x: 106, y: 250, width: 248, height: 26 },
+      { x: 202, y: 394, width: 282, height: 24 },
+      { x: 428, y: 104, width: 24, height: 192 },
+      { x: 542, y: 172, width: 24, height: 184 },
+      { x: 438, y: 246, width: 146, height: 24 },
+      { x: 94, y: 90, width: 24, height: 372 },
+    ],
+    port: { x: 322, y: 472, width: 514, height: 90 },
+    mansion: { x: 740, y: 126, width: 178, height: 142 },
+    lampPosts: [
+      { x: 410, y: 482 },
+      { x: 586, y: 480 },
+      { x: 736, y: 476 },
+    ],
+    crawlerBushes: [
+      { x: 84, y: 164, variant: 0, scale: 0.86 },
+      { x: 604, y: 156, variant: 5, scale: 0.84 },
+      { x: 676, y: 270, variant: 8, scale: 0.78 },
+      { x: 904, y: 284, variant: 7, scale: 0.74 },
+      { x: 274, y: 454, variant: 2, scale: 0.9 },
+    ],
+    crawlerTrees: [
+      { x: 662, y: 268, variant: 2, scale: 1 },
+      { x: 904, y: 274, variant: 6, scale: 1.04 },
+      { x: 76, y: 452, variant: 1, scale: 0.92 },
+    ],
+    crawlerTools: [
+      { x: 372, y: 542, variant: 0, scale: 0.72 },
+      { x: 648, y: 540, variant: 1, scale: 0.76 },
+      { x: 830, y: 286, variant: 0, scale: 0.62 },
+    ],
+    cainosProps: [
+      { sprite: "cargoStack", x: 350, y: 490, scale: 0.92 },
+      { sprite: "barrel", x: 440, y: 520, scale: 1.15 },
+      { sprite: "cargoStack", x: 610, y: 492, scale: 0.92 },
+      { sprite: "barrel", x: 720, y: 520, scale: 1.15 },
+      { sprite: "bench", x: 778, y: 182, scale: 0.82 },
+    ],
+  };
+}
+
+function createUnityHouseDecorations() {
+  return {
+    house: { x: 98, y: 74, width: 760, height: 472 },
+    rooms: [
+      { x: 110, y: 88, width: 154, height: 214 },
+      { x: 704, y: 88, width: 154, height: 214 },
+      { x: 372, y: 74, width: 214, height: 126 },
+    ],
+    beams: [146, 320, 482, 644, 810],
+    rugs: [
+      { x: 160, y: 320, width: 186, height: 84 },
+      { x: 612, y: 320, width: 186, height: 84 },
+    ],
+    limezuFloorProps: [
+      { sprite: "rugGold", x: 418, y: 336, scale: 0.84 },
+    ],
+    limezuFurnitureProps: [
+      { sprite: "bookshelfTall", x: 128, y: 102, scale: 0.78 },
+      { sprite: "deskCompact", x: 142, y: 192, scale: 0.84 },
+      { sprite: "bookshelfTall", x: 718, y: 102, scale: 0.78 },
+      { sprite: "deskArchive", x: 730, y: 192, scale: 0.84 },
+      { sprite: "chalkboard", x: 430, y: 90, scale: 0.92 },
+      { sprite: "deskWide", x: 408, y: 278, scale: 0.9 },
+      { sprite: "sofaSet", x: 418, y: 384, scale: 0.84 },
+    ],
+  };
+}
+
+function createRedSquareDecorations() {
+  return {
+    splitY: 330,
+    river: { x: 0, y: 300, width: WORLD.width, height: 58 },
+    bridge: { x: 434, y: 292, width: 92, height: 74 },
+    northSquare: { x: 126, y: 92, width: 710, height: 194 },
+    southTown: { x: 132, y: 396, width: 700, height: 176 },
+    flags: [
+      { x: 226, y: 102, height: 50 },
+      { x: 480, y: 90, height: 68 },
+      { x: 732, y: 110, height: 46 },
+    ],
+    crawlerBushes: [
+      { x: 166, y: 438, variant: 5, scale: 0.82 },
+      { x: 296, y: 554, variant: 8, scale: 0.76 },
+      { x: 652, y: 552, variant: 9, scale: 0.76 },
+      { x: 832, y: 438, variant: 4, scale: 0.82 },
+    ],
+    crawlerTrees: [
+      { x: 156, y: 566, variant: 4, scale: 1.04 },
+      { x: 860, y: 562, variant: 5, scale: 1.04 },
+      { x: 92, y: 286, variant: 2, scale: 0.92 },
+    ],
+    crawlerTools: [
+      { x: 290, y: 560, variant: 1, scale: 0.66 },
+      { x: 654, y: 560, variant: 0, scale: 0.66 },
+    ],
+    cainosProps: [
+      { sprite: "statue", x: 184, y: 126, scale: 0.86 },
+      { sprite: "statue", x: 714, y: 126, scale: 0.86 },
+      { sprite: "bench", x: 250, y: 236, scale: 0.84 },
+      { sprite: "bench", x: 612, y: 236, scale: 0.84 },
+      { sprite: "cargoStack", x: 190, y: 430, scale: 0.84 },
+      { sprite: "barrel", x: 736, y: 454, scale: 1.08 },
+    ],
+  };
+}
+
+function createDoiMoiValleyDecorations() {
+  return {
+    clouds: [
+      { x: 90, y: 56, width: 122, height: 18 },
+      { x: 340, y: 38, width: 146, height: 22 },
+      { x: 636, y: 64, width: 124, height: 18 },
+    ],
+    hills: [
+      { x: 0, y: 196, width: 320, height: 120, color: "#8ecb66" },
+      { x: 212, y: 170, width: 360, height: 146, color: "#77b751" },
+      { x: 560, y: 190, width: 400, height: 126, color: "#92ce67" },
+    ],
+    factories: [
+      { x: 614, y: 214, width: 122, height: 72 },
+      { x: 756, y: 198, width: 92, height: 82 },
+    ],
+    rationMarket: { x: 86, y: 214, width: 106, height: 92 },
+    riceFields: [
+      { x: 98, y: 430, width: 172, height: 102 },
+      { x: 358, y: 438, width: 240, height: 94 },
+      { x: 650, y: 430, width: 194, height: 102 },
+    ],
+    crawlerBushes: [
+      { x: 80, y: 316, variant: 1, scale: 0.78 },
+      { x: 276, y: 370, variant: 0, scale: 0.76 },
+      { x: 590, y: 360, variant: 2, scale: 0.78 },
+      { x: 882, y: 360, variant: 3, scale: 0.74 },
+      { x: 126, y: 556, variant: 10, scale: 0.82 },
+      { x: 836, y: 556, variant: 11, scale: 0.82 },
+    ],
+    crawlerTrees: [
+      { x: 62, y: 308, variant: 0, scale: 1.06 },
+      { x: 302, y: 296, variant: 1, scale: 1.04 },
+      { x: 578, y: 308, variant: 4, scale: 1.04 },
+    ],
+    crawlerTools: [
+      { x: 238, y: 416, variant: 0, scale: 0.7 },
+      { x: 570, y: 420, variant: 1, scale: 0.72 },
+      { x: 724, y: 416, variant: 0, scale: 0.72 },
+    ],
+  };
+}
+
 function createStoryRegistry(levelMap) {
   const registry = {};
 
   for (const level of Object.values(levelMap)) {
     for (const item of level.interactables ?? []) {
+      if (!item.slide) {
+        continue;
+      }
+
       registry[item.id] = {
         id: item.id,
         levelId: level.id,
@@ -1601,6 +3082,72 @@ function createStoryRegistry(levelMap) {
   }
 
   return registry;
+}
+
+function initializeLevelRuntime() {
+  for (const level of Object.values(levels)) {
+    for (const item of level.interactables ?? []) {
+      item.collected = false;
+      item.used = false;
+      item.purified = false;
+      item.activated = false;
+    }
+
+    for (const monster of level.monsters ?? []) {
+      monster.homeX = monster.x;
+      monster.homeY = monster.y;
+      monster.health = monster.maxHealth;
+      monster.defeated = false;
+      monster.hitFlashUntil = 0;
+      monster.lastContactAt = 0;
+      monster.animationState = "idle";
+      monster.phase = monster.phase ?? Math.random() * Math.PI * 2;
+    }
+  }
+}
+
+function resetGameplayProgress() {
+  state.health = PLAYER_MAX_HEALTH;
+  state.saDoa = 0;
+  state.inventory.clear();
+  state.skillCooldowns.strikeReadyAt = 0;
+  state.skillCooldowns.purifyReadyAt = 0;
+  state.invulnerableUntil = 0;
+  state.activeSkillEffect = null;
+  state.endingId = null;
+  state.endingSummary = "";
+  state.puzzleState.archiveSequence = 0;
+  state.puzzleState.archiveSolved = false;
+  state.quests = createQuestState();
+  initializeLevelRuntime();
+  updateProgressHud();
+}
+
+function updateProgressHud() {
+  const hpPercent = (state.health / PLAYER_MAX_HEALTH) * 100;
+  const saDoaPercent = (state.saDoa / SA_DOA_MAX) * 100;
+  const strikeCooldown = getRemainingCooldownMs(state.skillCooldowns.strikeReadyAt);
+  const purifyCooldown = getRemainingCooldownMs(state.skillCooldowns.purifyReadyAt);
+
+  hpFill.style.width = `${hpPercent}%`;
+  hpValue.textContent = `${state.health} / ${PLAYER_MAX_HEALTH}`;
+  saDoaFill.style.width = `${saDoaPercent}%`;
+  saDoaValue.textContent = `${state.saDoa}%`;
+  inventoryValue.textContent = `${state.inventory.size} / ${RELIC_TARGET_COUNT}`;
+  skillValue.textContent =
+    `${formatCooldownLabel("J", strikeCooldown)} | ${formatCooldownLabel("K", purifyCooldown)}`;
+}
+
+function getRemainingCooldownMs(readyAt) {
+  return Math.max(0, Math.ceil(readyAt - state.lastTimestamp));
+}
+
+function formatCooldownLabel(key, remainingMs) {
+  if (remainingMs <= 0) {
+    return `${key}: San sang`;
+  }
+
+  return `${key}: ${(remainingMs / 1000).toFixed(1)}s`;
 }
 
 function currentLevel() {
@@ -1613,9 +3160,15 @@ function frame(timestamp) {
 
   if (state.mode === "playing") {
     updatePlayer(deltaSeconds);
+    updateMonsters(deltaSeconds);
     updateInteractionPrompt();
   }
 
+  if (state.activeSkillEffect && state.lastTimestamp >= state.activeSkillEffect.endsAt) {
+    state.activeSkillEffect = null;
+  }
+
+  updateProgressHud();
   render();
   requestAnimationFrame(frame);
 }
@@ -1628,8 +3181,10 @@ function resetStoryProgress() {
   state.activeStoryIndex = 0;
   state.unlockedStoryIds.clear();
   state.pendingEnding = false;
+  state.endingId = null;
   hideDialogue();
   hideStoryToast();
+  resetGameplayProgress();
   updateBookControls();
   updateStoryBookButton();
 }
@@ -1683,10 +3238,57 @@ function hideDialogue() {
   dialogueBox.setAttribute("aria-hidden", "true");
 }
 
-function getInteractionDialogue(item) {
+function hideOpeningIntro() {
+  openingIntro.classList.add("hidden");
+  openingIntro.setAttribute("aria-hidden", "true");
+}
+
+function renderOpeningIntro() {
+  const entry = OPENING_DIALOGUE[state.openingStep];
+
+  if (!entry) {
+    return;
+  }
+
+  openingCard.style.animation = "none";
+  openingCard.offsetHeight;
+  openingCard.style.animation = "";
+  openingSpeaker.textContent = entry.speaker;
+  openingProgress.textContent = `${state.openingStep + 1} / ${OPENING_DIALOGUE.length}`;
+  openingText.textContent = entry.text;
+  openingNextButton.textContent = state.openingStep === OPENING_DIALOGUE.length - 1
+    ? "Bat dau"
+    : "Tiep tuc";
+  openingIntro.classList.remove("hidden");
+  openingIntro.setAttribute("aria-hidden", "false");
+}
+
+function getLegacyInteractionDialogue(item) {
   return INTERACTION_DIALOGUES[item.id] ?? {
     speaker: item.kind === "npc" ? "Nhân chứng" : "Dấu tích",
     lines: [item.slide.caption, item.slide.text],
+  };
+}
+
+function getInteractionDialogue(item) {
+  const scriptedDialogue = INTERACTION_DIALOGUES[item.id];
+
+  if (scriptedDialogue) {
+    return scriptedDialogue;
+  }
+
+  const lines = [
+    item.slide?.caption,
+    item.slide?.text,
+    item.prompt ? `Ban dung lai de ${item.prompt}.` : "",
+    item.kind === "npc"
+      ? "Nhan vat nay van con mot manh cau chuyen, du chua co hoi thoai rieng."
+      : "Dau tich nay van con gia an va chua kip ke het cau chuyen cua minh.",
+  ].filter(Boolean);
+
+  return {
+    speaker: item.kind === "npc" ? "Nhan chung" : "Dau tich",
+    lines: lines.slice(0, 2),
   };
 }
 
@@ -1825,7 +3427,7 @@ function showStoryBookEntry(direction) {
   openSlide(getActiveStorySlide());
 }
 
-function startGame() {
+function legacyStartGame() {
   state.mode = "playing";
   state.aboutFromPause = false;
   keys.clear();
@@ -1837,10 +3439,11 @@ function startGame() {
   pauseMenu.setAttribute("aria-hidden", "true");
   slideModal.setAttribute("aria-hidden", "true");
   resetStoryProgress();
-  loadLevel("village");
+  loadLevel("hub");
+  showStoryToast("Mục tiêu mới: đi qua 4 khu vực, tìm đủ 5 vật phẩm và giữ thanh Tha hóa ở mức an toàn.");
 }
 
-function returnToStartScreen() {
+function legacyReturnToStartScreen() {
   state.mode = "start";
   state.activeInteractionId = null;
   state.aboutFromPause = false;
@@ -1852,8 +3455,80 @@ function returnToStartScreen() {
   slideModal.setAttribute("aria-hidden", "true");
   pauseMenu.setAttribute("aria-hidden", "true");
   resetStoryProgress();
-  loadLevel("village");
+  loadLevel("hub");
   startScreen.classList.remove("hidden");
+}
+
+function advanceOpeningIntro() {
+  if (state.mode !== "opening") {
+    return;
+  }
+
+  if (state.openingStep < OPENING_DIALOGUE.length - 1) {
+    state.openingStep += 1;
+    renderOpeningIntro();
+    return;
+  }
+
+  beginGameSession();
+}
+
+function beginGameSession() {
+  state.mode = "playing";
+  state.aboutFromPause = false;
+  state.openingStep = 0;
+  keys.clear();
+  hideEndOverlay();
+  hideOpeningIntro();
+  startScreen.classList.add("hidden");
+  startScreen.setAttribute("aria-hidden", "true");
+  pauseMenu.classList.add("hidden");
+  slideModal.classList.add("hidden");
+  interactionPrompt.classList.add("hidden");
+  pauseMenu.setAttribute("aria-hidden", "true");
+  slideModal.setAttribute("aria-hidden", "true");
+  resetStoryProgress();
+  loadLevel("hub");
+  showStoryToast("Muc tieu moi: di qua 4 khu vuc, tim du 5 vat pham va giu thanh Tha hoa o muc an toan.");
+}
+
+function startGame() {
+  state.mode = "opening";
+  state.aboutFromPause = false;
+  state.openingStep = 0;
+  keys.clear();
+  hideEndOverlay();
+  hideDialogue();
+  hideStoryToast();
+  hideOpeningIntro();
+  startScreen.classList.add("hidden");
+  startScreen.setAttribute("aria-hidden", "true");
+  pauseMenu.classList.add("hidden");
+  slideModal.classList.add("hidden");
+  interactionPrompt.classList.add("hidden");
+  pauseMenu.setAttribute("aria-hidden", "true");
+  slideModal.setAttribute("aria-hidden", "true");
+  renderOpeningIntro();
+  updateStoryBookButton();
+}
+
+function returnToStartScreen() {
+  state.mode = "start";
+  state.activeInteractionId = null;
+  state.aboutFromPause = false;
+  state.openingStep = 0;
+  keys.clear();
+  hideEndOverlay();
+  hideOpeningIntro();
+  slideModal.classList.add("hidden");
+  pauseMenu.classList.add("hidden");
+  interactionPrompt.classList.add("hidden");
+  slideModal.setAttribute("aria-hidden", "true");
+  pauseMenu.setAttribute("aria-hidden", "true");
+  resetStoryProgress();
+  loadLevel("hub");
+  startScreen.classList.remove("hidden");
+  startScreen.setAttribute("aria-hidden", "false");
 }
 
 function togglePause() {
@@ -1884,16 +3559,20 @@ function restartGame() {
   state.mode = "playing";
   state.activeInteractionId = null;
   state.aboutFromPause = false;
+  state.openingStep = 0;
   keys.clear();
   hideEndOverlay();
+  hideOpeningIntro();
   startScreen.classList.add("hidden");
+  startScreen.setAttribute("aria-hidden", "true");
   pauseMenu.classList.add("hidden");
   slideModal.classList.add("hidden");
   interactionPrompt.classList.add("hidden");
   pauseMenu.setAttribute("aria-hidden", "true");
   slideModal.setAttribute("aria-hidden", "true");
   resetStoryProgress();
-  loadLevel("village");
+  loadLevel("hub");
+  showStoryToast("Hành trình khởi động lại. Hãy giữ vững chính khí, tránh Tha hóa và tìm đủ 5 vật phẩm.");
 }
 
 function loadLevel(levelId, spawnOverride) {
@@ -1909,12 +3588,18 @@ function loadLevel(levelId, spawnOverride) {
   player.direction = spawn.direction ?? "down";
   player.walkTime = 0;
   player.isMoving = false;
+  state.blockedExitIds = new Set(
+    level.exits
+      .filter((exit) => exit.target && isPointInsideExit(player.x, player.y, exit))
+      .map((exit) => exit.id)
+  );
 
   updateCamera();
   updateLevelChrome();
   updateInteractionPrompt();
   syncAmbienceAudio();
   updateStoryBookButton();
+  updateProgressHud();
 }
 
 function updateLevelChrome() {
@@ -2016,8 +3701,14 @@ function closeSlide() {
 }
 
 function showEndOverlay() {
+  const ending = ENDING_DEFINITIONS[state.endingId] ?? ENDING_DEFINITIONS.bad;
+
   state.mode = "ending";
   interactionPrompt.classList.add("hidden");
+  endTitle.textContent = ending.title;
+  endCopy.textContent = ending.copy;
+  endSummary.textContent =
+    state.endingSummary || `Tín vật: ${state.inventory.size}/${RELIC_TARGET_COUNT} • Tha hóa: ${state.saDoa}%`;
   endOverlay.classList.remove("hidden");
   endOverlay.setAttribute("aria-hidden", "false");
   updateStoryBookButton();
@@ -2027,6 +3718,200 @@ function hideEndOverlay() {
   endOverlay.classList.add("hidden");
   endOverlay.setAttribute("aria-hidden", "true");
   updateStoryBookButton();
+}
+
+function useStrikeSkill() {
+  if (state.lastTimestamp < state.skillCooldowns.strikeReadyAt) {
+    return;
+  }
+
+  state.skillCooldowns.strikeReadyAt = state.lastTimestamp + STRIKE_COOLDOWN_MS;
+  state.activeSkillEffect = {
+    type: "strike",
+    direction: player.direction,
+    x: player.x,
+    y: player.y,
+    endsAt: state.lastTimestamp + 150,
+  };
+
+  let hitMonster = false;
+
+  for (const monster of currentLevel().monsters ?? []) {
+    if (monster.defeated || !isTargetInRange(monster, STRIKE_RANGE)) {
+      continue;
+    }
+
+    hitMonster = true;
+    damageMonster(monster, 1);
+  }
+
+  if (!hitMonster) {
+    for (const item of currentLevel().interactables ?? []) {
+      if (item.kind !== "npc") {
+        continue;
+      }
+
+      if (isTargetInRange(item, STRIKE_RANGE)) {
+        adjustSaDoa(
+          item.attackPenalty ?? 10,
+          item.attackPenaltyMessage ?? "Bạn ra đòn thiếu kiểm soát và làm hại người vô tội."
+        );
+        break;
+      }
+    }
+  }
+}
+
+function usePurifySkill() {
+  if (state.lastTimestamp < state.skillCooldowns.purifyReadyAt) {
+    return;
+  }
+
+  state.skillCooldowns.purifyReadyAt = state.lastTimestamp + PURIFY_COOLDOWN_MS;
+  state.activeSkillEffect = {
+    type: "purify",
+    x: player.x,
+    y: player.y,
+    endsAt: state.lastTimestamp + 280,
+  };
+
+  let affected = false;
+
+  for (const monster of currentLevel().monsters ?? []) {
+    if (monster.defeated) {
+      continue;
+    }
+
+    const distance = Math.hypot(player.x - monster.x, player.y - monster.y);
+
+    if (distance <= PURIFY_RANGE) {
+      affected = true;
+      damageMonster(monster, 2);
+    }
+  }
+
+  for (const item of currentLevel().interactables ?? []) {
+    if (
+      item.used ||
+      item.purified ||
+      !["offerBribe", "splitChoice", "fillCorruption", "ideologyTrap"].includes(item.interactionType)
+    ) {
+      continue;
+    }
+
+    const distance = Math.hypot(player.x - item.x, player.y - item.y);
+
+    if (distance <= PURIFY_RANGE) {
+      item.purified = true;
+      affected = true;
+      adjustSaDoa(-8, "Bạn đã thanh tẩy được một mầm Tha hóa.");
+    }
+  }
+
+  if (!affected) {
+    showStoryToast("Quầng thanh tẩy lan ra nhưng chưa chạm tới mục tiêu nào.");
+  }
+}
+
+function isTargetInRange(target, range) {
+  const point = getInteractionPoint(target);
+  const dx = point.x - player.x;
+  const dy = point.y - player.y;
+  const distance = Math.hypot(dx, dy);
+
+  if (distance > range) {
+    return false;
+  }
+
+  if (player.direction === "left") {
+    return dx <= 14;
+  }
+  if (player.direction === "right") {
+    return dx >= -14;
+  }
+  if (player.direction === "up") {
+    return dy <= 14;
+  }
+
+  return dy >= -14;
+}
+
+function updateMonsters(deltaSeconds) {
+  for (const monster of currentLevel().monsters ?? []) {
+    if (monster.defeated) {
+      continue;
+    }
+
+    const dx = player.x - monster.x;
+    const dy = player.y - monster.y;
+    const distance = Math.hypot(dx, dy);
+    let targetX = monster.homeX + Math.cos(state.lastTimestamp * 0.001 + monster.phase) * (monster.patrolRadius ?? 18);
+    let targetY = monster.homeY + Math.sin(state.lastTimestamp * 0.0012 + monster.phase) * (monster.patrolRadius ?? 18);
+
+    if (distance < (monster.aggroRadius ?? 120)) {
+      targetX = player.x;
+      targetY = player.y;
+    }
+
+    const moveX = targetX - monster.x;
+    const moveY = targetY - monster.y;
+    const moveLength = Math.hypot(moveX, moveY);
+    monster.animationState = moveLength > 1 ? "run" : "idle";
+
+    if (moveLength > 1) {
+      const step = Math.min(moveLength, MONSTER_SPEED * deltaSeconds);
+      monster.x += (moveX / moveLength) * step;
+      monster.y += (moveY / moveLength) * step;
+    }
+
+    monster.x = clamp(monster.x, currentLevel().bounds.minX, currentLevel().bounds.maxX);
+    monster.y = clamp(monster.y, currentLevel().bounds.minY, currentLevel().bounds.maxY);
+
+    if (
+      distance <= MONSTER_TOUCH_RANGE &&
+      state.lastTimestamp - monster.lastContactAt >= MONSTER_CONTACT_DAMAGE_COOLDOWN_MS
+    ) {
+      monster.lastContactAt = state.lastTimestamp;
+      damagePlayer(monster.damage ?? 1, monster.name);
+    }
+  }
+}
+
+function damageMonster(monster, amount) {
+  monster.health = Math.max(0, monster.health - amount);
+  monster.hitFlashUntil = state.lastTimestamp + 180;
+
+  if (monster.health > 0) {
+    return;
+  }
+
+  monster.defeated = true;
+
+  if (monster.dropItemId) {
+    collectRelic(monster.dropItemId);
+    return;
+  }
+
+  showStoryToast(`${monster.name} đã bị đánh bại.`);
+}
+
+function damagePlayer(amount, sourceName = "bóng tối") {
+  if (state.lastTimestamp < state.invulnerableUntil) {
+    return;
+  }
+
+  state.invulnerableUntil = state.lastTimestamp + 820;
+  state.health = Math.max(0, state.health - amount);
+  updateProgressHud();
+
+  if (state.health > 0) {
+    showStoryToast(`${sourceName} gây ${amount} sát thương.`);
+    return;
+  }
+
+  adjustSaDoa(8, "Bạn gục ngã trước bóng tối và bị đẩy lùi trên hành trình.");
+  state.health = PLAYER_MAX_HEALTH;
+  loadLevel(state.currentLevelId);
 }
 
 function updatePlayer(deltaSeconds) {
@@ -2137,8 +4022,14 @@ function updateCamera() {
 }
 
 function handleLevelTransitions() {
+  refreshBlockedExits();
+
   for (const exit of currentLevel().exits) {
     if (!exit.target) {
+      continue;
+    }
+
+    if (state.blockedExitIds.has(exit.id)) {
       continue;
     }
 
@@ -2152,6 +4043,7 @@ function handleLevelTransitions() {
 }
 
 function updateInteractionPrompt() {
+  updateQuestChip();
   const candidate = getNearestInteractable();
 
   if (candidate) {
@@ -2162,6 +4054,13 @@ function updateInteractionPrompt() {
   }
 
   state.activeInteractionId = null;
+  const nearbyMonster = getNearestMonster(72);
+
+  if (nearbyMonster) {
+    interactionPrompt.textContent = `J tấn công • K thanh tẩy ${nearbyMonster.name}`;
+    interactionPrompt.classList.remove("hidden");
+    return;
+  }
 
   const exitHint = getActiveExitHint();
 
@@ -2171,17 +4070,51 @@ function updateInteractionPrompt() {
     return;
   }
 
+  const navigationPrompt = getNavigationStatusPrompt();
+
+  if (navigationPrompt) {
+    interactionPrompt.textContent = navigationPrompt;
+    interactionPrompt.classList.remove("hidden");
+    return;
+  }
+
   interactionPrompt.classList.add("hidden");
 }
 
 function getActiveExitHint() {
   for (const exit of currentLevel().exits) {
+    if (state.blockedExitIds.has(exit.id)) {
+      continue;
+    }
+
     if (isExitNear(exit)) {
       return exit;
     }
   }
 
   return null;
+}
+
+function updateQuestChip() {
+  if (!questChip) {
+    return;
+  }
+
+  const objective = getNavigationObjective();
+
+  questChip.textContent = objective
+    ? `Quest Nav: ${objective.label} (${formatNavigationDistance(objective.distance)})`
+    : "Quest Nav: Tu do tham hiem";
+}
+
+function getNavigationStatusPrompt() {
+  const objective = getNavigationObjective();
+
+  if (!objective) {
+    return "";
+  }
+
+  return `Muc tieu: ${objective.label} (${formatNavigationDistance(objective.distance)})`;
 }
 
 function isExitNear(exit) {
@@ -2197,21 +4130,527 @@ function isExitNear(exit) {
 }
 
 function isExitTriggered(exit) {
+  return isPointInsideExit(player.x, player.y, exit);
+}
+
+function isPointInsideExit(x, y, exit) {
   if (exit.kind === "edge-right") {
-    return player.x >= exit.triggerX && player.y > exit.minY && player.y < exit.maxY;
+    return x >= exit.triggerX && y > exit.minY && y < exit.maxY;
   }
 
   if (exit.kind === "rect") {
-    return pointInRect(player.x, player.y, exit);
+    return pointInRect(x, y, exit);
   }
 
   return false;
+}
+
+function refreshBlockedExits() {
+  if (state.blockedExitIds.size === 0) {
+    return;
+  }
+
+  const activeExitIds = new Set();
+
+  for (const exit of currentLevel().exits) {
+    if (!state.blockedExitIds.has(exit.id)) {
+      continue;
+    }
+
+    if (isPointInsideExit(player.x, player.y, exit)) {
+      activeExitIds.add(exit.id);
+    }
+  }
+
+  state.blockedExitIds = activeExitIds;
+}
+
+function isLevelReadyToReturn(levelId) {
+  switch (levelId) {
+    case "village":
+      return state.quests.zone1RewardClaimed;
+    case "archive":
+      return state.quests.zone2RewardClaimed;
+    case "crossroads":
+      return state.quests.zone3ThreadClaimed && state.quests.zone3MapClaimed;
+    case "spring":
+      return state.quests.zone4GearClaimed;
+    default:
+      return false;
+  }
+}
+
+function getReturnGuidanceForLevel(levelId) {
+  if (!isLevelReadyToReturn(levelId)) {
+    return "";
+  }
+
+  switch (levelId) {
+    case "village":
+      return "Đã có tín vật của Khu vực 1. Hãy theo mũi tên vàng quay lại trung tâm.";
+    case "archive":
+      return "Đã có tín vật của Khu vực 2. Hãy theo mũi tên vàng quay lại trung tâm.";
+    case "crossroads":
+      return "Đã thu đủ tín vật của Khu vực 3. Hãy theo mũi tên vàng quay lại trung tâm.";
+    case "spring":
+      return "Đã có tín vật của Khu vực 4. Hãy theo mũi tên vàng quay lại trung tâm.";
+    default:
+      return "";
+  }
+}
+
+function formatNavigationDistance(distance) {
+  return `${Math.max(1, Math.round(distance / 18))} buoc`;
+}
+
+function getDirectionFromVector(dx, dy) {
+  return Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? "right" : "left") : dy > 0 ? "down" : "up";
+}
+
+function getLevelInteractable(id) {
+  return currentLevel().interactables.find((item) => item.id === id) ?? null;
+}
+
+function getLevelMonster(id) {
+  return currentLevel().monsters?.find((monster) => monster.id === id) ?? null;
+}
+
+function getLevelExit(id) {
+  return currentLevel().exits.find((exit) => exit.id === id) ?? null;
+}
+
+function createInteractableNavigationTarget(item, label, color = "#f3d777") {
+  if (!item || item.collected || item.used) {
+    return null;
+  }
+
+  const point = getInteractionPoint(item);
+
+  return {
+    id: item.id,
+    type: "interactable",
+    label,
+    color,
+    x: point.x,
+    y: point.y,
+  };
+}
+
+function createMonsterNavigationTarget(monster, label, color = "#e96558") {
+  if (!monster || monster.defeated) {
+    return null;
+  }
+
+  return {
+    id: monster.id,
+    type: "monster",
+    label,
+    color,
+    x: monster.x,
+    y: monster.y,
+  };
+}
+
+function createExitNavigationTarget(exit, label, color = "#f3d777") {
+  if (!exit || state.blockedExitIds.has(exit.id)) {
+    return null;
+  }
+
+  const center = getExitCenter(exit);
+
+  return {
+    id: exit.id,
+    type: "exit",
+    label,
+    color: exit.guide?.color ?? color,
+    x: center.x,
+    y: center.y,
+  };
+}
+
+function pickNearestNavigationTarget(targets) {
+  let nearest = null;
+  let nearestDistance = Infinity;
+
+  for (const target of targets) {
+    if (!target) {
+      continue;
+    }
+
+    const distance = Math.hypot(target.x - player.x, target.y - player.y);
+
+    if (distance < nearestDistance) {
+      nearest = target;
+      nearestDistance = distance;
+    }
+  }
+
+  return nearest;
+}
+
+function getNextHubExitId() {
+  if (!state.quests.zone1RewardClaimed) {
+    return "to-fog-port";
+  }
+
+  if (!state.quests.zone2RewardClaimed) {
+    return "to-three-room-house";
+  }
+
+  if (!state.quests.zone3ThreadClaimed || !state.quests.zone3MapClaimed) {
+    return "to-red-square";
+  }
+
+  if (!state.quests.zone4GearClaimed) {
+    return "to-doi-moi-valley";
+  }
+
+  return null;
+}
+
+function getHubNavigationTarget() {
+  const hasAllRelics = REQUIRED_RELIC_IDS.every((itemId) => state.inventory.has(itemId));
+
+  if (hasAllRelics) {
+    return createInteractableNavigationTarget(
+      getLevelInteractable("final-history-gate"),
+      "Dat 5 tin vat len Canh Cua Lich Su",
+      "#f3d777"
+    );
+  }
+
+  const nextExitId = getNextHubExitId();
+
+  switch (nextExitId) {
+    case "to-fog-port":
+      return createExitNavigationTarget(getLevelExit(nextExitId), "Tien vao Khu vuc 1", "#d7ebff");
+    case "to-three-room-house":
+      return createExitNavigationTarget(getLevelExit(nextExitId), "Tien vao Khu vuc 2", "#f4d9af");
+    case "to-red-square":
+      return createExitNavigationTarget(getLevelExit(nextExitId), "Tien vao Khu vuc 3", "#f3dc7f");
+    case "to-doi-moi-valley":
+      return createExitNavigationTarget(getLevelExit(nextExitId), "Tien vao Khu vuc 4", "#d7efab");
+    default:
+      return null;
+  }
+}
+
+function getVillageNavigationTarget() {
+  if (state.quests.zone1RewardClaimed) {
+    return createExitNavigationTarget(getLevelExit("back-to-hub-1"), "Quay ve trung tam", "#f3d777");
+  }
+
+  if (!state.quests.zone1Started) {
+    return createInteractableNavigationTarget(getLevelInteractable("le-paria-stack"), "Nhan bao Le Paria", "#d7ebff");
+  }
+
+  const workerTargets = pickNearestNavigationTarget([
+    state.quests.zone1Delivered.has("worker-1")
+      ? null
+      : createInteractableNavigationTarget(getLevelInteractable("worker-harbor-1"), "Dua bao cho cong nhan 1", "#d7ebff"),
+    state.quests.zone1Delivered.has("worker-2")
+      ? null
+      : createInteractableNavigationTarget(getLevelInteractable("worker-harbor-2"), "Dua bao cho cong nhan 2", "#d7ebff"),
+    state.quests.zone1Delivered.has("worker-3")
+      ? null
+      : createInteractableNavigationTarget(getLevelInteractable("worker-harbor-3"), "Dua bao cho cong nhan 3", "#d7ebff"),
+  ]);
+
+  if (workerTargets) {
+    return workerTargets;
+  }
+
+  return createInteractableNavigationTarget(getLevelInteractable("red-compass-reward"), "Nhan Chiec La Ban Do", "#f3d777");
+}
+
+function getArchiveNavigationTarget() {
+  if (state.quests.zone2RewardClaimed) {
+    return createExitNavigationTarget(getLevelExit("back-to-hub-2"), "Quay ve trung tam", "#f3d777");
+  }
+
+  if (state.quests.zone2Fragments.size < 3) {
+    return pickNearestNavigationTarget([
+      state.quests.zone2Fragments.has("west")
+        ? null
+        : createInteractableNavigationTarget(getLevelInteractable("delegate-west"), "Hoa giai phong phia Tay", "#f4d9af"),
+      state.quests.zone2Fragments.has("east")
+        ? null
+        : createInteractableNavigationTarget(getLevelInteractable("delegate-east"), "Hoa giai phong phia Dong", "#f4d9af"),
+      state.quests.zone2Fragments.has("north")
+        ? null
+        : createInteractableNavigationTarget(getLevelInteractable("delegate-north"), "Hoa giai phong phia Bac", "#f4d9af"),
+    ]);
+  }
+
+  return createInteractableNavigationTarget(getLevelInteractable("unity-round-table"), "Dat 3 manh vo len ban tron", "#f3d777");
+}
+
+function getCrossroadsNavigationTarget() {
+  if (state.quests.zone3ThreadClaimed && state.quests.zone3MapClaimed) {
+    return createExitNavigationTarget(getLevelExit("back-to-hub-3"), "Quay ve trung tam", "#f3d777");
+  }
+
+  const targets = [];
+
+  if (!state.quests.zone3ThreadClaimed) {
+    if (state.quests.zone3Recruits.size < 4) {
+      targets.push(
+        state.quests.zone3Recruits.has("farmer")
+          ? null
+          : createInteractableNavigationTarget(getLevelInteractable("recruit-farmer"), "Moi nong dan vao mat tran", "#f3dc7f"),
+        state.quests.zone3Recruits.has("worker")
+          ? null
+          : createInteractableNavigationTarget(getLevelInteractable("recruit-worker"), "Moi cong nhan vao mat tran", "#f3dc7f"),
+        state.quests.zone3Recruits.has("intellectual")
+          ? null
+          : createInteractableNavigationTarget(getLevelInteractable("recruit-intellectual"), "Moi tri thuc yeu nuoc", "#f3dc7f"),
+        state.quests.zone3Recruits.has("bourgeois")
+          ? null
+          : createInteractableNavigationTarget(getLevelInteractable("recruit-bourgeois"), "Moi tu san dan toc", "#f3dc7f")
+      );
+    } else {
+      targets.push(
+        createInteractableNavigationTarget(getLevelInteractable("vietminh-cadre"), "Nhan Soi Chi Do Viet Minh", "#f3d777")
+      );
+    }
+  }
+
+  if (!state.quests.zone3MapClaimed) {
+    if (state.quests.zone3HamletsFreed.size < 3) {
+      targets.push(
+        state.quests.zone3HamletsFreed.has("hamlet-1")
+          ? null
+          : createInteractableNavigationTarget(getLevelInteractable("hamlet-1"), "Pha ap chien luoc 1", "#f08a61"),
+        state.quests.zone3HamletsFreed.has("hamlet-2")
+          ? null
+          : createInteractableNavigationTarget(getLevelInteractable("hamlet-2"), "Pha ap chien luoc 2", "#f08a61"),
+        state.quests.zone3HamletsFreed.has("hamlet-3")
+          ? null
+          : createInteractableNavigationTarget(getLevelInteractable("hamlet-3"), "Pha ap chien luoc 3", "#f08a61")
+      );
+    } else {
+      const boss = getLevelMonster("southern-tyrant");
+
+      if (boss && !boss.defeated) {
+        targets.push(createMonsterNavigationTarget(boss, "Danh bai bo may ap buc", "#e96558"));
+      } else {
+        targets.push(
+          createInteractableNavigationTarget(getLevelInteractable("resistance-commander"), "Nhan Ban do Vi tuyen 17", "#f3d777")
+        );
+      }
+    }
+  }
+
+  return pickNearestNavigationTarget(targets);
+}
+
+function getSpringNavigationTarget() {
+  if (state.quests.zone4GearClaimed) {
+    return createExitNavigationTarget(getLevelExit("back-to-hub-4"), "Quay ve trung tam", "#f3d777");
+  }
+
+  if (state.quests.zone4Barriers.size < 3) {
+    return pickNearestNavigationTarget([
+      state.quests.zone4Barriers.has("wall-1")
+        ? null
+        : createInteractableNavigationTarget(getLevelInteractable("bao-cap-wall-1"), "Pha hang rao 1", "#d7efab"),
+      state.quests.zone4Barriers.has("wall-2")
+        ? null
+        : createInteractableNavigationTarget(getLevelInteractable("bao-cap-wall-2"), "Pha hang rao 2", "#d7efab"),
+      state.quests.zone4Barriers.has("wall-3")
+        ? null
+        : createInteractableNavigationTarget(getLevelInteractable("bao-cap-wall-3"), "Pha hang rao 3", "#d7efab"),
+    ]);
+  }
+
+  if (state.quests.zone4Farmers.size < 3) {
+    return pickNearestNavigationTarget([
+      state.quests.zone4Farmers.has("farmer-1")
+        ? null
+        : createInteractableNavigationTarget(getLevelInteractable("farmer-khoan-1"), "Trao Khoan 10 cho nong dan 1", "#d7efab"),
+      state.quests.zone4Farmers.has("farmer-2")
+        ? null
+        : createInteractableNavigationTarget(getLevelInteractable("farmer-khoan-2"), "Trao Khoan 10 cho nong dan 2", "#d7efab"),
+      state.quests.zone4Farmers.has("farmer-3")
+        ? null
+        : createInteractableNavigationTarget(getLevelInteractable("farmer-khoan-3"), "Trao Khoan 10 cho nong dan 3", "#d7efab"),
+    ]);
+  }
+
+  return createInteractableNavigationTarget(getLevelInteractable("doi-moi-leader"), "Nhan Banh rang Doi Moi", "#f3d777");
+}
+
+function getNavigationObjective() {
+  let target = null;
+
+  switch (state.currentLevelId) {
+    case "hub":
+      target = getHubNavigationTarget();
+      break;
+    case "village":
+      target = getVillageNavigationTarget();
+      break;
+    case "archive":
+      target = getArchiveNavigationTarget();
+      break;
+    case "crossroads":
+      target = getCrossroadsNavigationTarget();
+      break;
+    case "spring":
+      target = getSpringNavigationTarget();
+      break;
+    default:
+      target = null;
+      break;
+  }
+
+  if (!target) {
+    return null;
+  }
+
+  const dx = target.x - player.x;
+  const dy = target.y - player.y;
+  const distance = Math.hypot(dx, dy);
+
+  return {
+    ...target,
+    dx,
+    dy,
+    distance,
+    direction: getDirectionFromVector(dx, dy),
+  };
+}
+
+function getExitCenter(exit) {
+  if (exit.kind === "rect") {
+    return {
+      x: exit.x + exit.width / 2,
+      y: exit.y + exit.height / 2,
+    };
+  }
+
+  return {
+    x: exit.triggerX,
+    y: (exit.minY + exit.maxY) / 2,
+  };
+}
+
+function isWorldPointOnScreen(x, y, margin = 18) {
+  const screenX = x - camera.x;
+  const screenY = y - camera.y;
+
+  return (
+    screenX >= margin &&
+    screenX <= VIEWPORT.width - margin &&
+    screenY >= margin &&
+    screenY <= VIEWPORT.height - margin
+  );
+}
+
+function drawObjectiveBeacon(objective, pulse) {
+  if (!isWorldPointOnScreen(objective.x, objective.y, 10)) {
+    return;
+  }
+
+  const bob = Math.sin(state.lastTimestamp * 0.01) * 3;
+  const markerX = Math.round(objective.x);
+  const markerY = Math.round(objective.y - 20 + bob);
+
+  ctx.save();
+  ctx.translate(-camera.x, -camera.y);
+  drawWorldWarmGlow(markerX, markerY, 26, 0.24 * pulse);
+
+  ctx.save();
+  ctx.globalAlpha = 0.24 * pulse;
+  drawPixelExitArrow(markerX + 2, markerY + 2, "down", 3, "#17120f");
+  ctx.restore();
+
+  drawPixelExitArrow(markerX, markerY, "down", 3, "#2b2019");
+  drawPixelExitArrow(markerX, markerY, "down", 2, objective.color);
+  drawPixelExitArrow(markerX, markerY, "down", 1, "#fff8d5");
+  ctx.restore();
+}
+
+function drawPlayerNavigationArrow(objective, pulse) {
+  const offset = 38;
+  const arrowX = player.x + (objective.dx / objective.distance) * offset;
+  const arrowY = player.y - 28 + (objective.dy / objective.distance) * offset;
+
+  ctx.save();
+  ctx.translate(-camera.x, -camera.y);
+  drawWorldWarmGlow(arrowX, arrowY, 34, 0.22 * pulse);
+
+  ctx.save();
+  ctx.globalAlpha = 0.24 * pulse;
+  drawPixelExitArrow(Math.round(arrowX + 3), Math.round(arrowY + 3), objective.direction, 3, "#17120f");
+  ctx.restore();
+
+  drawPixelExitArrow(Math.round(arrowX), Math.round(arrowY), objective.direction, 3, "#2b2019");
+  drawPixelExitArrow(Math.round(arrowX), Math.round(arrowY), objective.direction, 2, objective.color);
+  drawPixelExitArrow(Math.round(arrowX), Math.round(arrowY), objective.direction, 1, "#fff8d5");
+  ctx.restore();
+}
+
+function drawScreenEdgeNavigationArrow(objective, pulse) {
+  const margin = 28;
+  const centerX = VIEWPORT.width / 2;
+  const centerY = VIEWPORT.height / 2;
+  const unitX = objective.dx / objective.distance;
+  const unitY = objective.dy / objective.distance;
+  const limitX = centerX - margin;
+  const limitY = centerY - margin;
+  const scaleX = Math.abs(unitX) < 0.001 ? Infinity : limitX / Math.abs(unitX);
+  const scaleY = Math.abs(unitY) < 0.001 ? Infinity : limitY / Math.abs(unitY);
+  const scale = Math.min(scaleX, scaleY);
+  const arrowX = Math.round(centerX + unitX * scale);
+  const arrowY = Math.round(centerY + unitY * scale);
+
+  ctx.save();
+  drawWorldWarmGlow(arrowX, arrowY, 28, 0.18 * pulse);
+
+  ctx.save();
+  ctx.globalAlpha = 0.24 * pulse;
+  drawPixelExitArrow(arrowX + 2, arrowY + 2, objective.direction, 3, "#17120f");
+  ctx.restore();
+
+  drawPixelExitArrow(arrowX, arrowY, objective.direction, 3, "#2b2019");
+  drawPixelExitArrow(arrowX, arrowY, objective.direction, 2, objective.color);
+  drawPixelExitArrow(arrowX, arrowY, objective.direction, 1, "#fff8d5");
+  ctx.restore();
+}
+
+function drawNavigationAssist() {
+  const objective = getNavigationObjective();
+
+  if (!objective) {
+    return;
+  }
+
+  if (objective.distance < 8) {
+    return;
+  }
+
+  const pulse = 0.86 + (Math.sin(state.lastTimestamp * 0.01) + 1) * 0.1;
+
+  drawObjectiveBeacon(objective, pulse);
+
+  if (isWorldPointOnScreen(objective.x, objective.y, 14)) {
+    drawPlayerNavigationArrow(objective, pulse);
+    return;
+  }
+
+  drawScreenEdgeNavigationArrow(objective, pulse);
 }
 
 function handleInteraction() {
   const candidate = getNearestInteractable();
 
   if (!candidate) {
+    return;
+  }
+
+  if (candidate.interactionType) {
+    handleSystemInteraction(candidate);
     return;
   }
 
@@ -2230,6 +4669,10 @@ function getNearestInteractable() {
   let nearestDistance = Infinity;
 
   for (const item of currentLevel().interactables) {
+    if (!isInteractableAvailable(item)) {
+      continue;
+    }
+
     const point = getInteractionPoint(item);
     const dx = player.x - point.x;
     const dy = player.y - point.y;
@@ -2245,12 +4688,255 @@ function getNearestInteractable() {
   return nearest;
 }
 
+function isInteractableAvailable(item) {
+  switch (item.interactionType) {
+    case "startPapers":
+      return !state.quests.zone1Started;
+    case "deliverPaper":
+      return state.quests.zone1Started && !state.quests.zone1Delivered.has(item.workerId);
+    case "rewardCompass":
+      return state.quests.zone1Delivered.size === 3 && !state.quests.zone1RewardClaimed;
+    case "offerBribe":
+      return !item.used && !item.purified;
+    case "collectFragment":
+      return !state.quests.zone2Fragments.has(item.fragmentId);
+    case "rewardEmblem":
+      return !state.quests.zone2RewardClaimed;
+    case "splitChoice":
+      return !item.used && !item.purified;
+    case "recruit":
+      return !state.quests.zone3Recruits.has(item.recruitId);
+    case "rewardThread":
+      return !state.quests.zone3ThreadClaimed;
+    case "rescueHamlet":
+      return !state.quests.zone3HamletsFreed.has(item.hamletId);
+    case "rewardMap":
+      return !state.quests.zone3MapClaimed;
+    case "permanentDivision":
+      return !item.used;
+    case "breakBarrier":
+      return !state.quests.zone4Barriers.has(item.barrierId);
+    case "deliverKhoan10":
+      return !state.quests.zone4Farmers.has(item.farmerId);
+    case "rewardGear":
+      return !state.quests.zone4GearClaimed;
+    case "fillCorruption":
+    case "ideologyTrap":
+      return !item.used && !item.purified;
+    default:
+      return true;
+  }
+}
+
+function getNearestMonster(maxDistance = Infinity) {
+  let nearest = null;
+  let nearestDistance = maxDistance;
+
+  for (const monster of currentLevel().monsters ?? []) {
+    if (monster.defeated) {
+      continue;
+    }
+
+    const distance = Math.hypot(player.x - monster.x, player.y - monster.y);
+
+    if (distance < nearestDistance) {
+      nearest = monster;
+      nearestDistance = distance;
+    }
+  }
+
+  return nearest;
+}
+
+function handleSystemInteraction(item) {
+  switch (item.interactionType) {
+    case "startPapers":
+      state.quests.zone1Started = true;
+      item.used = true;
+      item.collected = true;
+      showStoryToast("Bạn nhận các tờ Le Paria. Hãy đem chúng tới ba người lao động ở bến cảng.");
+      return;
+    case "deliverPaper":
+      if (!state.quests.zone1Started) {
+        showStoryToast("Bạn cần nhận báo từ Nguyễn Ái Quốc trước.");
+        return;
+      }
+      state.quests.zone1Delivered.add(item.workerId);
+      showStoryToast(`Đã phát ${state.quests.zone1Delivered.size}/3 tờ báo cho công nhân.`);
+      if (state.quests.zone1Delivered.size === 3) {
+        showStoryToast("Khối công nhân đã thức tỉnh. Hãy quay lại gặp Nguyễn Ái Quốc.");
+      }
+      return;
+    case "rewardCompass":
+      if (state.quests.zone1Delivered.size < 3) {
+        showStoryToast("Nguyễn Ái Quốc chỉ trao vật phẩm khi báo đã tới đủ tay người lao động.");
+        return;
+      }
+      state.quests.zone1RewardClaimed = true;
+      item.collected = true;
+      collectRelic("red-compass", getReturnGuidanceForLevel("village"));
+      return;
+    case "offerBribe":
+      item.used = true;
+      adjustSaDoa(34, "Bạn nhận vinh hoa làm tay sai cho mẫu quốc. Tha hóa tăng mạnh.");
+      return;
+    case "collectFragment":
+      state.quests.zone2Fragments.add(item.fragmentId);
+      showStoryToast(`Bạn đã hòa giải được ${state.quests.zone2Fragments.size}/3 nhóm trong căn nhà ba gian.`);
+      return;
+    case "rewardEmblem":
+      if (state.quests.zone2Fragments.size < 3) {
+        showStoryToast("Bàn tròn vẫn thiếu những mảnh hợp nhất từ ba căn phòng.");
+        return;
+      }
+      state.quests.zone2RewardClaimed = true;
+      item.collected = true;
+      collectRelic("unified-emblem", getReturnGuidanceForLevel("archive"));
+      return;
+    case "splitChoice":
+      item.used = true;
+      adjustSaDoa(28, "Bạn dùng chia rẽ nội bộ để áp đặt quyền lực, trái với tinh thần hợp nhất.");
+      return;
+    case "recruit":
+      state.quests.zone3Recruits.add(item.recruitId);
+      showStoryToast(`Khối đại đoàn kết đã quy tụ ${state.quests.zone3Recruits.size}/4 lực lượng.`);
+      return;
+    case "rewardThread":
+      if (state.quests.zone3Recruits.size < 4) {
+        showStoryToast("Quảng trường Đỏ cần đủ nông dân, công nhân, trí thức và tư sản dân tộc.");
+        return;
+      }
+      state.quests.zone3ThreadClaimed = true;
+      collectRelic("vietminh-thread", getReturnGuidanceForLevel("crossroads"));
+      return;
+    case "rescueHamlet":
+      state.quests.zone3HamletsFreed.add(item.hamletId);
+      item.collected = true;
+      showStoryToast(`Bạn đã phá ${state.quests.zone3HamletsFreed.size}/3 ấp chiến lược.`);
+      return;
+    case "rewardMap": {
+      const southernBoss = currentLevel().monsters?.find((monster) => monster.id === "southern-tyrant");
+
+      if (state.quests.zone3HamletsFreed.size < 3) {
+        showStoryToast("Người dân miền Nam vẫn còn mắc kẹt trong các ấp chiến lược.");
+        return;
+      }
+
+      if (southernBoss && !southernBoss.defeated) {
+        showStoryToast("Bạn phải đánh bại bộ máy áp bức trước khi nhận Bản đồ hàn gắn.");
+        return;
+      }
+
+      state.quests.zone3MapClaimed = true;
+      collectRelic("healed-map", getReturnGuidanceForLevel("crossroads"));
+      return;
+    }
+    case "permanentDivision":
+      item.used = true;
+      triggerBadEnding("Bạn ký vào hiệp ước chia cắt vĩnh viễn đất nước.");
+      return;
+    case "breakBarrier":
+      state.quests.zone4Barriers.add(item.barrierId);
+      item.collected = true;
+      showStoryToast(`Đã phá ${state.quests.zone4Barriers.size}/3 hàng rào cơ chế quan liêu bao cấp.`);
+      return;
+    case "deliverKhoan10":
+      if (state.quests.zone4Barriers.size < 3) {
+        showStoryToast("Bạn phải phá rào cản bao cấp trước khi trao Khoán 10.");
+        return;
+      }
+      state.quests.zone4Farmers.add(item.farmerId);
+      showStoryToast(`Khoán 10 đã tới ${state.quests.zone4Farmers.size}/3 hộ nông dân.`);
+      return;
+    case "rewardGear":
+      if (state.quests.zone4Barriers.size < 3 || state.quests.zone4Farmers.size < 3) {
+        showStoryToast("Hãy phá hết rào cản và trao đủ Khoán 10 cho nông dân.");
+        return;
+      }
+      state.quests.zone4GearClaimed = true;
+      collectRelic("doi-moi-gear", getReturnGuidanceForLevel("spring"));
+      return;
+    case "fillCorruption":
+      item.used = true;
+      triggerBadEnding("Bạn sa vào tham nhũng, quan liêu và đánh mất lòng dân.");
+      return;
+    case "ideologyTrap":
+      item.used = true;
+      triggerBadEnding("Bạn nghe theo lời dụ dỗ đa nguyên chính trị và làm chệch hướng đất nước.");
+      return;
+    case "ending":
+      attemptEndingInteraction();
+      return;
+    default:
+      return;
+  }
+}
+
+function collectRelic(itemId, guidance = "") {
+  if (!itemId || state.inventory.has(itemId)) {
+    return false;
+  }
+
+  const relic = RELIC_DEFINITIONS[itemId];
+  state.inventory.add(itemId);
+  updateProgressHud();
+  showStoryToast(
+    guidance
+      ? `Nhận được ${relic?.label ?? "tín vật lạ"}. ${guidance}`
+      : `Nhận được ${relic?.label ?? "tín vật lạ"}`
+  );
+  return true;
+}
+
+function adjustSaDoa(delta, message = "") {
+  state.saDoa = clamp(state.saDoa + delta, 0, SA_DOA_MAX);
+  updateProgressHud();
+
+  if (message) {
+    showStoryToast(message);
+  }
+
+  if (state.saDoa >= SA_DOA_MAX) {
+    triggerBadEnding("Thanh Tha hóa đã đầy, nhân dân quay lưng và lịch sử rơi vào bóng đen mới.");
+  }
+}
+
+function triggerBadEnding(summary) {
+  state.saDoa = SA_DOA_MAX;
+  state.endingId = "bad";
+  state.endingSummary = summary;
+  updateProgressHud();
+  showEndOverlay();
+}
+
+function attemptEndingInteraction() {
+  if (state.saDoa >= SA_DOA_BAD_ENDING) {
+    state.endingId = "bad";
+    state.endingSummary = "Tha hóa đã vượt ngưỡng an toàn trước khi lịch sử kịp được mở khóa.";
+    showEndOverlay();
+    return;
+  }
+
+  const hasAllRelics = REQUIRED_RELIC_IDS.every((itemId) => state.inventory.has(itemId));
+
+  if (!hasAllRelics) {
+    showStoryToast("Cánh Cửa Lịch Sử vẫn bị khóa. Bạn cần đủ 5 vật phẩm then chốt.");
+    return;
+  }
+
+  state.endingId = "good";
+  state.endingSummary = "Năm vật phẩm hội tụ và thanh Tha hóa vẫn được giữ ở mức thấp.";
+  showEndOverlay();
+}
+
 function render() {
   drawWorld();
   drawInteractables();
   drawPlayer();
+  drawSkillEffect();
   drawAtmosphere();
   drawVignette();
+  drawNavigationAssist();
 }
 
 function drawWorld() {
@@ -2259,23 +4945,24 @@ function drawWorld() {
   ctx.save();
   ctx.translate(-camera.x, -camera.y);
 
-  if (state.currentLevelId === "village") {
-    drawVillageWorld(currentLevel().decorations);
+  if (state.currentLevelId === "hub") {
+    drawHubWorld(currentLevel().decorations);
+  } else if (state.currentLevelId === "village") {
+    drawPortMazeWorld(currentLevel().decorations);
   } else if (state.currentLevelId === "archive") {
-    drawArchiveWorld(currentLevel().decorations);
+    drawUnityHouseWorld(currentLevel().decorations);
   } else if (state.currentLevelId === "crossroads") {
-    drawCrossroadsWorld(currentLevel().decorations);
+    drawRedSquareWorld(currentLevel().decorations);
   } else {
-    drawSpringWorld(currentLevel().decorations);
+    drawDoiMoiValleyWorld(currentLevel().decorations);
   }
 
-  drawExitGuides(currentLevel().exits);
   ctx.restore();
 }
 
 function drawExitGuides(exits) {
   for (const exit of exits) {
-    if (!exit.guide?.markers?.length) {
+    if (!shouldDrawExitGuide(exit)) {
       continue;
     }
 
@@ -2287,7 +4974,7 @@ function drawExitGuides(exits) {
 
 function drawExitGuideMarker(guide, marker, index) {
   const direction = marker.direction ?? "right";
-  const size = marker.size ?? 3;
+  const size = marker.size ?? guide.size ?? 3;
   const travel = 2 + (marker.travel ?? 0);
   const pulsePhase = state.lastTimestamp * 0.006 + index * 0.85;
   const pulse = 0.74 + (Math.sin(pulsePhase) + 1) * 0.13;
@@ -2317,6 +5004,22 @@ function drawExitGuideMarker(guide, marker, index) {
   drawPixelExitArrow(drawX, drawY, direction, size, "#2b2019");
   drawPixelExitArrow(drawX, drawY, direction, size - 1, guide.color ?? "#f3d777");
   drawPixelExitArrow(drawX, drawY, direction, Math.max(1, size - 2), "#fff9d1");
+}
+
+function shouldDrawExitGuide(exit) {
+  if (!exit.guide?.markers?.length) {
+    return false;
+  }
+
+  if (typeof exit.guide.visibleWhen === "function") {
+    return exit.guide.visibleWhen();
+  }
+
+  if (typeof exit.guide.visibleWhen === "boolean") {
+    return exit.guide.visibleWhen;
+  }
+
+  return true;
 }
 
 function drawPixelExitArrow(centerX, centerY, direction, cellSize, color) {
@@ -2364,6 +5067,477 @@ function drawPixelExitArrow(centerX, centerY, direction, cellSize, color) {
       ctx.fillRect(Math.round(drawX), Math.round(drawY), cellSize, cellSize);
     }
   }
+}
+
+function drawHubWorld(decorations) {
+  ctx.fillStyle = "#0d1423";
+  ctx.fillRect(0, 0, WORLD.width, WORLD.height);
+  ctx.fillStyle = "#18263a";
+  ctx.fillRect(0, 160, WORLD.width, WORLD.height - 160);
+
+  for (const star of decorations.stars) {
+    ctx.fillStyle = "#e8f0ff";
+    ctx.fillRect(star.x, star.y, star.size, star.size);
+  }
+
+  ctx.fillStyle = "#314765";
+  ctx.fillRect(decorations.plaza.x, decorations.plaza.y, decorations.plaza.width, decorations.plaza.height);
+  ctx.fillStyle = "#435c7d";
+  ctx.fillRect(decorations.plaza.x + 18, decorations.plaza.y + 18, decorations.plaza.width - 36, decorations.plaza.height - 36);
+  ctx.fillStyle = "#506685";
+  ctx.fillRect(454, 136, 52, 370);
+  ctx.fillRect(246, 300, 468, 40);
+  ctx.fillStyle = "#6b82a2";
+  ctx.fillRect(464, 146, 32, 350);
+  ctx.fillRect(264, 310, 432, 20);
+
+  ctx.fillStyle = "#223046";
+  ctx.fillRect(decorations.gate.x, decorations.gate.y, decorations.gate.width, decorations.gate.height);
+  ctx.fillStyle = "#42526a";
+  ctx.fillRect(decorations.gate.x + 8, decorations.gate.y + 12, decorations.gate.width - 16, decorations.gate.height - 12);
+  ctx.fillStyle = "#1a2434";
+  ctx.fillRect(decorations.gate.x + 20, decorations.gate.y + 22, decorations.gate.width - 40, decorations.gate.height - 26);
+  drawWorldWarmGlow(decorations.gate.x + decorations.gate.width / 2, decorations.gate.y + 28, 88, 0.24);
+
+  drawCainosOutdoorProps(decorations.cainosProps);
+
+  for (const portal of decorations.portals) {
+    drawHubPortal(portal);
+  }
+}
+
+function drawHubPortal(portal) {
+  ctx.save();
+  drawWorldWarmGlow(portal.x, portal.y - 4, 54, 0.2);
+  drawHubPortalSprite(portal);
+
+  const labelY = portal.y + (portal.labelOffsetY ?? 38);
+  ctx.fillStyle = "rgba(22, 27, 36, 0.92)";
+  ctx.fillRect(portal.x - 42, labelY, 84, 28);
+  ctx.strokeStyle = "rgba(245, 232, 195, 0.35)";
+  ctx.lineWidth = 2;
+  ctx.strokeRect(portal.x - 42, labelY, 84, 28);
+  ctx.fillStyle = "#f6ebca";
+  ctx.font = 'bold 11px "Courier New", monospace';
+  ctx.textAlign = "center";
+  ctx.textBaseline = "top";
+  ctx.fillText(portal.title ?? "", portal.x, labelY + 4);
+  ctx.fillStyle = "#d0d7e7";
+  ctx.font = '9px "Courier New", monospace';
+  ctx.fillText(portal.subtitle ?? "", portal.x, labelY + 16);
+  ctx.restore();
+}
+
+function drawHubPortalSprite(portal) {
+  const portalSheet = environmentSprites.hubPortalSheet;
+
+  if (!canDrawSprite(portalSheet)) {
+    drawFallbackHubPortal(portal);
+    return;
+  }
+
+  const frameIndex = Math.floor(state.lastTimestamp / HUB_PORTAL_SPRITE.frameDuration) % HUB_PORTAL_SPRITE.frameCount;
+  const sourceCol = frameIndex % HUB_PORTAL_SPRITE.columns;
+  const sourceRow = Math.floor(frameIndex / HUB_PORTAL_SPRITE.columns);
+  const sourceX = sourceCol * HUB_PORTAL_SPRITE.frameSize;
+  const sourceY = sourceRow * HUB_PORTAL_SPRITE.frameSize;
+  const drawSize = HUB_PORTAL_SPRITE.drawSize;
+  const drawX = Math.round(portal.x - drawSize / 2);
+  const drawY = Math.round(portal.y - drawSize / 2);
+
+  ctx.save();
+  ctx.globalAlpha = 0.34;
+  ctx.fillStyle = portal.glow;
+  ctx.beginPath();
+  ctx.ellipse(portal.x, portal.y, 24, 28, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
+  ctx.drawImage(
+    portalSheet,
+    sourceX,
+    sourceY,
+    HUB_PORTAL_SPRITE.frameSize,
+    HUB_PORTAL_SPRITE.frameSize,
+    drawX,
+    drawY,
+    drawSize,
+    drawSize
+  );
+}
+
+function drawFallbackHubPortal(portal) {
+  ctx.fillStyle = "#2a3446";
+  ctx.fillRect(portal.x - 26, portal.y - 18, 52, 36);
+  ctx.fillStyle = portal.color;
+  ctx.fillRect(portal.x - 18, portal.y - 26, 36, 52);
+  ctx.fillStyle = portal.glow;
+  ctx.fillRect(portal.x - 10, portal.y - 18, 20, 36);
+}
+
+function drawPixelCrawlerVegetation(patches = []) {
+  const vegetationSheet = environmentSprites.pixelCrawler?.vegetation;
+
+  if (!patches.length || !canDrawSprite(vegetationSheet)) {
+    return;
+  }
+
+  const sortedPatches = [...patches].sort((left, right) => left.y - right.y);
+
+  for (const patch of sortedPatches) {
+    const sprite = PIXEL_CRAWLER_VEGETATION_SPRITES[patch.variant % PIXEL_CRAWLER_VEGETATION_SPRITES.length];
+    const scale = patch.scale ?? 1;
+    const drawWidth = Math.round(sprite.width * scale);
+    const drawHeight = Math.round(sprite.height * scale);
+    const drawX = Math.round(patch.x - drawWidth / 2);
+    const drawY = Math.round(patch.y - drawHeight);
+
+    ctx.save();
+    ctx.globalAlpha = patch.alpha ?? 1;
+    ctx.fillStyle = "rgba(10, 16, 13, 0.18)";
+    ctx.fillRect(drawX + 6, drawY + drawHeight - 8, Math.max(10, drawWidth - 12), 6);
+    ctx.drawImage(
+      vegetationSheet,
+      sprite.x,
+      sprite.y,
+      sprite.width,
+      sprite.height,
+      drawX,
+      drawY,
+      drawWidth,
+      drawHeight
+    );
+    ctx.restore();
+  }
+}
+
+function drawPixelCrawlerTrees(trees = []) {
+  const treeSheet = environmentSprites.pixelCrawler?.trees;
+
+  if (!trees.length || !canDrawSprite(treeSheet)) {
+    return;
+  }
+
+  const sortedTrees = [...trees].sort((left, right) => left.y - right.y);
+
+  for (const tree of sortedTrees) {
+    const variant = tree.variant ?? 0;
+    const sourceCol = variant % PIXEL_CRAWLER_TREE_SPRITE.columns;
+    const sourceRow = Math.floor(variant / PIXEL_CRAWLER_TREE_SPRITE.columns);
+    const sourceX = sourceCol * PIXEL_CRAWLER_TREE_SPRITE.frameWidth;
+    const sourceY = sourceRow * PIXEL_CRAWLER_TREE_SPRITE.frameHeight;
+    const scale = tree.scale ?? 1;
+    const drawWidth = Math.round(PIXEL_CRAWLER_TREE_SPRITE.frameWidth * scale);
+    const drawHeight = Math.round(PIXEL_CRAWLER_TREE_SPRITE.frameHeight * scale);
+    const drawX = Math.round(tree.x - drawWidth / 2);
+    const drawY = Math.round(tree.y - drawHeight);
+
+    ctx.save();
+    ctx.fillStyle = "rgba(10, 12, 14, 0.16)";
+    ctx.fillRect(drawX + 8, drawY + drawHeight - 10, Math.max(12, drawWidth - 16), 7);
+    ctx.drawImage(
+      treeSheet,
+      sourceX,
+      sourceY,
+      PIXEL_CRAWLER_TREE_SPRITE.frameWidth,
+      PIXEL_CRAWLER_TREE_SPRITE.frameHeight,
+      drawX,
+      drawY,
+      drawWidth,
+      drawHeight
+    );
+    ctx.restore();
+  }
+}
+
+function drawPixelCrawlerToolClusters(clusters = []) {
+  const toolsSheet = environmentSprites.pixelCrawler?.tools;
+
+  if (!clusters.length || !canDrawSprite(toolsSheet)) {
+    return;
+  }
+
+  const sortedClusters = [...clusters].sort((left, right) => left.y - right.y);
+
+  for (const cluster of sortedClusters) {
+    const sprite = PIXEL_CRAWLER_TOOL_CLUSTER_SPRITES[cluster.variant % PIXEL_CRAWLER_TOOL_CLUSTER_SPRITES.length];
+    const scale = cluster.scale ?? 1;
+    const drawWidth = Math.round(sprite.width * scale);
+    const drawHeight = Math.round(sprite.height * scale);
+    const drawX = Math.round(cluster.x - drawWidth / 2);
+    const drawY = Math.round(cluster.y - drawHeight);
+
+    ctx.save();
+    ctx.globalAlpha = cluster.alpha ?? 0.96;
+    ctx.fillStyle = "rgba(12, 10, 8, 0.18)";
+    ctx.fillRect(drawX + 4, drawY + drawHeight - 8, Math.max(8, drawWidth - 8), 6);
+    ctx.drawImage(
+      toolsSheet,
+      sprite.x,
+      sprite.y,
+      sprite.width,
+      sprite.height,
+      drawX,
+      drawY,
+      drawWidth,
+      drawHeight
+    );
+    ctx.restore();
+  }
+}
+
+function drawPlacedSpriteClusters(image, spriteMap, placements = []) {
+  if (!placements.length || !canDrawSprite(image)) {
+    return;
+  }
+
+  const sortedPlacements = [...placements].sort((left, right) => left.y - right.y);
+
+  for (const placement of sortedPlacements) {
+    const sprite = spriteMap[placement.sprite];
+
+    if (!sprite) {
+      continue;
+    }
+
+    const scale = placement.scale ?? 1;
+    const drawWidth = Math.round(sprite.width * scale);
+    const drawHeight = Math.round(sprite.height * scale);
+    const drawX = Math.round(placement.x);
+    const drawY = Math.round(placement.y);
+
+    if (!sprite.noShadow) {
+      const shadowWidth = Math.round((sprite.shadowWidth ?? Math.max(14, sprite.width * 0.7)) * scale);
+      const shadowHeight = Math.max(4, Math.round((sprite.shadowHeight ?? 6) * scale));
+      const shadowOffsetY = Math.round((sprite.shadowOffsetY ?? sprite.height - 8) * scale);
+
+      ctx.save();
+      ctx.fillStyle = "rgba(12, 10, 8, 0.18)";
+      ctx.fillRect(
+        drawX + Math.round((drawWidth - shadowWidth) / 2),
+        drawY + shadowOffsetY,
+        shadowWidth,
+        shadowHeight
+      );
+      ctx.restore();
+    }
+
+    drawSpriteRect(image, sprite, drawX, drawY, drawWidth, drawHeight, {
+      alpha: placement.alpha ?? 1,
+      filter: placement.filter ?? "none",
+    });
+  }
+}
+
+function drawCainosOutdoorProps(placements = []) {
+  drawPlacedSpriteClusters(environmentSprites.cainos?.props, CAINOS_PROP_SPRITES, placements);
+}
+
+function drawLimezuInteriorProps(placements = []) {
+  drawPlacedSpriteClusters(environmentSprites.limezu?.interiors, LIMEZU_INTERIOR_SPRITES, placements);
+}
+
+function drawPortMazeWorld(decorations) {
+  ctx.fillStyle = "#172235";
+  ctx.fillRect(0, 0, WORLD.width, WORLD.height);
+  ctx.fillStyle = "#2f3f49";
+  ctx.fillRect(0, 108, WORLD.width, WORLD.height - 108);
+  ctx.fillStyle = "#253329";
+  ctx.fillRect(0, 108, WORLD.width, 356);
+  ctx.fillStyle = "#213143";
+  ctx.fillRect(0, 464, WORLD.width, 176);
+  ctx.fillStyle = "#0f1925";
+  ctx.fillRect(0, 562, WORLD.width, 78);
+
+  for (const shrub of decorations.mazeShrubs) {
+    ctx.fillStyle = "#37523e";
+    ctx.fillRect(shrub.x, shrub.y, shrub.width, shrub.height);
+    ctx.fillStyle = "#2a3d30";
+    ctx.fillRect(shrub.x + 6, shrub.y + 4, shrub.width - 12, shrub.height - 8);
+  }
+
+  drawPixelCrawlerVegetation(decorations.crawlerBushes);
+  drawPixelCrawlerTrees(decorations.crawlerTrees);
+
+  for (const fog of decorations.fogBands) {
+    ctx.fillStyle = `rgba(225, 238, 248, ${fog.alpha})`;
+    ctx.fillRect(fog.x, fog.y, fog.width, fog.height);
+  }
+
+  ctx.fillStyle = "#67778a";
+  ctx.fillRect(decorations.port.x, decorations.port.y, decorations.port.width, decorations.port.height);
+  ctx.fillStyle = "#8c6a4c";
+  ctx.fillRect(decorations.port.x, decorations.port.y + 12, decorations.port.width, 18);
+  ctx.fillStyle = "#9b7858";
+  ctx.fillRect(decorations.port.x, decorations.port.y + 42, decorations.port.width, 16);
+
+  ctx.fillStyle = "#7d5c3d";
+  ctx.fillRect(decorations.mansion.x, decorations.mansion.y, decorations.mansion.width, decorations.mansion.height);
+  ctx.fillStyle = "#5e3c2e";
+  ctx.fillRect(decorations.mansion.x - 10, decorations.mansion.y - 16, decorations.mansion.width + 20, 18);
+  ctx.fillStyle = "#d1b38a";
+  ctx.fillRect(decorations.mansion.x + 26, decorations.mansion.y + 40, 34, 54);
+  ctx.fillRect(decorations.mansion.x + 104, decorations.mansion.y + 42, 42, 46);
+
+  drawCainosOutdoorProps(decorations.cainosProps);
+
+  for (const lamp of decorations.lampPosts) {
+    drawWorldWarmGlow(lamp.x, lamp.y - 30, 24, 0.28);
+    ctx.fillStyle = "#44382d";
+    ctx.fillRect(lamp.x - 2, lamp.y - 26, 4, 30);
+    ctx.fillStyle = "#f0db8f";
+    ctx.fillRect(lamp.x - 5, lamp.y - 34, 10, 8);
+  }
+
+  drawPixelCrawlerToolClusters(decorations.crawlerTools);
+}
+
+function drawUnityHouseWorld(decorations) {
+  ctx.fillStyle = "#191411";
+  ctx.fillRect(0, 0, WORLD.width, WORLD.height);
+  ctx.fillStyle = "#4b372a";
+  ctx.fillRect(decorations.house.x, decorations.house.y, decorations.house.width, decorations.house.height);
+  ctx.fillStyle = "#6b5038";
+  ctx.fillRect(decorations.house.x + 12, decorations.house.y + 12, decorations.house.width - 24, decorations.house.height - 24);
+
+  for (const room of decorations.rooms) {
+    ctx.fillStyle = "#5e4432";
+    ctx.fillRect(room.x, room.y, room.width, room.height);
+    ctx.fillStyle = "#7a5a42";
+    ctx.fillRect(room.x + 10, room.y + 10, room.width - 20, room.height - 20);
+    ctx.fillStyle = "#2a1f18";
+    ctx.fillRect(room.x + Math.floor(room.width / 2) - 14, room.y + room.height - 20, 28, 20);
+  }
+
+  for (const beamX of decorations.beams) {
+    ctx.fillStyle = "#2d1e15";
+    ctx.fillRect(beamX, decorations.house.y, 10, decorations.house.height);
+  }
+
+  drawLimezuInteriorProps(decorations.limezuFloorProps);
+
+  for (const rug of decorations.rugs) {
+    ctx.fillStyle = "#7c2e2a";
+    ctx.fillRect(rug.x, rug.y, rug.width, rug.height);
+    ctx.fillStyle = "#d7bb79";
+    ctx.fillRect(rug.x + 10, rug.y + 10, rug.width - 20, rug.height - 20);
+  }
+
+  drawLimezuInteriorProps(decorations.limezuFurnitureProps);
+}
+
+function drawRedSquareWorld(decorations) {
+  ctx.fillStyle = "#a7d8f0";
+  ctx.fillRect(0, 0, WORLD.width, 120);
+  ctx.fillStyle = "#ccd1d5";
+  ctx.fillRect(0, 120, WORLD.width, decorations.splitY - 120);
+  ctx.fillStyle = "#7ba953";
+  ctx.fillRect(0, decorations.splitY, WORLD.width, WORLD.height - decorations.splitY);
+
+  ctx.fillStyle = "#c8b38c";
+  ctx.fillRect(decorations.northSquare.x, decorations.northSquare.y, decorations.northSquare.width, decorations.northSquare.height);
+  ctx.fillStyle = "#d8c5a1";
+  ctx.fillRect(decorations.northSquare.x + 20, decorations.northSquare.y + 20, decorations.northSquare.width - 40, decorations.northSquare.height - 40);
+  ctx.fillStyle = "#bfa16b";
+  for (let x = decorations.northSquare.x + 40; x < decorations.northSquare.x + decorations.northSquare.width - 32; x += 38) {
+    ctx.fillRect(x, decorations.northSquare.y + 138, 14, 26);
+  }
+
+  ctx.fillStyle = "#3f7fb1";
+  ctx.fillRect(decorations.river.x, decorations.river.y, decorations.river.width, decorations.river.height);
+  ctx.fillStyle = "#60a4d1";
+  ctx.fillRect(decorations.river.x, decorations.river.y + 10, decorations.river.width, 12);
+  ctx.fillStyle = "rgba(212, 239, 255, 0.34)";
+  ctx.fillRect(decorations.river.x, decorations.river.y + 26, decorations.river.width, 6);
+  ctx.fillStyle = "#6d5238";
+  ctx.fillRect(decorations.bridge.x, decorations.bridge.y, decorations.bridge.width, decorations.bridge.height);
+  ctx.fillStyle = "#9c7754";
+  ctx.fillRect(decorations.bridge.x + 14, decorations.bridge.y + 12, decorations.bridge.width - 28, decorations.bridge.height - 24);
+
+  ctx.fillStyle = "#9a815e";
+  ctx.fillRect(decorations.southTown.x, decorations.southTown.y, decorations.southTown.width, decorations.southTown.height);
+  ctx.fillStyle = "#806449";
+  ctx.fillRect(decorations.southTown.x + 24, decorations.southTown.y + 24, decorations.southTown.width - 48, decorations.southTown.height - 48);
+  ctx.fillStyle = "#6f523c";
+  for (let index = 0; index < 4; index += 1) {
+    const hutX = decorations.southTown.x + 44 + index * 158;
+    ctx.fillRect(hutX, decorations.southTown.y + 38, 72, 44);
+    ctx.fillStyle = "#563d2d";
+    ctx.fillRect(hutX - 6, decorations.southTown.y + 30, 84, 12);
+    ctx.fillStyle = "#6f523c";
+  }
+
+  drawCainosOutdoorProps(decorations.cainosProps);
+  drawPixelCrawlerVegetation(decorations.crawlerBushes);
+  drawPixelCrawlerTrees(decorations.crawlerTrees);
+  drawPixelCrawlerToolClusters(decorations.crawlerTools);
+
+  for (const flag of decorations.flags) {
+    ctx.fillStyle = "#684f35";
+    ctx.fillRect(flag.x, flag.y, 4, flag.height);
+    ctx.fillStyle = "#cf3c37";
+    ctx.fillRect(flag.x + 4, flag.y + 4, 28, 14);
+    ctx.fillStyle = "#f7d96f";
+    ctx.fillRect(flag.x + 15, flag.y + 8, 6, 6);
+  }
+}
+
+function drawDoiMoiValleyWorld(decorations) {
+  ctx.fillStyle = "#98daf4";
+  ctx.fillRect(0, 0, WORLD.width, 150);
+  ctx.fillStyle = "#d4f1ff";
+  ctx.fillRect(0, 150, WORLD.width, 70);
+
+  for (const hill of decorations.hills) {
+    ctx.fillStyle = hill.color;
+    ctx.fillRect(hill.x, hill.y, hill.width, hill.height);
+  }
+
+  for (const cloud of decorations.clouds) {
+    ctx.fillStyle = "#f8fdff";
+    ctx.fillRect(cloud.x, cloud.y, cloud.width, cloud.height);
+    ctx.fillRect(cloud.x + 12, cloud.y - 6, cloud.width - 24, 8);
+  }
+
+  ctx.fillStyle = "#7abf53";
+  ctx.fillRect(0, 220, WORLD.width, WORLD.height - 220);
+
+  for (const plot of decorations.riceFields) {
+    ctx.fillStyle = "#cba854";
+    ctx.fillRect(plot.x, plot.y, plot.width, plot.height);
+    ctx.fillStyle = "#efd77b";
+    for (let row = 0; row < 5; row += 1) {
+      ctx.fillRect(plot.x + 10, plot.y + 8 + row * 18, plot.width - 20, 4);
+    }
+  }
+
+  drawPixelCrawlerVegetation(decorations.crawlerBushes);
+  drawPixelCrawlerTrees(decorations.crawlerTrees);
+
+  ctx.fillStyle = "#796053";
+  ctx.fillRect(decorations.rationMarket.x, decorations.rationMarket.y, decorations.rationMarket.width, decorations.rationMarket.height);
+  ctx.fillStyle = "#c7b69c";
+  ctx.fillRect(decorations.rationMarket.x + 8, decorations.rationMarket.y + 24, decorations.rationMarket.width - 16, 18);
+  ctx.fillStyle = "#4f423a";
+  for (let index = 0; index < 4; index += 1) {
+    ctx.fillRect(decorations.rationMarket.x + 12 + index * 18, decorations.rationMarket.y + 56, 8, 24);
+  }
+
+  for (const factory of decorations.factories) {
+    ctx.fillStyle = "#88939c";
+    ctx.fillRect(factory.x, factory.y, factory.width, factory.height);
+    ctx.fillStyle = "#5d6a74";
+    ctx.fillRect(factory.x + 18, factory.y - 30, 18, 30);
+    ctx.fillRect(factory.x + 54, factory.y - 44, 20, 44);
+    ctx.fillStyle = "#d8e1ea";
+    ctx.fillRect(factory.x + 12, factory.y + 18, 18, 14);
+    ctx.fillRect(factory.x + 42, factory.y + 22, 18, 14);
+    ctx.fillStyle = "#f3f8fb";
+    ctx.fillRect(factory.x + 21, factory.y - 36, 8, 6);
+    ctx.fillRect(factory.x + 59, factory.y - 50, 8, 6);
+  }
+
+  drawPixelCrawlerToolClusters(decorations.crawlerTools);
 }
 
 function drawVillageWorld(decorations) {
@@ -3096,6 +6270,27 @@ function drawWorldWarmGlow(x, y, radius, alpha) {
   ctx.restore();
 }
 
+function drawWorldAura(worldX, worldY, radius, innerColor, middleColor, outerColor, alpha = 1) {
+  const x = worldX - camera.x;
+  const y = worldY - camera.y;
+
+  if (x < -radius || x > VIEWPORT.width + radius || y < -radius || y > VIEWPORT.height + radius) {
+    return;
+  }
+
+  const gradient = ctx.createRadialGradient(x, y, 0, x, y, radius);
+  gradient.addColorStop(0, innerColor);
+  gradient.addColorStop(0.52, middleColor);
+  gradient.addColorStop(1, outerColor);
+
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.globalCompositeOperation = "screen";
+  ctx.fillStyle = gradient;
+  ctx.fillRect(x - radius, y - radius, radius * 2, radius * 2);
+  ctx.restore();
+}
+
 function drawCrossroadsWorld(decorations) {
   drawCrossroadsBackdrop(decorations);
   drawCrossroadsGlowPath(decorations.glowingPath, decorations.finalArch);
@@ -3434,6 +6629,10 @@ function drawInteractables() {
   ctx.translate(-camera.x, -camera.y);
 
   for (const item of currentLevel().interactables) {
+    if (!shouldDrawInteractable(item)) {
+      continue;
+    }
+
     if (item.kind === "npc") {
       drawNpc(item);
     } else {
@@ -3445,7 +6644,27 @@ function drawInteractables() {
     }
   }
 
+  for (const monster of currentLevel().monsters ?? []) {
+    if (monster.defeated) {
+      continue;
+    }
+
+    drawMonster(monster);
+  }
+
   ctx.restore();
+}
+
+function shouldDrawInteractable(item) {
+  if (item.interactionType === "rewardCompass") {
+    return state.quests.zone1Delivered.size === 3 && !state.quests.zone1RewardClaimed;
+  }
+
+  if (item.interactionType === "rewardEmblem") {
+    return state.quests.zone2Fragments.size === 3 && !state.quests.zone2RewardClaimed;
+  }
+
+  return !item.collected;
 }
 
 function drawNpc(npc) {
@@ -3475,6 +6694,56 @@ function drawNpc(npc) {
 }
 
 function drawObject(item) {
+  if (item.variant === "final-history-gate") {
+    drawFinalHistoryGate(item);
+    return;
+  }
+
+  if (item.variant === "paper-bundle") {
+    drawPaperBundle(item);
+    return;
+  }
+
+  if (item.variant === "unity-table") {
+    drawUnityTable(item);
+    return;
+  }
+
+  if (item.variant === "strategic-hamlet") {
+    drawStrategicHamlet(item);
+    return;
+  }
+
+  if (item.variant === "bureaucracy-wall") {
+    drawBureaucracyWall(item);
+    return;
+  }
+
+  if (item.variant === "ration-market") {
+    drawRationMarket(item);
+    return;
+  }
+
+  if (item.variant === "story-relic") {
+    drawStoryRelic(item);
+    return;
+  }
+
+  if (item.variant === "memory-seal") {
+    drawMemorySeal(item);
+    return;
+  }
+
+  if (item.variant === "corrupt-obelisk") {
+    drawCorruptObelisk(item);
+    return;
+  }
+
+  if (item.variant === "ending-altar") {
+    drawEndingAltar(item);
+    return;
+  }
+
   if (item.variant === "desk") {
     drawRuinedDesk(item);
     return;
@@ -3503,6 +6772,242 @@ function drawObject(item) {
   if (item.variant === "grand-tree") {
     drawGrandTree(item);
   }
+}
+
+function drawFinalHistoryGate(item) {
+  const ready = REQUIRED_RELIC_IDS.every((itemId) => state.inventory.has(itemId)) && state.saDoa < SA_DOA_BAD_ENDING;
+
+  ctx.fillStyle = ready ? "rgba(255, 229, 142, 0.28)" : "rgba(158, 186, 220, 0.18)";
+  ctx.fillRect(item.x - 52, item.y - 72, 104, 120);
+  ctx.fillStyle = "#2f3d54";
+  ctx.fillRect(item.x - 34, item.y - 66, 68, 112);
+  ctx.fillStyle = "#d6c39f";
+  ctx.fillRect(item.x - 26, item.y - 58, 52, 96);
+  ctx.fillStyle = ready ? "#ffe89b" : "#95abc8";
+  ctx.fillRect(item.x - 10, item.y - 44, 20, 46);
+  ctx.fillStyle = "#7f6545";
+  ctx.fillRect(item.x - 40, item.y + 42, 80, 10);
+}
+
+function drawPaperBundle(item) {
+  ctx.fillStyle = "#6a4834";
+  ctx.fillRect(item.x - 8, item.y + 2, 16, 8);
+  ctx.fillStyle = "#efe5c8";
+  ctx.fillRect(item.x - 7, item.y - 6, 14, 10);
+  ctx.fillRect(item.x - 4, item.y - 10, 12, 6);
+  ctx.fillStyle = "#c23e37";
+  ctx.fillRect(item.x - 1, item.y - 11, 2, 14);
+}
+
+function drawUnityTable(item) {
+  ctx.fillStyle = "#6b4a34";
+  ctx.fillRect(item.x - 22, item.y - 6, 44, 12);
+  ctx.fillStyle = "#8b6648";
+  ctx.fillRect(item.x - 16, item.y - 12, 32, 8);
+  ctx.fillStyle = state.quests.zone2Fragments.size === 3 ? "#ffd971" : "#9fb7c4";
+  ctx.fillRect(item.x - 6, item.y - 16, 12, 6);
+}
+
+function drawStrategicHamlet(item) {
+  const cleared = state.quests.zone3HamletsFreed.has(item.hamletId);
+  ctx.fillStyle = cleared ? "#789f54" : "#6b5a4a";
+  ctx.fillRect(item.x - 18, item.y - 10, 36, 20);
+  ctx.fillStyle = cleared ? "#cfe7a0" : "#c2aa7a";
+  ctx.fillRect(item.x - 12, item.y - 16, 24, 8);
+  ctx.fillStyle = cleared ? "#4d7a37" : "#352920";
+  ctx.fillRect(item.x - 20, item.y + 8, 40, 4);
+}
+
+function drawBureaucracyWall(item) {
+  const broken = state.quests.zone4Barriers.has(item.barrierId);
+  ctx.fillStyle = broken ? "#8bc56a" : "#7d6757";
+  ctx.fillRect(item.x - 16, item.y - 8, 32, 16);
+  ctx.fillStyle = broken ? "#d7f1a8" : "#d2c1a2";
+  ctx.fillRect(item.x - 10, item.y - 14, 20, 8);
+  ctx.fillStyle = broken ? "#5d8c45" : "#4a3b31";
+  ctx.fillRect(item.x - 18, item.y + 8, 36, 4);
+}
+
+function drawRationMarket(item) {
+  ctx.fillStyle = "#6d4a36";
+  ctx.fillRect(item.x - 18, item.y - 10, 36, 20);
+  ctx.fillStyle = "#b88e62";
+  ctx.fillRect(item.x - 20, item.y - 16, 40, 8);
+  ctx.fillStyle = "#efe3be";
+  ctx.fillRect(item.x - 10, item.y - 4, 20, 6);
+}
+
+function drawStoryRelic(item) {
+  const glow = 0.42 + Math.sin(state.lastTimestamp * 0.008) * 0.14;
+
+  ctx.fillStyle = `rgba(255, 218, 121, ${glow})`;
+  ctx.fillRect(item.x - 10, item.y - 14, 20, 20);
+  ctx.fillStyle = "#704631";
+  ctx.fillRect(item.x - 6, item.y + 4, 12, 5);
+  ctx.fillStyle = "#f0d17b";
+  ctx.fillRect(item.x - 4, item.y - 10, 8, 12);
+  ctx.fillStyle = "#fff5cf";
+  ctx.fillRect(item.x - 2, item.y - 12, 4, 4);
+  ctx.fillStyle = "#d44b3b";
+  ctx.fillRect(item.x - 1, item.y - 6, 2, 6);
+}
+
+function drawMemorySeal(item) {
+  const active = item.activated;
+  const coreColor = active ? "#fff1a9" : "#9bb6cc";
+  const glowColor = active ? "rgba(255, 230, 136, 0.26)" : "rgba(137, 199, 240, 0.14)";
+
+  ctx.fillStyle = glowColor;
+  ctx.fillRect(item.x - 12, item.y - 18, 24, 30);
+  ctx.fillStyle = "#5f4a37";
+  ctx.fillRect(item.x - 8, item.y - 2, 16, 18);
+  ctx.fillStyle = "#86634b";
+  ctx.fillRect(item.x - 10, item.y - 8, 20, 8);
+  ctx.fillStyle = coreColor;
+  ctx.fillRect(item.x - 4, item.y - 12, 8, 8);
+}
+
+function drawCorruptObelisk(item) {
+  const purified = item.purified;
+  const used = item.used;
+  const glowColor = purified
+    ? "rgba(164, 226, 174, 0.22)"
+    : used
+      ? "rgba(194, 67, 52, 0.16)"
+      : "rgba(194, 67, 52, 0.24)";
+
+  ctx.fillStyle = glowColor;
+  ctx.fillRect(item.x - 14, item.y - 20, 28, 34);
+  ctx.fillStyle = purified ? "#4d7c57" : "#322735";
+  ctx.fillRect(item.x - 8, item.y - 14, 16, 26);
+  ctx.fillStyle = purified ? "#9edaa7" : "#d04639";
+  ctx.fillRect(item.x - 1, item.y - 10, 2, 18);
+  ctx.fillStyle = purified ? "#c9f0d1" : "#6b2320";
+  ctx.fillRect(item.x - 4, item.y - 16, 8, 4);
+}
+
+function drawEndingAltar(item) {
+  const ready = REQUIRED_RELIC_IDS.every((itemId) => state.inventory.has(itemId));
+
+  ctx.fillStyle = ready ? "rgba(255, 239, 168, 0.28)" : "rgba(231, 225, 197, 0.18)";
+  ctx.fillRect(item.x - 22, item.y - 10, 44, 18);
+  ctx.fillStyle = "#8a7252";
+  ctx.fillRect(item.x - 18, item.y - 4, 36, 12);
+  ctx.fillStyle = "#ddd0b4";
+  ctx.fillRect(item.x - 12, item.y - 8, 24, 8);
+  ctx.fillStyle = ready ? "#f8e281" : "#9db3c0";
+  ctx.fillRect(item.x - 6, item.y - 14, 12, 6);
+}
+
+function drawMonster(monster) {
+  const hitFlash = state.lastTimestamp < monster.hitFlashUntil;
+  const spriteConfig = MONSTER_SPRITE_CONFIG[monster.variant];
+  const shadowWidth = spriteConfig?.shadowWidth ?? 20;
+
+  ctx.fillStyle = "rgba(12, 14, 18, 0.28)";
+  ctx.fillRect(monster.x - shadowWidth / 2, monster.y + 10, shadowWidth, 4);
+
+  if (!drawMonsterSprite(monster, hitFlash)) {
+    const palette = getMonsterPalette(monster.variant, hitFlash);
+
+    ctx.fillStyle = palette.body;
+    ctx.fillRect(monster.x - 8, monster.y - 10, 16, 18);
+    ctx.fillStyle = palette.detail;
+    ctx.fillRect(monster.x - 6, monster.y - 14, 12, 6);
+    ctx.fillStyle = palette.eye;
+    ctx.fillRect(monster.x - 4, monster.y - 8, 2, 2);
+    ctx.fillRect(monster.x + 2, monster.y - 8, 2, 2);
+    ctx.fillStyle = palette.crest;
+    ctx.fillRect(monster.x - 10, monster.y - 6, 4, 8);
+    ctx.fillRect(monster.x + 6, monster.y - 4, 4, 8);
+  }
+
+  drawMonsterHealthBar(monster);
+}
+
+function drawMonsterSprite(monster, hitFlash) {
+  const config = MONSTER_SPRITE_CONFIG[monster.variant];
+  const spriteSet = monsterSprites[monster.variant];
+  const animationKey = monster.animationState === "run" ? "run" : "idle";
+  const animation = config?.animations?.[animationKey] ?? config?.animations?.idle;
+  const sprite = spriteSet?.[animationKey] ?? spriteSet?.idle;
+
+  if (!config || !animation || !canDrawSprite(sprite)) {
+    return false;
+  }
+
+  const frameIndex =
+    Math.floor((state.lastTimestamp + (monster.phase ?? 0) * 1000) / animation.frameDuration) % animation.frameCount;
+  const drawX = Math.round(monster.x + config.drawOffsetX);
+  const drawY = Math.round(monster.y + config.drawOffsetY);
+
+  ctx.drawImage(
+    sprite,
+    frameIndex * animation.frameWidth,
+    0,
+    animation.frameWidth,
+    animation.frameHeight,
+    drawX,
+    drawY,
+    config.drawWidth,
+    config.drawHeight
+  );
+
+  if (hitFlash) {
+    ctx.save();
+    ctx.globalCompositeOperation = "screen";
+    ctx.fillStyle = "rgba(255, 236, 212, 0.26)";
+    ctx.fillRect(drawX + 3, drawY + 3, config.drawWidth - 6, config.drawHeight - 8);
+    ctx.restore();
+  }
+
+  return true;
+}
+
+function getMonsterPalette(variant, hitFlash) {
+  if (hitFlash) {
+    return {
+      body: "#f0d2a2",
+      detail: "#fff2d6",
+      eye: "#7d1e19",
+      crest: "#f07d54",
+    };
+  }
+
+  if (variant === "devourer") {
+    return {
+      body: "#4b4035",
+      detail: "#786a52",
+      eye: "#f1cb6d",
+      crest: "#8b342f",
+    };
+  }
+
+  if (variant === "blight") {
+    return {
+      body: "#31462d",
+      detail: "#628a49",
+      eye: "#f6d98e",
+      crest: "#d95c48",
+    };
+  }
+
+  return {
+    body: "#302b3d",
+    detail: "#5a5474",
+    eye: "#ffdd8c",
+    crest: "#c24338",
+  };
+}
+
+function drawMonsterHealthBar(monster) {
+  const width = 18;
+  const ratio = monster.health / monster.maxHealth;
+
+  ctx.fillStyle = "rgba(18, 20, 23, 0.84)";
+  ctx.fillRect(monster.x - 9, monster.y - 18, width, 4);
+  ctx.fillStyle = "#95cf5f";
+  ctx.fillRect(monster.x - 8, monster.y - 17, Math.max(0, Math.round((width - 2) * ratio)), 2);
 }
 
 function drawRuinedDesk(item) {
@@ -3780,24 +7285,256 @@ function drawPlayer() {
   ctx.restore();
 }
 
+function drawSkillEffect() {
+  if (!state.activeSkillEffect) {
+    return;
+  }
+
+  ctx.save();
+  ctx.translate(-camera.x, -camera.y);
+
+  if (state.activeSkillEffect.type === "strike") {
+    const { x, y, direction } = state.activeSkillEffect;
+    let drawX = x;
+    let drawY = y;
+    let width = 26;
+    let height = 10;
+
+    if (direction === "left") {
+      drawX -= 24;
+    } else if (direction === "right") {
+      drawX += 4;
+    } else if (direction === "up") {
+      drawY -= 24;
+      width = 10;
+      height = 26;
+    } else {
+      drawY += 4;
+      width = 10;
+      height = 26;
+    }
+
+    ctx.fillStyle = "rgba(255, 236, 166, 0.72)";
+    ctx.fillRect(drawX, drawY, width, height);
+    ctx.fillStyle = "rgba(255, 255, 234, 0.9)";
+    ctx.fillRect(drawX + 2, drawY + 2, Math.max(2, width - 4), Math.max(2, height - 4));
+  } else {
+    const radius = 22 + Math.sin(state.lastTimestamp * 0.04) * 4;
+    ctx.beginPath();
+    ctx.arc(state.activeSkillEffect.x, state.activeSkillEffect.y, radius, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(200, 244, 190, 0.22)";
+    ctx.fill();
+    ctx.strokeStyle = "rgba(245, 255, 221, 0.75)";
+    ctx.lineWidth = 3;
+    ctx.stroke();
+  }
+
+  ctx.restore();
+}
+
 function drawAtmosphere() {
+  const decorations = currentLevel().decorations ?? {};
+
+  if (state.currentLevelId === "hub") {
+    drawHubAtmosphere(decorations);
+    return;
+  }
+
   if (state.currentLevelId === "village") {
-    drawRain(currentLevel().decorations.rain);
+    drawFogDrift(decorations.fogBands ?? []);
     return;
   }
 
   if (state.currentLevelId === "archive") {
-    drawArchiveLighting(currentLevel().decorations);
-    drawEmbers(currentLevel().decorations.embers);
+    drawUnityHouseAtmosphere(decorations);
     return;
   }
 
   if (state.currentLevelId === "crossroads") {
-    drawGlowMotes(currentLevel().decorations.motes);
+    drawRedSquareAtmosphere(decorations);
     return;
   }
 
-  drawPetals(currentLevel().decorations.petals);
+  drawDoiMoiAtmosphere(decorations);
+}
+
+function drawHubAtmosphere(decorations) {
+  const gateCenterX = decorations.gate.x + decorations.gate.width / 2;
+  const gateCenterY = decorations.gate.y + decorations.gate.height / 2;
+
+  drawWorldAura(
+    gateCenterX,
+    gateCenterY - 12,
+    144,
+    "rgba(217, 236, 255, 0.22)",
+    "rgba(104, 154, 214, 0.14)",
+    "rgba(14, 24, 37, 0)",
+    1
+  );
+
+  for (let index = 0; index < decorations.portals.length; index += 1) {
+    const portal = decorations.portals[index];
+    const pulse = 0.6 + (Math.sin(state.lastTimestamp * 0.004 + index) + 1) * 0.14;
+    drawWorldWarmGlow(portal.x, portal.y - 8, 38, 0.1 + pulse * 0.12);
+  }
+
+  ctx.save();
+  ctx.globalCompositeOperation = "screen";
+
+  for (let index = 0; index < 18; index += 1) {
+    const angle = state.lastTimestamp * 0.0012 + index * 0.35;
+    const radius = 48 + (index % 3) * 16;
+    const x = gateCenterX + Math.cos(angle) * radius - camera.x;
+    const y = gateCenterY - 8 + Math.sin(angle * 1.6) * (22 + (index % 4) * 5) - camera.y;
+    ctx.fillStyle = `rgba(234, 244, 255, ${0.12 + (index % 4) * 0.04})`;
+    ctx.fillRect(Math.round(x), Math.round(y), 2 + (index % 2), 2 + (index % 2));
+  }
+
+  ctx.restore();
+}
+
+function drawFogDrift(fogBands) {
+  ctx.save();
+
+  for (let index = 0; index < fogBands.length; index += 1) {
+    const fog = fogBands[index];
+    const sway = Math.sin(state.lastTimestamp * 0.00045 + index * 0.9) * (10 + (index % 3) * 4);
+    const drift = Math.cos(state.lastTimestamp * 0.0003 + index * 0.6) * 3;
+    const x = fog.x - camera.x + sway;
+    const y = fog.y - camera.y + drift;
+    const width = fog.width + 24;
+    const height = fog.height;
+
+    ctx.fillStyle = `rgba(221, 232, 242, ${fog.alpha * 1.8})`;
+    ctx.fillRect(Math.round(x), Math.round(y), width, height);
+    ctx.fillStyle = `rgba(250, 252, 255, ${fog.alpha * 0.75})`;
+    ctx.fillRect(Math.round(x + 18), Math.round(y + 6), Math.max(24, width - 40), Math.max(6, height - 16));
+  }
+
+  ctx.restore();
+}
+
+function drawUnityHouseAtmosphere(decorations) {
+  const shafts = [208, 480, 748];
+
+  ctx.save();
+  ctx.globalCompositeOperation = "screen";
+
+  for (const shaftX of shafts) {
+    const x = shaftX - camera.x;
+    const y = decorations.house.y - camera.y;
+    const height = decorations.house.height;
+    const gradient = ctx.createLinearGradient(x, y, x, y + height);
+    gradient.addColorStop(0, "rgba(244, 221, 159, 0.18)");
+    gradient.addColorStop(0.35, "rgba(214, 170, 92, 0.08)");
+    gradient.addColorStop(1, "rgba(36, 22, 14, 0)");
+    ctx.fillStyle = gradient;
+    ctx.fillRect(x - 24, y, 48, height);
+  }
+
+  drawWorldAura(
+    480,
+    322,
+    112,
+    "rgba(255, 227, 156, 0.18)",
+    "rgba(182, 117, 64, 0.12)",
+    "rgba(42, 24, 12, 0)",
+    1
+  );
+
+  for (let index = 0; index < 24; index += 1) {
+    const travel = state.lastTimestamp * 0.02 + index * 13;
+    const x = decorations.house.x + 40 + ((index * 67) % (decorations.house.width - 80)) - camera.x;
+    const y = decorations.house.y + 40 + ((travel * 0.45 + index * 17) % (decorations.house.height - 80)) - camera.y;
+    ctx.fillStyle = `rgba(255, 231, 190, ${0.08 + (index % 3) * 0.04})`;
+    ctx.fillRect(Math.round(x), Math.round(y), 2, 2);
+  }
+
+  ctx.restore();
+}
+
+function drawRedSquareAtmosphere(decorations) {
+  drawWorldAura(
+    decorations.bridge.x + decorations.bridge.width / 2,
+    decorations.bridge.y + 20,
+    96,
+    "rgba(242, 226, 151, 0.14)",
+    "rgba(196, 121, 52, 0.1)",
+    "rgba(32, 24, 18, 0)",
+    1
+  );
+
+  ctx.save();
+  ctx.globalCompositeOperation = "screen";
+
+  for (let index = 0; index < 18; index += 1) {
+    const x = decorations.northSquare.x + 36 + ((index * 41) % (decorations.northSquare.width - 72)) - camera.x;
+    const y = decorations.northSquare.y + 34 + Math.sin(state.lastTimestamp * 0.0016 + index) * 16 - camera.y;
+    ctx.fillStyle = `rgba(255, 231, 161, ${0.1 + (index % 2) * 0.06})`;
+    ctx.fillRect(Math.round(x), Math.round(y), 2 + (index % 2), 2 + (index % 2));
+  }
+
+  for (let index = 0; index < 16; index += 1) {
+    const travel = state.lastTimestamp * 0.018 + index * 19;
+    const x = decorations.southTown.x + 24 + ((index * 57) % (decorations.southTown.width - 48)) - camera.x;
+    const y = decorations.southTown.y + 22 + ((travel + index * 9) % 116) - camera.y;
+    ctx.fillStyle = `rgba(116, 88, 62, ${0.08 + (index % 3) * 0.03})`;
+    ctx.fillRect(Math.round(x), Math.round(y), 8, 4);
+  }
+
+  const shimmerOffset = (state.lastTimestamp * 0.05) % 120;
+  ctx.fillStyle = "rgba(231, 247, 255, 0.12)";
+  for (let x = -120; x < VIEWPORT.width + 120; x += 120) {
+    ctx.fillRect(x + shimmerOffset, decorations.river.y - camera.y + 34, 44, 2);
+  }
+
+  ctx.restore();
+}
+
+function drawDoiMoiAtmosphere(decorations) {
+  drawWorldAura(
+    776,
+    94,
+    112,
+    "rgba(255, 245, 194, 0.18)",
+    "rgba(255, 209, 111, 0.1)",
+    "rgba(86, 144, 177, 0)",
+    1
+  );
+
+  ctx.save();
+
+  for (const factory of decorations.factories) {
+    const chimneys = [
+      { x: factory.x + 27, y: factory.y - 30 },
+      { x: factory.x + 64, y: factory.y - 44 },
+    ];
+
+    for (let smokeIndex = 0; smokeIndex < chimneys.length; smokeIndex += 1) {
+      const chimney = chimneys[smokeIndex];
+
+      for (let puff = 0; puff < 5; puff += 1) {
+        const lift = (state.lastTimestamp * 0.026 + puff * 18 + smokeIndex * 12) % 74;
+        const sway = Math.sin(state.lastTimestamp * 0.0014 + puff + smokeIndex) * 8;
+        const x = chimney.x + sway - camera.x;
+        const y = chimney.y - lift - camera.y;
+        const size = 10 + puff * 3;
+        ctx.fillStyle = `rgba(239, 246, 249, ${0.12 - puff * 0.018})`;
+        ctx.fillRect(Math.round(x), Math.round(y), size, Math.max(4, size - 2));
+      }
+    }
+  }
+
+  ctx.globalCompositeOperation = "screen";
+  for (let index = 0; index < 24; index += 1) {
+    const travel = state.lastTimestamp * 0.03 + index * 11;
+    const x = ((index * 53 + travel) % (VIEWPORT.width + 40)) - 20;
+    const y = 260 + ((index * 37 + travel * 0.35) % 260);
+    ctx.fillStyle = `rgba(255, 232, 150, ${0.08 + (index % 4) * 0.03})`;
+    ctx.fillRect(Math.round(x), Math.round(y), 3, 2);
+  }
+
+  ctx.restore();
 }
 
 function drawRain(rain) {
@@ -3973,7 +7710,15 @@ function drawPetals(petals) {
 function drawVignette() {
   const gradient = ctx.createLinearGradient(0, 0, 0, VIEWPORT.height);
 
-  if (state.currentLevelId === "archive") {
+  if (state.currentLevelId === "hub") {
+    gradient.addColorStop(0, "rgba(207, 226, 255, 0.04)");
+    gradient.addColorStop(1, "rgba(3, 8, 16, 0.3)");
+    ctx.strokeStyle = "rgba(162, 197, 255, 0.1)";
+  } else if (state.currentLevelId === "village") {
+    gradient.addColorStop(0, "rgba(241, 248, 255, 0.04)");
+    gradient.addColorStop(1, "rgba(0, 0, 0, 0.34)");
+    ctx.strokeStyle = "rgba(208, 228, 244, 0.08)";
+  } else if (state.currentLevelId === "archive") {
     gradient.addColorStop(0, "rgba(255, 219, 162, 0.05)");
     gradient.addColorStop(1, "rgba(0, 0, 0, 0.24)");
     ctx.strokeStyle = "rgba(255, 229, 181, 0.08)";
