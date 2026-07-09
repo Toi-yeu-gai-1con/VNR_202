@@ -77,6 +77,9 @@ const MONSTER_SPEED = 38;
 const MONSTER_TOUCH_RANGE = 18;
 const MONSTER_CONTACT_DAMAGE_COOLDOWN_MS = 900;
 const RELIC_TARGET_COUNT = 5;
+const PLAYER_ATTACK_ANIMATION_MS = 260;
+const MONSTER_ATTACK_ANIMATION_MS = 260;
+const ATTACK_LUNGE_DISTANCE = 4;
 const NAVIGATION_ASSIST = {
   objectiveGlowRadius: 18,
   playerGlowRadius: 18,
@@ -3244,6 +3247,9 @@ function initializeLevelRuntime() {
       monster.defeated = false;
       monster.hitFlashUntil = 0;
       monster.lastContactAt = 0;
+      monster.attackStartedAt = 0;
+      monster.attackEndsAt = 0;
+      monster.attackDirection = "down";
       monster.animationState = "idle";
       monster.phase = monster.phase ?? Math.random() * Math.PI * 2;
     }
@@ -3876,7 +3882,8 @@ function useStrikeSkill() {
     direction: player.direction,
     x: player.x,
     y: player.y,
-    endsAt: state.lastTimestamp + 150,
+    startedAt: state.lastTimestamp,
+    endsAt: state.lastTimestamp + PLAYER_ATTACK_ANIMATION_MS,
   };
 
   let hitMonster = false;
@@ -4001,9 +4008,10 @@ function updateMonsters(deltaSeconds) {
     const moveX = targetX - monster.x;
     const moveY = targetY - monster.y;
     const moveLength = Math.hypot(moveX, moveY);
-    monster.animationState = moveLength > 1 ? "run" : "idle";
+    const isAttacking = state.lastTimestamp < (monster.attackEndsAt ?? 0);
+    monster.animationState = isAttacking ? "attack" : moveLength > 1 ? "run" : "idle";
 
-    if (moveLength > 1) {
+    if (!isAttacking && moveLength > 1) {
       const step = Math.min(moveLength, MONSTER_SPEED * deltaSeconds);
       monster.x += (moveX / moveLength) * step;
       monster.y += (moveY / moveLength) * step;
@@ -4017,6 +4025,10 @@ function updateMonsters(deltaSeconds) {
       state.lastTimestamp - monster.lastContactAt >= MONSTER_CONTACT_DAMAGE_COOLDOWN_MS
     ) {
       monster.lastContactAt = state.lastTimestamp;
+      monster.attackStartedAt = state.lastTimestamp;
+      monster.attackEndsAt = state.lastTimestamp + MONSTER_ATTACK_ANIMATION_MS;
+      monster.attackDirection = getDirectionFromVector(player.x - monster.x, player.y - monster.y);
+      monster.animationState = "attack";
       damagePlayer(monster.damage ?? 1, monster.name);
     }
   }
@@ -4332,6 +4344,35 @@ function formatNavigationDistance(distance) {
 
 function getDirectionFromVector(dx, dy) {
   return Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? "right" : "left") : dy > 0 ? "down" : "up";
+}
+
+function getDirectionUnit(direction) {
+  if (direction === "left") {
+    return { x: -1, y: 0 };
+  }
+  if (direction === "right") {
+    return { x: 1, y: 0 };
+  }
+  if (direction === "up") {
+    return { x: 0, y: -1 };
+  }
+
+  return { x: 0, y: 1 };
+}
+
+function getTimedProgress(startedAt = 0, endsAt = 0) {
+  const duration = Math.max(1, endsAt - startedAt);
+  return clamp((state.lastTimestamp - startedAt) / duration, 0, 1);
+}
+
+function getAttackLungeOffset(direction, progress, distance = ATTACK_LUNGE_DISTANCE) {
+  const unit = getDirectionUnit(direction);
+  const amount = Math.sin(progress * Math.PI) * distance;
+
+  return {
+    x: unit.x * amount,
+    y: unit.y * amount,
+  };
 }
 
 function getLevelInteractable(id) {
@@ -7440,23 +7481,38 @@ function drawMonster(monster) {
   const hitFlash = state.lastTimestamp < monster.hitFlashUntil;
   const spriteConfig = MONSTER_SPRITE_CONFIG[monster.variant];
   const shadowWidth = spriteConfig?.shadowWidth ?? 20;
+  const isAttacking = state.lastTimestamp < (monster.attackEndsAt ?? 0);
 
   ctx.fillStyle = "rgba(12, 14, 18, 0.28)";
   ctx.fillRect(monster.x - shadowWidth / 2, monster.y + 10, shadowWidth, 4);
 
   if (!drawMonsterSprite(monster, hitFlash)) {
     const palette = getMonsterPalette(monster.variant, hitFlash);
+    const attackProgress = isAttacking ? getTimedProgress(monster.attackStartedAt, monster.attackEndsAt) : 0;
+    const attackOffset = getAttackLungeOffset(monster.attackDirection, attackProgress, ATTACK_LUNGE_DISTANCE * 0.8);
+    const monsterX = monster.x + attackOffset.x;
+    const monsterY = monster.y + attackOffset.y;
 
     ctx.fillStyle = palette.body;
-    ctx.fillRect(monster.x - 8, monster.y - 10, 16, 18);
+    ctx.fillRect(monsterX - 8, monsterY - 10, 16, 18);
     ctx.fillStyle = palette.detail;
-    ctx.fillRect(monster.x - 6, monster.y - 14, 12, 6);
+    ctx.fillRect(monsterX - 6, monsterY - 14, 12, 6);
     ctx.fillStyle = palette.eye;
-    ctx.fillRect(monster.x - 4, monster.y - 8, 2, 2);
-    ctx.fillRect(monster.x + 2, monster.y - 8, 2, 2);
+    ctx.fillRect(monsterX - 4, monsterY - 8, 2, 2);
+    ctx.fillRect(monsterX + 2, monsterY - 8, 2, 2);
     ctx.fillStyle = palette.crest;
-    ctx.fillRect(monster.x - 10, monster.y - 6, 4, 8);
-    ctx.fillRect(monster.x + 6, monster.y - 4, 4, 8);
+    ctx.fillRect(monsterX - 10, monsterY - 6, 4, 8);
+    ctx.fillRect(monsterX + 6, monsterY - 4, 4, 8);
+  }
+
+  if (isAttacking) {
+    const progress = getTimedProgress(monster.attackStartedAt, monster.attackEndsAt);
+    drawAttackSlash(monster.x, monster.y, monster.attackDirection, progress, {
+      scale: 0.72,
+      color: "rgba(255, 121, 91, 0.9)",
+      highlightColor: "rgba(255, 225, 188, 0.78)",
+      shadowColor: "rgba(76, 15, 18, 0.6)",
+    });
   }
 
   drawMonsterHealthBar(monster);
@@ -7465,7 +7521,8 @@ function drawMonster(monster) {
 function drawMonsterSprite(monster, hitFlash) {
   const config = MONSTER_SPRITE_CONFIG[monster.variant];
   const spriteSet = monsterSprites[monster.variant];
-  const animationKey = monster.animationState === "run" ? "run" : "idle";
+  const isAttacking = state.lastTimestamp < (monster.attackEndsAt ?? 0);
+  const animationKey = monster.animationState === "run" || isAttacking ? "run" : "idle";
   const animation = config?.animations?.[animationKey] ?? config?.animations?.idle;
   const sprite = spriteSet?.[animationKey] ?? spriteSet?.idle;
 
@@ -7475,8 +7532,10 @@ function drawMonsterSprite(monster, hitFlash) {
 
   const frameIndex =
     Math.floor((state.lastTimestamp + (monster.phase ?? 0) * 1000) / animation.frameDuration) % animation.frameCount;
-  const drawX = Math.round(monster.x + config.drawOffsetX);
-  const drawY = Math.round(monster.y + config.drawOffsetY);
+  const attackProgress = isAttacking ? getTimedProgress(monster.attackStartedAt, monster.attackEndsAt) : 0;
+  const attackOffset = getAttackLungeOffset(monster.attackDirection, attackProgress, ATTACK_LUNGE_DISTANCE);
+  const drawX = Math.round(monster.x + config.drawOffsetX + attackOffset.x);
+  const drawY = Math.round(monster.y + config.drawOffsetY + attackOffset.y);
 
   ctx.drawImage(
     sprite,
@@ -7738,12 +7797,29 @@ function drawInteractionMarker(item) {
   ctx.fillRect(markerX - 2, markerY + 8, 4, 4);
 }
 
+function getPlayerAttackProgress() {
+  if (state.activeSkillEffect?.type !== "strike") {
+    return 0;
+  }
+
+  return getTimedProgress(state.activeSkillEffect.startedAt, state.activeSkillEffect.endsAt);
+}
+
 function drawPlayer() {
   ctx.save();
   ctx.translate(Math.round(player.x - camera.x), Math.round(player.y - camera.y));
 
   ctx.fillStyle = "rgba(10, 12, 16, 0.32)";
   ctx.fillRect(-7, 9, 14, 4);
+
+  const attackProgress = getPlayerAttackProgress();
+
+  if (attackProgress > 0) {
+    const attackOffset = getAttackLungeOffset(player.direction, attackProgress);
+    const squash = Math.sin(attackProgress * Math.PI);
+    ctx.translate(Math.round(attackOffset.x), Math.round(attackOffset.y));
+    ctx.scale(1 + squash * 0.04, 1 - squash * 0.03);
+  }
 
   const sheet = getPlayerSpriteSheet();
 
@@ -7822,6 +7898,57 @@ function drawPlayer() {
   ctx.restore();
 }
 
+function drawAttackSlash(x, y, direction, progress, options = {}) {
+  const unit = getDirectionUnit(direction);
+  const scale = options.scale ?? 1;
+  const alpha = (options.alpha ?? 1) * Math.sin(progress * Math.PI);
+  const originX = x + unit.x * (18 * scale);
+  const originY = y - 4 + unit.y * (18 * scale);
+  const angle = direction === "left"
+    ? Math.PI
+    : direction === "up"
+      ? -Math.PI / 2
+      : direction === "down"
+        ? Math.PI / 2
+        : 0;
+
+  if (alpha <= 0.01) {
+    return;
+  }
+
+  ctx.save();
+  ctx.translate(originX, originY);
+  ctx.rotate(angle);
+  ctx.scale(0.78 + progress * 0.34, 0.78 + progress * 0.2);
+  ctx.globalAlpha = alpha;
+  ctx.lineCap = "square";
+  ctx.lineJoin = "miter";
+
+  ctx.strokeStyle = options.shadowColor ?? "rgba(48, 24, 16, 0.55)";
+  ctx.lineWidth = Math.max(2, Math.round(5 * scale));
+  ctx.beginPath();
+  ctx.moveTo(-8 * scale, -12 * scale);
+  ctx.quadraticCurveTo(18 * scale, -8 * scale, 28 * scale, 0);
+  ctx.quadraticCurveTo(18 * scale, 8 * scale, -8 * scale, 12 * scale);
+  ctx.stroke();
+
+  ctx.strokeStyle = options.color ?? "rgba(255, 241, 178, 0.95)";
+  ctx.lineWidth = Math.max(1, Math.round(3 * scale));
+  ctx.beginPath();
+  ctx.moveTo(-7 * scale, -10 * scale);
+  ctx.quadraticCurveTo(16 * scale, -6 * scale, 24 * scale, 0);
+  ctx.quadraticCurveTo(16 * scale, 6 * scale, -7 * scale, 10 * scale);
+  ctx.stroke();
+
+  ctx.strokeStyle = options.highlightColor ?? "rgba(255, 255, 236, 0.85)";
+  ctx.lineWidth = Math.max(1, Math.round(1 * scale));
+  ctx.beginPath();
+  ctx.moveTo(0, -6 * scale);
+  ctx.quadraticCurveTo(13 * scale, -3 * scale, 20 * scale, 0);
+  ctx.stroke();
+  ctx.restore();
+}
+
 function drawSkillEffect() {
   if (!state.activeSkillEffect) {
     return;
@@ -7832,29 +7959,8 @@ function drawSkillEffect() {
 
   if (state.activeSkillEffect.type === "strike") {
     const { x, y, direction } = state.activeSkillEffect;
-    let drawX = x;
-    let drawY = y;
-    let width = 26;
-    let height = 10;
-
-    if (direction === "left") {
-      drawX -= 24;
-    } else if (direction === "right") {
-      drawX += 4;
-    } else if (direction === "up") {
-      drawY -= 24;
-      width = 10;
-      height = 26;
-    } else {
-      drawY += 4;
-      width = 10;
-      height = 26;
-    }
-
-    ctx.fillStyle = "rgba(255, 236, 166, 0.72)";
-    ctx.fillRect(drawX, drawY, width, height);
-    ctx.fillStyle = "rgba(255, 255, 234, 0.9)";
-    ctx.fillRect(drawX + 2, drawY + 2, Math.max(2, width - 4), Math.max(2, height - 4));
+    const progress = getTimedProgress(state.activeSkillEffect.startedAt, state.activeSkillEffect.endsAt);
+    drawAttackSlash(x, y, direction, progress, { scale: 0.84 });
   } else {
     const radius = 22 + Math.sin(state.lastTimestamp * 0.04) * 4;
     ctx.beginPath();
