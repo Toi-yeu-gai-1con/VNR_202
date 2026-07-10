@@ -77,6 +77,16 @@ if (endArtOverlayCtx) {
 
 const VIEWPORT = { width: canvas.width, height: canvas.height };
 const WORLD = { width: 960, height: 640 };
+const PORT_MAZE_DOOR = {
+  x: 122,
+  y: 154,
+  width: 48,
+  height: 48,
+  portalX: 146,
+  portalY: 178,
+  spawnX: 178,
+  spawnY: 238,
+};
 const PLAYER_SPEED = 92;
 const INTERACTION_RADIUS = 30;
 const STORY_UNLOCK_TOAST_MS = 2800;
@@ -2578,12 +2588,12 @@ function createHubLevel() {
         id: "to-fog-port",
         kind: "rect",
         prompt: "Cổng Sương Mù -> Khu vực 1",
-        x: 166,
-        y: 194,
-        width: 104,
-        height: 124,
+        x: 194,
+        y: 238,
+        width: 48,
+        height: 48,
         target: "village",
-        spawn: { x: 124, y: 104, direction: "down" },
+        spawn: { x: PORT_MAZE_DOOR.spawnX, y: PORT_MAZE_DOOR.spawnY, direction: "left" },
         guide: {
           color: "#d7ebff",
           glowAlpha: 0.36,
@@ -2601,12 +2611,12 @@ function createHubLevel() {
         id: "to-three-room-house",
         kind: "rect",
         prompt: "Nhà gỗ ba gian -> Khu vực 2",
-        x: 690,
-        y: 194,
-        width: 104,
-        height: 124,
+        x: 716,
+        y: 238,
+        width: 48,
+        height: 48,
         target: "archive",
-        spawn: { x: 480, y: 560, direction: "up" },
+        spawn: { x: 480, y: 520, direction: "up" },
         guide: {
           color: "#f4d9af",
           glowAlpha: 0.36,
@@ -2624,10 +2634,10 @@ function createHubLevel() {
         id: "to-red-square",
         kind: "rect",
         prompt: "Quảng trường đỏ -> Khu vực 3",
-        x: 228,
-        y: 390,
-        width: 104,
-        height: 140,
+        x: 256,
+        y: 452,
+        width: 48,
+        height: 48,
         target: "crossroads",
         spawn: { x: 482, y: 88, direction: "down" },
         guide: {
@@ -2647,10 +2657,10 @@ function createHubLevel() {
         id: "to-doi-moi-valley",
         kind: "rect",
         prompt: "Thung lũng Đổi Mới -> Khu vực 4",
-        x: 628,
-        y: 390,
-        width: 104,
-        height: 140,
+        x: 656,
+        y: 452,
+        width: 48,
+        height: 48,
         target: "spring",
         spawn: { x: 482, y: 560, direction: "up" },
         guide: {
@@ -2701,7 +2711,7 @@ function createPortMazeLevel() {
     label: "Khu vực 1: Mê cung sương mù & Bến cảng",
     canvasLabel: "Khu vực 1: Mê cung sương mù và Bến cảng",
     pauseTitle: "Mê cung sương mù & Bến cảng",
-    spawn: { x: 124, y: 104, direction: "down" },
+    spawn: { x: PORT_MAZE_DOOR.spawnX, y: PORT_MAZE_DOOR.spawnY, direction: "left" },
     bounds: { minX: 24, maxX: 936, minY: 24, maxY: 616 },
     aboutSlide: {
       kicker: "Khu vực 1",
@@ -2716,22 +2726,30 @@ function createPortMazeLevel() {
         id: "back-to-hub-1",
         kind: "rect",
         prompt: "Lối quay lại trung tâm",
-        x: 70,
-        y: 36,
-        width: 96,
-        height: 70,
+        x: PORT_MAZE_DOOR.x,
+        y: PORT_MAZE_DOOR.y,
+        width: PORT_MAZE_DOOR.width,
+        height: PORT_MAZE_DOOR.height,
         target: "hub",
         spawn: { x: 218, y: 356, direction: "down" },
-        portal: { label: "Trung tam", labelOffsetY: 34, drawSize: 54, auraRadius: 42 },
+        portal: {
+          x: PORT_MAZE_DOOR.portalX,
+          y: PORT_MAZE_DOOR.portalY,
+          label: "Trung tam",
+          labelOffsetY: 46,
+          drawSize: 64,
+          auraRadius: 48,
+          shadowOffsetY: 28,
+        },
         guide: {
           color: "#f3d777",
           glowAlpha: 0.34,
           size: 3,
           visibleWhen: () => state.quests.zone1RewardClaimed,
           markers: [
-            { x: 204, y: 176, direction: "left", size: 2 },
-            { x: 154, y: 136, direction: "up", size: 2 },
-            { x: 122, y: 86, direction: "up", size: 2 },
+            { x: 328, y: 262, direction: "left", size: 2 },
+            { x: 206, y: 244, direction: "left", size: 2 },
+            { x: PORT_MAZE_DOOR.portalX, y: PORT_MAZE_DOOR.portalY, direction: "left", size: 2 },
           ],
         },
       },
@@ -2864,19 +2882,7 @@ function createPortMazeLevel() {
         patrolRadius: 18,
       },
     ],
-    colliders: [
-      { x: 86, y: 96, width: 22, height: 350 },
-      { x: 90, y: 454, width: 232, height: 20 },
-      { x: 184, y: 136, width: 186, height: 20 },
-      { x: 350, y: 136, width: 20, height: 160 },
-      { x: 184, y: 282, width: 160, height: 20 },
-      { x: 444, y: 94, width: 20, height: 194 },
-      { x: 444, y: 270, width: 136, height: 20 },
-      { x: 564, y: 180, width: 20, height: 164 },
-      { x: 226, y: 382, width: 236, height: 18 },
-      { x: 0, y: 562, width: WORLD.width, height: 24 },
-      { x: 766, y: 150, width: 138, height: 104 },
-    ],
+    colliders: [],
     decorations,
   };
 }
@@ -2889,7 +2895,7 @@ function createUnityHouseLevel() {
     label: "Khu vực 2: Căn nhà gỗ ba gian",
     canvasLabel: "Khu vực 2: Căn nhà gỗ ba gian",
     pauseTitle: "Căn nhà gỗ ba gian",
-    spawn: { x: 480, y: 560, direction: "up" },
+    spawn: { x: 480, y: 520, direction: "up" },
     bounds: { minX: 76, maxX: 884, minY: 64, maxY: 578 },
     aboutSlide: {
       kicker: "Khu vực 2",
@@ -2904,22 +2910,30 @@ function createUnityHouseLevel() {
         id: "back-to-hub-2",
         kind: "rect",
         prompt: "Lối quay lại trung tâm",
-        x: 430,
-        y: 548,
-        width: 100,
-        height: 56,
+        x: 456,
+        y: 512,
+        width: 48,
+        height: 48,
         target: "hub",
         spawn: { x: 740, y: 356, direction: "down" },
-        portal: { label: "Trung tam", labelOffsetY: -52, drawSize: 56, auraRadius: 44 },
+        portal: {
+          x: 480,
+          y: 536,
+          label: "Trung tam",
+          labelOffsetY: -52,
+          drawSize: 56,
+          auraRadius: 44,
+          shadowOffsetY: 18,
+        },
         guide: {
           color: "#f3d777",
           glowAlpha: 0.34,
           size: 3,
           visibleWhen: () => state.quests.zone2RewardClaimed,
           markers: [
-            { x: 480, y: 404, direction: "down", size: 2 },
-            { x: 480, y: 468, direction: "down", size: 2 },
-            { x: 480, y: 522, direction: "down", size: 2 },
+            { x: 480, y: 392, direction: "down", size: 2 },
+            { x: 480, y: 452, direction: "down", size: 2 },
+            { x: 480, y: 516, direction: "down", size: 2 },
           ],
         },
       },
@@ -2991,27 +3005,7 @@ function createUnityHouseLevel() {
       },
     ],
     monsters: [],
-    colliders: [
-      { x: 110, y: 88, width: 154, height: 16 },
-      { x: 110, y: 88, width: 16, height: 214 },
-      { x: 248, y: 88, width: 16, height: 214 },
-      { x: 110, y: 286, width: 63, height: 16 },
-      { x: 201, y: 286, width: 63, height: 16 },
-      { x: 704, y: 88, width: 154, height: 16 },
-      { x: 704, y: 88, width: 16, height: 214 },
-      { x: 842, y: 88, width: 16, height: 214 },
-      { x: 704, y: 286, width: 63, height: 16 },
-      { x: 795, y: 286, width: 63, height: 16 },
-      { x: 372, y: 74, width: 214, height: 16 },
-      { x: 372, y: 74, width: 16, height: 126 },
-      { x: 570, y: 74, width: 16, height: 126 },
-      { x: 372, y: 184, width: 93, height: 16 },
-      { x: 493, y: 184, width: 93, height: 16 },
-      { x: 294, y: 230, width: 28, height: 194 },
-      { x: 640, y: 230, width: 28, height: 194 },
-      { x: 178, y: 452, width: 228, height: 26 },
-      { x: 554, y: 452, width: 244, height: 26 },
-    ],
+    colliders: [],
     decorations,
   };
 }
@@ -3039,10 +3033,10 @@ function createRedSquareLevel() {
         id: "back-to-hub-3",
         kind: "rect",
         prompt: "Lối quay lại trung tâm",
-        x: 432,
-        y: 28,
-        width: 96,
-        height: 56,
+        x: 456,
+        y: 32,
+        width: 48,
+        height: 48,
         target: "hub",
         spawn: { x: 280, y: 368, direction: "up" },
         portal: { label: "Trung tam", labelOffsetY: 34, drawSize: 54, auraRadius: 42 },
@@ -3236,12 +3230,9 @@ function createRedSquareLevel() {
       },
     ],
     colliders: [
-      { x: 0, y: 262, width: 446, height: 92 },
-      { x: 514, y: 262, width: WORLD.width - 514, height: 92 },
       { x: 178, y: 456, width: 84, height: 34, hamletId: "hamlet-1" },
       { x: 440, y: 446, width: 84, height: 34, hamletId: "hamlet-2" },
       { x: 742, y: 452, width: 84, height: 34, hamletId: "hamlet-3" },
-      { x: 422, y: 36, width: 116, height: 24 },
     ],
     decorations,
   };
@@ -3270,10 +3261,10 @@ function createDoiMoiValleyLevel() {
         id: "back-to-hub-4",
         kind: "rect",
         prompt: "Lối quay lại trung tâm",
-        x: 434,
-        y: 550,
-        width: 96,
-        height: 56,
+        x: 458,
+        y: 554,
+        width: 48,
+        height: 48,
         target: "hub",
         spawn: { x: 680, y: 368, direction: "up" },
         portal: { label: "Trung tam", labelOffsetY: -52, drawSize: 56, auraRadius: 44 },
@@ -3429,9 +3420,6 @@ function createDoiMoiValleyLevel() {
     ],
     monsters: [],
     colliders: [
-      { x: 120, y: 286, width: 204, height: 76 },
-      { x: 88, y: 100, width: 284, height: 132 },
-      { x: 560, y: 324, width: 196, height: 136 },
       { x: 354, y: 394, width: 68, height: 24, barrierId: "wall-1" },
       { x: 446, y: 388, width: 68, height: 24, barrierId: "wall-2" },
       { x: 538, y: 394, width: 68, height: 24, barrierId: "wall-3" },
@@ -6806,6 +6794,22 @@ function drawPortMazeWorld(decorations) {
   ctx.fillStyle = "#172235";
   ctx.fillRect(0, 0, WORLD.width, WORLD.height);
 
+  const hasHarborHero = drawCoverImage(
+    environmentSprites.generatedWorlds?.colonialHarbor,
+    0,
+    0,
+    WORLD.width,
+    WORLD.height,
+    {
+      alpha: 0.94,
+      filter: "saturate(0.9) brightness(0.86) contrast(1.02)",
+    }
+  );
+
+  if (hasHarborHero) {
+    return;
+  }
+
   drawPortForestGround();
 
   if (drawPixelCrawlerTerrainFill(PIXEL_CRAWLER_TERRAIN.stone, 0, 464, WORLD.width, 98, {
@@ -6831,63 +6835,49 @@ function drawPortMazeWorld(decorations) {
     drawSoftFogBand(fog);
   }
 
-  const hasHarborHero = drawCoverImage(
-    environmentSprites.generatedWorlds?.colonialHarbor,
-    286,
-    88,
-    646,
-    474,
-    {
-      alpha: 0.92,
-      filter: "saturate(0.9) brightness(0.86) contrast(1.02)",
-    }
+  drawPixelCrawlerVegetation(decorations.crawlerBushes);
+  drawPixelCrawlerTrees(decorations.crawlerTrees);
+
+  ctx.fillStyle = "#485b68";
+  ctx.fillRect(decorations.port.x, decorations.port.y, decorations.port.width, decorations.port.height);
+  drawPixelCrawlerTerrainFill(
+    PIXEL_CRAWLER_TERRAIN.brick,
+    decorations.port.x,
+    decorations.port.y,
+    decorations.port.width,
+    decorations.port.height,
+    { seed: 43, scale: 1.5, alpha: 0.62 }
   );
+  ctx.fillStyle = "rgba(22, 28, 33, 0.24)";
+  ctx.fillRect(decorations.port.x, decorations.port.y, decorations.port.width, decorations.port.height);
+  ctx.fillStyle = "#8c6a4c";
+  ctx.fillRect(decorations.port.x, decorations.port.y + 12, decorations.port.width, 18);
+  ctx.fillStyle = "#9b7858";
+  ctx.fillRect(decorations.port.x, decorations.port.y + 42, decorations.port.width, 16);
 
-  if (!hasHarborHero) {
-    drawPixelCrawlerVegetation(decorations.crawlerBushes);
-    drawPixelCrawlerTrees(decorations.crawlerTrees);
+  ctx.fillStyle = "#7d5c3d";
+  ctx.fillRect(decorations.mansion.x, decorations.mansion.y, decorations.mansion.width, decorations.mansion.height);
+  ctx.fillStyle = "#5e3c2e";
+  ctx.fillRect(decorations.mansion.x - 10, decorations.mansion.y - 16, decorations.mansion.width + 20, 18);
+  ctx.fillStyle = "#d1b38a";
+  ctx.fillRect(decorations.mansion.x + 26, decorations.mansion.y + 40, 34, 54);
+  ctx.fillRect(decorations.mansion.x + 104, decorations.mansion.y + 42, 42, 46);
 
-    ctx.fillStyle = "#485b68";
-    ctx.fillRect(decorations.port.x, decorations.port.y, decorations.port.width, decorations.port.height);
-    drawPixelCrawlerTerrainFill(
-      PIXEL_CRAWLER_TERRAIN.brick,
-      decorations.port.x,
-      decorations.port.y,
-      decorations.port.width,
-      decorations.port.height,
-      { seed: 43, scale: 1.5, alpha: 0.62 }
-    );
-    ctx.fillStyle = "rgba(22, 28, 33, 0.24)";
-    ctx.fillRect(decorations.port.x, decorations.port.y, decorations.port.width, decorations.port.height);
-    ctx.fillStyle = "#8c6a4c";
-    ctx.fillRect(decorations.port.x, decorations.port.y + 12, decorations.port.width, 18);
-    ctx.fillStyle = "#9b7858";
-    ctx.fillRect(decorations.port.x, decorations.port.y + 42, decorations.port.width, 16);
+  drawCainosOutdoorProps(decorations.cainosProps);
 
-    ctx.fillStyle = "#7d5c3d";
-    ctx.fillRect(decorations.mansion.x, decorations.mansion.y, decorations.mansion.width, decorations.mansion.height);
-    ctx.fillStyle = "#5e3c2e";
-    ctx.fillRect(decorations.mansion.x - 10, decorations.mansion.y - 16, decorations.mansion.width + 20, 18);
-    ctx.fillStyle = "#d1b38a";
-    ctx.fillRect(decorations.mansion.x + 26, decorations.mansion.y + 40, 34, 54);
-    ctx.fillRect(decorations.mansion.x + 104, decorations.mansion.y + 42, 42, 46);
-
-    drawCainosOutdoorProps(decorations.cainosProps);
-
-    for (const lamp of decorations.lampPosts) {
-      if (drawKenneyLampPost(lamp)) {
-        continue;
-      }
-
-      drawWorldWarmGlow(lamp.x, lamp.y - 30, 24, 0.28);
-      ctx.fillStyle = "#44382d";
-      ctx.fillRect(lamp.x - 2, lamp.y - 26, 4, 30);
-      ctx.fillStyle = "#f0db8f";
-      ctx.fillRect(lamp.x - 5, lamp.y - 34, 10, 8);
+  for (const lamp of decorations.lampPosts) {
+    if (drawKenneyLampPost(lamp)) {
+      continue;
     }
 
-    drawPixelCrawlerToolClusters(decorations.crawlerTools);
+    drawWorldWarmGlow(lamp.x, lamp.y - 30, 24, 0.28);
+    ctx.fillStyle = "#44382d";
+    ctx.fillRect(lamp.x - 2, lamp.y - 26, 4, 30);
+    ctx.fillStyle = "#f0db8f";
+    ctx.fillRect(lamp.x - 5, lamp.y - 34, 10, 8);
   }
+
+  drawPixelCrawlerToolClusters(decorations.crawlerTools);
 }
 
 function drawUnityHouseWorld(decorations) {
@@ -6895,10 +6885,10 @@ function drawUnityHouseWorld(decorations) {
   ctx.fillRect(0, 0, WORLD.width, WORLD.height);
   const hasArchiveHero = drawCoverImage(
     environmentSprites.generatedWorlds?.archiveInterior,
-    decorations.house.x + 14,
-    decorations.house.y + 12,
-    decorations.house.width - 28,
-    decorations.house.height - 18,
+    0,
+    0,
+    WORLD.width,
+    WORLD.height,
     {
       alpha: 0.97,
       filter: "saturate(0.96) brightness(0.96) contrast(1.02)",
