@@ -90,6 +90,7 @@ const PORT_MAZE_DOOR = {
 const PLAYER_SPEED = 92;
 const INTERACTION_RADIUS = 30;
 const STORY_UNLOCK_TOAST_MS = 2800;
+const RELIC_BOOK_OPEN_DELAY_MS = 900;
 const PLAYER_MAX_HEALTH = 5;
 const SA_DOA_MAX = 100;
 const SA_DOA_BAD_ENDING = 60;
@@ -442,22 +443,75 @@ const RELIC_DEFINITIONS = {
   "red-compass": {
     label: "Chiếc La Bàn Đỏ",
     source: "sau khi phát báo Người Cùng Khổ cho công nhân bến cảng",
+    storyId: "relic-red-compass",
   },
   "unified-emblem": {
     label: "Huy hiệu Búa Liềm thống nhất",
     source: "đặt đủ ba mảnh hợp nhất lên bàn tròn",
+    storyId: "relic-unified-emblem",
   },
   "vietminh-thread": {
     label: "Sợi chỉ đỏ Việt Minh",
     source: "quy tụ đủ khối đại đoàn kết toàn dân",
+    storyId: "relic-vietminh-thread",
   },
   "healed-map": {
     label: "Bản đồ Vĩ tuyến 17 hàn gắn",
     source: "giải phóng các ấp chiến lược và đẩy lùi thế lực chia cắt",
+    storyId: "relic-healed-map",
   },
   "doi-moi-gear": {
     label: "Bánh răng Đổi Mới",
     source: "phá hàng rào bao cấp và phát Khoán 10 cho nông dân",
+    storyId: "relic-doi-moi-gear",
+  },
+};
+
+const RELIC_STORY_SLIDES = {
+  "red-compass": {
+    levelId: "village",
+    kicker: "Tín vật 1/5 - Khu 1",
+    title: "CHIẾC LA BÀN ĐỎ",
+    text:
+      "1. Nhiệm vụ mở khóa\nNhận Le Paria ở chồng báo, đưa báo cho 3 công nhân bến cảng, rồi quay lại nhận Chiếc La Bàn Đỏ.\n\n2. Mô tả vật phẩm\nMột chiếc la bàn cổ phát ra ánh sáng đỏ rực rỡ, xuyên thủng lớp sương mù dày đặc của mê cung.\n\n3. Hồ sơ lịch sử\nCuối thế kỷ XIX, dưới ách thống trị của thực dân Pháp, Việt Nam biến thành một nước thuộc địa nửa phong kiến. Dù có truyền thống yêu nước, các phong trào từ Cần Vương đến khuynh hướng tư sản như Đông Du, Đông Kinh Nghĩa Thục đều thất bại do thiếu đường lối đúng đắn. Lịch sử dân tộc rơi vào khủng hoảng đường lối cứu nước.\n\n4. Giá trị chân lý\nNguyễn Ái Quốc đã tìm ra con đường cách mạng vô sản. Câu nói \"Đảng mà không có chủ nghĩa cũng như người không có trí khôn, tàu không có bàn chỉ nam\" giúp giải thích biểu tượng la bàn: Chủ nghĩa Mác - Lênin là kim chỉ nam đưa dân tộc thoát khỏi màn đêm nô lệ.\n\n5. Câu chốt thuyết trình\nChiếc la bàn không chỉ là vật phẩm chỉ đường trong game, mà là hình ảnh của đường lối đúng đắn trong lịch sử.",
+    caption: "Từ bế tắc đường lối đến kim chỉ nam Mác - Lênin",
+    art: "compass",
+  },
+  "unified-emblem": {
+    levelId: "archive",
+    kicker: "Tín vật 2/5 - Khu 2",
+    title: "HUY HIỆU BÚA LIỀM THỐNG NHẤT",
+    text:
+      "1. Nhiệm vụ mở khóa\nNói chuyện đủ 3 nhóm west, east và north, sau đó tới bàn tròn để lấy Huy hiệu Búa Liềm Thống Nhất.\n\n2. Mô tả vật phẩm\nBa mảnh ghép kim loại tản mát bỗng bị hút chặt vào nhau bằng một từ trường mạnh mẽ, đúc thành biểu tượng Búa Liềm rực sáng.\n\n3. Hồ sơ lịch sử\nCuối năm 1929, phong trào đấu tranh lên cao dẫn đến sự ra đời của ba tổ chức cộng sản hoạt động biệt lập: Đông Dương Cộng sản Đảng, An Nam Cộng sản Đảng và Đông Dương Cộng sản Liên đoàn. Tuy nhiên, sự biệt lập này có nguy cơ gây chia rẽ, công kích lẫn nhau và làm suy yếu phong trào.\n\n4. Sự kiện bước ngoặt\nNgày 6/1/1930 tại Hương Cảng, Nguyễn Ái Quốc chủ trì hội nghị, yêu cầu bỏ thành kiến, thành thật hợp tác để hợp nhất ba tổ chức thành Đảng Cộng sản Việt Nam. Từ đó, phong trào cách mạng có một đội tiên phong thống nhất lãnh đạo.\n\n5. Câu chốt thuyết trình\nHuy hiệu thể hiện sức mạnh của sự thống nhất: những mảnh rời rạc chỉ trở thành lực lượng lịch sử khi được quy tụ chung một tổ chức.",
+    caption: "Ba tổ chức rời rạc hợp nhất thành một đội tiên phong lãnh đạo cách mạng",
+    art: "compass",
+  },
+  "vietminh-thread": {
+    levelId: "crossroads",
+    kicker: "Tín vật 3/5 - Khu 3A",
+    title: "SỢI CHỈ ĐỎ VIỆT MINH",
+    text:
+      "1. Nhiệm vụ mở khóa\nMời đủ 4 lực lượng nông dân, công nhân, trí thức và tư sản dân tộc, rồi gặp cán bộ Việt Minh để lấy Sợi Chỉ Đỏ Việt Minh.\n\n2. Mô tả vật phẩm\nMột sợi dây thừng rực lửa kết nối các nhân vật đang đứng rải rác trên quảng trường thành một khối vững chắc.\n\n3. Hồ sơ lịch sử\nChủ nghĩa Mác - Lênin khẳng định cách mạng là sự nghiệp của quần chúng nhân dân. Quần chúng thiếu tổ chức chỉ là những đốm lửa lẻ tẻ. Tháng 5/1941, tại Hội nghị Trung ương 8, Đảng quyết định thành lập Mặt trận Việt Minh để quy tụ sức mạnh đại đoàn kết toàn dân tộc, đặt nhiệm vụ giải phóng dân tộc lên cao nhất.\n\n4. Chớp thời cơ ngàn năm\nKhi phát xít Nhật đầu hàng Đồng minh tháng 8/1945, Đảng đã chớp đúng thời cơ, phát động Tổng khởi nghĩa theo tinh thần tập trung, thống nhất và kịp thời, lập ra nước Việt Nam Dân chủ Cộng hòa.\n\n5. Câu chốt thuyết trình\nSợi chỉ đỏ cho thấy quần chúng khi được tổ chức sẽ trở thành sức mạnh quyết định của cách mạng.",
+    caption: "Mặt trận Việt Minh quy tụ sức mạnh toàn dân cho Cách mạng Tháng Tám",
+    art: "crowd",
+  },
+  "healed-map": {
+    levelId: "crossroads",
+    kicker: "Tín vật 4/5 - Khu 3B",
+    title: "BẢN ĐỒ VIỆT NAM THỐNG NHẤT",
+    text:
+      "1. Nhiệm vụ mở khóa\nPhá 3 ấp chiến lược, đánh bại bộ máy áp bức miền Nam, rồi gặp chỉ huy kháng chiến để lấy Bản đồ Vĩ tuyến 17 hàn gắn.\n\n2. Mô tả vật phẩm\nTấm bản đồ bị xé rách làm đôi tại vĩ tuyến 17 được khâu liền lại bằng ánh sáng vàng, xua tan bóng đen của sự chia cắt.\n\n3. Hồ sơ lịch sử\nSau Hiệp định Giơnevơ năm 1954, đất nước tạm thời bị chia cắt tại vĩ tuyến 17. Đế quốc Mỹ âm mưu hất cẳng Pháp, biến miền Nam thành thuộc địa kiểu mới và chia cắt vĩnh viễn nước ta.\n\n4. Đường lối sáng tạo\nĐại hội III của Đảng năm 1960 xác định đường lối tiến hành đồng thời cách mạng xã hội chủ nghĩa ở miền Bắc, làm hậu phương lớn, và cách mạng dân tộc dân chủ ở miền Nam, làm tiền tuyến lớn.\n\n5. Bản anh hùng ca\nNhờ kết hợp hậu phương và tiền tuyến, dân tộc ta đánh bại các chiến lược chiến tranh của Mỹ, làm nên Đại thắng Mùa Xuân 1975, đưa non sông thu về một mối.",
+    caption: "Từ vĩ tuyến chia cắt đến khát vọng thống nhất đất nước",
+    art: "bridge",
+  },
+  "doi-moi-gear": {
+    levelId: "spring",
+    kicker: "Tín vật 5/5 - Khu 4",
+    title: "BÁNH RĂNG ĐỔI MỚI",
+    text:
+      "1. Nhiệm vụ mở khóa\nPhá 3 hàng rào bao cấp, trao Khoán 10 cho 3 nông dân, rồi gặp nhà lãnh đạo Đổi Mới để nhận Bánh răng Đổi Mới.\n\n2. Mô tả vật phẩm\nBánh răng tượng trưng cho guồng máy kinh tế được khởi động lại: từ trì trệ, bao cấp sang tự chủ sản xuất và đổi mới tư duy.\n\n3. Hồ sơ lịch sử\nSau chiến tranh, đất nước lâm vào khủng hoảng kinh tế - xã hội trầm trọng do hậu quả chiến tranh và cơ chế tập trung quan liêu, bao cấp. Lạm phát năm 1986 lên tới 774,7%, đời sống nhân dân gặp nhiều khó khăn.\n\n4. Bước ngoặt Đổi Mới\nĐại hội VI năm 1986 dũng cảm nhìn thẳng vào sự thật, khởi xướng đường lối Đổi Mới toàn diện, trọng tâm là đổi mới tư duy kinh tế, giải phóng sức sản xuất và mở đường hội nhập.\n\n5. Câu chốt thuyết trình\nBánh răng Đổi Mới cho thấy bản lĩnh tự sửa mình và năng lực lãnh đạo đất nước vượt qua khủng hoảng để phát triển.",
+    caption: "Đại hội VI mở ra công cuộc Đổi Mới toàn diện",
+    art: "spring",
   },
 };
 
@@ -759,6 +813,7 @@ const monsterSprites = loadMonsterSprites();
 const uiSounds = loadUiSounds();
 const ambienceSounds = loadAmbienceSounds();
 let storyToastTimeoutId = 0;
+let relicBookOpenTimeoutId = 0;
 
 const state = {
   mode: "start",
@@ -3645,6 +3700,20 @@ function createStoryRegistry(levelMap) {
     }
   }
 
+  for (const [itemId, slide] of Object.entries(RELIC_STORY_SLIDES)) {
+    const relic = RELIC_DEFINITIONS[itemId];
+
+    if (!relic?.storyId) {
+      continue;
+    }
+
+    registry[relic.storyId] = {
+      id: relic.storyId,
+      itemId,
+      ...slide,
+    };
+  }
+
   return registry;
 }
 
@@ -3830,6 +3899,7 @@ function resetStoryProgress() {
   state.unlockedStoryIds.clear();
   state.pendingEnding = false;
   state.endingId = null;
+  clearScheduledRelicBookOpen();
   hideDialogue();
   hideStoryToast();
   resetGameplayProgress();
@@ -3879,6 +3949,25 @@ function hideStoryToast() {
   window.clearTimeout(storyToastTimeoutId);
   storyToast.classList.add("hidden");
   storyToast.setAttribute("aria-hidden", "true");
+}
+
+function clearScheduledRelicBookOpen() {
+  window.clearTimeout(relicBookOpenTimeoutId);
+  relicBookOpenTimeoutId = 0;
+}
+
+function scheduleRelicBookOpen(storyId) {
+  clearScheduledRelicBookOpen();
+
+  relicBookOpenTimeoutId = window.setTimeout(() => {
+    relicBookOpenTimeoutId = 0;
+
+    if (state.mode !== "playing" || !state.unlockedStoryIds.has(storyId)) {
+      return;
+    }
+
+    openStoryBook(storyId);
+  }, RELIC_BOOK_OPEN_DELAY_MS);
 }
 
 function hideDialogue() {
@@ -3962,8 +4051,8 @@ function renderDialogue() {
   dialogueBox.setAttribute("aria-hidden", "false");
 }
 
-function unlockStory(storyId) {
-  if (state.unlockedStoryIds.has(storyId)) {
+function unlockStory(storyId, options = {}) {
+  if (!storyId || state.unlockedStoryIds.has(storyId)) {
     return false;
   }
 
@@ -3972,7 +4061,7 @@ function unlockStory(storyId) {
   state.unlockedStoryIds.add(storyId);
   updateStoryBookButton();
 
-  if (story) {
+  if (story && !options.silent) {
     showStoryToast(`Đã mở khóa: ${story.title}`);
   }
 
@@ -6009,13 +6098,28 @@ function collectRelic(itemId, guidance = "") {
   }
 
   const relic = RELIC_DEFINITIONS[itemId];
+  const storyUnlocked = unlockStory(relic?.storyId, { silent: true });
+  const relicLabel = relic?.label ?? "tín vật lạ";
+  const bookHint = storyUnlocked
+    ? "Đã thêm vào Sách lịch sử và sẽ mở đúng chương thuyết trình."
+    : "";
   state.inventory.add(itemId);
   updateProgressHud();
+
   showStoryToast(
-    guidance
-      ? `Nhận được ${relic?.label ?? "tín vật lạ"}. ${guidance}`
-      : `Nhận được ${relic?.label ?? "tín vật lạ"}`
+    [
+      `Nhận được ${relicLabel}.`,
+      bookHint,
+      guidance,
+    ]
+      .filter(Boolean)
+      .join(" ")
   );
+
+  if (storyUnlocked) {
+    scheduleRelicBookOpen(relic.storyId);
+  }
+
   return true;
 }
 
