@@ -878,8 +878,20 @@ button {
   backdrop-filter: blur(3px);
 }
 
+.end-overlay[data-ending="good"] {
+  background:
+    linear-gradient(180deg, rgba(24, 38, 66, 0.3), rgba(12, 20, 36, 0.68)),
+    rgba(9, 15, 26, 0.52);
+}
+
+.end-overlay[data-ending="bad"] {
+  background:
+    linear-gradient(180deg, rgba(54, 16, 16, 0.34), rgba(23, 7, 8, 0.72)),
+    rgba(18, 10, 12, 0.58);
+}
+
 .end-card {
-  width: min(92%, 520px);
+  width: min(94%, 620px);
   padding: 34px 30px;
   border: 0;
   background:
@@ -896,12 +908,131 @@ button {
   image-rendering: crisp-edges;
 }
 
+.end-overlay[data-ending="good"] .end-card {
+  background:
+    linear-gradient(180deg, rgba(45, 69, 106, 0.42), rgba(20, 37, 68, 0.82)),
+    url("assets/ui/kenney-rpg/panel_brown.png") center / 100% 100% no-repeat,
+    linear-gradient(180deg, rgba(31, 54, 90, 0.98), rgba(15, 29, 55, 0.98));
+}
+
+.end-overlay[data-ending="bad"] .end-card {
+  background:
+    linear-gradient(180deg, rgba(79, 34, 34, 0.42), rgba(41, 15, 16, 0.84)),
+    url("assets/ui/kenney-rpg/panel_brown.png") center / 100% 100% no-repeat,
+    linear-gradient(180deg, rgba(66, 24, 26, 0.98), rgba(33, 10, 12, 0.98));
+}
+
 .end-card h2 {
   margin: 0;
   color: #fff5cf;
   font-family: "Press Start 2P", cursive;
   font-size: clamp(0.92rem, 2.4vw, 1.4rem);
   line-height: 1.5;
+}
+
+.end-art-frame {
+  position: relative;
+  width: min(100%, 540px);
+  min-height: 188px;
+  padding: 10px;
+  border: 2px solid rgba(255, 239, 197, 0.24);
+  background:
+    radial-gradient(circle at top, rgba(255, 226, 146, 0.16), rgba(255, 226, 146, 0)),
+    rgba(10, 14, 22, 0.38);
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.03),
+    0 10px 20px rgba(0, 0, 0, 0.2);
+}
+
+.end-overlay[data-ending="bad"] .end-art-frame {
+  background:
+    radial-gradient(circle at top, rgba(234, 86, 70, 0.16), rgba(234, 86, 70, 0)),
+    rgba(22, 10, 12, 0.42);
+}
+
+.end-art-image {
+  display: block;
+  width: 100%;
+  max-height: 304px;
+  object-fit: contain;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.28));
+  opacity: 0;
+  transition: opacity 420ms ease;
+}
+
+.end-art-cinematic {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 0;
+  pointer-events: none;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  opacity: 1;
+  transition: opacity 420ms ease;
+}
+
+.end-art-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+  pointer-events: none;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+.end-copy,
+.end-summary,
+#return-start-button {
+  transition: opacity 460ms ease, transform 460ms ease, filter 460ms ease;
+}
+
+.end-overlay[data-cinematic="running"] .end-art-image {
+  opacity: 0;
+}
+
+.end-overlay[data-cinematic="running"] .end-copy,
+.end-overlay[data-cinematic="running"] .end-summary,
+.end-overlay[data-cinematic="running"] #return-start-button {
+  opacity: 0.24;
+  transform: translateY(10px);
+  filter: blur(2px);
+}
+
+.end-overlay[data-cinematic="running"] #return-start-button {
+  pointer-events: none;
+}
+
+.end-overlay[data-cinematic="complete"] .end-art-image {
+  opacity: 1;
+}
+
+.end-overlay[data-cinematic="complete"] .end-art-cinematic {
+  opacity: 0;
+}
+
+.end-overlay[data-cinematic="complete"] .end-copy,
+.end-overlay[data-cinematic="complete"] .end-summary,
+.end-overlay[data-cinematic="complete"] #return-start-button {
+  opacity: 1;
+  transform: translateY(0);
+  filter: none;
+}
+
+.end-card .pixel-button:disabled {
+  opacity: 0.5;
+  cursor: default;
+  transform: none;
+  filter: saturate(0.7);
+  box-shadow: 0 6px 0 rgba(46, 24, 18, 0.4);
+}
+
+.end-card .pixel-button:disabled:active {
+  transform: none;
+  box-shadow: 0 6px 0 rgba(46, 24, 18, 0.4);
 }
 
 .end-copy {

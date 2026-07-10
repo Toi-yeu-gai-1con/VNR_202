@@ -60,6 +60,20 @@ const skillValue = document.getElementById("skill-value");
 const endTitle = document.getElementById("end-title");
 const endCopy = document.getElementById("end-copy");
 const endSummary = document.getElementById("end-summary");
+const endArtFrame = document.getElementById("end-art-frame");
+const endArtCinematic = document.getElementById("end-art-cinematic");
+const endArtImage = document.getElementById("end-art-image");
+const endArtCinematicCtx = endArtCinematic?.getContext("2d") ?? null;
+const endArtOverlay = document.getElementById("end-art-overlay");
+const endArtOverlayCtx = endArtOverlay?.getContext("2d") ?? null;
+
+if (endArtCinematicCtx) {
+  endArtCinematicCtx.imageSmoothingEnabled = false;
+}
+
+if (endArtOverlayCtx) {
+  endArtOverlayCtx.imageSmoothingEnabled = false;
+}
 
 const VIEWPORT = { width: canvas.width, height: canvas.height };
 const WORLD = { width: 960, height: 640 };
@@ -442,11 +456,232 @@ const ENDING_DEFINITIONS = {
     title: "GOOD ENDING: ĐẠI THẮNG & PHÁT TRIỂN",
     copy:
       "Dưới sự lãnh đạo của Đảng Cộng sản Việt Nam, dân tộc ta đã giành lại độc lập, thống nhất và đang vững bước trên con đường dân giàu, nước mạnh. Sự lãnh đạo của Đảng là nhân tố hàng đầu bảo đảm mọi thắng lợi.",
+    artSrc: "assets/environment/generated-worlds/good-ending-hero.png",
+    artAlt: "Khung cảnh kết thúc tốt với quảng trường đoàn kết, ngọn đuốc rực sáng, ruộng lúa và công trình hiện đại.",
   },
   bad: {
     title: "BAD ENDING: MẤT NƯỚC / CHỆCH HƯỚNG",
     copy:
       "Không có ngọn cờ dẫn đường đúng đắn và bản lĩnh kiên định, lịch sử dân tộc đã rẽ sang một bóng đen nô lệ và chia cắt mới. Đất nước tiếp tục bị các thế lực thù địch thao túng hoặc chệch khỏi con đường xã hội chủ nghĩa.",
+    artSrc: "assets/environment/generated-worlds/bad-ending-hero.png",
+    artAlt: "Khung cảnh kết thúc xấu với xã hội đen tối hiện đại, trụ Tha hóa, chia rẽ và lệ thuộc.",
+  },
+};
+
+const ENDING_OVERLAY_SCENES = {
+  good: {
+    figures: [
+      {
+        kind: "npc",
+        x: 0.24,
+        y: 0.92,
+        spriteKey: "npc03",
+        direction: "up",
+        scale: 0.72,
+        bobAmplitude: 1.2,
+        swayAmplitude: 1.4,
+        swaySpeed: 0.0018,
+        frameOffset: 0.1,
+      },
+      {
+        kind: "npc",
+        x: 0.33,
+        y: 0.9,
+        spriteKey: "npc06",
+        direction: "up",
+        scale: 0.8,
+        bobAmplitude: 1.6,
+        swayAmplitude: 1.8,
+        swaySpeed: 0.0022,
+        frameOffset: 0.35,
+      },
+      {
+        kind: "npc",
+        x: 0.42,
+        y: 0.88,
+        spriteKey: "npc02",
+        direction: "up",
+        scale: 0.88,
+        bobAmplitude: 1.4,
+        swayAmplitude: 1.2,
+        swaySpeed: 0.0024,
+        frameOffset: 0.6,
+      },
+      {
+        kind: "player",
+        x: 0.5,
+        y: 0.885,
+        direction: "up",
+        scale: 0.96,
+        bobAmplitude: 1.7,
+        swayAmplitude: 0.8,
+        swaySpeed: 0.0019,
+        frameOffset: 0.15,
+      },
+      {
+        kind: "npc",
+        x: 0.58,
+        y: 0.88,
+        spriteKey: "npc01",
+        direction: "up",
+        scale: 0.88,
+        bobAmplitude: 1.4,
+        swayAmplitude: 1.1,
+        swaySpeed: 0.002,
+        frameOffset: 0.8,
+      },
+      {
+        kind: "npc",
+        x: 0.67,
+        y: 0.9,
+        spriteKey: "npc05",
+        direction: "up",
+        scale: 0.8,
+        bobAmplitude: 1.5,
+        swayAmplitude: 1.6,
+        swaySpeed: 0.0021,
+        frameOffset: 0.48,
+      },
+      {
+        kind: "npc",
+        x: 0.76,
+        y: 0.92,
+        spriteKey: "npc04",
+        direction: "up",
+        scale: 0.72,
+        bobAmplitude: 1.2,
+        swayAmplitude: 1.4,
+        swaySpeed: 0.0017,
+        frameOffset: 0.92,
+      },
+    ],
+    motes: [
+      { x: 0.48, y: 0.64, size: 13, speed: 0.0013, drift: 4, alpha: 0.18 },
+      { x: 0.56, y: 0.58, size: 10, speed: 0.0017, drift: 6, alpha: 0.22 },
+      { x: 0.37, y: 0.72, size: 9, speed: 0.0015, drift: 5, alpha: 0.16 },
+      { x: 0.66, y: 0.73, size: 8, speed: 0.0019, drift: 5, alpha: 0.16 },
+      { x: 0.5, y: 0.49, size: 15, speed: 0.0011, drift: 7, alpha: 0.18 },
+    ],
+  },
+  bad: {
+    figures: [
+      {
+        kind: "npc",
+        x: 0.18,
+        y: 0.9,
+        spriteKey: "npc05",
+        direction: "right",
+        scale: 0.78,
+        animation: "walk",
+        bobAmplitude: 1.6,
+        swayAmplitude: 2.4,
+        swaySpeed: 0.003,
+        frameOffset: 0.2,
+        opacity: 0.92,
+      },
+      {
+        kind: "npc",
+        x: 0.28,
+        y: 0.88,
+        spriteKey: "npc02",
+        direction: "up",
+        scale: 0.84,
+        animation: "walk",
+        bobAmplitude: 1.3,
+        swayAmplitude: 1.8,
+        swaySpeed: 0.0028,
+        frameOffset: 0.48,
+        opacity: 0.92,
+      },
+      {
+        kind: "npc",
+        x: 0.44,
+        y: 0.83,
+        spriteKey: "npc06",
+        direction: "up",
+        scale: 0.88,
+        bobAmplitude: 0.8,
+        swayAmplitude: 0.7,
+        swaySpeed: 0.0015,
+        frameOffset: 0.1,
+        opacity: 0.94,
+      },
+      {
+        kind: "player",
+        x: 0.5,
+        y: 0.84,
+        direction: "up",
+        scale: 0.92,
+        bobAmplitude: 0.9,
+        swayAmplitude: 0.5,
+        swaySpeed: 0.0012,
+        frameOffset: 0.55,
+        opacity: 0.8,
+      },
+      {
+        kind: "npc",
+        x: 0.56,
+        y: 0.83,
+        spriteKey: "npc01",
+        direction: "up",
+        scale: 0.88,
+        bobAmplitude: 0.8,
+        swayAmplitude: 0.7,
+        swaySpeed: 0.0014,
+        frameOffset: 0.7,
+        opacity: 0.94,
+      },
+      {
+        kind: "npc",
+        x: 0.7,
+        y: 0.9,
+        spriteKey: "npc03",
+        direction: "left",
+        scale: 0.78,
+        animation: "walk",
+        bobAmplitude: 1.6,
+        swayAmplitude: 2.2,
+        swaySpeed: 0.0031,
+        frameOffset: 0.84,
+        opacity: 0.92,
+      },
+      {
+        kind: "npc",
+        x: 0.81,
+        y: 0.92,
+        spriteKey: "npc04",
+        direction: "left",
+        scale: 0.72,
+        bobAmplitude: 1.2,
+        swayAmplitude: 1.5,
+        swaySpeed: 0.0025,
+        frameOffset: 0.33,
+        opacity: 0.86,
+      },
+    ],
+  },
+};
+
+const ENDING_CINEMATIC_DEFINITIONS = {
+  good: {
+    duration: 7000,
+    keyframes: [
+      { at: 0, x: 0.2, y: 0.34, zoom: 2.18 },
+      { at: 0.26, x: 0.5, y: 0.46, zoom: 2.28 },
+      { at: 0.54, x: 0.8, y: 0.28, zoom: 2.04 },
+      { at: 0.78, x: 0.52, y: 0.76, zoom: 1.74 },
+      { at: 1, x: 0.5, y: 0.5, zoom: 1 },
+    ],
+  },
+  bad: {
+    duration: 7200,
+    keyframes: [
+      { at: 0, x: 0.2, y: 0.72, zoom: 2.22 },
+      { at: 0.28, x: 0.5, y: 0.43, zoom: 2.36 },
+      { at: 0.56, x: 0.78, y: 0.32, zoom: 2.08 },
+      { at: 0.8, x: 0.58, y: 0.76, zoom: 1.82 },
+      { at: 1, x: 0.5, y: 0.5, zoom: 1 },
+    ],
   },
 };
 
@@ -539,6 +774,7 @@ const state = {
   activeSkillEffect: null,
   endingId: null,
   endingSummary: "",
+  endingCinematic: null,
   blockedExitIds: new Set(),
   puzzleState: {
     archiveSequence: 0,
@@ -578,7 +814,7 @@ dialogueNextButton.addEventListener("click", withUiClickSound(advanceDialogue));
 openingNextButton.addEventListener("click", withUiClickSound(advanceOpeningIntro));
 storyPrevButton.addEventListener("click", withUiClickSound(() => showStoryBookEntry(-1)));
 storyNextButton.addEventListener("click", withUiClickSound(() => showStoryBookEntry(1)));
-returnStartButton.addEventListener("click", withUiClickSound(returnToStartScreen));
+returnStartButton.addEventListener("click", withUiClickSound(handleReturnFromEnding));
 
 window.addEventListener("keydown", (event) => {
   if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " "].includes(event.key)) {
@@ -628,8 +864,12 @@ window.addEventListener("keydown", (event) => {
   }
 
   if (state.mode === "ending" && (key === "enter" || key === "space")) {
+    if (!isEndingCinematicComplete()) {
+      return;
+    }
+
     playUiSound(uiSounds.pixelClick);
-    returnToStartScreen();
+    handleReturnFromEnding();
     return;
   }
 
@@ -686,6 +926,8 @@ window.addEventListener("keyup", (event) => {
 });
 
 loadLevel("hub");
+applyDebugLevelFromUrl();
+applyDebugEndingFromUrl();
 requestAnimationFrame(frame);
 
 function createPlayer() {
@@ -952,12 +1194,16 @@ function resolveNpcDirection(direction = "down") {
 }
 
 function getNpcFrame(actor) {
+  return getNpcFrameAt(actor, state.lastTimestamp);
+}
+
+function getNpcFrameAt(actor, timestamp = state.lastTimestamp) {
   const animation = actor.animation === "walk" ? "walk" : "idle";
   const frameCount = animation === "walk" ? NPC_SPRITE.walkFrames : NPC_SPRITE.idleFrames;
   const duration =
     animation === "walk" ? NPC_SPRITE.walkFrameDuration : NPC_SPRITE.idleFrameDuration;
   const frameOffset = actor.frameOffset ?? 0;
-  const frameTime = state.lastTimestamp + frameOffset * duration * 4;
+  const frameTime = timestamp + frameOffset * duration * 4;
 
   return {
     animation,
@@ -966,6 +1212,10 @@ function getNpcFrame(actor) {
 }
 
 function drawNpcSpriteActor(actor) {
+  return drawNpcSpriteActorToContext(ctx, actor, state.lastTimestamp);
+}
+
+function drawNpcSpriteActorToContext(context, actor, timestamp = state.lastTimestamp) {
   const spriteSet = npcSprites[actor.spriteKey];
 
   if (!spriteSet) {
@@ -979,17 +1229,18 @@ function drawNpcSpriteActor(actor) {
     return false;
   }
 
-  const frame = getNpcFrame(actor);
+  const frame = getNpcFrameAt(actor, timestamp);
   const scale = actor.scale ?? 1;
   const sourceY = frame.animation === "walk" ? NPC_SPRITE.frameHeight : 0;
   const sourceX = frame.index * NPC_SPRITE.frameWidth + NPC_SPRITE.cropX;
   const drawWidth = Math.max(1, Math.round(NPC_SPRITE.drawWidth * scale));
   const drawHeight = Math.max(1, Math.round(NPC_SPRITE.drawHeight * scale));
 
-  ctx.save();
-  ctx.translate(Math.round(actor.x), Math.round(actor.y));
-  ctx.scale(direction.flipX ? -1 : 1, 1);
-  ctx.drawImage(
+  context.save();
+  context.globalAlpha = actor.opacity ?? 1;
+  context.translate(Math.round(actor.x), Math.round(actor.y));
+  context.scale(direction.flipX ? -1 : 1, 1);
+  context.drawImage(
     sheet,
     sourceX,
     sourceY + NPC_SPRITE.cropY,
@@ -1000,7 +1251,44 @@ function drawNpcSpriteActor(actor) {
     drawWidth,
     drawHeight
   );
-  ctx.restore();
+  context.restore();
+  return true;
+}
+
+function drawPlayerSpriteActorToContext(context, actor, timestamp = state.lastTimestamp) {
+  const animationSet = actor.animation === "walk" ? playerSprites.run : playerSprites.idle;
+  const sheet = animationSet[actor.direction] ?? animationSet.down;
+
+  if (!canDrawSprite(sheet)) {
+    return false;
+  }
+
+  const scale = actor.scale ?? 1;
+  const duration = actor.animation === "walk" ? 120 : PLAYER_SPRITE.idleFrameDuration;
+  const frameOffset = actor.frameOffset ?? 0;
+  const frameTime = timestamp + frameOffset * duration * 4;
+  const frameIndex = Math.floor(frameTime / duration) % PLAYER_SPRITE.frameCount;
+  const sourceX = frameIndex * PLAYER_SPRITE.frameWidth + PLAYER_SPRITE.cropX;
+  const drawWidth = Math.max(1, Math.round(PLAYER_SPRITE.drawWidth * scale));
+  const drawHeight = Math.max(1, Math.round(PLAYER_SPRITE.drawHeight * scale));
+  const drawOffsetX = Math.round(PLAYER_SPRITE.drawOffsetX * scale);
+  const drawOffsetY = Math.round(PLAYER_SPRITE.drawOffsetY * scale);
+
+  context.save();
+  context.globalAlpha = actor.opacity ?? 1;
+  context.translate(Math.round(actor.x), Math.round(actor.y));
+  context.drawImage(
+    sheet,
+    sourceX,
+    PLAYER_SPRITE.cropY,
+    PLAYER_SPRITE.cropWidth,
+    PLAYER_SPRITE.cropHeight,
+    drawOffsetX,
+    drawOffsetY,
+    drawWidth,
+    drawHeight
+  );
+  context.restore();
   return true;
 }
 
@@ -2290,10 +2578,10 @@ function createHubLevel() {
         id: "to-fog-port",
         kind: "rect",
         prompt: "Cổng Sương Mù -> Khu vực 1",
-        x: 92,
-        y: 102,
-        width: 124,
-        height: 104,
+        x: 166,
+        y: 194,
+        width: 104,
+        height: 124,
         target: "village",
         spawn: { x: 124, y: 104, direction: "down" },
         guide: {
@@ -2301,11 +2589,11 @@ function createHubLevel() {
           glowAlpha: 0.36,
           size: 4,
           markers: [
-            { x: 388, y: 318, direction: "left" },
-            { x: 308, y: 318, direction: "left" },
-            { x: 228, y: 318, direction: "left" },
-            { x: 162, y: 252, direction: "up" },
-            { x: 162, y: 186, direction: "up" },
+            { x: 392, y: 332, direction: "left" },
+            { x: 324, y: 332, direction: "left" },
+            { x: 258, y: 332, direction: "left" },
+            { x: 218, y: 294, direction: "up" },
+            { x: 218, y: 248, direction: "up" },
           ],
         },
       },
@@ -2313,10 +2601,10 @@ function createHubLevel() {
         id: "to-three-room-house",
         kind: "rect",
         prompt: "Nhà gỗ ba gian -> Khu vực 2",
-        x: 744,
-        y: 102,
-        width: 124,
-        height: 104,
+        x: 690,
+        y: 194,
+        width: 104,
+        height: 124,
         target: "archive",
         spawn: { x: 480, y: 560, direction: "up" },
         guide: {
@@ -2324,11 +2612,11 @@ function createHubLevel() {
           glowAlpha: 0.36,
           size: 4,
           markers: [
-            { x: 572, y: 318, direction: "right" },
-            { x: 652, y: 318, direction: "right" },
-            { x: 732, y: 318, direction: "right" },
-            { x: 798, y: 252, direction: "up" },
-            { x: 798, y: 186, direction: "up" },
+            { x: 568, y: 332, direction: "right" },
+            { x: 636, y: 332, direction: "right" },
+            { x: 702, y: 332, direction: "right" },
+            { x: 740, y: 294, direction: "up" },
+            { x: 740, y: 248, direction: "up" },
           ],
         },
       },
@@ -2336,10 +2624,10 @@ function createHubLevel() {
         id: "to-red-square",
         kind: "rect",
         prompt: "Quảng trường đỏ -> Khu vực 3",
-        x: 96,
-        y: 430,
-        width: 132,
-        height: 108,
+        x: 228,
+        y: 390,
+        width: 104,
+        height: 140,
         target: "crossroads",
         spawn: { x: 482, y: 88, direction: "down" },
         guide: {
@@ -2347,11 +2635,11 @@ function createHubLevel() {
           glowAlpha: 0.36,
           size: 4,
           markers: [
-            { x: 388, y: 336, direction: "left" },
-            { x: 308, y: 336, direction: "left" },
-            { x: 228, y: 336, direction: "left" },
-            { x: 170, y: 404, direction: "down" },
-            { x: 170, y: 468, direction: "down" },
+            { x: 392, y: 404, direction: "left" },
+            { x: 328, y: 404, direction: "left" },
+            { x: 280, y: 404, direction: "left" },
+            { x: 280, y: 438, direction: "down" },
+            { x: 280, y: 472, direction: "down" },
           ],
         },
       },
@@ -2359,10 +2647,10 @@ function createHubLevel() {
         id: "to-doi-moi-valley",
         kind: "rect",
         prompt: "Thung lũng Đổi Mới -> Khu vực 4",
-        x: 736,
-        y: 430,
-        width: 132,
-        height: 108,
+        x: 628,
+        y: 390,
+        width: 104,
+        height: 140,
         target: "spring",
         spawn: { x: 482, y: 560, direction: "up" },
         guide: {
@@ -2370,11 +2658,11 @@ function createHubLevel() {
           glowAlpha: 0.36,
           size: 4,
           markers: [
-            { x: 572, y: 336, direction: "right" },
-            { x: 652, y: 336, direction: "right" },
-            { x: 732, y: 336, direction: "right" },
-            { x: 792, y: 404, direction: "down" },
-            { x: 792, y: 468, direction: "down" },
+            { x: 568, y: 404, direction: "right" },
+            { x: 632, y: 404, direction: "right" },
+            { x: 680, y: 404, direction: "right" },
+            { x: 680, y: 438, direction: "down" },
+            { x: 680, y: 472, direction: "down" },
           ],
         },
       },
@@ -2433,7 +2721,8 @@ function createPortMazeLevel() {
         width: 96,
         height: 70,
         target: "hub",
-        spawn: { x: 156, y: 156, direction: "down" },
+        spawn: { x: 218, y: 356, direction: "down" },
+        portal: { label: "Trung tam", labelOffsetY: 34, drawSize: 54, auraRadius: 42 },
         guide: {
           color: "#f3d777",
           glowAlpha: 0.34,
@@ -2620,7 +2909,8 @@ function createUnityHouseLevel() {
         width: 100,
         height: 56,
         target: "hub",
-        spawn: { x: 804, y: 172, direction: "down" },
+        spawn: { x: 740, y: 356, direction: "down" },
+        portal: { label: "Trung tam", labelOffsetY: -52, drawSize: 56, auraRadius: 44 },
         guide: {
           color: "#f3d777",
           glowAlpha: 0.34,
@@ -2637,8 +2927,8 @@ function createUnityHouseLevel() {
     interactables: [
       {
         id: "delegate-east",
-        x: 734,
-        y: 178,
+        x: 768,
+        y: 248,
         width: 22,
         height: 40,
         kind: "npc",
@@ -2651,8 +2941,8 @@ function createUnityHouseLevel() {
       },
       {
         id: "delegate-west",
-        x: 232,
-        y: 180,
+        x: 192,
+        y: 248,
         width: 22,
         height: 40,
         kind: "npc",
@@ -2665,8 +2955,8 @@ function createUnityHouseLevel() {
       },
       {
         id: "delegate-north",
-        x: 482,
-        y: 218,
+        x: 480,
+        y: 152,
         width: 22,
         height: 40,
         kind: "npc",
@@ -2680,7 +2970,7 @@ function createUnityHouseLevel() {
       {
         id: "unity-round-table",
         x: 480,
-        y: 344,
+        y: 294,
         width: 34,
         height: 18,
         kind: "object",
@@ -2690,8 +2980,8 @@ function createUnityHouseLevel() {
       },
       {
         id: "split-blade",
-        x: 610,
-        y: 420,
+        x: 760,
+        y: 486,
         width: 34,
         height: 44,
         kind: "object",
@@ -2754,7 +3044,8 @@ function createRedSquareLevel() {
         width: 96,
         height: 56,
         target: "hub",
-        spawn: { x: 164, y: 484, direction: "right" },
+        spawn: { x: 280, y: 368, direction: "up" },
+        portal: { label: "Trung tam", labelOffsetY: 34, drawSize: 54, auraRadius: 42 },
         guide: {
           color: "#f3d777",
           glowAlpha: 0.34,
@@ -2771,8 +3062,8 @@ function createRedSquareLevel() {
     interactables: [
       {
         id: "vietminh-cadre",
-        x: 482,
-        y: 160,
+        x: 480,
+        y: 176,
         width: 22,
         height: 40,
         kind: "npc",
@@ -2784,8 +3075,8 @@ function createRedSquareLevel() {
       },
       {
         id: "recruit-farmer",
-        x: 214,
-        y: 182,
+        x: 184,
+        y: 174,
         width: 20,
         height: 38,
         kind: "npc",
@@ -2798,8 +3089,8 @@ function createRedSquareLevel() {
       },
       {
         id: "recruit-worker",
-        x: 724,
-        y: 208,
+        x: 756,
+        y: 184,
         width: 20,
         height: 38,
         kind: "npc",
@@ -2812,8 +3103,8 @@ function createRedSquareLevel() {
       },
       {
         id: "recruit-intellectual",
-        x: 312,
-        y: 108,
+        x: 330,
+        y: 110,
         width: 20,
         height: 38,
         kind: "npc",
@@ -2826,8 +3117,8 @@ function createRedSquareLevel() {
       },
       {
         id: "recruit-bourgeois",
-        x: 656,
-        y: 124,
+        x: 628,
+        y: 110,
         width: 20,
         height: 38,
         kind: "npc",
@@ -2840,8 +3131,8 @@ function createRedSquareLevel() {
       },
       {
         id: "landlord-patriot",
-        x: 144,
-        y: 256,
+        x: 160,
+        y: 246,
         width: 20,
         height: 38,
         kind: "npc",
@@ -2854,8 +3145,8 @@ function createRedSquareLevel() {
       },
       {
         id: "middle-peasant",
-        x: 800,
-        y: 256,
+        x: 804,
+        y: 246,
         width: 20,
         height: 38,
         kind: "npc",
@@ -2868,7 +3159,7 @@ function createRedSquareLevel() {
       },
       {
         id: "hamlet-1",
-        x: 250,
+        x: 210,
         y: 478,
         width: 28,
         height: 24,
@@ -2881,7 +3172,7 @@ function createRedSquareLevel() {
       {
         id: "hamlet-2",
         x: 482,
-        y: 528,
+        y: 468,
         width: 28,
         height: 24,
         kind: "object",
@@ -2892,8 +3183,8 @@ function createRedSquareLevel() {
       },
       {
         id: "hamlet-3",
-        x: 720,
-        y: 460,
+        x: 784,
+        y: 474,
         width: 28,
         height: 24,
         kind: "object",
@@ -2904,8 +3195,8 @@ function createRedSquareLevel() {
       },
       {
         id: "resistance-commander",
-        x: 832,
-        y: 566,
+        x: 816,
+        y: 524,
         width: 22,
         height: 40,
         kind: "npc",
@@ -2917,8 +3208,8 @@ function createRedSquareLevel() {
       },
       {
         id: "foreign-advisor",
-        x: 112,
-        y: 566,
+        x: 146,
+        y: 530,
         width: 22,
         height: 40,
         kind: "npc",
@@ -2934,8 +3225,8 @@ function createRedSquareLevel() {
         id: "southern-tyrant",
         name: "Bộ máy áp bức miền Nam",
         variant: "blight",
-        x: 542,
-        y: 480,
+        x: 588,
+        y: 476,
         width: 28,
         height: 28,
         maxHealth: 5,
@@ -2945,12 +3236,12 @@ function createRedSquareLevel() {
       },
     ],
     colliders: [
-      { x: 0, y: 300, width: 420, height: 56 },
-      { x: 540, y: 300, width: WORLD.width - 540, height: 56 },
-      { x: 206, y: 456, width: 86, height: 34, hamletId: "hamlet-1" },
-      { x: 442, y: 508, width: 80, height: 34, hamletId: "hamlet-2" },
-      { x: 684, y: 444, width: 80, height: 34, hamletId: "hamlet-3" },
-      { x: 408, y: 22, width: 152, height: 26 },
+      { x: 0, y: 262, width: 446, height: 92 },
+      { x: 514, y: 262, width: WORLD.width - 514, height: 92 },
+      { x: 178, y: 456, width: 84, height: 34, hamletId: "hamlet-1" },
+      { x: 440, y: 446, width: 84, height: 34, hamletId: "hamlet-2" },
+      { x: 742, y: 452, width: 84, height: 34, hamletId: "hamlet-3" },
+      { x: 422, y: 36, width: 116, height: 24 },
     ],
     decorations,
   };
@@ -2984,7 +3275,8 @@ function createDoiMoiValleyLevel() {
         width: 96,
         height: 56,
         target: "hub",
-        spawn: { x: 800, y: 486, direction: "left" },
+        spawn: { x: 680, y: 368, direction: "up" },
+        portal: { label: "Trung tam", labelOffsetY: -52, drawSize: 56, auraRadius: 44 },
         guide: {
           color: "#f3d777",
           glowAlpha: 0.34,
@@ -3001,8 +3293,8 @@ function createDoiMoiValleyLevel() {
     interactables: [
       {
         id: "bao-cap-wall-1",
-        x: 286,
-        y: 386,
+        x: 388,
+        y: 392,
         width: 26,
         height: 22,
         kind: "object",
@@ -3014,7 +3306,7 @@ function createDoiMoiValleyLevel() {
       {
         id: "bao-cap-wall-2",
         x: 480,
-        y: 370,
+        y: 386,
         width: 26,
         height: 22,
         kind: "object",
@@ -3025,8 +3317,8 @@ function createDoiMoiValleyLevel() {
       },
       {
         id: "bao-cap-wall-3",
-        x: 674,
-        y: 386,
+        x: 572,
+        y: 392,
         width: 26,
         height: 22,
         kind: "object",
@@ -3037,8 +3329,8 @@ function createDoiMoiValleyLevel() {
       },
       {
         id: "farmer-khoan-1",
-        x: 190,
-        y: 476,
+        x: 208,
+        y: 452,
         width: 20,
         height: 38,
         kind: "npc",
@@ -3051,13 +3343,13 @@ function createDoiMoiValleyLevel() {
       },
       {
         id: "farmer-khoan-2",
-        x: 480,
-        y: 470,
+        x: 698,
+        y: 318,
         width: 20,
         height: 38,
         kind: "npc",
         spriteKey: "npc03",
-        direction: "down",
+        direction: "left",
         animation: "idle",
         prompt: "trao Khoán 10 cho người sản xuất",
         interactionType: "deliverKhoan10",
@@ -3065,8 +3357,8 @@ function createDoiMoiValleyLevel() {
       },
       {
         id: "farmer-khoan-3",
-        x: 780,
-        y: 476,
+        x: 824,
+        y: 110,
         width: 20,
         height: 38,
         kind: "npc",
@@ -3079,8 +3371,8 @@ function createDoiMoiValleyLevel() {
       },
       {
         id: "doi-moi-leader",
-        x: 486,
-        y: 270,
+        x: 480,
+        y: 338,
         width: 22,
         height: 40,
         kind: "npc",
@@ -3100,8 +3392,8 @@ function createDoiMoiValleyLevel() {
       },
       {
         id: "ration-market",
-        x: 118,
-        y: 262,
+        x: 196,
+        y: 330,
         width: 24,
         height: 22,
         kind: "object",
@@ -3110,21 +3402,21 @@ function createDoiMoiValleyLevel() {
       },
       {
         id: "corrupt-official",
-        x: 842,
-        y: 196,
+        x: 286,
+        y: 170,
         width: 22,
         height: 40,
         kind: "npc",
         spriteKey: "npc04",
-        direction: "left",
+        direction: "right",
         animation: "idle",
         prompt: "tham nhũng, bòn rút của công",
         interactionType: "fillCorruption",
       },
       {
         id: "pluralism-broker",
-        x: 832,
-        y: 318,
+        x: 676,
+        y: 424,
         width: 22,
         height: 40,
         kind: "npc",
@@ -3137,12 +3429,12 @@ function createDoiMoiValleyLevel() {
     ],
     monsters: [],
     colliders: [
-      { x: 98, y: 242, width: 66, height: 48 },
-      { x: 788, y: 152, width: 112, height: 82 },
-      { x: 784, y: 280, width: 118, height: 82 },
-      { x: 252, y: 390, width: 68, height: 24, barrierId: "wall-1" },
-      { x: 446, y: 374, width: 68, height: 24, barrierId: "wall-2" },
-      { x: 642, y: 390, width: 68, height: 24, barrierId: "wall-3" },
+      { x: 120, y: 286, width: 204, height: 76 },
+      { x: 88, y: 100, width: 284, height: 132 },
+      { x: 560, y: 324, width: 196, height: 136 },
+      { x: 354, y: 394, width: 68, height: 24, barrierId: "wall-1" },
+      { x: 446, y: 388, width: 68, height: 24, barrierId: "wall-2" },
+      { x: 538, y: 394, width: 68, height: 24, barrierId: "wall-3" },
     ],
     decorations,
   };
@@ -3156,10 +3448,10 @@ function createHubDecorations() {
       size: 1 + (index % 2),
     })),
     portals: [
-      { x: 154, y: 154, color: "#cdd7ef", glow: "#7ea3d7", title: "Khu 1", subtitle: "Sương mù", labelOffsetY: 38 },
-      { x: 806, y: 154, color: "#efd6ab", glow: "#d59f62", title: "Khu 2", subtitle: "Nha go", labelOffsetY: 38 },
-      { x: 162, y: 482, color: "#f3d85b", glow: "#bf4739", title: "Khu 3", subtitle: "Cau gay", labelOffsetY: -62 },
-      { x: 802, y: 482, color: "#d9f0a7", glow: "#6db05a", title: "Khu 4", subtitle: "Doi Moi", labelOffsetY: -62 },
+      { x: 218, y: 262, color: "#cdd7ef", glow: "#7ea3d7", title: "Khu 1", subtitle: "Sương mù", labelOffsetY: 44 },
+      { x: 740, y: 262, color: "#efd6ab", glow: "#d59f62", title: "Khu 2", subtitle: "Nha go", labelOffsetY: 44 },
+      { x: 280, y: 476, color: "#f3d85b", glow: "#bf4739", title: "Khu 3", subtitle: "Cau gay", labelOffsetY: -74 },
+      { x: 680, y: 476, color: "#d9f0a7", glow: "#6db05a", title: "Khu 4", subtitle: "Doi Moi", labelOffsetY: -74 },
     ],
     plaza: { x: 238, y: 146, width: 484, height: 354 },
     gate: { x: 445, y: 198, width: 70, height: 82 },
@@ -3269,11 +3561,11 @@ function createUnityHouseDecorations() {
 
 function createRedSquareDecorations() {
   return {
-    splitY: 330,
-    river: { x: 0, y: 300, width: WORLD.width, height: 58 },
-    bridge: { x: 434, y: 292, width: 92, height: 74 },
-    northSquare: { x: 126, y: 92, width: 710, height: 194 },
-    southTown: { x: 132, y: 396, width: 700, height: 176 },
+    splitY: 360,
+    river: { x: 0, y: 246, width: WORLD.width, height: 106 },
+    bridge: { x: 452, y: 236, width: 56, height: 176 },
+    northSquare: { x: 96, y: 48, width: 768, height: 214 },
+    southTown: { x: 72, y: 392, width: 816, height: 188 },
     flags: [
       { x: 226, y: 102, height: 50 },
       { x: 480, y: 90, height: 68 },
@@ -3318,10 +3610,10 @@ function createDoiMoiValleyDecorations() {
       { x: 560, y: 190, width: 400, height: 126, color: "#92ce67" },
     ],
     factories: [
-      { x: 614, y: 214, width: 122, height: 72 },
-      { x: 756, y: 198, width: 92, height: 82 },
+      { x: 104, y: 124, width: 136, height: 88 },
+      { x: 232, y: 104, width: 142, height: 100 },
     ],
-    rationMarket: { x: 86, y: 214, width: 106, height: 92 },
+    rationMarket: { x: 120, y: 292, width: 204, height: 92 },
     riceFields: [
       { x: 98, y: 430, width: 172, height: 102 },
       { x: 358, y: 438, width: 240, height: 94 },
@@ -3403,6 +3695,7 @@ function resetGameplayProgress() {
   state.activeSkillEffect = null;
   state.endingId = null;
   state.endingSummary = "";
+  state.endingCinematic = null;
   state.puzzleState.archiveSequence = 0;
   state.puzzleState.archiveSolved = false;
   state.quests = createQuestState();
@@ -3442,6 +3735,83 @@ function currentLevel() {
   return levels[state.currentLevelId];
 }
 
+function getDebugEndingIdFromUrl() {
+  const requestedEnding = new URLSearchParams(window.location.search).get("debugEnding");
+  return requestedEnding === "good" || requestedEnding === "bad" ? requestedEnding : null;
+}
+
+function getDebugLevelIdFromUrl() {
+  const requestedLevel = new URLSearchParams(window.location.search).get("debugLevel");
+  return requestedLevel && levels[requestedLevel] ? requestedLevel : null;
+}
+
+function applyDebugLevelFromUrl() {
+  const levelId = getDebugLevelIdFromUrl();
+
+  if (!levelId || getDebugEndingIdFromUrl()) {
+    return;
+  }
+
+  state.mode = "playing";
+  state.aboutFromPause = false;
+  state.openingStep = 0;
+  keys.clear();
+  hideEndOverlay();
+  hideDialogue();
+  hideOpeningIntro();
+  hideStoryToast();
+  startScreen.classList.add("hidden");
+  startScreen.setAttribute("aria-hidden", "true");
+  pauseMenu.classList.add("hidden");
+  slideModal.classList.add("hidden");
+  interactionPrompt.classList.add("hidden");
+  pauseMenu.setAttribute("aria-hidden", "true");
+  slideModal.setAttribute("aria-hidden", "true");
+  resetStoryProgress();
+  loadLevel(levelId);
+}
+
+function applyDebugEndingFromUrl() {
+  const endingId = getDebugEndingIdFromUrl();
+
+  if (!endingId) {
+    return;
+  }
+
+  state.aboutFromPause = false;
+  state.pendingEnding = false;
+  state.endingId = endingId;
+  state.endingSummary =
+    endingId === "good"
+      ? "Preview Good Ending duoc mo bang ?debugEnding=good."
+      : "Preview Bad Ending duoc mo bang ?debugEnding=bad.";
+
+  state.inventory.clear();
+
+  if (endingId === "good") {
+    for (const relicId of REQUIRED_RELIC_IDS) {
+      state.inventory.add(relicId);
+    }
+    state.saDoa = 18;
+  } else {
+    state.saDoa = SA_DOA_MAX;
+  }
+
+  keys.clear();
+  hideDialogue();
+  hideOpeningIntro();
+  hideStoryToast();
+  startScreen.classList.add("hidden");
+  startScreen.setAttribute("aria-hidden", "true");
+  pauseMenu.classList.add("hidden");
+  slideModal.classList.add("hidden");
+  interactionPrompt.classList.add("hidden");
+  pauseMenu.setAttribute("aria-hidden", "true");
+  slideModal.setAttribute("aria-hidden", "true");
+  updateProgressHud();
+  showEndOverlay();
+}
+
 function frame(timestamp) {
   const deltaSeconds = Math.min((timestamp - state.lastTimestamp) / 1000 || 0, 0.033);
   state.lastTimestamp = timestamp;
@@ -3458,6 +3828,8 @@ function frame(timestamp) {
 
   updateProgressHud();
   render();
+  renderEndingArtCinematic();
+  renderEndingSceneOverlay();
   requestAnimationFrame(frame);
 }
 
@@ -3988,24 +4360,475 @@ function closeSlide() {
   updateStoryBookButton();
 }
 
+function handleReturnFromEnding() {
+  if (!isEndingCinematicComplete()) {
+    return;
+  }
+
+  returnToStartScreen();
+}
+
+function createEndingCinematicState(endingId) {
+  const definition = ENDING_CINEMATIC_DEFINITIONS[endingId] ?? ENDING_CINEMATIC_DEFINITIONS.bad;
+
+  return {
+    endingId,
+    startedAt: state.lastTimestamp,
+    duration: definition.duration,
+    completed: false,
+    hasStarted: false,
+  };
+}
+
+function isEndingCinematicComplete() {
+  return !state.endingCinematic || state.endingCinematic.completed;
+}
+
+function updateEndingCinematicUiState() {
+  if (state.mode !== "ending") {
+    returnStartButton.disabled = false;
+    delete endOverlay.dataset.cinematic;
+    return;
+  }
+
+  const cinematicState = isEndingCinematicComplete() ? "complete" : "running";
+  endOverlay.dataset.cinematic = cinematicState;
+  returnStartButton.disabled = cinematicState === "running";
+}
+
 function showEndOverlay() {
   const ending = ENDING_DEFINITIONS[state.endingId] ?? ENDING_DEFINITIONS.bad;
 
   state.mode = "ending";
+  state.endingCinematic = createEndingCinematicState(state.endingId ?? "bad");
   interactionPrompt.classList.add("hidden");
   endTitle.textContent = ending.title;
   endCopy.textContent = ending.copy;
   endSummary.textContent =
     state.endingSummary || `Tín vật: ${state.inventory.size}/${RELIC_TARGET_COUNT} • Tha hóa: ${state.saDoa}%`;
+  updateEndingArt(ending);
+  endOverlay.dataset.ending = state.endingId ?? "bad";
   endOverlay.classList.remove("hidden");
   endOverlay.setAttribute("aria-hidden", "false");
+  syncEndingArtCinematicCanvas();
+  syncEndingSceneOverlayCanvas();
+  updateEndingCinematicUiState();
   updateStoryBookButton();
 }
 
 function hideEndOverlay() {
+  if (endArtFrame && endArtImage) {
+    endArtFrame.classList.add("hidden");
+    endArtFrame.setAttribute("aria-hidden", "true");
+    endArtImage.removeAttribute("src");
+    endArtImage.alt = "";
+  }
+  state.endingCinematic = null;
+  clearEndingArtCinematic();
+  clearEndingSceneOverlay();
+  updateEndingCinematicUiState();
+  delete endOverlay.dataset.ending;
   endOverlay.classList.add("hidden");
   endOverlay.setAttribute("aria-hidden", "true");
   updateStoryBookButton();
+}
+
+function updateEndingArt(ending) {
+  if (!endArtFrame || !endArtImage) {
+    return;
+  }
+
+  if (!ending?.artSrc) {
+    endArtFrame.classList.add("hidden");
+    endArtFrame.setAttribute("aria-hidden", "true");
+    endArtImage.removeAttribute("src");
+    endArtImage.alt = "";
+    return;
+  }
+
+  endArtImage.src = ending.artSrc;
+  endArtImage.alt = ending.artAlt ?? "";
+  endArtFrame.classList.remove("hidden");
+  endArtFrame.setAttribute("aria-hidden", "false");
+}
+
+function syncEndingArtSurface(canvasElement, surfaceContext) {
+  if (!canvasElement || !surfaceContext || !endArtFrame || !endArtImage) {
+    return null;
+  }
+
+  const width = Math.round(endArtImage.clientWidth);
+  const height = Math.round(endArtImage.clientHeight);
+
+  if (!width || !height || !endArtImage.complete || !endArtImage.naturalWidth) {
+    canvasElement.style.width = "0px";
+    canvasElement.style.height = "0px";
+    return null;
+  }
+
+  const left = Math.round(endArtImage.offsetLeft);
+  const top = Math.round(endArtImage.offsetTop);
+
+  if (canvasElement.width !== width) {
+    canvasElement.width = width;
+  }
+
+  if (canvasElement.height !== height) {
+    canvasElement.height = height;
+  }
+
+  canvasElement.style.left = `${left}px`;
+  canvasElement.style.top = `${top}px`;
+  canvasElement.style.width = `${width}px`;
+  canvasElement.style.height = `${height}px`;
+
+  return { context: surfaceContext, width, height };
+}
+
+function syncEndingArtCinematicCanvas() {
+  return syncEndingArtSurface(endArtCinematic, endArtCinematicCtx);
+}
+
+function syncEndingSceneOverlayCanvas() {
+  return syncEndingArtSurface(endArtOverlay, endArtOverlayCtx);
+}
+
+function clearEndingArtSurface(canvasElement, surfaceContext) {
+  if (!canvasElement || !surfaceContext) {
+    return;
+  }
+
+  surfaceContext.setTransform(1, 0, 0, 1, 0, 0);
+  surfaceContext.clearRect(0, 0, canvasElement.width, canvasElement.height);
+  canvasElement.width = 0;
+  canvasElement.height = 0;
+  canvasElement.style.width = "0px";
+  canvasElement.style.height = "0px";
+}
+
+function clearEndingArtCinematic() {
+  clearEndingArtSurface(endArtCinematic, endArtCinematicCtx);
+}
+
+function clearEndingSceneOverlay() {
+  clearEndingArtSurface(endArtOverlay, endArtOverlayCtx);
+}
+
+function easeInOutCubic(value) {
+  if (value < 0.5) {
+    return 4 * value * value * value;
+  }
+
+  return 1 - Math.pow(-2 * value + 2, 3) / 2;
+}
+
+function easeOutQuad(value) {
+  return 1 - (1 - value) * (1 - value);
+}
+
+function sampleEndingCinematicKeyframes(keyframes, progress) {
+  if (progress <= keyframes[0].at) {
+    return keyframes[0];
+  }
+
+  for (let index = 0; index < keyframes.length - 1; index += 1) {
+    const current = keyframes[index];
+    const next = keyframes[index + 1];
+
+    if (progress > next.at) {
+      continue;
+    }
+
+    const segmentProgress = clamp((progress - current.at) / (next.at - current.at), 0, 1);
+    const eased = easeInOutCubic(segmentProgress);
+
+    return {
+      x: current.x + (next.x - current.x) * eased,
+      y: current.y + (next.y - current.y) * eased,
+      zoom: current.zoom + (next.zoom - current.zoom) * eased,
+    };
+  }
+
+  return keyframes[keyframes.length - 1];
+}
+
+function computeEndingCinematicFrame(image, width, height, cinematicState) {
+  const definition =
+    ENDING_CINEMATIC_DEFINITIONS[cinematicState.endingId] ?? ENDING_CINEMATIC_DEFINITIONS.bad;
+  const progress = clamp((state.lastTimestamp - cinematicState.startedAt) / cinematicState.duration, 0, 1);
+  const keyframe = sampleEndingCinematicKeyframes(definition.keyframes, progress);
+  const revealProgress = easeInOutCubic(clamp((progress - 0.72) / 0.28, 0, 1));
+  const targetAspect = width / height;
+  let cropWidth = image.naturalWidth / keyframe.zoom;
+  let cropHeight = cropWidth / targetAspect;
+
+  if (cropHeight > image.naturalHeight) {
+    cropHeight = image.naturalHeight;
+    cropWidth = cropHeight * targetAspect;
+  }
+
+  const focusX = keyframe.x * image.naturalWidth;
+  const focusY = keyframe.y * image.naturalHeight;
+  const cropX = clamp(focusX - cropWidth / 2, 0, image.naturalWidth - cropWidth);
+  const cropY = clamp(focusY - cropHeight / 2, 0, image.naturalHeight - cropHeight);
+
+  return {
+    cropX,
+    cropY,
+    cropWidth,
+    cropHeight,
+    fadeAlpha: 1 - easeOutQuad(clamp(progress / 0.16, 0, 1)),
+    matteHeight: Math.round((1 - revealProgress) * Math.min(26, height * 0.11)),
+    vignetteAlpha: 0.24 - revealProgress * 0.14,
+    flareAlpha: cinematicState.endingId === "good" ? 0.16 * (1 - revealProgress * 0.5) : 0.08 * (1 - revealProgress * 0.5),
+    revealProgress,
+    complete: progress >= 1,
+  };
+}
+
+function renderEndingArtCinematic() {
+  if (state.mode !== "ending" || !state.endingId) {
+    clearEndingArtCinematic();
+    return;
+  }
+
+  const cinematicState =
+    state.endingCinematic ?? createEndingCinematicState(state.endingId ?? "bad");
+  state.endingCinematic = cinematicState;
+
+  if (!endArtImage?.complete || !endArtImage?.naturalWidth) {
+    return;
+  }
+
+  if (!cinematicState.hasStarted) {
+    cinematicState.hasStarted = true;
+    cinematicState.startedAt = state.lastTimestamp;
+  }
+
+  const surface = syncEndingArtCinematicCanvas();
+
+  if (!surface) {
+    return;
+  }
+
+  const { context, width, height } = surface;
+  const frame = computeEndingCinematicFrame(endArtImage, width, height, cinematicState);
+
+  context.clearRect(0, 0, width, height);
+  context.save();
+  context.drawImage(
+    endArtImage,
+    Math.round(frame.cropX),
+    Math.round(frame.cropY),
+    Math.round(frame.cropWidth),
+    Math.round(frame.cropHeight),
+    0,
+    0,
+    width,
+    height
+  );
+
+  if (frame.flareAlpha > 0) {
+    context.save();
+    context.globalCompositeOperation = cinematicState.endingId === "good" ? "screen" : "multiply";
+    context.fillStyle =
+      cinematicState.endingId === "good"
+        ? `rgba(255, 222, 138, ${frame.flareAlpha})`
+        : `rgba(76, 12, 16, ${frame.flareAlpha + 0.06})`;
+    context.fillRect(0, 0, width, height);
+    context.restore();
+  }
+
+  if (frame.vignetteAlpha > 0) {
+    const gradient = context.createRadialGradient(
+      width * 0.5,
+      height * 0.48,
+      width * 0.08,
+      width * 0.5,
+      height * 0.52,
+      width * 0.72
+    );
+    gradient.addColorStop(0, "rgba(0, 0, 0, 0)");
+    gradient.addColorStop(1, `rgba(4, 6, 10, ${frame.vignetteAlpha})`);
+    context.fillStyle = gradient;
+    context.fillRect(0, 0, width, height);
+  }
+
+  if (frame.matteHeight > 0) {
+    context.fillStyle = "rgba(4, 6, 10, 0.92)";
+    context.fillRect(0, 0, width, frame.matteHeight);
+    context.fillRect(0, height - frame.matteHeight, width, frame.matteHeight);
+  }
+
+  if (frame.fadeAlpha > 0) {
+    context.fillStyle = `rgba(4, 6, 10, ${frame.fadeAlpha})`;
+    context.fillRect(0, 0, width, height);
+  }
+
+  context.restore();
+
+  if (frame.complete && !cinematicState.completed) {
+    cinematicState.completed = true;
+    updateEndingCinematicUiState();
+  }
+}
+
+function renderEndingSceneOverlay() {
+  if (state.mode !== "ending" || !state.endingId) {
+    clearEndingSceneOverlay();
+    return;
+  }
+
+  if (!isEndingCinematicComplete()) {
+    clearEndingSceneOverlay();
+    return;
+  }
+
+  const scene = ENDING_OVERLAY_SCENES[state.endingId];
+
+  if (!scene) {
+    clearEndingSceneOverlay();
+    return;
+  }
+
+  const surface = syncEndingSceneOverlayCanvas();
+
+  if (!surface) {
+    return;
+  }
+
+  const { context, width, height } = surface;
+  context.clearRect(0, 0, width, height);
+  context.save();
+
+  if (state.endingId === "good") {
+    renderGoodEndingSceneOverlay(context, width, height, scene);
+  } else {
+    renderBadEndingSceneOverlay(context, width, height, scene);
+  }
+
+  context.restore();
+}
+
+function renderGoodEndingSceneOverlay(context, width, height, scene) {
+  const timestamp = state.lastTimestamp;
+  const pulse = 0.82 + Math.sin(timestamp * 0.0024) * 0.08;
+
+  context.save();
+  context.globalCompositeOperation = "screen";
+  context.fillStyle = `rgba(255, 227, 123, ${0.08 + pulse * 0.06})`;
+  context.fillRect(width * 0.32, height * 0.58, width * 0.36, height * 0.3);
+  context.restore();
+
+  for (const mote of scene.motes) {
+    const sway = Math.sin(timestamp * mote.speed + mote.x * 22) * mote.drift;
+    const lift = Math.cos(timestamp * mote.speed * 1.6 + mote.y * 18) * mote.drift;
+    const x = width * mote.x + sway;
+    const y = height * mote.y + lift;
+    const size = mote.size * (0.92 + Math.sin(timestamp * mote.speed * 1.9) * 0.08);
+
+    context.save();
+    context.globalAlpha = mote.alpha;
+    context.fillStyle = "#ffd86b";
+    context.beginPath();
+    context.arc(x, y, size * 0.34, 0, Math.PI * 2);
+    context.fill();
+
+    if (canDrawSprite(effectSprites.sparkle)) {
+      context.drawImage(
+        effectSprites.sparkle,
+        Math.round(x - size / 2),
+        Math.round(y - size / 2),
+        size,
+        size
+      );
+    }
+    context.restore();
+  }
+
+  drawEndingSceneFigures(context, width, height, scene.figures);
+}
+
+function renderBadEndingSceneOverlay(context, width, height, scene) {
+  const timestamp = state.lastTimestamp;
+
+  context.save();
+  context.fillStyle = "rgba(39, 8, 10, 0.18)";
+  context.fillRect(width * 0.28, height * 0.66, width * 0.44, height * 0.22);
+  context.restore();
+
+  for (let index = 0; index < 26; index += 1) {
+    const seed = index * 37.17;
+    const x = (seed * 23 + timestamp * 0.04) % (width + 30) - 15;
+    const y = (seed * 17 + timestamp * 0.18) % (height + 60) - 30;
+    const length = 10 + (index % 4) * 3;
+
+    context.save();
+    context.strokeStyle =
+      index % 3 === 0 ? "rgba(146, 255, 128, 0.2)" : "rgba(208, 226, 255, 0.18)";
+    context.lineWidth = 1;
+    context.beginPath();
+    context.moveTo(Math.round(x), Math.round(y));
+    context.lineTo(Math.round(x - 3), Math.round(y + length));
+    context.stroke();
+    context.restore();
+  }
+
+  for (let index = 0; index < 8; index += 1) {
+    const angle = timestamp * 0.0022 + index * 0.76;
+    const emberX = width * 0.5 + Math.sin(angle) * (28 + index * 3);
+    const emberY = height * (0.58 + index * 0.026) + Math.cos(angle * 1.5) * 4;
+    const size = 6 + (index % 3) * 2;
+
+    context.save();
+    context.globalAlpha = 0.16 + (index % 3) * 0.04;
+    context.fillStyle = "#f05446";
+    context.beginPath();
+    context.arc(emberX, emberY, size * 0.3, 0, Math.PI * 2);
+    context.fill();
+
+    if (canDrawSprite(effectSprites.ember)) {
+      context.drawImage(
+        effectSprites.ember,
+        Math.round(emberX - size / 2),
+        Math.round(emberY - size / 2),
+        size,
+        size
+      );
+    }
+    context.restore();
+  }
+
+  drawEndingSceneFigures(context, width, height, scene.figures);
+}
+
+function drawEndingSceneFigures(context, width, height, figures) {
+  const timestamp = state.lastTimestamp;
+  const sortedFigures = [...figures].sort((left, right) => left.y - right.y);
+
+  for (const figure of sortedFigures) {
+    const swaySpeed = figure.swaySpeed ?? 0.0018;
+    const sway =
+      Math.sin(timestamp * swaySpeed + (figure.frameOffset ?? 0) * Math.PI * 2) *
+      (figure.swayAmplitude ?? 0);
+    const bob = Math.cos(timestamp * (swaySpeed * 1.8) + figure.x * 16) * (figure.bobAmplitude ?? 0);
+    const x = width * figure.x + sway;
+    const y = height * figure.y + bob;
+    const shadowWidth = 8 + (figure.scale ?? 1) * 10;
+
+    context.save();
+    context.globalAlpha = 0.22;
+    context.fillStyle = "#091014";
+    context.fillRect(Math.round(x - shadowWidth / 2), Math.round(y + 5), Math.round(shadowWidth), 3);
+    context.restore();
+
+    if (figure.kind === "player") {
+      drawPlayerSpriteActorToContext(context, { ...figure, x, y }, timestamp);
+      continue;
+    }
+
+    drawNpcSpriteActorToContext(context, { ...figure, x, y }, timestamp);
+  }
 }
 
 function useStrikeSkill() {
@@ -5277,6 +6100,86 @@ function drawWorld() {
     drawDoiMoiValleyWorld(currentLevel().decorations);
   }
 
+  drawLevelExitPortals(currentLevel().exits);
+
+  ctx.restore();
+}
+
+function drawLevelExitPortals(exits) {
+  for (const exit of exits) {
+    if (!shouldDrawExitPortal(exit)) {
+      continue;
+    }
+
+    drawLevelExitPortal(exit);
+  }
+}
+
+function shouldDrawExitPortal(exit) {
+  if (!exit.portal) {
+    return false;
+  }
+
+  if (typeof exit.portal.visibleWhen === "function") {
+    return exit.portal.visibleWhen();
+  }
+
+  if (typeof exit.portal.visibleWhen === "boolean") {
+    return exit.portal.visibleWhen;
+  }
+
+  return true;
+}
+
+function drawLevelExitPortal(exit) {
+  const portal = exit.portal;
+  const centerX = portal.x ?? Math.round(exit.x + exit.width / 2);
+  const centerY = portal.y ?? Math.round(exit.y + exit.height / 2);
+  const pulse = 0.7 + (Math.sin(state.lastTimestamp * 0.0045 + centerX * 0.01 + centerY * 0.01) + 1) * 0.12;
+
+  ctx.save();
+  ctx.globalAlpha = 0.42;
+  ctx.fillStyle = "rgba(8, 12, 18, 0.74)";
+  ctx.beginPath();
+  ctx.ellipse(centerX, centerY + (portal.shadowOffsetY ?? 18), portal.shadowWidth ?? 24, portal.shadowHeight ?? 10, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
+  drawWorldWarmGlow(centerX, centerY - 4, portal.auraRadius ?? 42, (portal.auraAlpha ?? 0.12) + pulse * 0.08);
+  drawHubPortalSprite({
+    x: centerX,
+    y: centerY,
+    color: portal.color ?? "#dce4f3",
+    glow: portal.glow ?? "#d8a65e",
+    drawSize: portal.drawSize ?? 56,
+    auraWidth: portal.auraWidth ?? 20,
+    auraHeight: portal.auraHeight ?? 24,
+    innerGlowAlpha: portal.innerGlowAlpha ?? 0.28,
+    spriteAlpha: portal.spriteAlpha ?? 0.96,
+  });
+
+  if (portal.label) {
+    drawLevelExitPortalLabel(portal, centerX, centerY, pulse);
+  }
+}
+
+function drawLevelExitPortalLabel(portal, centerX, centerY, pulse) {
+  const labelWidth = portal.labelWidth ?? 82;
+  const labelHeight = portal.labelHeight ?? 18;
+  const labelY = centerY + (portal.labelOffsetY ?? 34);
+
+  ctx.save();
+  ctx.globalAlpha = Math.min(1, 0.82 + pulse * 0.08);
+  ctx.fillStyle = "rgba(18, 23, 31, 0.92)";
+  ctx.fillRect(centerX - labelWidth / 2, labelY, labelWidth, labelHeight);
+  ctx.strokeStyle = "rgba(245, 232, 195, 0.28)";
+  ctx.lineWidth = 2;
+  ctx.strokeRect(centerX - labelWidth / 2, labelY, labelWidth, labelHeight);
+  ctx.fillStyle = "#f6ebca";
+  ctx.font = '9px "Courier New", monospace';
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(portal.label, centerX, labelY + labelHeight / 2 + 1);
   ctx.restore();
 }
 
@@ -5521,18 +6424,22 @@ function drawHubPortalSprite(portal) {
   const sourceRow = Math.floor(frameIndex / HUB_PORTAL_SPRITE.columns);
   const sourceX = sourceCol * HUB_PORTAL_SPRITE.frameSize;
   const sourceY = sourceRow * HUB_PORTAL_SPRITE.frameSize;
-  const drawSize = HUB_PORTAL_SPRITE.drawSize;
+  const drawSize = portal.drawSize ?? HUB_PORTAL_SPRITE.drawSize;
   const drawX = Math.round(portal.x - drawSize / 2);
   const drawY = Math.round(portal.y - drawSize / 2);
+  const auraWidth = portal.auraWidth ?? Math.round(drawSize * 0.35);
+  const auraHeight = portal.auraHeight ?? Math.round(drawSize * 0.41);
 
   ctx.save();
-  ctx.globalAlpha = 0.34;
+  ctx.globalAlpha = portal.innerGlowAlpha ?? 0.34;
   ctx.fillStyle = portal.glow;
   ctx.beginPath();
-  ctx.ellipse(portal.x, portal.y, 24, 28, 0, 0, Math.PI * 2);
+  ctx.ellipse(portal.x, portal.y, auraWidth, auraHeight, 0, 0, Math.PI * 2);
   ctx.fill();
   ctx.restore();
 
+  ctx.save();
+  ctx.globalAlpha = portal.spriteAlpha ?? 1;
   ctx.drawImage(
     portalSheet,
     sourceX,
@@ -5544,15 +6451,25 @@ function drawHubPortalSprite(portal) {
     drawSize,
     drawSize
   );
+  ctx.restore();
 }
 
 function drawFallbackHubPortal(portal) {
+  const drawSize = portal.drawSize ?? HUB_PORTAL_SPRITE.drawSize;
+  const scale = drawSize / HUB_PORTAL_SPRITE.drawSize;
+  const outerHalfWidth = Math.round(26 * scale);
+  const outerHalfHeight = Math.round(18 * scale);
+  const innerHalfWidth = Math.round(18 * scale);
+  const innerHalfHeight = Math.round(26 * scale);
+  const coreHalfWidth = Math.round(10 * scale);
+  const coreHalfHeight = Math.round(18 * scale);
+
   ctx.fillStyle = "#2a3446";
-  ctx.fillRect(portal.x - 26, portal.y - 18, 52, 36);
+  ctx.fillRect(portal.x - outerHalfWidth, portal.y - outerHalfHeight, outerHalfWidth * 2, outerHalfHeight * 2);
   ctx.fillStyle = portal.color;
-  ctx.fillRect(portal.x - 18, portal.y - 26, 36, 52);
+  ctx.fillRect(portal.x - innerHalfWidth, portal.y - innerHalfHeight, innerHalfWidth * 2, innerHalfHeight * 2);
   ctx.fillStyle = portal.glow;
-  ctx.fillRect(portal.x - 10, portal.y - 18, 20, 36);
+  ctx.fillRect(portal.x - coreHalfWidth, portal.y - coreHalfHeight, coreHalfWidth * 2, coreHalfHeight * 2);
 }
 
 function drawPixelCrawlerVegetation(patches = []) {
@@ -5819,15 +6736,15 @@ function drawArchiveHouseInteriorProps(placements = []) {
 }
 
 function drawPortForestGround() {
-  ctx.fillStyle = "#243b2f";
+  ctx.fillStyle = "#2a2c31";
   ctx.fillRect(0, 108, WORLD.width, 356);
 
-  if (drawPixelCrawlerTerrainFill(PIXEL_CRAWLER_TERRAIN.grass, 0, 108, WORLD.width, 356, {
+  if (drawPixelCrawlerTerrainFill(PIXEL_CRAWLER_TERRAIN.stone, 0, 108, WORLD.width, 356, {
     seed: 21,
     scale: 2.75,
-    alpha: 0.18,
+    alpha: 0.16,
   })) {
-    ctx.fillStyle = "rgba(18, 39, 32, 0.46)";
+    ctx.fillStyle = "rgba(18, 22, 30, 0.54)";
     ctx.fillRect(0, 108, WORLD.width, 356);
   }
 
@@ -5837,7 +6754,7 @@ function drawPortForestGround() {
     const x = 18 + ((index * 53) % (WORLD.width - 36));
     const y = 122 + ((index * 37) % 320);
     const tone = index % 3;
-    ctx.fillStyle = tone === 0 ? "#31513d" : tone === 1 ? "#1d332b" : "#406044";
+    ctx.fillStyle = tone === 0 ? "#4b4943" : tone === 1 ? "#2c2f34" : "#5a554d";
     ctx.fillRect(x, y, 12 + (index % 4) * 4, 2);
   }
   ctx.restore();
@@ -5845,16 +6762,16 @@ function drawPortForestGround() {
 
 function drawPortMazeHedge(shrub) {
   ctx.save();
-  ctx.fillStyle = "#172b22";
+  ctx.fillStyle = "#181a1f";
   ctx.fillRect(shrub.x - 2, shrub.y - 2, shrub.width + 4, shrub.height + 4);
-  ctx.fillStyle = "#31523c";
+  ctx.fillStyle = "#49433c";
   ctx.fillRect(shrub.x, shrub.y, shrub.width, shrub.height);
-  ctx.fillStyle = "#203d30";
+  ctx.fillStyle = "#282522";
   ctx.fillRect(shrub.x + 5, shrub.y + 5, Math.max(4, shrub.width - 10), Math.max(4, shrub.height - 10));
 
   for (let x = shrub.x + 4; x < shrub.x + shrub.width - 4; x += 14) {
     const y = shrub.y + 3 + ((x + shrub.y) % Math.max(4, shrub.height - 8));
-    ctx.fillStyle = (x / 14) % 2 < 1 ? "#466b4a" : "#274633";
+    ctx.fillStyle = (x / 14) % 2 < 1 ? "#62574d" : "#3a332d";
     ctx.fillRect(x, y, 8, 3);
   }
 
@@ -5910,71 +6827,88 @@ function drawPortMazeWorld(decorations) {
     drawPortMazeHedge(shrub);
   }
 
-  drawPixelCrawlerVegetation(decorations.crawlerBushes);
-  drawPixelCrawlerTrees(decorations.crawlerTrees);
-
   for (const fog of decorations.fogBands) {
     drawSoftFogBand(fog);
   }
 
-  ctx.fillStyle = "#485b68";
-  ctx.fillRect(decorations.port.x, decorations.port.y, decorations.port.width, decorations.port.height);
-  drawPixelCrawlerTerrainFill(
-    PIXEL_CRAWLER_TERRAIN.brick,
-    decorations.port.x,
-    decorations.port.y,
-    decorations.port.width,
-    decorations.port.height,
-    { seed: 43, scale: 1.5, alpha: 0.62 }
-  );
-  ctx.fillStyle = "rgba(22, 28, 33, 0.24)";
-  ctx.fillRect(decorations.port.x, decorations.port.y, decorations.port.width, decorations.port.height);
-  ctx.fillStyle = "#8c6a4c";
-  ctx.fillRect(decorations.port.x, decorations.port.y + 12, decorations.port.width, 18);
-  ctx.fillStyle = "#9b7858";
-  ctx.fillRect(decorations.port.x, decorations.port.y + 42, decorations.port.width, 16);
-
-  ctx.fillStyle = "#7d5c3d";
-  ctx.fillRect(decorations.mansion.x, decorations.mansion.y, decorations.mansion.width, decorations.mansion.height);
-  ctx.fillStyle = "#5e3c2e";
-  ctx.fillRect(decorations.mansion.x - 10, decorations.mansion.y - 16, decorations.mansion.width + 20, 18);
-  ctx.fillStyle = "#d1b38a";
-  ctx.fillRect(decorations.mansion.x + 26, decorations.mansion.y + 40, 34, 54);
-  ctx.fillRect(decorations.mansion.x + 104, decorations.mansion.y + 42, 42, 46);
-
-  drawCoverImage(
+  const hasHarborHero = drawCoverImage(
     environmentSprites.generatedWorlds?.colonialHarbor,
     286,
     88,
     646,
     474,
     {
-      alpha: 0.68,
-      filter: "saturate(0.76) brightness(0.8) contrast(1.04)",
-      overlayColor: "rgba(13, 20, 28, 0.18)",
+      alpha: 0.92,
+      filter: "saturate(0.9) brightness(0.86) contrast(1.02)",
     }
   );
 
-  drawCainosOutdoorProps(decorations.cainosProps);
+  if (!hasHarborHero) {
+    drawPixelCrawlerVegetation(decorations.crawlerBushes);
+    drawPixelCrawlerTrees(decorations.crawlerTrees);
 
-  for (const lamp of decorations.lampPosts) {
-    if (drawKenneyLampPost(lamp)) {
-      continue;
+    ctx.fillStyle = "#485b68";
+    ctx.fillRect(decorations.port.x, decorations.port.y, decorations.port.width, decorations.port.height);
+    drawPixelCrawlerTerrainFill(
+      PIXEL_CRAWLER_TERRAIN.brick,
+      decorations.port.x,
+      decorations.port.y,
+      decorations.port.width,
+      decorations.port.height,
+      { seed: 43, scale: 1.5, alpha: 0.62 }
+    );
+    ctx.fillStyle = "rgba(22, 28, 33, 0.24)";
+    ctx.fillRect(decorations.port.x, decorations.port.y, decorations.port.width, decorations.port.height);
+    ctx.fillStyle = "#8c6a4c";
+    ctx.fillRect(decorations.port.x, decorations.port.y + 12, decorations.port.width, 18);
+    ctx.fillStyle = "#9b7858";
+    ctx.fillRect(decorations.port.x, decorations.port.y + 42, decorations.port.width, 16);
+
+    ctx.fillStyle = "#7d5c3d";
+    ctx.fillRect(decorations.mansion.x, decorations.mansion.y, decorations.mansion.width, decorations.mansion.height);
+    ctx.fillStyle = "#5e3c2e";
+    ctx.fillRect(decorations.mansion.x - 10, decorations.mansion.y - 16, decorations.mansion.width + 20, 18);
+    ctx.fillStyle = "#d1b38a";
+    ctx.fillRect(decorations.mansion.x + 26, decorations.mansion.y + 40, 34, 54);
+    ctx.fillRect(decorations.mansion.x + 104, decorations.mansion.y + 42, 42, 46);
+
+    drawCainosOutdoorProps(decorations.cainosProps);
+
+    for (const lamp of decorations.lampPosts) {
+      if (drawKenneyLampPost(lamp)) {
+        continue;
+      }
+
+      drawWorldWarmGlow(lamp.x, lamp.y - 30, 24, 0.28);
+      ctx.fillStyle = "#44382d";
+      ctx.fillRect(lamp.x - 2, lamp.y - 26, 4, 30);
+      ctx.fillStyle = "#f0db8f";
+      ctx.fillRect(lamp.x - 5, lamp.y - 34, 10, 8);
     }
 
-    drawWorldWarmGlow(lamp.x, lamp.y - 30, 24, 0.28);
-    ctx.fillStyle = "#44382d";
-    ctx.fillRect(lamp.x - 2, lamp.y - 26, 4, 30);
-    ctx.fillStyle = "#f0db8f";
-    ctx.fillRect(lamp.x - 5, lamp.y - 34, 10, 8);
+    drawPixelCrawlerToolClusters(decorations.crawlerTools);
   }
-
-  drawPixelCrawlerToolClusters(decorations.crawlerTools);
 }
 
 function drawUnityHouseWorld(decorations) {
   ctx.fillStyle = "#191411";
   ctx.fillRect(0, 0, WORLD.width, WORLD.height);
+  const hasArchiveHero = drawCoverImage(
+    environmentSprites.generatedWorlds?.archiveInterior,
+    decorations.house.x + 14,
+    decorations.house.y + 12,
+    decorations.house.width - 28,
+    decorations.house.height - 18,
+    {
+      alpha: 0.97,
+      filter: "saturate(0.96) brightness(0.96) contrast(1.02)",
+    }
+  );
+
+  if (hasArchiveHero) {
+    return;
+  }
+
   ctx.fillStyle = "#4b372a";
   ctx.fillRect(decorations.house.x, decorations.house.y, decorations.house.width, decorations.house.height);
   ctx.fillStyle = "#6b5038";
@@ -6018,19 +6952,6 @@ function drawUnityHouseWorld(decorations) {
     ctx.fillRect(beamX, decorations.house.y, 10, decorations.house.height);
   }
 
-  drawCoverImage(
-    environmentSprites.generatedWorlds?.archiveInterior,
-    decorations.house.x + 14,
-    decorations.house.y + 12,
-    decorations.house.width - 28,
-    decorations.house.height - 18,
-    {
-      alpha: 0.74,
-      filter: "saturate(0.84) brightness(0.76) contrast(1.02)",
-      overlayColor: "rgba(24, 16, 12, 0.14)",
-    }
-  );
-
   drawLimezuInteriorProps(decorations.limezuFloorProps);
 
   for (const rug of decorations.rugs) {
@@ -6044,6 +6965,18 @@ function drawUnityHouseWorld(decorations) {
 }
 
 function drawRedSquareWorld(decorations) {
+  ctx.fillStyle = "#d6d2c6";
+  ctx.fillRect(0, 0, WORLD.width, WORLD.height);
+
+  const hasRedSquareHero = drawCoverImage(environmentSprites.generatedWorlds?.revolutionSquare, 0, 0, WORLD.width, WORLD.height, {
+    alpha: 0.96,
+    filter: "saturate(0.96) brightness(0.98) contrast(1.01)",
+  });
+
+  if (hasRedSquareHero) {
+    return;
+  }
+
   ctx.fillStyle = "#a7d8f0";
   ctx.fillRect(0, 0, WORLD.width, 120);
   ctx.fillStyle = "#ccd1d5";
@@ -6107,12 +7040,6 @@ function drawRedSquareWorld(decorations) {
     ctx.fillStyle = "#6f523c";
   }
 
-  drawCoverImage(environmentSprites.generatedWorlds?.revolutionSquare, 0, 0, WORLD.width, WORLD.height, {
-    alpha: 0.6,
-    filter: "saturate(0.82) brightness(0.9) contrast(1.01)",
-    overlayColor: "rgba(82, 68, 48, 0.08)",
-  });
-
   drawCainosOutdoorProps(decorations.cainosProps);
   drawPixelCrawlerVegetation(decorations.crawlerBushes);
   drawPixelCrawlerTrees(decorations.crawlerTrees);
@@ -6129,6 +7056,18 @@ function drawRedSquareWorld(decorations) {
 }
 
 function drawDoiMoiValleyWorld(decorations) {
+  ctx.fillStyle = "#d4dbc6";
+  ctx.fillRect(0, 0, WORLD.width, WORLD.height);
+
+  const hasFactoryValleyHero = drawCoverImage(environmentSprites.generatedWorlds?.factoryValley, 0, 0, WORLD.width, WORLD.height, {
+    alpha: 0.96,
+    filter: "saturate(0.96) brightness(0.98) contrast(1.01)",
+  });
+
+  if (hasFactoryValleyHero) {
+    return;
+  }
+
   ctx.fillStyle = "#98daf4";
   ctx.fillRect(0, 0, WORLD.width, 150);
   ctx.fillStyle = "#d4f1ff";
@@ -6168,12 +7107,6 @@ function drawDoiMoiValleyWorld(decorations) {
       ctx.fillRect(plot.x + 10, plot.y + 8 + row * 18, plot.width - 20, 4);
     }
   }
-
-  drawCoverImage(environmentSprites.generatedWorlds?.factoryValley, 0, 0, WORLD.width, WORLD.height, {
-    alpha: 0.44,
-    filter: "saturate(0.82) brightness(0.98) contrast(0.99)",
-    overlayColor: "rgba(241, 233, 184, 0.1)",
-  });
 
   drawPixelCrawlerVegetation(decorations.crawlerBushes);
   drawPixelCrawlerTrees(decorations.crawlerTrees);
