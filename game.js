@@ -475,6 +475,23 @@ const RELIC_STORY_SLIDES = {
     text:
       "1. Nhiệm vụ mở khóa\nNhận Le Paria ở chồng báo, đưa báo cho 3 công nhân bến cảng, rồi quay lại nhận Chiếc La Bàn Đỏ.\n\n2. Mô tả vật phẩm\nMột chiếc la bàn cổ phát ra ánh sáng đỏ rực rỡ, xuyên thủng lớp sương mù dày đặc của mê cung.\n\n3. Hồ sơ lịch sử\nCuối thế kỷ XIX, dưới ách thống trị của thực dân Pháp, Việt Nam biến thành một nước thuộc địa nửa phong kiến. Dù có truyền thống yêu nước, các phong trào từ Cần Vương đến khuynh hướng tư sản như Đông Du, Đông Kinh Nghĩa Thục đều thất bại do thiếu đường lối đúng đắn. Lịch sử dân tộc rơi vào khủng hoảng đường lối cứu nước.\n\n4. Giá trị chân lý\nNguyễn Ái Quốc đã tìm ra con đường cách mạng vô sản. Câu nói \"Đảng mà không có chủ nghĩa cũng như người không có trí khôn, tàu không có bàn chỉ nam\" giúp giải thích biểu tượng la bàn: Chủ nghĩa Mác - Lênin là kim chỉ nam đưa dân tộc thoát khỏi màn đêm nô lệ.\n\n5. Câu chốt thuyết trình\nChiếc la bàn không chỉ là vật phẩm chỉ đường trong game, mà là hình ảnh của đường lối đúng đắn trong lịch sử.",
     caption: "Từ bế tắc đường lối đến kim chỉ nam Mác - Lênin",
+    gallery: [
+      {
+        src: "assets/story/level1/colonial-exploitation.png",
+        alt: "Ng\u01b0\u1eddi d\u00e2n Vi\u1ec7t Nam lao \u0111\u1ed9ng kh\u1ed5 c\u1ef1c d\u01b0\u1edbi \u00e1ch b\u00f3c l\u1ed9t c\u1ee7a th\u1ef1c d\u00e2n Ph\u00e1p",
+        caption: "Ng\u01b0\u1eddi d\u00e2n Vi\u1ec7t Nam b\u1ecb b\u00f3c l\u1ed9t n\u1eb7ng n\u1ec1 d\u01b0\u1edbi \u00e1ch th\u1ed1ng tr\u1ecb c\u1ee7a th\u1ef1c d\u00e2n Ph\u00e1p.",
+      },
+      {
+        src: "assets/story/level1/patriotic-scholars.png",
+        alt: "Hai nh\u00e0 c\u00e1ch m\u1ea1ng Phan B\u1ed9i Ch\u00e2u v\u00e0 Phan Ch\u00e2u Trinh",
+        caption: "Hai nh\u00e0 y\u00eau n\u01b0\u1edbc Phan B\u1ed9i Ch\u00e2u v\u00e0 Phan Ch\u00e2u Trinh ti\u00eau bi\u1ec3u cho n\u1ed7 l\u1ef1c t\u00ecm \u0111\u01b0\u1eddng c\u1ee9u n\u01b0\u1edbc \u0111\u1ea7u th\u1ebf k\u1ef7 XX.",
+      },
+      {
+        src: "assets/story/level1/duong-kach-menh.png",
+        alt: "T\u00e1c ph\u1ea9m \u0110\u01b0\u1eddng K\u00e1ch M\u1ec7nh",
+        caption: "T\u00e1c ph\u1ea9m \u0110\u01b0\u1eddng K\u00e1ch M\u1ec7nh \u0111\u1eb7t n\u1ec1n t\u1ea3ng l\u00fd lu\u1eadn, m\u1edf ra kim ch\u1ec9 nam cho con \u0111\u01b0\u1eddng c\u1ee7a c\u00e1ch m\u1ea1ng Vi\u1ec7t Nam.",
+      },
+    ],
     art: "compass",
   },
   "unified-emblem": {
@@ -484,6 +501,13 @@ const RELIC_STORY_SLIDES = {
     text:
       "1. Nhiệm vụ mở khóa\nNói chuyện đủ 3 nhóm west, east và north, sau đó tới bàn tròn để lấy Huy hiệu Búa Liềm Thống Nhất.\n\n2. Mô tả vật phẩm\nBa mảnh ghép kim loại tản mát bỗng bị hút chặt vào nhau bằng một từ trường mạnh mẽ, đúc thành biểu tượng Búa Liềm rực sáng.\n\n3. Hồ sơ lịch sử\nCuối năm 1929, phong trào đấu tranh lên cao dẫn đến sự ra đời của ba tổ chức cộng sản hoạt động biệt lập: Đông Dương Cộng sản Đảng, An Nam Cộng sản Đảng và Đông Dương Cộng sản Liên đoàn. Tuy nhiên, sự biệt lập này có nguy cơ gây chia rẽ, công kích lẫn nhau và làm suy yếu phong trào.\n\n4. Sự kiện bước ngoặt\nNgày 6/1/1930 tại Hương Cảng, Nguyễn Ái Quốc chủ trì hội nghị, yêu cầu bỏ thành kiến, thành thật hợp tác để hợp nhất ba tổ chức thành Đảng Cộng sản Việt Nam. Từ đó, phong trào cách mạng có một đội tiên phong thống nhất lãnh đạo.\n\n5. Câu chốt thuyết trình\nHuy hiệu thể hiện sức mạnh của sự thống nhất: những mảnh rời rạc chỉ trở thành lực lượng lịch sử khi được quy tụ chung một tổ chức.",
     caption: "Ba tổ chức rời rạc hợp nhất thành một đội tiên phong lãnh đạo cách mạng",
+    gallery: [
+      {
+        src: "assets/story/level2/party-unification-1930.png",
+        alt: "H\u1ee3p nh\u1ea5t c\u00e1c t\u1ed5 ch\u1ee9c c\u1ed9ng s\u1ea3n n\u0103m 1930",
+        caption: "H\u1ed9i ngh\u1ecb h\u1ee3p nh\u1ea5t c\u00e1c t\u1ed5 ch\u1ee9c c\u1ed9ng s\u1ea3n n\u0103m 1930 d\u01b0\u1edbi s\u1ef1 ch\u1ee7 tr\u00ec c\u1ee7a Nguy\u1ec5n \u00c1i Qu\u1ed1c.",
+      },
+    ],
     art: "compass",
   },
   "vietminh-thread": {
@@ -493,6 +517,18 @@ const RELIC_STORY_SLIDES = {
     text:
       "1. Nhiệm vụ mở khóa\nMời đủ 4 lực lượng nông dân, công nhân, trí thức và tư sản dân tộc, rồi gặp cán bộ Việt Minh để lấy Sợi Chỉ Đỏ Việt Minh.\n\n2. Mô tả vật phẩm\nMột sợi dây thừng rực lửa kết nối các nhân vật đang đứng rải rác trên quảng trường thành một khối vững chắc.\n\n3. Hồ sơ lịch sử\nChủ nghĩa Mác - Lênin khẳng định cách mạng là sự nghiệp của quần chúng nhân dân. Quần chúng thiếu tổ chức chỉ là những đốm lửa lẻ tẻ. Tháng 5/1941, tại Hội nghị Trung ương 8, Đảng quyết định thành lập Mặt trận Việt Minh để quy tụ sức mạnh đại đoàn kết toàn dân tộc, đặt nhiệm vụ giải phóng dân tộc lên cao nhất.\n\n4. Chớp thời cơ ngàn năm\nKhi phát xít Nhật đầu hàng Đồng minh tháng 8/1945, Đảng đã chớp đúng thời cơ, phát động Tổng khởi nghĩa theo tinh thần tập trung, thống nhất và kịp thời, lập ra nước Việt Nam Dân chủ Cộng hòa.\n\n5. Câu chốt thuyết trình\nSợi chỉ đỏ cho thấy quần chúng khi được tổ chức sẽ trở thành sức mạnh quyết định của cách mạng.",
     caption: "Mặt trận Việt Minh quy tụ sức mạnh toàn dân cho Cách mạng Tháng Tám",
+    gallery: [
+      {
+        src: "assets/story/level3/viet-minh-1941.png",
+        alt: "M\u1eb7t tr\u1eadn Vi\u1ec7t Nam \u0110\u1ed9c l\u1eadp \u0110\u1ed3ng minh th\u00e0nh l\u1eadp n\u0103m 1941",
+        caption: "M\u1eb7t tr\u1eadn Vi\u1ec7t Nam \u0110\u1ed9c l\u1eadp \u0110\u1ed3ng minh (Vi\u1ec7t Minh) th\u00e0nh l\u1eadp n\u0103m 1941, quy t\u1ee5 s\u1ee9c m\u1ea1nh \u0111\u1ea1i \u0111o\u00e0n k\u1ebft to\u00e0n d\u00e2n t\u1ed9c.",
+      },
+      {
+        src: "assets/story/level3/august-revolution-1945.png",
+        alt: "M\u00edt tinh t\u1ea1i Qu\u1ea3ng tr\u01b0\u1eddng Ba \u0110\u00ecnh ng\u00e0y 2 th\u00e1ng 9 n\u0103m 1945",
+        caption: "Cu\u1ed9c m\u00edt tinh t\u1ea1i Qu\u1ea3ng tr\u01b0\u1eddng Ba \u0110\u00ecnh ng\u00e0y 2/9/1945, d\u1ea5u m\u1ed1c khai sinh n\u01b0\u1edbc Vi\u1ec7t Nam D\u00e2n ch\u1ee7 C\u1ed9ng h\u00f2a.",
+      },
+    ],
     art: "crowd",
   },
   "healed-map": {
@@ -502,6 +538,18 @@ const RELIC_STORY_SLIDES = {
     text:
       "1. Nhiệm vụ mở khóa\nPhá 3 ấp chiến lược, đánh bại bộ máy áp bức miền Nam, rồi gặp chỉ huy kháng chiến để lấy Bản đồ Vĩ tuyến 17 hàn gắn.\n\n2. Mô tả vật phẩm\nTấm bản đồ bị xé rách làm đôi tại vĩ tuyến 17 được khâu liền lại bằng ánh sáng vàng, xua tan bóng đen của sự chia cắt.\n\n3. Hồ sơ lịch sử\nSau Hiệp định Giơnevơ năm 1954, đất nước tạm thời bị chia cắt tại vĩ tuyến 17. Đế quốc Mỹ âm mưu hất cẳng Pháp, biến miền Nam thành thuộc địa kiểu mới và chia cắt vĩnh viễn nước ta.\n\n4. Đường lối sáng tạo\nĐại hội III của Đảng năm 1960 xác định đường lối tiến hành đồng thời cách mạng xã hội chủ nghĩa ở miền Bắc, làm hậu phương lớn, và cách mạng dân tộc dân chủ ở miền Nam, làm tiền tuyến lớn.\n\n5. Bản anh hùng ca\nNhờ kết hợp hậu phương và tiền tuyến, dân tộc ta đánh bại các chiến lược chiến tranh của Mỹ, làm nên Đại thắng Mùa Xuân 1975, đưa non sông thu về một mối.",
     caption: "Từ vĩ tuyến chia cắt đến khát vọng thống nhất đất nước",
+    gallery: [
+      {
+        src: "assets/story/level3/vietnam-divided-17th-parallel.png",
+        alt: "Vi\u1ec7t Nam b\u1ecb chia c\u1eaft hai mi\u1ec1n t\u1ea1i v\u0129 tuy\u1ebfn 17",
+        caption: "Vi\u1ec7t Nam t\u1ea1m th\u1eddi b\u1ecb chia c\u1eaft hai mi\u1ec1n t\u1ea1i v\u0129 tuy\u1ebfn 17 sau Hi\u1ec7p \u0111\u1ecbnh Gi\u01a1nev\u01a1 n\u0103m 1954.",
+      },
+      {
+        src: "assets/story/level3/reunification-1975.png",
+        alt: "Xe t\u0103ng h\u00fac \u0111\u1ed5 c\u1ed5ng Dinh \u0110\u1ed9c L\u1eadp ng\u00e0y 30 th\u00e1ng 4 n\u0103m 1975",
+        caption: "Xe t\u0103ng ti\u1ebfn v\u00e0o Dinh \u0110\u1ed9c L\u1eadp ng\u00e0y 30/4/1975, bi\u1ec3u t\u01b0\u1ee3ng cho \u0111\u1ea1i th\u1eafng m\u00f9a xu\u00e2n v\u00e0 s\u1ef1 nghi\u1ec7p th\u1ed1ng nh\u1ea5t \u0111\u1ea5t n\u01b0\u1edbc.",
+      },
+    ],
     art: "bridge",
   },
   "doi-moi-gear": {
@@ -511,6 +559,18 @@ const RELIC_STORY_SLIDES = {
     text:
       "1. Nhiệm vụ mở khóa\nPhá 3 hàng rào bao cấp, trao Khoán 10 cho 3 nông dân, rồi gặp nhà lãnh đạo Đổi Mới để nhận Bánh răng Đổi Mới.\n\n2. Mô tả vật phẩm\nBánh răng tượng trưng cho guồng máy kinh tế được khởi động lại: từ trì trệ, bao cấp sang tự chủ sản xuất và đổi mới tư duy.\n\n3. Hồ sơ lịch sử\nSau chiến tranh, đất nước lâm vào khủng hoảng kinh tế - xã hội trầm trọng do hậu quả chiến tranh và cơ chế tập trung quan liêu, bao cấp. Lạm phát năm 1986 lên tới 774,7%, đời sống nhân dân gặp nhiều khó khăn.\n\n4. Bước ngoặt Đổi Mới\nĐại hội VI năm 1986 dũng cảm nhìn thẳng vào sự thật, khởi xướng đường lối Đổi Mới toàn diện, trọng tâm là đổi mới tư duy kinh tế, giải phóng sức sản xuất và mở đường hội nhập.\n\n5. Câu chốt thuyết trình\nBánh răng Đổi Mới cho thấy bản lĩnh tự sửa mình và năng lực lãnh đạo đất nước vượt qua khủng hoảng để phát triển.",
     caption: "Đại hội VI mở ra công cuộc Đổi Mới toàn diện",
+    gallery: [
+      {
+        src: "assets/story/level4/bao-cap-before-1986.png",
+        alt: "Khung cảnh thời bao cấp trước năm 1986",
+        caption: "Khung cảnh thời bao cấp trước năm 1986 gợi lại đời sống nhiều thiếu thốn, xếp hàng và tem phiếu kéo dài.",
+      },
+      {
+        src: "assets/story/level4/dai-hoi-vi-1986.png",
+        alt: "Đại hội Đảng VI năm 1986",
+        caption: "Đại hội Đảng VI năm 1986 mở ra bước ngoặt Đổi Mới, đặt nền tảng để đất nước thoát khỏi khủng hoảng và phát triển.",
+      },
+    ],
     art: "spring",
   },
 };
@@ -2820,13 +2880,13 @@ function createPortMazeLevel() {
         spriteKey: "npc06",
         direction: "left",
         animation: "idle",
-        prompt: "trò chuyện với Nguyễn Ái Quốc",
+        prompt: "trò chuyện với người liên lạc",
         slide: {
           kicker: "Khu vực 1",
-          title: "Người mang ngọn đèn dẫn đường",
+          title: "Người nhóm lửa thức tỉnh",
           text:
-            "Nguyễn Ái Quốc đem đến cho những người lao động bị áp bức một con đường mới: cách mạng vô sản, tổ chức quần chúng và giác ngộ bằng báo chí cách mạng.",
-          caption: "Le Paria đến tay công nhân như một ánh lửa mở đường",
+            "Giữa bến cảng nặng nề vì sưu thuế và áp bức, một người liên lạc bí mật lặng lẽ gửi đến người lao động những tờ Le Paria. Không chỉ là một tờ báo, đó còn là tiếng nói bênh vực người cùng khổ, giúp họ hiểu vì sao mình bị áp bức và vì sao phải đoàn kết đứng lên tìm đường giải phóng.",
+          caption: "Những tờ Le Paria lặng lẽ gieo mầm thức tỉnh nơi bến cảng",
           art: "desk",
         },
       },
@@ -4349,6 +4409,7 @@ function updateLevelChrome() {
 
 function renderSlideGallery(galleryItems) {
   slideGallery.replaceChildren();
+  slideGallery.dataset.count = String(galleryItems.length);
 
   for (const item of galleryItems) {
     const figure = document.createElement("figure");
@@ -4382,6 +4443,7 @@ function openSlide(slideData) {
   slideCaption.textContent = slideData.caption;
   slideImage.className = "slide-image";
   slideGallery.replaceChildren();
+  delete slideGallery.dataset.count;
 
   const hasGallery = Array.isArray(slideData.gallery) && slideData.gallery.length > 0;
 
@@ -5978,18 +6040,18 @@ function handleSystemInteraction(item) {
       return;
     case "deliverPaper":
       if (!state.quests.zone1Started) {
-        showStoryToast("Bạn cần nhận báo từ Nguyễn Ái Quốc trước.");
+        showStoryToast("Bạn cần nhận báo từ người liên lạc trước.");
         return;
       }
       state.quests.zone1Delivered.add(item.workerId);
       showStoryToast(`Đã phát ${state.quests.zone1Delivered.size}/3 tờ báo cho công nhân.`);
       if (state.quests.zone1Delivered.size === 3) {
-        showStoryToast("Khối công nhân đã thức tỉnh. Hãy quay lại gặp Nguyễn Ái Quốc.");
+        showStoryToast("Khối công nhân đã thức tỉnh. Hãy quay lại gặp người liên lạc.");
       }
       return;
     case "rewardCompass":
       if (state.quests.zone1Delivered.size < 3) {
-        showStoryToast("Nguyễn Ái Quốc chỉ trao vật phẩm khi báo đã tới đủ tay người lao động.");
+        showStoryToast("Người liên lạc chỉ trao vật phẩm khi báo đã tới đủ tay người lao động.");
         return;
       }
       state.quests.zone1RewardClaimed = true;
