@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20260712-opening-copy-fix">
+  <link rel="stylesheet" href="styles.css?v=20260712-ending-polish-pass">
 </head>
 <body>
   <div class="page-shell">
@@ -23,6 +23,9 @@
           <span id="story-book-count" class="story-book-count">0</span>
         </button>
         <div id="story-toast" class="story-toast hidden" aria-live="polite" aria-hidden="true"></div>
+        <div id="corruption-warning" class="corruption-warning hidden" aria-live="assertive" aria-hidden="true">
+          Mọi thứ đang dần đi chệch hướng
+        </div>
         <div id="hud" class="hud" aria-live="polite">
           <div class="action-panel">
             <div class="action-overview">
@@ -153,7 +156,7 @@
         </div>
       </section>
 
-      <section id="end-overlay" class="overlay end-overlay hidden" aria-hidden="true" role="dialog" aria-modal="true">
+      <section id="end-overlay" class="overlay end-overlay hidden" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="end-title" aria-describedby="end-copy end-summary">
         <div class="end-card">
           <p class="menu-label">Hành trình hoàn tất</p>
           <h2 id="end-title">LỊCH SỬ ĐÃ TRẢ LỜI</h2>
@@ -166,12 +169,14 @@
             Bạn đã đi qua 5 ngã rẽ để thấy rằng nếu không có Đảng Cộng sản Việt Nam, dân tộc có thể chìm trong bế tắc, chia cắt và khủng hoảng. Chính đường lối đúng đắn đã mở ra con đường độc lập, thống nhất và đổi mới.
           </p>
           <p id="end-summary" class="end-summary">Thu thập đủ 5 vật phẩm và kiềm chế Tha hóa để đi tới kết cục tốt nhất.</p>
-          <button id="return-start-button" class="pixel-button" type="button">Về màn hình đầu</button>
+          <div class="end-actions">
+            <button id="return-start-button" class="pixel-button" type="button">Về màn hình đầu</button>
+          </div>
         </div>
       </section>
     </main>
   </div>
 
-  <script type="module" src="game.js?v=20260712-opening-copy-fix"></script>
+  <script type="module" src="game.js?v=20260712-ending-polish-pass"></script>
 </body>
 </html>

@@ -1,5 +1,6 @@
 const canvas = document.getElementById("game-canvas");
 const ctx = canvas.getContext("2d");
+const gameFrame = document.querySelector(".game-frame");
 
 ctx.imageSmoothingEnabled = false;
 
@@ -14,6 +15,8 @@ const pauseTitle = document.getElementById("pause-title");
 const storyBookButton = document.getElementById("story-book-button");
 const storyBookCount = document.getElementById("story-book-count");
 const storyToast = document.getElementById("story-toast");
+const corruptionWarning = document.getElementById("corruption-warning");
+const hud = document.getElementById("hud");
 const dialogueBox = document.getElementById("dialogue-box");
 const dialogueSpeaker = document.getElementById("dialogue-speaker");
 const dialogueProgress = document.getElementById("dialogue-progress");
@@ -94,6 +97,9 @@ const RELIC_BOOK_OPEN_DELAY_MS = 900;
 const PLAYER_MAX_HEALTH = 36;
 const SA_DOA_MAX = 100;
 const SA_DOA_BAD_ENDING = 60;
+const CORRUPTION_GLITCH_THRESHOLD = 50;
+const CORRUPTION_WARNING_MS = 2600;
+const DEATH_SA_DOA_PENALTY = 12;
 const STRIKE_COOLDOWN_MS = 420;
 const PURIFY_COOLDOWN_MS = 1800;
 const STRIKE_RANGE = 48;
@@ -101,6 +107,7 @@ const PURIFY_RANGE = 76;
 const MONSTER_SPEED = 38;
 const MONSTER_TOUCH_RANGE = 18;
 const MONSTER_CONTACT_DAMAGE_COOLDOWN_MS = 900;
+const RESPAWN_INVULNERABILITY_MS = 1400;
 const RELIC_TARGET_COUNT = 5;
 const PLAYER_ATTACK_ANIMATION_MS = 260;
 const MONSTER_ATTACK_ANIMATION_MS = 260;
@@ -875,22 +882,22 @@ const ENDING_OVERLAY_SCENES = {
 
 const ENDING_CINEMATIC_DEFINITIONS = {
   good: {
-    duration: 7000,
+    duration: 8600,
     keyframes: [
-      { at: 0, x: 0.2, y: 0.34, zoom: 2.18 },
-      { at: 0.26, x: 0.5, y: 0.46, zoom: 2.28 },
-      { at: 0.54, x: 0.8, y: 0.28, zoom: 2.04 },
-      { at: 0.78, x: 0.52, y: 0.76, zoom: 1.74 },
+      { at: 0, x: 0.18, y: 0.2, zoom: 2.52 },
+      { at: 0.24, x: 0.82, y: 0.2, zoom: 2.4 },
+      { at: 0.52, x: 0.82, y: 0.78, zoom: 2.18 },
+      { at: 0.78, x: 0.2, y: 0.8, zoom: 1.94 },
       { at: 1, x: 0.5, y: 0.5, zoom: 1 },
     ],
   },
   bad: {
-    duration: 7200,
+    duration: 9000,
     keyframes: [
-      { at: 0, x: 0.2, y: 0.72, zoom: 2.22 },
-      { at: 0.28, x: 0.5, y: 0.43, zoom: 2.36 },
-      { at: 0.56, x: 0.78, y: 0.32, zoom: 2.08 },
-      { at: 0.8, x: 0.58, y: 0.76, zoom: 1.82 },
+      { at: 0, x: 0.2, y: 0.8, zoom: 2.56 },
+      { at: 0.24, x: 0.22, y: 0.2, zoom: 2.42 },
+      { at: 0.52, x: 0.8, y: 0.22, zoom: 2.2 },
+      { at: 0.8, x: 0.82, y: 0.8, zoom: 1.98 },
       { at: 1, x: 0.5, y: 0.5, zoom: 1 },
     ],
   },
@@ -925,6 +932,7 @@ function createQuestState() {
     zone3Recruits: new Set(),
     zone3ThreadClaimed: false,
     zone3HamletsFreed: new Set(),
+    zone3BossDefeated: false,
     zone3MapClaimed: false,
     zone4Barriers: new Set(),
     zone4Farmers: new Set(),
@@ -961,6 +969,7 @@ const monsterSprites = loadMonsterSprites();
 const uiSounds = loadUiSounds();
 const ambienceSounds = loadAmbienceSounds();
 let storyToastTimeoutId = 0;
+let corruptionWarningTimeoutId = 0;
 let relicBookOpenTimeoutId = 0;
 
 const state = {
@@ -988,6 +997,9 @@ const state = {
   endingId: null,
   endingSummary: "",
   endingCinematic: null,
+  highCorruptionWarningShown: false,
+  respawnLevelId: "hub",
+  respawnSpawn: null,
   blockedExitIds: new Set(),
   puzzleState: {
     archiveSequence: 0,
@@ -1141,6 +1153,7 @@ window.addEventListener("keyup", (event) => {
 loadLevel("hub");
 applyDebugLevelFromUrl();
 applyDebugEndingFromUrl();
+installDebugTools();
 requestAnimationFrame(frame);
 
 function createPlayer() {
@@ -3899,6 +3912,53 @@ function initializeLevelRuntime() {
   }
 }
 
+function cloneSpawnPoint(spawn) {
+  return spawn
+    ? {
+        x: spawn.x,
+        y: spawn.y,
+        direction: spawn.direction,
+      }
+    : null;
+}
+
+function setRespawnCheckpoint(levelId, spawnOverride = null) {
+  const fallbackLevelId = levels[levelId] ? levelId : "hub";
+  const fallbackSpawn = spawnOverride ?? levels[fallbackLevelId]?.spawn ?? levels.hub.spawn;
+  state.respawnLevelId = fallbackLevelId;
+  state.respawnSpawn = cloneSpawnPoint(fallbackSpawn);
+}
+
+function shouldPreserveMonsterDefeatOnRespawn(monster) {
+  if (monster.dropItemId && state.inventory.has(monster.dropItemId)) {
+    return true;
+  }
+
+  return monster.id === "southern-tyrant" && state.quests.zone3BossDefeated;
+}
+
+function resetLevelMonstersForRespawn(levelId) {
+  const level = levels[levelId];
+
+  if (!level) {
+    return;
+  }
+
+  for (const monster of level.monsters ?? []) {
+    const preserveDefeat = shouldPreserveMonsterDefeatOnRespawn(monster);
+    monster.x = monster.homeX;
+    monster.y = monster.homeY;
+    monster.health = preserveDefeat ? 0 : monster.maxHealth;
+    monster.defeated = preserveDefeat;
+    monster.hitFlashUntil = 0;
+    monster.lastContactAt = 0;
+    monster.attackStartedAt = 0;
+    monster.attackEndsAt = 0;
+    monster.attackDirection = "down";
+    monster.animationState = "idle";
+  }
+}
+
 function resetGameplayProgress() {
   state.health = PLAYER_MAX_HEALTH;
   state.saDoa = 0;
@@ -3910,10 +3970,12 @@ function resetGameplayProgress() {
   state.endingId = null;
   state.endingSummary = "";
   state.endingCinematic = null;
+  state.highCorruptionWarningShown = false;
   state.puzzleState.archiveSequence = 0;
   state.puzzleState.archiveSolved = false;
   state.quests = createQuestState();
   initializeLevelRuntime();
+  setRespawnCheckpoint("hub");
   updateProgressHud();
 }
 
@@ -3931,6 +3993,7 @@ function updateProgressHud() {
   skillValue.textContent = strikeCooldown <= 0 && purifyCooldown <= 0
     ? "J/K OK"
     : `${formatCooldownLabel("J", strikeCooldown)} | ${formatCooldownLabel("K", purifyCooldown)}`;
+  updateCorruptionEffects();
 }
 
 function getRemainingCooldownMs(readyAt) {
@@ -3947,6 +4010,92 @@ function formatCooldownLabel(key, remainingMs) {
 
 function currentLevel() {
   return levels[state.currentLevelId];
+}
+
+function shouldEnableDebugTools() {
+  return new URLSearchParams(window.location.search).get("debugTools") === "1";
+}
+
+function createDebugSnapshot() {
+  return {
+    mode: state.mode,
+    currentLevelId: state.currentLevelId,
+    respawnLevelId: state.respawnLevelId,
+    health: state.health,
+    saDoa: state.saDoa,
+    inventory: Array.from(state.inventory),
+    player: {
+      x: player.x,
+      y: player.y,
+      direction: player.direction,
+    },
+    quests: {
+      zone1Started: state.quests.zone1Started,
+      zone1Delivered: Array.from(state.quests.zone1Delivered),
+      zone1RewardClaimed: state.quests.zone1RewardClaimed,
+      zone2Fragments: Array.from(state.quests.zone2Fragments),
+      zone2RewardClaimed: state.quests.zone2RewardClaimed,
+      zone3Recruits: Array.from(state.quests.zone3Recruits),
+      zone3ThreadClaimed: state.quests.zone3ThreadClaimed,
+      zone3HamletsFreed: Array.from(state.quests.zone3HamletsFreed),
+      zone3BossDefeated: state.quests.zone3BossDefeated,
+      zone3MapClaimed: state.quests.zone3MapClaimed,
+      zone4Barriers: Array.from(state.quests.zone4Barriers),
+      zone4Farmers: Array.from(state.quests.zone4Farmers),
+      zone4GearClaimed: state.quests.zone4GearClaimed,
+    },
+  };
+}
+
+function installDebugTools() {
+  if (!shouldEnableDebugTools()) {
+    return;
+  }
+
+  window.__CROSSROADS_DEBUG__ = {
+    beginSession() {
+      beginGameSession();
+      return createDebugSnapshot();
+    },
+    getSnapshot() {
+      return createDebugSnapshot();
+    },
+    loadLevel(levelId, spawnOverride = null) {
+      loadLevel(levelId, spawnOverride);
+      return createDebugSnapshot();
+    },
+    setPlayerPosition(x, y) {
+      player.x = clamp(x, currentLevel().bounds.minX, currentLevel().bounds.maxX);
+      player.y = clamp(y, currentLevel().bounds.minY, currentLevel().bounds.maxY);
+      updateCamera();
+      updateInteractionPrompt();
+      return createDebugSnapshot();
+    },
+    setSaDoa(amount) {
+      state.saDoa = clamp(Math.round(amount), 0, SA_DOA_MAX);
+      updateProgressHud();
+      return createDebugSnapshot();
+    },
+    interactById(interactableId) {
+      const item = currentLevel().interactables.find((entry) => entry.id === interactableId);
+
+      if (!item) {
+        return false;
+      }
+
+      if (item.interactionType) {
+        handleSystemInteraction(item);
+      } else {
+        startDialogue(item);
+      }
+
+      return createDebugSnapshot();
+    },
+    damagePlayer(amount = PLAYER_MAX_HEALTH, sourceName = "debug") {
+      damagePlayer(amount, sourceName);
+      return createDebugSnapshot();
+    },
+  };
 }
 
 function getDebugEndingIdFromUrl() {
@@ -4106,6 +4255,60 @@ function hideStoryToast() {
   window.clearTimeout(storyToastTimeoutId);
   storyToast.classList.add("hidden");
   storyToast.setAttribute("aria-hidden", "true");
+}
+
+function showCorruptionWarning() {
+  if (!corruptionWarning) {
+    return;
+  }
+
+  window.clearTimeout(corruptionWarningTimeoutId);
+  corruptionWarning.classList.remove("hidden");
+  corruptionWarning.setAttribute("aria-hidden", "false");
+  corruptionWarning.classList.remove("is-visible");
+  corruptionWarning.offsetWidth;
+  corruptionWarning.classList.add("is-visible");
+
+  corruptionWarningTimeoutId = window.setTimeout(() => {
+    hideCorruptionWarning();
+  }, CORRUPTION_WARNING_MS);
+}
+
+function hideCorruptionWarning() {
+  if (!corruptionWarning) {
+    return;
+  }
+
+  window.clearTimeout(corruptionWarningTimeoutId);
+  corruptionWarningTimeoutId = 0;
+  corruptionWarning.classList.remove("is-visible");
+  corruptionWarning.classList.add("hidden");
+  corruptionWarning.setAttribute("aria-hidden", "true");
+}
+
+function updateCorruptionEffects() {
+  const shouldShowEffects =
+    state.saDoa >= CORRUPTION_GLITCH_THRESHOLD &&
+    state.mode !== "start" &&
+    state.mode !== "opening" &&
+    state.mode !== "ending";
+
+  gameFrame?.classList.toggle("glitch-active", shouldShowEffects);
+
+  if (!shouldShowEffects) {
+    hideCorruptionWarning();
+
+    if (state.saDoa < CORRUPTION_GLITCH_THRESHOLD) {
+      state.highCorruptionWarningShown = false;
+    }
+
+    return;
+  }
+
+  if (!state.highCorruptionWarningShown) {
+    state.highCorruptionWarningShown = true;
+    showCorruptionWarning();
+  }
 }
 
 function clearScheduledRelicBookOpen() {
@@ -4469,13 +4672,17 @@ function restartGame() {
   showStoryToast("Hành trình khởi động lại. Hãy giữ vững chính khí, tránh Tha hóa và tìm đủ 5 vật phẩm.");
 }
 
-function loadLevel(levelId, spawnOverride) {
+function loadLevel(levelId, spawnOverride, options = {}) {
   state.currentLevelId = levelId;
   state.activeInteractionId = null;
   state.pendingEnding = false;
 
   const level = currentLevel();
-  const spawn = spawnOverride ?? level.spawn;
+  const spawn = cloneSpawnPoint(spawnOverride ?? level.spawn) ?? level.spawn;
+
+  if (options.updateRespawnCheckpoint !== false) {
+    setRespawnCheckpoint(levelId, spawn);
+  }
 
   player.x = spawn.x;
   player.y = spawn.y;
@@ -4637,19 +4844,28 @@ function showEndOverlay() {
 
   state.mode = "ending";
   state.endingCinematic = createEndingCinematicState(state.endingId ?? "bad");
+  hideDialogue();
+  hideStoryToast();
+  hideCorruptionWarning();
   interactionPrompt.classList.add("hidden");
+  hud?.classList.add("hidden");
+  pauseButton.classList.add("hidden");
+  storyBookButton.classList.add("hidden");
+  storyBookButton.setAttribute("aria-hidden", "true");
   endTitle.textContent = ending.title;
   endCopy.textContent = ending.copy;
   endSummary.textContent =
     state.endingSummary || `Tín vật: ${state.inventory.size}/${RELIC_TARGET_COUNT} • Tha hóa: ${state.saDoa}%`;
   updateEndingArt(ending);
   endOverlay.dataset.ending = state.endingId ?? "bad";
+  endOverlay.setAttribute("aria-label", ending.title);
   endOverlay.classList.remove("hidden");
   endOverlay.setAttribute("aria-hidden", "false");
   syncEndingArtCinematicCanvas();
   syncEndingSceneOverlayCanvas();
   updateEndingCinematicUiState();
   updateStoryBookButton();
+  updateCorruptionEffects();
 }
 
 function hideEndOverlay() {
@@ -4664,9 +4880,13 @@ function hideEndOverlay() {
   clearEndingSceneOverlay();
   updateEndingCinematicUiState();
   delete endOverlay.dataset.ending;
+  endOverlay.removeAttribute("aria-label");
   endOverlay.classList.add("hidden");
   endOverlay.setAttribute("aria-hidden", "true");
+  hud?.classList.remove("hidden");
+  pauseButton.classList.remove("hidden");
   updateStoryBookButton();
+  updateCorruptionEffects();
 }
 
 function updateEndingArt(ending) {
@@ -5240,6 +5460,10 @@ function damageMonster(monster, amount) {
 
   monster.defeated = true;
 
+  if (monster.id === "southern-tyrant") {
+    state.quests.zone3BossDefeated = true;
+  }
+
   if (monster.dropItemId) {
     collectRelic(monster.dropItemId);
     return;
@@ -5262,9 +5486,25 @@ function damagePlayer(amount, sourceName = "bóng tối") {
     return;
   }
 
-  adjustSaDoa(8, "Bạn gục ngã trước bóng tối và bị đẩy lùi trên hành trình.");
   state.health = PLAYER_MAX_HEALTH;
-  loadLevel(state.currentLevelId);
+  state.activeSkillEffect = null;
+  state.invulnerableUntil = state.lastTimestamp + RESPAWN_INVULNERABILITY_MS;
+
+  const respawnLevelId = state.respawnLevelId ?? state.currentLevelId;
+  const respawnLevel = levels[respawnLevelId] ?? currentLevel();
+  const respawnSpawn = cloneSpawnPoint(state.respawnSpawn ?? respawnLevel.spawn);
+
+  adjustSaDoa(
+    DEATH_SA_DOA_PENALTY,
+    `Bạn gục ngã trước ${sourceName}. Tha hóa dâng lên và bạn bị đẩy lùi về ${respawnLevel.label}.`
+  );
+
+  if (state.mode === "ending") {
+    return;
+  }
+
+  resetLevelMonstersForRespawn(respawnLevelId);
+  loadLevel(respawnLevelId, respawnSpawn, { updateRespawnCheckpoint: false });
 }
 
 function updatePlayer(deltaSeconds) {
@@ -6194,14 +6434,12 @@ function handleSystemInteraction(item) {
       showStoryToast(`Bạn đã phá ${state.quests.zone3HamletsFreed.size}/3 ấp chiến lược.`);
       return;
     case "rewardMap": {
-      const southernBoss = currentLevel().monsters?.find((monster) => monster.id === "southern-tyrant");
-
       if (state.quests.zone3HamletsFreed.size < 3) {
         showStoryToast("Người dân miền Nam vẫn còn mắc kẹt trong các ấp chiến lược.");
         return;
       }
 
-      if (southernBoss && !southernBoss.defeated) {
+      if (!state.quests.zone3BossDefeated) {
         showStoryToast("Bạn phải đánh bại bộ máy áp bức trước khi nhận Bản đồ hàn gắn.");
         return;
       }

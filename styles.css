@@ -57,6 +57,7 @@ button {
   width: min(100%, 1100px);
   aspect-ratio: 16 / 9;
   margin: 0 auto;
+  isolation: isolate;
   border: 8px solid var(--frame-dark);
   box-shadow:
     0 18px 0 0 var(--frame-mid),
@@ -67,6 +68,48 @@ button {
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 25%),
     linear-gradient(180deg, #37485c 0%, #44576b 44%, #2d343b 44%, #1b2026 100%);
+}
+
+.game-frame::before,
+.game-frame::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.game-frame::before {
+  z-index: 2;
+  background:
+    repeating-linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.045) 0 2px,
+      rgba(255, 255, 255, 0) 2px 6px
+    ),
+    linear-gradient(135deg, rgba(255, 72, 72, 0.04), transparent 38%, rgba(91, 214, 255, 0.05));
+  mix-blend-mode: screen;
+}
+
+.game-frame::after {
+  z-index: 3;
+  background:
+    linear-gradient(90deg, rgba(255, 74, 74, 0.08), transparent 24%, transparent 72%, rgba(91, 214, 255, 0.08)),
+    linear-gradient(180deg, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.06));
+}
+
+.game-frame.glitch-active::before {
+  opacity: 0.18;
+  animation: corruption-scanlines 3s linear infinite;
+}
+
+.game-frame.glitch-active::after {
+  opacity: 0.14;
+  animation: corruption-jitter 1.8s steps(2, end) infinite;
+}
+
+.game-frame.glitch-active #game-canvas {
+  filter: contrast(1.03) saturate(0.95);
 }
 
 #game-canvas {
@@ -313,6 +356,32 @@ button {
   font-size: clamp(1.08rem, 1.75vw, 1.34rem);
   line-height: 1.18;
   pointer-events: none;
+}
+
+.corruption-warning {
+  position: absolute;
+  top: 18px;
+  left: 50%;
+  z-index: 4;
+  max-width: min(420px, calc(100% - 32px));
+  padding: 10px 16px;
+  border: 3px solid rgba(79, 28, 28, 0.9);
+  border-radius: 12px;
+  background:
+    linear-gradient(180deg, rgba(255, 222, 190, 0.96), rgba(233, 167, 136, 0.95));
+  color: #4b1819;
+  box-shadow:
+    0 10px 0 rgba(70, 30, 28, 0.32),
+    0 20px 28px rgba(0, 0, 0, 0.22);
+  font-size: clamp(1.02rem, 1.54vw, 1.24rem);
+  line-height: 1.14;
+  text-align: center;
+  pointer-events: none;
+  transform: translate(-50%, -12px);
+}
+
+.corruption-warning.is-visible {
+  animation: corruption-warning-pop 2600ms ease both;
 }
 
 .dialogue-box {
@@ -838,6 +907,53 @@ button {
   }
 }
 
+@keyframes corruption-scanlines {
+  0% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-4px);
+  }
+
+  100% {
+    transform: translateY(0);
+  }
+}
+
+@keyframes corruption-jitter {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  33% {
+    transform: translateX(-1px);
+  }
+
+  66% {
+    transform: translateX(1px);
+  }
+}
+
+@keyframes corruption-warning-pop {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -18px) scale(0.96);
+  }
+
+  12%,
+  78% {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -8px) scale(0.98);
+  }
+}
+
 .menu-card {
   width: min(92%, 420px);
   padding: 34px 28px;
@@ -870,102 +986,119 @@ button {
 
 .end-overlay {
   display: grid;
-  place-items: center;
-  padding: 24px;
+  place-items: stretch;
+  padding: 0;
   background:
-    linear-gradient(180deg, rgba(17, 30, 12, 0.35), rgba(11, 18, 9, 0.62)),
-    rgba(15, 17, 23, 0.5);
-  backdrop-filter: blur(3px);
+    linear-gradient(180deg, rgba(8, 12, 20, 0.08), rgba(4, 6, 10, 0.34)),
+    rgba(4, 6, 10, 0.68);
+  backdrop-filter: blur(1px);
+  overflow: hidden;
 }
 
 .end-overlay[data-ending="good"] {
   background:
-    linear-gradient(180deg, rgba(24, 38, 66, 0.3), rgba(12, 20, 36, 0.68)),
-    rgba(9, 15, 26, 0.52);
+    linear-gradient(180deg, rgba(24, 38, 66, 0.12), rgba(12, 20, 36, 0.28)),
+    rgba(7, 11, 20, 0.7);
 }
 
 .end-overlay[data-ending="bad"] {
   background:
-    linear-gradient(180deg, rgba(54, 16, 16, 0.34), rgba(23, 7, 8, 0.72)),
-    rgba(18, 10, 12, 0.58);
+    linear-gradient(180deg, rgba(54, 16, 16, 0.16), rgba(23, 7, 8, 0.34)),
+    rgba(12, 6, 8, 0.74);
 }
 
 .end-card {
-  width: min(94%, 620px);
-  padding: 34px 30px;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  padding: 0;
   border: 0;
-  background:
-    linear-gradient(180deg, rgba(57, 77, 45, 0.42), rgba(28, 49, 24, 0.78)),
-    url("assets/ui/kenney-rpg/panel_brown.png") center / 100% 100% no-repeat,
-    linear-gradient(180deg, rgba(45, 71, 39, 0.96), rgba(23, 46, 24, 0.98));
-  box-shadow:
-    0 22px 42px rgba(0, 0, 0, 0.34);
+  background: none;
+  box-shadow: none;
   display: grid;
-  gap: 14px;
-  justify-items: center;
-  text-align: center;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 0;
+  justify-items: stretch;
+  align-items: stretch;
   image-rendering: pixelated;
   image-rendering: crisp-edges;
 }
 
+.end-card::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: clamp(88px, 14vh, 134px);
+  background: linear-gradient(180deg, rgba(4, 6, 10, 0), rgba(4, 6, 10, 0.9) 36%, rgba(4, 6, 10, 0.99));
+  pointer-events: none;
+  z-index: 1;
+}
+
 .end-overlay[data-ending="good"] .end-card {
-  background:
-    linear-gradient(180deg, rgba(45, 69, 106, 0.42), rgba(20, 37, 68, 0.82)),
-    url("assets/ui/kenney-rpg/panel_brown.png") center / 100% 100% no-repeat,
-    linear-gradient(180deg, rgba(31, 54, 90, 0.98), rgba(15, 29, 55, 0.98));
+  background: none;
 }
 
 .end-overlay[data-ending="bad"] .end-card {
-  background:
-    linear-gradient(180deg, rgba(79, 34, 34, 0.42), rgba(41, 15, 16, 0.84)),
-    url("assets/ui/kenney-rpg/panel_brown.png") center / 100% 100% no-repeat,
-    linear-gradient(180deg, rgba(66, 24, 26, 0.98), rgba(33, 10, 12, 0.98));
+  background: none;
 }
 
-.end-card h2 {
-  margin: 0;
-  color: #fff5cf;
-  font-family: "Press Start 2P", cursive;
-  font-size: clamp(0.92rem, 2.4vw, 1.4rem);
-  line-height: 1.5;
+.end-overlay[data-ending="bad"] .end-card::after {
+  background: linear-gradient(180deg, rgba(12, 5, 8, 0), rgba(12, 5, 8, 0.92) 34%, rgba(12, 5, 8, 0.995));
+}
+
+.end-card > .menu-label,
+.end-card > h2,
+.end-copy,
+.end-summary {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
 }
 
 .end-art-frame {
   position: relative;
-  width: min(100%, 540px);
-  min-height: 188px;
-  padding: 10px;
-  border: 2px solid rgba(255, 239, 197, 0.24);
-  background:
-    radial-gradient(circle at top, rgba(255, 226, 146, 0.16), rgba(255, 226, 146, 0)),
-    rgba(10, 14, 22, 0.38);
-  box-shadow:
-    inset 0 0 0 2px rgba(255, 255, 255, 0.03),
-    0 10px 20px rgba(0, 0, 0, 0.2);
+  z-index: 0;
+  width: 100%;
+  min-height: 0;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: rgba(4, 6, 10, 0.98);
+  box-shadow: none;
+  overflow: hidden;
 }
 
 .end-overlay[data-ending="bad"] .end-art-frame {
-  background:
-    radial-gradient(circle at top, rgba(234, 86, 70, 0.16), rgba(234, 86, 70, 0)),
-    rgba(22, 10, 12, 0.42);
+  background: rgba(8, 4, 6, 0.98);
 }
 
 .end-art-image {
+  position: absolute;
+  inset: 0;
   display: block;
   width: 100%;
-  max-height: 304px;
+  height: 100%;
   object-fit: contain;
+  object-position: center;
   image-rendering: pixelated;
   image-rendering: crisp-edges;
-  filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.28));
+  filter: none;
   opacity: 0;
   transition: opacity 420ms ease;
 }
 
 .end-art-cinematic {
   position: absolute;
-  top: 0;
-  left: 0;
+  inset: 0;
   z-index: 0;
   pointer-events: none;
   image-rendering: pixelated;
@@ -976,34 +1109,46 @@ button {
 
 .end-art-overlay {
   position: absolute;
-  top: 0;
-  left: 0;
+  inset: 0;
   z-index: 1;
+  display: none;
   pointer-events: none;
   image-rendering: pixelated;
   image-rendering: crisp-edges;
 }
 
-.end-copy,
-.end-summary,
-#return-start-button {
+.end-actions {
+  position: relative;
+  z-index: 2;
+  justify-self: center;
+  margin: 0 0 clamp(14px, 2.4vh, 26px);
+  padding: 12px 14px;
+  border: 0;
+  background:
+    linear-gradient(180deg, rgba(255, 248, 230, 0.08), rgba(255, 248, 230, 0)),
+    url("assets/ui/kenney-rpg/panel_brown.png") center / 100% 100% no-repeat,
+    linear-gradient(180deg, rgba(90, 68, 44, 0.96), rgba(48, 34, 24, 0.98));
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.34);
   transition: opacity 460ms ease, transform 460ms ease, filter 460ms ease;
+}
+
+.end-actions #return-start-button {
+  min-width: clamp(210px, 26vw, 300px);
 }
 
 .end-overlay[data-cinematic="running"] .end-art-image {
   opacity: 0;
 }
 
-.end-overlay[data-cinematic="running"] .end-copy,
-.end-overlay[data-cinematic="running"] .end-summary,
-.end-overlay[data-cinematic="running"] #return-start-button {
-  opacity: 0.24;
-  transform: translateY(10px);
-  filter: blur(2px);
+.end-overlay[data-cinematic="running"] .end-actions {
+  opacity: 0;
+  transform: translateY(14px);
+  filter: blur(3px);
+  pointer-events: none;
 }
 
-.end-overlay[data-cinematic="running"] #return-start-button {
-  pointer-events: none;
+.end-overlay[data-cinematic="running"] .end-art-frame {
+  box-shadow: inset 0 -56px 80px rgba(0, 0, 0, 0.2);
 }
 
 .end-overlay[data-cinematic="complete"] .end-art-image {
@@ -1014,9 +1159,7 @@ button {
   opacity: 0;
 }
 
-.end-overlay[data-cinematic="complete"] .end-copy,
-.end-overlay[data-cinematic="complete"] .end-summary,
-.end-overlay[data-cinematic="complete"] #return-start-button {
+.end-overlay[data-cinematic="complete"] .end-actions {
   opacity: 1;
   transform: translateY(0);
   filter: none;
@@ -1033,22 +1176,6 @@ button {
 .end-card .pixel-button:disabled:active {
   transform: none;
   box-shadow: 0 6px 0 rgba(46, 24, 18, 0.4);
-}
-
-.end-copy {
-  margin: 0 0 6px;
-  max-width: 30ch;
-  color: #eef1dd;
-  font-size: clamp(1.2rem, 2.2vw, 1.55rem);
-  line-height: 1.24;
-}
-
-.end-summary {
-  margin: 0;
-  max-width: 32ch;
-  color: #dde8ce;
-  font-size: clamp(1.08rem, 1.9vw, 1.3rem);
-  line-height: 1.22;
 }
 
 @keyframes start-screen-pulse {
@@ -1692,6 +1819,13 @@ button {
     bottom: auto;
     max-width: min(280px, calc(100% - 20px));
     font-size: clamp(0.9rem, 3.5vw, 1.08rem);
+  }
+
+  .corruption-warning {
+    top: 56px;
+    max-width: min(300px, calc(100% - 20px));
+    padding: 9px 12px;
+    font-size: clamp(0.88rem, 3.4vw, 1rem);
   }
 
   .dialogue-box {
