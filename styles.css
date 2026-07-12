@@ -1066,9 +1066,9 @@ button {
 
 .slide-card {
   position: relative;
-  width: min(94vw, calc(86vh * 0.98125), 860px);
+  width: min(96vw, calc(90vh * 0.98125), 920px);
   aspect-ratio: 157 / 160;
-  max-height: 86vh;
+  max-height: 90vh;
   overflow: visible;
   filter: drop-shadow(0 24px 48px rgba(0, 0, 0, 0.36));
 }
@@ -1086,7 +1086,7 @@ button {
 
 .book-controls {
   position: absolute;
-  top: 7.5%;
+  top: 3.5%;
   left: 50%;
   z-index: 2;
   display: flex;
@@ -1145,10 +1145,10 @@ button {
 
 .slide-spread {
   position: absolute;
-  inset: 9.5% 8.5% 9%;
+  inset: 10% 8% 8.5%;
   display: grid;
-  grid-template-columns: minmax(0, 0.97fr) minmax(0, 1fr);
-  gap: clamp(22px, 3.2vw, 34px);
+  grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.18fr);
+  gap: clamp(18px, 2.7vw, 30px);
 }
 
 .slide-page {
@@ -1186,17 +1186,17 @@ button {
 }
 
 .slide-copy {
-  gap: 14px;
+  gap: 12px;
 }
 
 .slide-media-stack {
-  gap: 14px;
+  gap: 10px;
 }
 
 .slide-card h2 {
   margin: 0;
   font-family: "VT323", monospace;
-  font-size: clamp(1.85rem, 2.25vw, 2.35rem);
+  font-size: clamp(1.65rem, 2.04vw, 2.18rem);
   line-height: 1.02;
   letter-spacing: 0.02em;
   color: #442f2c;
@@ -1207,8 +1207,8 @@ button {
   flex: 1;
   overflow-y: auto;
   padding-right: 4px;
-  font-size: clamp(1.05rem, 1.7vw, 1.28rem);
-  line-height: 1.36;
+  font-size: clamp(1rem, 1.42vw, 1.18rem);
+  line-height: 1.32;
   color: #5f4d44;
   white-space: pre-line;
 }
@@ -1510,7 +1510,7 @@ button {
   display: grid;
   grid-template-rows: repeat(2, minmax(0, 1fr));
   grid-auto-rows: minmax(0, 1fr);
-  gap: 12px;
+  gap: 10px;
   overflow-y: auto;
   padding-right: 4px;
 }
@@ -1520,7 +1520,7 @@ button {
 }
 
 .slide-gallery[data-count="3"] {
-  grid-template-rows: repeat(3, minmax(0, 1fr));
+  grid-template-rows: repeat(3, minmax(118px, 1fr));
 }
 
 .slide-gallery::-webkit-scrollbar {
@@ -1537,10 +1537,10 @@ button {
   min-height: 0;
   display: grid;
   grid-template-rows: minmax(0, 1fr) auto;
-  gap: 8px;
-  padding: 10px;
+  gap: 6px;
+  padding: 8px;
   border: 3px solid rgba(89, 64, 53, 0.42);
-  border-radius: 14px;
+  border-radius: 10px;
   background:
     linear-gradient(180deg, rgba(250, 239, 210, 0.84), rgba(237, 218, 176, 0.62));
   box-shadow:
@@ -1554,16 +1554,16 @@ button {
   height: 100%;
   min-height: 0;
   border: 3px solid rgba(89, 64, 53, 0.45);
-  border-radius: 10px;
-  object-fit: cover;
+  border-radius: 8px;
+  object-fit: contain;
   background: #e8dec5;
 }
 
 .slide-gallery-caption {
   margin: 0;
   color: #745d4e;
-  font-size: clamp(0.92rem, 1.3vw, 1.02rem);
-  line-height: 1.24;
+  font-size: clamp(0.78rem, 1.08vw, 0.92rem);
+  line-height: 1.18;
 }
 
 .close-button {

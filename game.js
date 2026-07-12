@@ -575,6 +575,93 @@ const RELIC_STORY_SLIDES = {
   },
 };
 
+const RELIC_STORY_PRESENTATION_UPDATES = {
+  "red-compass": {
+    text:
+      "Đầu thế kỷ XX, các phong trào yêu nước lần lượt bế tắc vì thiếu đường lối đúng đắn. Nguyễn Ái Quốc tìm thấy con đường cách mạng vô sản, biến chủ nghĩa Mác - Lênin thành kim chỉ nam soi đường giải phóng dân tộc.",
+    gallery: [
+      {
+        src: "assets/story/level1/colonial-exploitation.png",
+        alt: "Người dân Việt Nam lao động khổ cực dưới ách bóc lột của thực dân Pháp",
+        caption: "Đời sống thuộc địa dưới ách bóc lột của thực dân Pháp.",
+      },
+      {
+        src: "assets/story/level1/patriotic-scholars.png",
+        alt: "Hai nhà yêu nước Phan Bội Châu và Phan Châu Trinh",
+        caption: "Các sĩ phu yêu nước đầu thế kỷ XX nỗ lực tìm đường cứu nước.",
+      },
+      {
+        src: "assets/story/level1/duong-kach-menh.png",
+        alt: "Tác phẩm Đường Kách Mệnh",
+        caption: "Đường Kách Mệnh đặt nền lý luận cho con đường cách mạng Việt Nam.",
+      },
+    ],
+  },
+  "unified-emblem": {
+    text:
+      "Cuối năm 1929, ba tổ chức cộng sản ra đời nhưng hoạt động riêng rẽ, có nguy cơ chia rẽ phong trào. Hội nghị hợp nhất đầu năm 1930 do Nguyễn Ái Quốc chủ trì đã lập nên Đảng Cộng sản Việt Nam, tạo một đội tiên phong thống nhất.",
+    gallery: [
+      {
+        src: "assets/story/level2/party-unification-1930.png",
+        alt: "Hợp nhất các tổ chức cộng sản năm 1930",
+        caption: "Hội nghị hợp nhất năm 1930 tạo nên một đội tiên phong thống nhất.",
+      },
+    ],
+  },
+  "vietminh-thread": {
+    text:
+      "Năm 1941, Mặt trận Việt Minh ra đời để quy tụ sức mạnh toàn dân, đặt nhiệm vụ giải phóng dân tộc lên hàng đầu. Khi thời cơ tháng 8/1945 đến, khối đoàn kết ấy trở thành lực lượng quyết định giành chính quyền.",
+    gallery: [
+      {
+        src: "assets/story/level3/viet-minh-1941.png",
+        alt: "Mặt trận Việt Nam Độc lập Đồng minh thành lập năm 1941",
+        caption: "Việt Minh quy tụ sức mạnh đại đoàn kết toàn dân tộc.",
+      },
+      {
+        src: "assets/story/level3/august-revolution-1945.png",
+        alt: "Mít tinh tại Quảng trường Ba Đình ngày 2 tháng 9 năm 1945",
+        caption: "Cách mạng Tháng Tám mở ra kỷ nguyên độc lập cho dân tộc.",
+      },
+    ],
+  },
+  "healed-map": {
+    text:
+      "Sau năm 1954, đất nước tạm thời bị chia cắt tại vĩ tuyến 17. Đường lối cách mạng xác định miền Bắc là hậu phương lớn, miền Nam là tiền tuyến lớn; sức mạnh cả nước đã hội tụ trong Đại thắng mùa Xuân 1975, thống nhất non sông.",
+    gallery: [
+      {
+        src: "assets/story/level3/vietnam-divided-17th-parallel.png",
+        alt: "Việt Nam bị chia cắt hai miền tại vĩ tuyến 17",
+        caption: "Vĩ tuyến 17 trở thành giới tuyến chia cắt tạm thời sau năm 1954.",
+      },
+      {
+        src: "assets/story/level3/reunification-1975.png",
+        alt: "Xe tăng húc đổ cổng Dinh Độc Lập ngày 30 tháng 4 năm 1975",
+        caption: "Đại thắng 30/4/1975 khép lại chiến tranh, thống nhất đất nước.",
+      },
+    ],
+  },
+  "doi-moi-gear": {
+    text:
+      "Sau chiến tranh, cơ chế bao cấp khiến kinh tế trì trệ và đời sống khó khăn. Đại hội VI năm 1986 khởi xướng Đổi Mới, giải phóng sức sản xuất, đổi mới tư duy kinh tế và mở đường để đất nước phát triển, hội nhập.",
+    gallery: [
+      {
+        src: "assets/story/level4/bao-cap-before-1986.png",
+        alt: "Khung cảnh thời bao cấp trước năm 1986",
+        caption: "Thời bao cấp gợi lại đời sống thiếu thốn, tem phiếu và xếp hàng.",
+      },
+      {
+        src: "assets/story/level4/dai-hoi-vi-1986.png",
+        alt: "Đại hội Đảng VI năm 1986",
+        caption: "Đại hội VI năm 1986 mở ra công cuộc Đổi Mới toàn diện.",
+      },
+    ],
+  },
+};
+
+for (const [itemId, update] of Object.entries(RELIC_STORY_PRESENTATION_UPDATES)) {
+  Object.assign(RELIC_STORY_SLIDES[itemId], update);
+}
+
 const ENDING_DEFINITIONS = {
   good: {
     title: "GOOD ENDING: ĐẠI THẮNG & PHÁT TRIỂN",
@@ -2808,13 +2895,7 @@ function createHubLevel() {
         interactionOffsetY: 18,
       },
     ],
-    colliders: [
-      { x: 450, y: 198, width: 60, height: 86 },
-      { x: 352, y: 246, width: 28, height: 30 },
-      { x: 584, y: 246, width: 28, height: 30 },
-      { x: 314, y: 414, width: 52, height: 18 },
-      { x: 598, y: 414, width: 52, height: 18 },
-    ],
+    colliders: [],
     decorations,
   };
 }
@@ -2888,6 +2969,13 @@ function createPortMazeLevel() {
           text:
             "Giữa bến cảng nặng nề vì sưu thuế và áp bức, một người liên lạc bí mật lặng lẽ gửi đến người lao động những tờ Le Paria. Không chỉ là một tờ báo, đó còn là tiếng nói bênh vực người cùng khổ, giúp họ hiểu vì sao mình bị áp bức và vì sao phải đoàn kết đứng lên tìm đường giải phóng.",
           caption: "Những tờ Le Paria lặng lẽ gieo mầm thức tỉnh nơi bến cảng",
+          gallery: [
+            {
+              src: "assets/story/level1/Những tờ Le Paria.webp",
+              alt: "Những tờ báo Le Paria của Nguyễn Ái Quốc",
+              caption: "Le Paria lên tiếng cho các dân tộc thuộc địa và gieo mầm thức tỉnh.",
+            },
+          ],
           art: "desk",
         },
       },
@@ -3570,6 +3658,14 @@ function createHubDecorations() {
 
 function createPortMazeDecorations() {
   return {
+    rain: Array.from({ length: 92 }, (_, index) => ({
+      x: (index * 17) % (VIEWPORT.width + 34),
+      y: (index * 11) % (VIEWPORT.height + 28),
+      speed: 1.08 + (index % 5) * 0.24,
+      drift: 0.9 + (index % 4) * 0.2,
+      length: 13 + (index % 5) * 2,
+      alpha: 0.22 + (index % 4) * 0.08,
+    })),
     fogBands: Array.from({ length: 10 }, (_, index) => ({
       x: -60 + index * 108,
       y: 72 + ((index * 31) % 270),
@@ -9465,6 +9561,7 @@ function drawAtmosphere() {
 
   if (state.currentLevelId === "village") {
     drawFogDrift(decorations.fogBands ?? []);
+    drawRain(decorations.rain ?? []);
     return;
   }
 
@@ -9672,30 +9769,53 @@ function drawRain(rain) {
   const rainFrame = Math.floor(state.lastTimestamp / 120) % rainSprites.length;
   const rainSprite = rainSprites[rainFrame];
 
+  if (canDrawSprite(rainSprite)) {
+    const sourceWidth = 28;
+    const sourceHeight = 44;
+    const maxSourceX = Math.max(1, rainSprite.naturalWidth - sourceWidth);
+    const maxSourceY = Math.max(1, rainSprite.naturalHeight - sourceHeight);
+    ctx.globalCompositeOperation = "screen";
+
+    for (let index = 0; index < rain.length; index += 1) {
+      const drop = rain[index];
+      const travel = state.lastTimestamp * 0.15 * drop.speed;
+      const x = (drop.x + travel * drop.drift) % (VIEWPORT.width + 34) - 17;
+      const y = (drop.y + travel) % (VIEWPORT.height + 34) - 17;
+      const sourceX = Math.floor((drop.x * 5 + drop.y * 3 + index * 19) % maxSourceX);
+      const sourceY = Math.floor((drop.y * 7 + drop.x * 2 + index * 13) % maxSourceY);
+      const scale = 0.64 + (index % 4) * 0.09;
+      const drawWidth = Math.round(sourceWidth * scale);
+      const drawHeight = Math.round(sourceHeight * scale);
+
+      ctx.globalAlpha = Math.min(0.18, drop.alpha * 0.44);
+      ctx.drawImage(
+        rainSprite,
+        sourceX,
+        sourceY,
+        sourceWidth,
+        sourceHeight,
+        Math.round(x - drawWidth / 2),
+        Math.round(y - drawHeight / 2),
+        drawWidth,
+        drawHeight
+      );
+    }
+
+    ctx.restore();
+    return;
+  }
+
   for (const drop of rain) {
     const travel = state.lastTimestamp * 0.15 * drop.speed;
     const x = (drop.x + travel * drop.drift) % (VIEWPORT.width + 34) - 17;
     const y = (drop.y + travel) % (VIEWPORT.height + 34) - 17;
 
-    if (canDrawSprite(rainSprite)) {
-      const scale = Math.min(Math.max(drop.length / 24, 1.0), 1.75);
-      const alpha = drop.alpha * 1.1;
-      ctx.globalAlpha = alpha;
-      ctx.drawImage(
-        rainSprite,
-        Math.round(x - 8 * scale),
-        Math.round(y - 6 * scale),
-        Math.round(16 * scale),
-        Math.round(32 * scale)
-      );
-    } else {
-      ctx.strokeStyle = `rgba(202, 220, 255, ${drop.alpha})`;
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(Math.round(x), Math.round(y));
-      ctx.lineTo(Math.round(x - 3), Math.round(y + drop.length));
-      ctx.stroke();
-    }
+    ctx.strokeStyle = `rgba(202, 220, 255, ${drop.alpha})`;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(Math.round(x), Math.round(y));
+    ctx.lineTo(Math.round(x - 3), Math.round(y + drop.length));
+    ctx.stroke();
   }
 
   ctx.restore();
