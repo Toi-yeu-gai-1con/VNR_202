@@ -336,6 +336,33 @@ button {
   line-height: 1;
 }
 
+.combat-status {
+  margin: 2px 0 0;
+  color: #9fd8c2;
+  font-size: clamp(0.76rem, 1.1vw, 0.94rem);
+  letter-spacing: 0.03em;
+}
+
+.difficulty-controls {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+  width: min(470px, 100%);
+  margin: 12px auto 0;
+}
+
+.difficulty-button {
+  min-width: 0;
+  padding: 10px 6px;
+  font-size: clamp(0.72rem, 1.3vw, 0.88rem);
+}
+
+.difficulty-button.is-selected {
+  filter: brightness(1.18) saturate(1.2);
+  outline: 2px solid rgba(255, 231, 166, 0.82);
+  outline-offset: 2px;
+}
+
 .sound-button {
   position: absolute;
   top: 14px;

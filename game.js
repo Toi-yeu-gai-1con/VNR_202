@@ -62,6 +62,8 @@ const zoneSummaryTitle = document.getElementById("zone-summary-title");
 const zoneSummaryCopy = document.getElementById("zone-summary-copy");
 const zoneSummaryStats = document.getElementById("zone-summary-stats");
 const zoneSummaryCloseButton = document.getElementById("zone-summary-close-button");
+const combatStatus = document.getElementById("combat-status");
+const difficultyControls = document.getElementById("difficulty-controls");
 
 const slideKicker = document.getElementById("slide-kicker");
 const slideTitle = document.getElementById("slide-title");
@@ -124,6 +126,13 @@ const PURIFY_COOLDOWN_MS = 1800;
 const STRIKE_RANGE = 48;
 const PURIFY_RANGE = 76;
 const MONSTER_SPEED = 38;
+const STAMINA_MAX = 100;
+const STAMINA_REGEN_PER_SECOND = 32;
+const DODGE_COST = 28;
+const DODGE_DISTANCE = 54;
+const DODGE_COOLDOWN_MS = 420;
+const CHARGED_STRIKE_THRESHOLD_MS = 360;
+const PROJECTILE_SPEED = 136;
 const MONSTER_TOUCH_RANGE = 18;
 const MONSTER_CONTACT_DAMAGE_COOLDOWN_MS = 900;
 const RESPAWN_INVULNERABILITY_MS = 1400;
@@ -1016,6 +1025,19 @@ const state = {
     strikeReadyAt: 0,
     purifyReadyAt: 0,
   },
+  skillReadySoundArmed: {
+    strike: false,
+    purify: false,
+  },
+  stamina: STAMINA_MAX,
+  dodgeReadyAt: 0,
+  dodgeEndsAt: 0,
+  strikeChargeStartedAt: 0,
+  comboStep: 0,
+  comboExpiresAt: 0,
+  difficulty: "normal",
+  weakenedUntil: 0,
+  enemyProjectiles: [],
   invulnerableUntil: 0,
   activeSkillEffect: null,
   endingId: null,
@@ -1086,6 +1108,68 @@ function ensureBosses() {
 
 ensureBosses();
 
+const COMBAT_ROSTER = {
+  village: [
+    { id: "village-raider", name: "Kẻ Cướp Bóng Đêm", archetype: "melee", variant: "devourer", x: 640, y: 426, elite: true },
+    { id: "village-marksman", name: "Xạ Thủ Bóng Mờ", archetype: "ranged", variant: "wraith", x: 812, y: 330 },
+    { id: "village-chanter", name: "Kẻ Tụng Niệm Tha Hóa", archetype: "support", variant: "blight", x: 566, y: 286 },
+  ],
+  archive: [
+    { id: "archive-raider", name: "Bóng Đen Phá Kho", archetype: "melee", variant: "devourer", x: 270, y: 392 },
+    { id: "archive-marksman", name: "Xạ Thủ Mật Mã", archetype: "ranged", variant: "wraith", x: 700, y: 352, elite: true },
+    { id: "archive-chanter", name: "Thủ Thư Tha Hóa", archetype: "support", variant: "blight", x: 490, y: 210 },
+  ],
+  crossroads: [
+    { id: "crossroads-raider", name: "Kẻ Cướp Cầu Gãy", archetype: "melee", variant: "devourer", x: 360, y: 438 },
+    { id: "crossroads-marksman", name: "Xạ Thủ Chia Cắt", archetype: "ranged", variant: "wraith", x: 620, y: 402 },
+    { id: "crossroads-chanter", name: "Kẻ Tuyên Truyền Bóng Tối", archetype: "support", variant: "blight", x: 780, y: 496, elite: true },
+  ],
+  spring: [
+    { id: "spring-raider", name: "Kẻ Phá Hoại Mùa Màng", archetype: "melee", variant: "devourer", x: 350, y: 360 },
+    { id: "spring-marksman", name: "Xạ Thủ Quan Liêu", archetype: "ranged", variant: "wraith", x: 700, y: 328, elite: true },
+    { id: "spring-chanter", name: "Kẻ Tụng Niệm Bao Cấp", archetype: "support", variant: "blight", x: 540, y: 428 },
+  ],
+};
+
+const COMBAT_DENSITY = { village: 1, archive: 2, crossroads: 3, spring: 3 };
+
+function ensureCombatRoster() {
+  for (const [levelId, roster] of Object.entries(COMBAT_ROSTER)) {
+    const level = levels[levelId];
+    level.monsters ??= [];
+    roster.forEach((entry, index) => {
+      if (level.monsters.some((monster) => monster.id === entry.id)) {
+        return;
+      }
+      level.monsters.push({
+        ...entry,
+        spawnRank: index + 1,
+        width: entry.archetype === "support" ? 20 : 24,
+        height: 28,
+        maxHealth: entry.elite ? 7 : 5,
+        damage: entry.elite ? 2 : 1,
+        aggroRadius: entry.archetype === "ranged" ? 190 : 138,
+        patrolRadius: 18,
+      });
+    });
+
+    level.drops ??= [];
+    level.traps ??= [{ id: `${levelId}-trap`, x: 470, y: 372, radius: 22, cooldownUntil: 0 }];
+    level.breakables ??= [{ id: `${levelId}-crate`, x: 430, y: 446, width: 24, height: 22, health: 3, maxHealth: 3, destroyed: false }];
+  }
+}
+
+function isMonsterActive(monster) {
+  if (!monster.spawnRank) {
+    return true;
+  }
+  const difficultyBonus = state.difficulty === "challenge" ? 1 : state.difficulty === "story" ? -1 : 0;
+  const budget = Math.max(1, (COMBAT_DENSITY[state.currentLevelId] ?? 3) + difficultyBonus);
+  return monster.spawnRank <= budget;
+}
+
+ensureCombatRoster();
+
 function serializeQuestState() {
   return {
     zone1Started: state.quests.zone1Started,
@@ -1150,7 +1234,7 @@ function restoreRuntimeSaveState(runtime = {}) {
     for (const monster of level.monsters ?? []) {
       const savedMonster = savedLevel.monsters?.[monster.id];
       if (savedMonster) {
-        monster.health = clamp(Number(savedMonster.health) || 0, 0, monster.maxHealth);
+        monster.health = clamp(Number(savedMonster.health) || 0, 0, monster.runtimeMaxHealth ?? monster.maxHealth);
         monster.defeated = Boolean(savedMonster.defeated);
       }
     }
@@ -1170,10 +1254,12 @@ function saveGameProgress() {
       respawnLevelId: state.respawnLevelId,
       respawnSpawn: cloneSpawnPoint(state.respawnSpawn),
       health: state.health,
+      stamina: state.stamina,
       saDoa: state.saDoa,
       inventory: [...state.inventory],
       unlockedStoryIds: [...state.unlockedStoryIds],
       completedZones: [...state.completedZones],
+      difficulty: state.difficulty,
       tutorialSeen: state.tutorialSeen,
       quests: serializeQuestState(),
       runtime: getRuntimeSaveState(),
@@ -1207,6 +1293,26 @@ function clearSavedProgress() {
   refreshContinueButton();
 }
 
+function setDifficulty(difficulty) {
+  if (!['story', 'normal', 'challenge'].includes(difficulty)) {
+    return;
+  }
+
+  state.difficulty = difficulty;
+  difficultyControls.querySelectorAll('[data-difficulty]').forEach((button) => {
+    button.classList.toggle('is-selected', button.dataset.difficulty === difficulty);
+    button.setAttribute('aria-pressed', String(button.dataset.difficulty === difficulty));
+  });
+}
+
+function getDifficultySettings() {
+  return {
+    story: { enemyHealth: 0.75, enemyDamage: 0.65, enemySpeed: 0.82, dropChance: 0.5 },
+    normal: { enemyHealth: 1, enemyDamage: 1, enemySpeed: 1, dropChance: 0.34 },
+    challenge: { enemyHealth: 1.35, enemyDamage: 1.4, enemySpeed: 1.16, dropChance: 0.22 },
+  }[state.difficulty] ?? { enemyHealth: 1, enemyDamage: 1, enemySpeed: 1, dropChance: 0.34 };
+}
+
 function continueSavedGame() {
   const saved = loadSavedProgress();
   if (!saved) {
@@ -1219,8 +1325,10 @@ function continueSavedGame() {
   state.inventory = new Set(saved.inventory ?? []);
   state.unlockedStoryIds = new Set(saved.unlockedStoryIds ?? []);
   state.completedZones = new Set(saved.completedZones ?? []);
+  setDifficulty(saved.difficulty ?? "normal");
   state.tutorialSeen = Boolean(saved.tutorialSeen);
   state.health = clamp(Number(saved.health) || PLAYER_MAX_HEALTH, 1, PLAYER_MAX_HEALTH);
+  state.stamina = clamp(Number(saved.stamina) || STAMINA_MAX, 0, STAMINA_MAX);
   state.saDoa = clamp(Number(saved.saDoa) || 0, 0, SA_DOA_MAX);
   state.respawnLevelId = levels[saved.respawnLevelId] ? saved.respawnLevelId : saved.currentLevelId;
   state.respawnSpawn = cloneSpawnPoint(saved.respawnSpawn ?? levels[state.respawnLevelId].spawn);
@@ -1324,6 +1432,12 @@ storyNextButton.addEventListener("click", withUiClickSound(() => showStoryBookEn
 returnStartButton.addEventListener("click", withUiClickSound(handleReturnFromEnding));
 tutorialNextButton.addEventListener("click", withUiClickSound(advanceTutorial));
 zoneSummaryCloseButton.addEventListener("click", withUiClickSound(closeZoneSummary));
+difficultyControls.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-difficulty]");
+  if (button) {
+    setDifficulty(button.dataset.difficulty);
+  }
+});
 document.addEventListener("fullscreenchange", updateFullscreenButton);
 updateFullscreenButton();
 updateSoundButton();
@@ -1471,8 +1585,13 @@ window.addEventListener("keydown", (event) => {
     return;
   }
 
+  if (state.mode === "playing" && key === "shift") {
+    useDodge();
+    return;
+  }
+
   if (state.mode === "playing" && key === "j") {
-    useStrikeSkill();
+    startStrikeCharge();
     return;
   }
 
@@ -1490,7 +1609,12 @@ window.addEventListener("keydown", (event) => {
 });
 
 window.addEventListener("keyup", (event) => {
-  keys.delete(normalizeKey(event.key));
+  const key = normalizeKey(event.key);
+  keys.delete(key);
+
+  if (state.mode === "playing" && key === "j") {
+    releaseStrikeCharge();
+  }
 });
 
 loadLevel("hub");
@@ -4309,7 +4433,16 @@ function createStoryRegistry(levelMap) {
 }
 
 function initializeLevelRuntime() {
+  const difficulty = getDifficultySettings();
   for (const level of Object.values(levels)) {
+    level.drops = [];
+    for (const trap of level.traps ?? []) {
+      trap.cooldownUntil = 0;
+    }
+    for (const breakable of level.breakables ?? []) {
+      breakable.health = breakable.maxHealth;
+      breakable.destroyed = false;
+    }
     for (const item of level.interactables ?? []) {
       item.collected = false;
       item.used = false;
@@ -4320,7 +4453,8 @@ function initializeLevelRuntime() {
     for (const monster of level.monsters ?? []) {
       monster.homeX = monster.x;
       monster.homeY = monster.y;
-      monster.health = monster.maxHealth;
+      monster.runtimeMaxHealth = Math.ceil(monster.maxHealth * difficulty.enemyHealth);
+      monster.health = monster.runtimeMaxHealth;
       monster.defeated = false;
       monster.hitFlashUntil = 0;
       monster.lastContactAt = 0;
@@ -4330,6 +4464,11 @@ function initializeLevelRuntime() {
       monster.telegraphEndsAt = 0;
       monster.attackDirection = "down";
       monster.animationState = "idle";
+      monster.slowedUntil = 0;
+      monster.weakenedUntil = 0;
+      monster.stunnedUntil = 0;
+      monster.bossPhase = 0;
+      monster.supportPulseUntil = 0;
       monster.phase = monster.phase ?? Math.random() * Math.PI * 2;
     }
   }
@@ -4375,12 +4514,18 @@ function resetLevelMonstersForRespawn(levelId) {
     const preserveDefeat = shouldPreserveMonsterDefeatOnRespawn(monster);
     monster.x = monster.homeX;
     monster.y = monster.homeY;
-    monster.health = preserveDefeat ? 0 : monster.maxHealth;
+    monster.health = preserveDefeat ? 0 : (monster.runtimeMaxHealth ?? monster.maxHealth);
     monster.defeated = preserveDefeat;
     monster.hitFlashUntil = 0;
     monster.lastContactAt = 0;
     monster.attackStartedAt = 0;
     monster.attackEndsAt = 0;
+    monster.telegraphStartsAt = 0;
+    monster.telegraphEndsAt = 0;
+    monster.slowedUntil = 0;
+    monster.weakenedUntil = 0;
+    monster.stunnedUntil = 0;
+    monster.bossPhase = 0;
     monster.attackDirection = "down";
     monster.animationState = "idle";
   }
@@ -4392,6 +4537,16 @@ function resetGameplayProgress() {
   state.inventory.clear();
   state.skillCooldowns.strikeReadyAt = 0;
   state.skillCooldowns.purifyReadyAt = 0;
+  state.skillReadySoundArmed.strike = false;
+  state.skillReadySoundArmed.purify = false;
+  state.stamina = STAMINA_MAX;
+  state.dodgeReadyAt = 0;
+  state.dodgeEndsAt = 0;
+  state.strikeChargeStartedAt = 0;
+  state.comboStep = 0;
+  state.comboExpiresAt = 0;
+  state.weakenedUntil = 0;
+  state.enemyProjectiles = [];
   state.invulnerableUntil = 0;
   state.activeSkillEffect = null;
   state.endingId = null;
@@ -4420,7 +4575,27 @@ function updateProgressHud() {
   saDoaFill.style.width = `${saDoaPercent}%`;
   saDoaValue.textContent = `${state.saDoa}%`;
   inventoryValue.textContent = `${state.inventory.size} / ${RELIC_TARGET_COUNT}`;
+  updateCombatStatus();
   updateCorruptionEffects();
+}
+
+function updateCombatStatus() {
+  if (!combatStatus) {
+    return;
+  }
+  const dodgeReady = state.lastTimestamp >= state.dodgeReadyAt;
+  const strikeReady = state.lastTimestamp >= state.skillCooldowns.strikeReadyAt;
+  const purifyReady = state.lastTimestamp >= state.skillCooldowns.purifyReadyAt;
+  if (state.skillReadySoundArmed.strike && strikeReady) {
+    state.skillReadySoundArmed.strike = false;
+    playUiSound(uiSounds.pixelClick);
+  }
+  if (state.skillReadySoundArmed.purify && purifyReady) {
+    state.skillReadySoundArmed.purify = false;
+    playUiSound(uiSounds.pixelClick);
+  }
+  const charged = state.strikeChargeStartedAt ? " • Đang tích lực" : "";
+  combatStatus.textContent = `Thể lực ${Math.round(state.stamina)}/${STAMINA_MAX} • Shift ${dodgeReady ? "sẵn sàng" : "hồi"} • J ${strikeReady ? "sẵn sàng" : "hồi"} • K ${purifyReady ? "sẵn sàng" : "hồi"}${charged}`;
 }
 
 function currentLevel() {
@@ -4468,6 +4643,14 @@ function createDebugSnapshot() {
           currentTime: Number(sound.currentTime.toFixed(2)),
         }])
       ),
+    },
+    combat: {
+      stamina: Number(state.stamina.toFixed(1)),
+      dodgeReadyAt: state.dodgeReadyAt,
+      strikeChargeStartedAt: state.strikeChargeStartedAt,
+      comboStep: state.comboStep,
+      difficulty: state.difficulty,
+      projectileCount: state.enemyProjectiles.length,
     },
   };
 }
@@ -4518,6 +4701,14 @@ function installDebugTools() {
     },
     damagePlayer(amount = PLAYER_MAX_HEALTH, sourceName = "debug") {
       damagePlayer(amount, sourceName);
+      return createDebugSnapshot();
+    },
+    dodge() {
+      useDodge();
+      return createDebugSnapshot();
+    },
+    strike(charged = false) {
+      useStrikeSkill(charged);
       return createDebugSnapshot();
     },
   };
@@ -4607,6 +4798,9 @@ function frame(timestamp) {
   if (state.mode === "playing") {
     updatePlayer(deltaSeconds);
     updateMonsters(deltaSeconds);
+    updateEnemyProjectiles(deltaSeconds);
+    updateWorldDrops();
+    updateLevelHazards();
     updateInteractionPrompt();
   }
 
@@ -5106,6 +5300,7 @@ function loadLevel(levelId, spawnOverride, options = {}) {
   state.currentLevelId = levelId;
   state.activeInteractionId = null;
   state.pendingEnding = false;
+  state.enemyProjectiles = [];
 
   const level = currentLevel();
   const spawn = cloneSpawnPoint(spawnOverride ?? level.spawn) ?? level.spawn;
@@ -5725,30 +5920,59 @@ function drawEndingSceneFigures(context, width, height, figures) {
   }
 }
 
-function useStrikeSkill() {
+function startStrikeCharge() {
+  if (state.lastTimestamp < state.skillCooldowns.strikeReadyAt || state.strikeChargeStartedAt) {
+    return;
+  }
+
+  state.strikeChargeStartedAt = state.lastTimestamp;
+}
+
+function releaseStrikeCharge() {
+  if (!state.strikeChargeStartedAt) {
+    return;
+  }
+
+  const heldFor = state.lastTimestamp - state.strikeChargeStartedAt;
+  state.strikeChargeStartedAt = 0;
+  useStrikeSkill(heldFor >= CHARGED_STRIKE_THRESHOLD_MS);
+}
+
+function useStrikeSkill(isCharged = false) {
   if (state.lastTimestamp < state.skillCooldowns.strikeReadyAt) {
     return;
   }
 
   state.skillCooldowns.strikeReadyAt = state.lastTimestamp + STRIKE_COOLDOWN_MS;
+  state.skillReadySoundArmed.strike = true;
+  state.comboStep = state.lastTimestamp <= state.comboExpiresAt ? (state.comboStep % 3) + 1 : 1;
+  state.comboExpiresAt = state.lastTimestamp + 700;
+  const strikeDamage = isCharged ? 4 : state.comboStep === 3 ? 2 : 1;
   state.activeSkillEffect = {
-    type: "strike",
+    type: isCharged ? "chargedStrike" : "strike",
     direction: player.direction,
     x: player.x,
     y: player.y,
     startedAt: state.lastTimestamp,
-    endsAt: state.lastTimestamp + PLAYER_ATTACK_ANIMATION_MS,
+    endsAt: state.lastTimestamp + (isCharged ? PLAYER_ATTACK_ANIMATION_MS + 120 : PLAYER_ATTACK_ANIMATION_MS),
   };
 
   let hitMonster = false;
 
   for (const monster of currentLevel().monsters ?? []) {
-    if (monster.defeated || !isTargetInRange(monster, STRIKE_RANGE)) {
+    if (monster.defeated || !isMonsterActive(monster) || !isTargetInRange(monster, STRIKE_RANGE)) {
       continue;
     }
 
     hitMonster = true;
-    damageMonster(monster, 1);
+    damageMonster(monster, strikeDamage, { knockback: isCharged || state.comboStep === 3, stun: isCharged });
+  }
+
+  for (const breakable of currentLevel().breakables ?? []) {
+    if (!breakable.destroyed && isTargetInRange(breakable, STRIKE_RANGE)) {
+      damageBreakable(breakable, isCharged ? 3 : 1);
+      hitMonster = true;
+    }
   }
 
   if (!hitMonster) {
@@ -5768,12 +5992,32 @@ function useStrikeSkill() {
   }
 }
 
+function useDodge() {
+  if (state.lastTimestamp < state.dodgeReadyAt || state.stamina < DODGE_COST) {
+    return;
+  }
+
+  state.stamina -= DODGE_COST;
+  state.dodgeReadyAt = state.lastTimestamp + DODGE_COOLDOWN_MS;
+  state.dodgeEndsAt = state.lastTimestamp + 180;
+  state.invulnerableUntil = Math.max(state.invulnerableUntil, state.dodgeEndsAt);
+  const direction = getDirectionUnit(player.direction);
+  const original = { x: player.x, y: player.y };
+  player.x += direction.x * DODGE_DISTANCE;
+  player.y += direction.y * DODGE_DISTANCE;
+  applyLevelBounds();
+  resolveLevelCollisions("x", player.x - original.x);
+  resolveLevelCollisions("y", player.y - original.y);
+  state.activeSkillEffect = { type: "dodge", x: original.x, y: original.y, direction: player.direction, startedAt: state.lastTimestamp, endsAt: state.dodgeEndsAt };
+}
+
 function usePurifySkill() {
   if (state.lastTimestamp < state.skillCooldowns.purifyReadyAt) {
     return;
   }
 
   state.skillCooldowns.purifyReadyAt = state.lastTimestamp + PURIFY_COOLDOWN_MS;
+  state.skillReadySoundArmed.purify = true;
   state.activeSkillEffect = {
     type: "purify",
     x: player.x,
@@ -5784,7 +6028,7 @@ function usePurifySkill() {
   let affected = false;
 
   for (const monster of currentLevel().monsters ?? []) {
-    if (monster.defeated) {
+    if (monster.defeated || !isMonsterActive(monster)) {
       continue;
     }
 
@@ -5792,7 +6036,9 @@ function usePurifySkill() {
 
     if (distance <= PURIFY_RANGE) {
       affected = true;
-      damageMonster(monster, 2);
+      monster.slowedUntil = state.lastTimestamp + 1300;
+      monster.weakenedUntil = state.lastTimestamp + 1800;
+      damageMonster(monster, monster.isBoss ? 3 : 2, { purify: true, stun: !monster.isBoss });
     }
   }
 
@@ -5844,19 +6090,26 @@ function isTargetInRange(target, range) {
 
 function updateMonsters(deltaSeconds) {
   for (const monster of currentLevel().monsters ?? []) {
-    if (monster.defeated) {
+    if (monster.defeated || !isMonsterActive(monster)) {
       continue;
     }
 
     const dx = player.x - monster.x;
     const dy = player.y - monster.y;
     const distance = Math.hypot(dx, dy);
+    const settings = getDifficultySettings();
+    const isStunned = state.lastTimestamp < (monster.stunnedUntil ?? 0);
     let targetX = monster.homeX + Math.cos(state.lastTimestamp * 0.001 + monster.phase) * (monster.patrolRadius ?? 18);
     let targetY = monster.homeY + Math.sin(state.lastTimestamp * 0.0012 + monster.phase) * (monster.patrolRadius ?? 18);
 
     if (distance < (monster.aggroRadius ?? 120)) {
-      targetX = player.x;
-      targetY = player.y;
+      if (monster.archetype === "ranged" && distance < 104) {
+        targetX = monster.x - dx;
+        targetY = monster.y - dy;
+      } else if (monster.archetype !== "support") {
+        targetX = player.x;
+        targetY = player.y;
+      }
     }
 
     const moveX = targetX - monster.x;
@@ -5865,8 +6118,9 @@ function updateMonsters(deltaSeconds) {
     const isAttacking = state.lastTimestamp < (monster.attackEndsAt ?? 0);
     monster.animationState = isAttacking ? "attack" : moveLength > 1 ? "run" : "idle";
 
-    if (!isAttacking && moveLength > 1) {
-      const step = Math.min(moveLength, MONSTER_SPEED * deltaSeconds);
+    if (!isAttacking && !isStunned && moveLength > 1) {
+      const slowMultiplier = state.lastTimestamp < (monster.slowedUntil ?? 0) ? 0.58 : 1;
+      const step = Math.min(moveLength, MONSTER_SPEED * settings.enemySpeed * (monster.phaseSpeedMultiplier ?? 1) * slowMultiplier * deltaSeconds);
       monster.x += (moveX / moveLength) * step;
       monster.y += (moveY / moveLength) * step;
     }
@@ -5874,10 +6128,10 @@ function updateMonsters(deltaSeconds) {
     monster.x = clamp(monster.x, currentLevel().bounds.minX, currentLevel().bounds.maxX);
     monster.y = clamp(monster.y, currentLevel().bounds.minY, currentLevel().bounds.maxY);
 
-    const telegraphRange = MONSTER_TOUCH_RANGE + (monster.isBoss ? 48 : 30);
+    const telegraphRange = monster.archetype === "ranged" ? 170 : MONSTER_TOUCH_RANGE + (monster.isBoss ? 48 : 30);
     const canStartAttack = state.lastTimestamp - monster.lastContactAt >= MONSTER_CONTACT_DAMAGE_COOLDOWN_MS;
 
-    if (!monster.telegraphEndsAt && distance <= telegraphRange && canStartAttack) {
+    if (!isStunned && !monster.telegraphEndsAt && distance <= telegraphRange && canStartAttack) {
       monster.telegraphStartsAt = state.lastTimestamp;
       monster.telegraphEndsAt = state.lastTimestamp + (monster.isBoss ? 520 : 340);
       monster.attackDirection = getDirectionFromVector(player.x - monster.x, player.y - monster.y);
@@ -5892,18 +6146,148 @@ function updateMonsters(deltaSeconds) {
       monster.telegraphEndsAt = 0;
       monster.animationState = "attack";
 
-      if (distance <= MONSTER_TOUCH_RANGE + 10) {
-        damagePlayer(monster.damage ?? 1, monster.name);
+      if (monster.archetype === "ranged") {
+        spawnEnemyProjectile(monster);
+      } else if (monster.archetype === "support") {
+        applySupportPulse(monster);
+      } else if (distance <= MONSTER_TOUCH_RANGE + 10) {
+        damagePlayer(Math.max(1, Math.round((monster.damage ?? 1) * settings.enemyDamage)), monster.name);
       }
     }
   }
 }
 
-function damageMonster(monster, amount) {
+function spawnEnemyProjectile(monster) {
+  const dx = player.x - monster.x;
+  const dy = player.y - monster.y;
+  const length = Math.max(1, Math.hypot(dx, dy));
+  state.enemyProjectiles.push({
+    x: monster.x,
+    y: monster.y - 4,
+    velocityX: (dx / length) * PROJECTILE_SPEED,
+    velocityY: (dy / length) * PROJECTILE_SPEED,
+    expiresAt: state.lastTimestamp + 1800,
+    damage: Math.max(1, Math.round((monster.damage ?? 1) * getDifficultySettings().enemyDamage)),
+    sourceName: monster.name,
+  });
+}
+
+function applySupportPulse(monster) {
+  monster.supportPulseUntil = state.lastTimestamp + 340;
+  for (const ally of currentLevel().monsters ?? []) {
+    if (ally.defeated || ally === monster || Math.hypot(ally.x - monster.x, ally.y - monster.y) > 92) {
+      continue;
+    }
+    ally.health = Math.min(ally.runtimeMaxHealth ?? ally.maxHealth, ally.health + 1);
+    ally.supportBuffUntil = state.lastTimestamp + 1400;
+  }
+  if (Math.hypot(player.x - monster.x, player.y - monster.y) < 116) {
+    state.weakenedUntil = state.lastTimestamp + 1200;
+    showStoryToast("Lời tụng niệm làm ý chí của bạn chao đảo.");
+  }
+}
+
+function updateEnemyProjectiles(deltaSeconds) {
+  for (let index = state.enemyProjectiles.length - 1; index >= 0; index -= 1) {
+    const projectile = state.enemyProjectiles[index];
+    projectile.x += projectile.velocityX * deltaSeconds;
+    projectile.y += projectile.velocityY * deltaSeconds;
+
+    if (state.lastTimestamp >= projectile.expiresAt || !isWorldPointInBounds(projectile.x, projectile.y)) {
+      state.enemyProjectiles.splice(index, 1);
+      continue;
+    }
+
+    if (Math.hypot(player.x - projectile.x, player.y - projectile.y) < 14) {
+      damagePlayer(projectile.damage, projectile.sourceName);
+      state.enemyProjectiles.splice(index, 1);
+    }
+  }
+}
+
+function isWorldPointInBounds(x, y) {
+  const bounds = currentLevel().bounds;
+  return x >= bounds.minX && x <= bounds.maxX && y >= bounds.minY && y <= bounds.maxY;
+}
+
+function spawnMonsterDrop(monster) {
+  const guaranteed = monster.isBoss;
+  if (!guaranteed && Math.random() > getDifficultySettings().dropChance) {
+    return;
+  }
+  currentLevel().drops.push({
+    x: monster.x,
+    y: monster.y,
+    type: monster.isBoss || state.health < PLAYER_MAX_HEALTH * 0.55 ? "health" : "stamina",
+    expiresAt: state.lastTimestamp + 12000,
+  });
+}
+
+function updateWorldDrops() {
+  const drops = currentLevel().drops ?? [];
+  for (let index = drops.length - 1; index >= 0; index -= 1) {
+    const drop = drops[index];
+    if (state.lastTimestamp >= drop.expiresAt) {
+      drops.splice(index, 1);
+      continue;
+    }
+    if (Math.hypot(player.x - drop.x, player.y - drop.y) < 20) {
+      if (drop.type === "health") {
+        state.health = Math.min(PLAYER_MAX_HEALTH, state.health + 6);
+      } else {
+        state.stamina = Math.min(STAMINA_MAX, state.stamina + 34);
+      }
+      drops.splice(index, 1);
+      showStoryToast(drop.type === "health" ? "Nhặt được hồi phục sinh lực." : "Nhặt được năng lượng chiến đấu.");
+    }
+  }
+}
+
+function updateLevelHazards() {
+  for (const trap of currentLevel().traps ?? []) {
+    if (state.lastTimestamp < trap.cooldownUntil || Math.hypot(player.x - trap.x, player.y - trap.y) > trap.radius) {
+      continue;
+    }
+    trap.cooldownUntil = state.lastTimestamp + 1100;
+    damagePlayer(1, "bẫy môi trường");
+  }
+}
+
+function damageBreakable(breakable, amount) {
+  breakable.health = Math.max(0, breakable.health - amount);
+  if (breakable.health > 0) {
+    return;
+  }
+  breakable.destroyed = true;
+  currentLevel().drops.push({ x: breakable.x, y: breakable.y, type: "stamina", expiresAt: state.lastTimestamp + 12000 });
+  showStoryToast("Chướng ngại đã vỡ, để lại năng lượng chiến đấu.");
+}
+
+function damageMonster(monster, amount, effects = {}) {
+  if (monster.weakenedUntil > state.lastTimestamp && !effects.purify) {
+    amount += 1;
+  }
   monster.health = Math.max(0, monster.health - amount);
   monster.hitFlashUntil = state.lastTimestamp + 180;
   state.cameraShakeUntil = state.lastTimestamp + (monster.isBoss ? 150 : 90);
   state.cameraShakeStrength = monster.isBoss ? 4 : 2;
+
+  if (effects.stun) {
+    monster.stunnedUntil = state.lastTimestamp + (monster.isBoss ? 180 : 520);
+  }
+
+  if (effects.knockback) {
+    const direction = getDirectionUnit(getDirectionFromVector(monster.x - player.x, monster.y - player.y));
+    monster.x += direction.x * (monster.isBoss ? 12 : 24);
+    monster.y += direction.y * (monster.isBoss ? 12 : 24);
+  }
+
+  if (monster.isBoss && !monster.bossPhase && monster.health > 0 && monster.health <= (monster.runtimeMaxHealth ?? monster.maxHealth) / 2) {
+    monster.bossPhase = 2;
+    monster.damage += 1;
+    monster.phaseSpeedMultiplier = 1.25;
+    showStoryToast(`${monster.name} bước vào giai đoạn hai!`);
+  }
 
   if (monster.health > 0) {
     return;
@@ -5911,6 +6295,8 @@ function damageMonster(monster, amount) {
 
   monster.defeated = true;
   saveGameProgress();
+
+  spawnMonsterDrop(monster);
 
   if (monster.id === "southern-tyrant") {
     state.quests.zone3BossDefeated = true;
@@ -5963,6 +6349,10 @@ function damagePlayer(amount, sourceName = "bóng tối") {
 }
 
 function updatePlayer(deltaSeconds) {
+  if (state.lastTimestamp >= state.dodgeEndsAt) {
+    state.stamina = Math.min(STAMINA_MAX, state.stamina + STAMINA_REGEN_PER_SECOND * deltaSeconds);
+  }
+
   let moveX = 0;
   let moveY = 0;
 
@@ -5992,8 +6382,9 @@ function updatePlayer(deltaSeconds) {
       player.direction = moveY > 0 ? "down" : "up";
     }
 
-    const deltaX = moveX * PLAYER_SPEED * deltaSeconds;
-    const deltaY = moveY * PLAYER_SPEED * deltaSeconds;
+    const weakenedMultiplier = state.lastTimestamp < state.weakenedUntil ? 0.76 : 1;
+    const deltaX = moveX * PLAYER_SPEED * weakenedMultiplier * deltaSeconds;
+    const deltaY = moveY * PLAYER_SPEED * weakenedMultiplier * deltaSeconds;
 
     player.x += deltaX;
     applyLevelBounds();
@@ -6162,9 +6553,9 @@ function updateContextualControls(context) {
 
   const hints = {
     interact: "E tương tác • J/K kỹ năng • B sách",
-    combat: "J tấn công • K thanh tẩy • Di chuyển để né",
+    combat: "J tấn công/tích lực • Shift né • K thanh tẩy",
     exit: "Theo lối ra • E khi có điểm tương tác",
-    move: "WASD di chuyển • E tương tác • J/K kỹ năng • B sách",
+    move: "WASD di chuyển • Shift né • J/K kỹ năng • B sách",
   };
   actionHint.textContent = hints[context] ?? hints.move;
 }
@@ -6355,7 +6746,7 @@ function createInteractableNavigationTarget(item, label, color = "#f3d777") {
 }
 
 function createMonsterNavigationTarget(monster, label, color = "#e96558") {
-  if (!monster || monster.defeated) {
+  if (!monster || monster.defeated || !isMonsterActive(monster)) {
     return null;
   }
 
@@ -6853,7 +7244,7 @@ function getNearestMonster(maxDistance = Infinity) {
   let nearestDistance = maxDistance;
 
   for (const monster of currentLevel().monsters ?? []) {
-    if (monster.defeated) {
+    if (monster.defeated || !isMonsterActive(monster)) {
       continue;
     }
 
@@ -7156,7 +7547,7 @@ function drawMiniMap() {
   }
 
   for (const monster of level.monsters ?? []) {
-    if (!monster.defeated) {
+    if (!monster.defeated && isMonsterActive(monster)) {
       drawPoint(monster.x, monster.y, monster.isBoss ? "#f1b452" : "#e96558", monster.isBoss ? 4 : 2);
     }
   }
@@ -9450,14 +9841,64 @@ function drawInteractables() {
   }
 
   for (const monster of currentLevel().monsters ?? []) {
-    if (monster.defeated) {
+    if (monster.defeated || !isMonsterActive(monster)) {
       continue;
     }
 
     drawMonster(monster);
   }
 
+  drawWorldDrops();
+  drawLevelHazards();
+  drawBreakables();
+  drawEnemyProjectiles();
+
   ctx.restore();
+}
+
+function drawWorldDrops() {
+  for (const drop of currentLevel().drops ?? []) {
+    const bob = Math.sin((state.lastTimestamp + drop.x * 13) / 180) * 2;
+    ctx.fillStyle = drop.type === "health" ? "#ef7c6d" : "#8fd8d0";
+    ctx.fillRect(drop.x - 4, drop.y - 8 + bob, 8, 8);
+    ctx.fillStyle = "rgba(255,255,235,0.78)";
+    ctx.fillRect(drop.x - 2, drop.y - 10 + bob, 4, 3);
+  }
+}
+
+function drawLevelHazards() {
+  for (const trap of currentLevel().traps ?? []) {
+    const active = state.lastTimestamp < trap.cooldownUntil + 180;
+    ctx.save();
+    ctx.globalAlpha = active ? 0.78 : 0.4;
+    ctx.strokeStyle = active ? "#ff775f" : "#b75a51";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(trap.x, trap.y, trap.radius, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+
+function drawBreakables() {
+  for (const breakable of currentLevel().breakables ?? []) {
+    if (breakable.destroyed) {
+      continue;
+    }
+    ctx.fillStyle = "#76523b";
+    ctx.fillRect(breakable.x - breakable.width / 2, breakable.y - breakable.height / 2, breakable.width, breakable.height);
+    ctx.strokeStyle = "#cf9f62";
+    ctx.strokeRect(breakable.x - breakable.width / 2 + 1, breakable.y - breakable.height / 2 + 1, breakable.width - 2, breakable.height - 2);
+  }
+}
+
+function drawEnemyProjectiles() {
+  for (const projectile of state.enemyProjectiles) {
+    ctx.fillStyle = "#d9e9ff";
+    ctx.fillRect(projectile.x - 3, projectile.y - 3, 6, 6);
+    ctx.fillStyle = "#6b85d5";
+    ctx.fillRect(projectile.x - 1, projectile.y - 5, 2, 10);
+  }
 }
 
 function shouldDrawInteractable(item) {
@@ -9879,6 +10320,11 @@ function drawMonster(monster) {
     const monsterX = monster.x + attackOffset.x;
     const monsterY = monster.y + attackOffset.y;
 
+    if (drawArchetypeMonster(monster, palette, monsterX, monsterY)) {
+      drawMonsterHealthBar(monster);
+      return;
+    }
+
     ctx.fillStyle = palette.body;
     ctx.fillRect(monsterX - 8, monsterY - 10, 16, 18);
     ctx.fillStyle = palette.detail;
@@ -9904,6 +10350,60 @@ function drawMonster(monster) {
   drawMonsterHealthBar(monster);
 }
 
+function drawArchetypeMonster(monster, palette, x, y) {
+  if (!monster.archetype) {
+    return false;
+  }
+
+  ctx.save();
+  if (monster.elite) {
+    ctx.fillStyle = "rgba(245, 195, 95, 0.24)";
+    ctx.beginPath();
+    ctx.arc(x, y, 19, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  if (monster.archetype === "ranged") {
+    ctx.fillStyle = palette.body;
+    ctx.fillRect(x - 5, y - 12, 10, 20);
+    ctx.fillStyle = palette.detail;
+    ctx.fillRect(x - 4, y - 17, 8, 6);
+    ctx.fillStyle = "#c8d8ef";
+    ctx.fillRect(x + 4, y - 5, 12, 3);
+    ctx.fillRect(x + 13, y - 7, 3, 7);
+  } else if (monster.archetype === "support") {
+    ctx.fillStyle = palette.body;
+    ctx.beginPath();
+    ctx.moveTo(x, y - 17);
+    ctx.lineTo(x - 12, y + 12);
+    ctx.lineTo(x + 12, y + 12);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = palette.detail;
+    ctx.fillRect(x - 4, y - 18, 8, 7);
+    ctx.fillStyle = "#d69ee8";
+    ctx.fillRect(x + 10, y - 16, 3, 24);
+    ctx.fillRect(x + 7, y - 19, 9, 4);
+  } else {
+    ctx.fillStyle = palette.body;
+    ctx.fillRect(x - 10, y - 10, 20, 20);
+    ctx.fillStyle = palette.detail;
+    ctx.fillRect(x - 7, y - 16, 14, 7);
+    ctx.fillStyle = palette.crest;
+    ctx.fillRect(x - 14, y - 5, 4, 12);
+    ctx.fillRect(x + 10, y - 5, 4, 12);
+  }
+
+  ctx.fillStyle = palette.eye;
+  ctx.fillRect(x - 2, y - 12, 4, 2);
+  if (monster.elite) {
+    ctx.fillStyle = "#f5cf73";
+    ctx.fillRect(x - 5, y - 23, 10, 3);
+  }
+  ctx.restore();
+  return true;
+}
+
 function drawMonsterTelegraph(monster) {
   const duration = Math.max(1, monster.telegraphEndsAt - monster.telegraphStartsAt);
   const progress = clamp((state.lastTimestamp - monster.telegraphStartsAt) / duration, 0, 1);
@@ -9923,6 +10423,10 @@ function drawMonsterTelegraph(monster) {
 }
 
 function drawMonsterSprite(monster, hitFlash) {
+  if (monster.archetype) {
+    return false;
+  }
+
   const config = MONSTER_SPRITE_CONFIG[monster.variant];
   const spriteSet = monsterSprites[monster.variant];
   const isAttacking = state.lastTimestamp < (monster.attackEndsAt ?? 0);
@@ -10002,7 +10506,7 @@ function getMonsterPalette(variant, hitFlash) {
 
 function drawMonsterHealthBar(monster) {
   const width = monster.isBoss ? 34 : 18;
-  const ratio = monster.health / monster.maxHealth;
+  const ratio = monster.health / (monster.runtimeMaxHealth ?? monster.maxHealth);
   const y = monster.y - (monster.isBoss ? 26 : 18);
   const height = monster.isBoss ? 5 : 4;
 
@@ -10439,10 +10943,17 @@ function drawSkillEffect() {
   ctx.save();
   applyCameraTransform();
 
-  if (state.activeSkillEffect.type === "strike") {
+  if (state.activeSkillEffect.type === "strike" || state.activeSkillEffect.type === "chargedStrike") {
     const { x, y, direction } = state.activeSkillEffect;
     const progress = getTimedProgress(state.activeSkillEffect.startedAt, state.activeSkillEffect.endsAt);
-    drawAttackSlash(x, y, direction, progress, { scale: 0.84, spriteStyle: "sword" });
+    drawAttackSlash(x, y, direction, progress, { scale: state.activeSkillEffect.type === "chargedStrike" ? 1.28 : 0.84, spriteStyle: "sword" });
+  } else if (state.activeSkillEffect.type === "dodge") {
+    const progress = getTimedProgress(state.activeSkillEffect.startedAt, state.activeSkillEffect.endsAt);
+    ctx.strokeStyle = "rgba(183, 229, 255, 0.82)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(state.activeSkillEffect.x, state.activeSkillEffect.y, 14 + progress * 20, 0, Math.PI * 2);
+    ctx.stroke();
   } else {
     const radius = 22 + Math.sin(state.lastTimestamp * 0.04) * 4;
     ctx.beginPath();

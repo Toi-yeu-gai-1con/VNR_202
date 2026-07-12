@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20260712-core-loop-v1">
+  <link rel="stylesheet" href="styles.css?v=20260712-combat-depth-v3">
 </head>
 <body>
   <div class="page-shell">
@@ -56,6 +56,7 @@
             </div>
             <div class="action-footer">
               <p id="action-hint" class="action-hint">E tương tác | J/K | B sách</p>
+              <p id="combat-status" class="combat-status">Thể lực 100 • J sẵn sàng • K sẵn sàng</p>
               <div id="interaction-prompt" class="hud-chip prompt hidden">Nhấn E để quan sát</div>
             </div>
           </div>
@@ -92,6 +93,11 @@
             <p>Giữ thanh Tha hóa ở mức thấp để tránh Bad Ending</p>
           </div>
           <p class="start-controls">WASD / Mũi tên di chuyển | E / Phím cách tương tác | J tấn công | K thanh tẩy | B mở sách</p>
+          <div id="difficulty-controls" class="difficulty-controls" role="group" aria-label="Độ khó">
+            <button class="pixel-button difficulty-button" type="button" data-difficulty="story">Cốt truyện</button>
+            <button class="pixel-button difficulty-button is-selected" type="button" data-difficulty="normal">Tiêu chuẩn</button>
+            <button class="pixel-button difficulty-button" type="button" data-difficulty="challenge">Thử thách</button>
+          </div>
           <button id="start-button" class="pixel-button hero-button" type="button">Bắt đầu hành trình</button>
           <button id="continue-button" class="pixel-button hero-button hidden" type="button">Tiếp tục hành trình</button>
         </div>
@@ -202,6 +208,6 @@
     </main>
   </div>
 
-  <script type="module" src="game.js?v=20260712-core-loop-v1"></script>
+  <script type="module" src="game.js?v=20260712-combat-depth-v3"></script>
 </body>
 </html>
