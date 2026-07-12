@@ -1299,7 +1299,7 @@ function loadAmbienceSounds() {
 function loadMusicSounds() {
   return {
     portMaze: loadSound("assets/audio/unforgiving_himalayas_looping.ogg", 0.24, { loop: true }),
-    badEnding: loadSound("assets/audio/The Caretaker - Its just a burning memory (2016).mp3", 0.28, { loop: true }),
+    badEnding: loadSound("assets/audio/Bad Ending - Mob of The Dead - Soundtrack.mp3", 0.28, { loop: true }),
   };
 }
 
