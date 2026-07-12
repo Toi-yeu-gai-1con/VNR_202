@@ -15,6 +15,8 @@ assert.doesNotMatch(game, /function usePurifySkill\(/, "The former purify skill 
 assert.match(game, /assets\/monsters\/pixellab\/shadow-raider-south\.png/, "PixelLab melee art should be loaded.");
 assert.match(game, /assets\/monsters\/pixellab\/corrupted-chanter-south\.png/, "PixelLab support art should be loaded.");
 assert.match(game, /assets\/monsters\/pixellab\/corrupted-warden-south\.png/, "PixelLab boss art should be loaded.");
+assert.match(game, /assets\/monsters\/military-soldier\/soldier-walk-down\.png/, "The rifleman should load a free four-direction walk sheet.");
+assert.match(game, /archetype === "ranged"[\s\S]{0,120}"rifleman"/, "Ranged enemies should use the military soldier art.");
 assert.match(game, /drawKenneyRoguelikeSprite\(sprite/, "Breakables should render from proper sprite art.");
 assert.match(html, /K phản đòn/, "Player-facing controls should describe parry.");
 assert.match(sources, /PixelLab/, "Generated art should be documented.");

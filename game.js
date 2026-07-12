@@ -382,6 +382,19 @@ const HOUSE_INTERIOR_A_SPRITES = {
   doorPanel: { x: 160, y: 192, width: 32, height: 32, shadowWidth: 18, shadowHeight: 5, shadowOffsetY: 28 },
 };
 const MONSTER_SPRITE_CONFIG = {
+  rifleman: {
+    directional: true,
+    directionalAnimation: true,
+    drawWidth: 38,
+    drawHeight: 38,
+    drawOffsetX: -19,
+    drawOffsetY: -25,
+    shadowWidth: 20,
+    animations: {
+      idle: { frameWidth: 16, frameHeight: 16, frameCount: 4, frameDuration: 180 },
+      run: { frameWidth: 16, frameHeight: 16, frameCount: 7, frameDuration: 110 },
+    },
+  },
   pixellabRaider: {
     directional: true,
     drawWidth: 40,
@@ -1751,6 +1764,24 @@ function loadEnvironmentSprites() {
 
 function loadMonsterSprites() {
   return {
+    rifleman: {
+      south: {
+        idle: loadSprite("assets/monsters/military-soldier/soldier-idle.png"),
+        run: loadSprite("assets/monsters/military-soldier/soldier-walk-down.png"),
+      },
+      north: {
+        idle: loadSprite("assets/monsters/military-soldier/soldier-idle.png"),
+        run: loadSprite("assets/monsters/military-soldier/soldier-walk-up.png"),
+      },
+      west: {
+        idle: loadSprite("assets/monsters/military-soldier/soldier-idle.png"),
+        run: loadSprite("assets/monsters/military-soldier/soldier-walk-left.png"),
+      },
+      east: {
+        idle: loadSprite("assets/monsters/military-soldier/soldier-idle.png"),
+        run: loadSprite("assets/monsters/military-soldier/soldier-walk-right.png"),
+      },
+    },
     pixellabRaider: {
       south: loadSprite("assets/monsters/pixellab/shadow-raider-south.png"),
       east: loadSprite("assets/monsters/pixellab/shadow-raider-east.png"),
@@ -10510,8 +10541,11 @@ function drawMonsterSprite(monster, hitFlash) {
   const isAttacking = state.lastTimestamp < (monster.attackEndsAt ?? 0);
   const animationKey = monster.animationState === "run" || isAttacking ? "run" : "idle";
   const animation = config?.animations?.[animationKey] ?? config?.animations?.idle;
+  const direction = getMonsterSpriteDirection(monster);
   const sprite = config?.directional
-    ? spriteSet?.[getMonsterSpriteDirection(monster)]
+    ? config.directionalAnimation
+      ? spriteSet?.[direction]?.[animationKey]
+      : spriteSet?.[direction]
     : spriteSet?.[animationKey] ?? spriteSet?.idle;
 
   if (!config || !animation || !canDrawSprite(sprite)) {
@@ -10557,6 +10591,9 @@ function getMonsterArtKey(monster) {
   }
   if (monster.archetype === "support") {
     return "pixellabChanter";
+  }
+  if (monster.archetype === "ranged") {
+    return "rifleman";
   }
   return monster.variant;
 }

@@ -38,6 +38,9 @@ This project uses a small subset of free game assets:
 - PixelLab generated character art
   - Used for the melee raider, corrupted chanter, and boss warden enemy sprites in `assets/monsters/pixellab/`.
   - Generated for this project through the configured PixelLab account; not redistributed as a third-party asset pack.
+- Military Character Pack by DravnirCreates: https://dravnircreates.itch.io/military-character-pack
+  - License: CC BY 4.0; character art by DravnirCreates. The game crops and animates the supplied soldier walk sheets for ranged enemies.
+  - Used for `assets/monsters/military-soldier/`.
 
 ## Music
 
