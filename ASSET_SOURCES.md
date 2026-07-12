@@ -35,6 +35,9 @@ This project uses a small subset of free game assets:
   - Used for village cart props.
 - `assets/effects/petal-pink.png`
   - Created for this project.
+- PixelLab generated character art
+  - Used for the melee raider, corrupted chanter, and boss warden enemy sprites in `assets/monsters/pixellab/`.
+  - Generated for this project through the configured PixelLab account; not redistributed as a third-party asset pack.
 
 ## Music
 

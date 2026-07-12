@@ -122,9 +122,9 @@ const CORRUPTION_GLITCH_THRESHOLD = 50;
 const CORRUPTION_WARNING_MS = 2600;
 const DEATH_SA_DOA_PENALTY = 12;
 const STRIKE_COOLDOWN_MS = 420;
-const PURIFY_COOLDOWN_MS = 1800;
+const PARRY_COOLDOWN_MS = 760;
+const PARRY_WINDOW_MS = 260;
 const STRIKE_RANGE = 48;
-const PURIFY_RANGE = 76;
 const MONSTER_SPEED = 38;
 const STAMINA_MAX = 100;
 const STAMINA_REGEN_PER_SECOND = 32;
@@ -382,6 +382,42 @@ const HOUSE_INTERIOR_A_SPRITES = {
   doorPanel: { x: 160, y: 192, width: 32, height: 32, shadowWidth: 18, shadowHeight: 5, shadowOffsetY: 28 },
 };
 const MONSTER_SPRITE_CONFIG = {
+  pixellabRaider: {
+    directional: true,
+    drawWidth: 40,
+    drawHeight: 40,
+    drawOffsetX: -20,
+    drawOffsetY: -27,
+    shadowWidth: 20,
+    animations: {
+      idle: { frameWidth: 68, frameHeight: 68, frameCount: 1, frameDuration: 180 },
+      run: { frameWidth: 68, frameHeight: 68, frameCount: 1, frameDuration: 110 },
+    },
+  },
+  pixellabChanter: {
+    directional: true,
+    drawWidth: 40,
+    drawHeight: 40,
+    drawOffsetX: -20,
+    drawOffsetY: -27,
+    shadowWidth: 20,
+    animations: {
+      idle: { frameWidth: 68, frameHeight: 68, frameCount: 1, frameDuration: 180 },
+      run: { frameWidth: 68, frameHeight: 68, frameCount: 1, frameDuration: 110 },
+    },
+  },
+  pixellabWarden: {
+    directional: true,
+    drawWidth: 48,
+    drawHeight: 48,
+    drawOffsetX: -24,
+    drawOffsetY: -34,
+    shadowWidth: 28,
+    animations: {
+      idle: { frameWidth: 68, frameHeight: 68, frameCount: 1, frameDuration: 180 },
+      run: { frameWidth: 68, frameHeight: 68, frameCount: 1, frameDuration: 110 },
+    },
+  },
   wraith: {
     drawWidth: 34,
     drawHeight: 34,
@@ -974,7 +1010,7 @@ function configureOpeningCopy() {
   startQuestion.textContent = "THE CROSSROADS: NHÀ DU HÀNH THỜI GIAN";
   startCopy.textContent =
     "Hãy trở thành một người vô danh du hành về các nhánh thời gian khác nhau, chứng kiến câu chuyện của các thời đại đó để mở ra tương lai thật sự, hoặc vi phạm vào sai lầm và rơi vào cái kết tệ nhất.";
-  startControls.textContent = "WASD di chuyển • E tương tác • J/K kỹ năng • B mở sách";
+  startControls.textContent = "WASD di chuyển • E tương tác • J tấn công • K phản đòn • B mở sách";
 
   const objectiveLabels = [
     "Bước qua 4 nhánh thời gian",
@@ -1023,15 +1059,16 @@ const state = {
   inventory: new Set(),
   skillCooldowns: {
     strikeReadyAt: 0,
-    purifyReadyAt: 0,
+    parryReadyAt: 0,
   },
   skillReadySoundArmed: {
     strike: false,
-    purify: false,
+    parry: false,
   },
   stamina: STAMINA_MAX,
   dodgeReadyAt: 0,
   dodgeEndsAt: 0,
+  parryEndsAt: 0,
   strikeChargeStartedAt: 0,
   comboStep: 0,
   comboExpiresAt: 0,
@@ -1359,7 +1396,7 @@ function advanceTutorial() {
   const steps = [
     "Di chuyển bằng WASD hoặc phím mũi tên. Đi theo mũi tên vàng để tới mục tiêu.",
     "Khi đứng gần nhân vật hoặc vật thể, nhấn E để tương tác. Các điểm có thể tương tác sẽ phát sáng.",
-    "Nhấn J để tấn công và K để thanh tẩy. Quái vật sẽ lóe đỏ trước khi ra đòn, hãy giữ khoảng cách.",
+    "Nhấn J để tấn công. Khi quái lóe đỏ và sắp trúng đòn, nhấn K để phản đòn, làm choáng chúng.",
   ];
 
   state.tutorialStep += 1;
@@ -1596,7 +1633,7 @@ window.addEventListener("keydown", (event) => {
   }
 
   if (state.mode === "playing" && key === "k") {
-    usePurifySkill();
+    useParrySkill();
     return;
   }
 
@@ -1714,6 +1751,24 @@ function loadEnvironmentSprites() {
 
 function loadMonsterSprites() {
   return {
+    pixellabRaider: {
+      south: loadSprite("assets/monsters/pixellab/shadow-raider-south.png"),
+      east: loadSprite("assets/monsters/pixellab/shadow-raider-east.png"),
+      north: loadSprite("assets/monsters/pixellab/shadow-raider-north.png"),
+      west: loadSprite("assets/monsters/pixellab/shadow-raider-west.png"),
+    },
+    pixellabChanter: {
+      south: loadSprite("assets/monsters/pixellab/corrupted-chanter-south.png"),
+      east: loadSprite("assets/monsters/pixellab/corrupted-chanter-east.png"),
+      north: loadSprite("assets/monsters/pixellab/corrupted-chanter-north.png"),
+      west: loadSprite("assets/monsters/pixellab/corrupted-chanter-west.png"),
+    },
+    pixellabWarden: {
+      south: loadSprite("assets/monsters/pixellab/corrupted-warden-south.png"),
+      east: loadSprite("assets/monsters/pixellab/corrupted-warden-east.png"),
+      north: loadSprite("assets/monsters/pixellab/corrupted-warden-north.png"),
+      west: loadSprite("assets/monsters/pixellab/corrupted-warden-west.png"),
+    },
     wraith: {
       idle: loadSprite("assets/monsters/pixel-crawler/skeleton-rogue-idle.png"),
       run: loadSprite("assets/monsters/pixel-crawler/skeleton-rogue-run.png"),
@@ -4536,12 +4591,13 @@ function resetGameplayProgress() {
   state.saDoa = 0;
   state.inventory.clear();
   state.skillCooldowns.strikeReadyAt = 0;
-  state.skillCooldowns.purifyReadyAt = 0;
+  state.skillCooldowns.parryReadyAt = 0;
   state.skillReadySoundArmed.strike = false;
-  state.skillReadySoundArmed.purify = false;
+  state.skillReadySoundArmed.parry = false;
   state.stamina = STAMINA_MAX;
   state.dodgeReadyAt = 0;
   state.dodgeEndsAt = 0;
+  state.parryEndsAt = 0;
   state.strikeChargeStartedAt = 0;
   state.comboStep = 0;
   state.comboExpiresAt = 0;
@@ -4585,17 +4641,18 @@ function updateCombatStatus() {
   }
   const dodgeReady = state.lastTimestamp >= state.dodgeReadyAt;
   const strikeReady = state.lastTimestamp >= state.skillCooldowns.strikeReadyAt;
-  const purifyReady = state.lastTimestamp >= state.skillCooldowns.purifyReadyAt;
+  const parryReady = state.lastTimestamp >= state.skillCooldowns.parryReadyAt;
   if (state.skillReadySoundArmed.strike && strikeReady) {
     state.skillReadySoundArmed.strike = false;
     playUiSound(uiSounds.pixelClick);
   }
-  if (state.skillReadySoundArmed.purify && purifyReady) {
-    state.skillReadySoundArmed.purify = false;
+  if (state.skillReadySoundArmed.parry && parryReady) {
+    state.skillReadySoundArmed.parry = false;
     playUiSound(uiSounds.pixelClick);
   }
   const charged = state.strikeChargeStartedAt ? " • Đang tích lực" : "";
-  combatStatus.textContent = `Thể lực ${Math.round(state.stamina)}/${STAMINA_MAX} • Shift ${dodgeReady ? "sẵn sàng" : "hồi"} • J ${strikeReady ? "sẵn sàng" : "hồi"} • K ${purifyReady ? "sẵn sàng" : "hồi"}${charged}`;
+  const parrying = state.lastTimestamp < state.parryEndsAt ? " • ĐỠ ĐÒN!" : "";
+  combatStatus.textContent = `Thể lực ${Math.round(state.stamina)}/${STAMINA_MAX} • Shift ${dodgeReady ? "sẵn sàng" : "hồi"} • J ${strikeReady ? "sẵn sàng" : "hồi"} • K ${parryReady ? "phản đòn" : "hồi"}${charged}${parrying}`;
 }
 
 function currentLevel() {
@@ -4647,6 +4704,8 @@ function createDebugSnapshot() {
     combat: {
       stamina: Number(state.stamina.toFixed(1)),
       dodgeReadyAt: state.dodgeReadyAt,
+      parryReadyAt: state.skillCooldowns.parryReadyAt,
+      parryEndsAt: state.parryEndsAt,
       strikeChargeStartedAt: state.strikeChargeStartedAt,
       comboStep: state.comboStep,
       difficulty: state.difficulty,
@@ -4705,6 +4764,10 @@ function installDebugTools() {
     },
     dodge() {
       useDodge();
+      return createDebugSnapshot();
+    },
+    parry() {
+      useParrySkill();
       return createDebugSnapshot();
     },
     strike(charged = false) {
@@ -6011,58 +6074,45 @@ function useDodge() {
   state.activeSkillEffect = { type: "dodge", x: original.x, y: original.y, direction: player.direction, startedAt: state.lastTimestamp, endsAt: state.dodgeEndsAt };
 }
 
-function usePurifySkill() {
-  if (state.lastTimestamp < state.skillCooldowns.purifyReadyAt) {
+function useParrySkill() {
+  if (state.lastTimestamp < state.skillCooldowns.parryReadyAt) {
     return;
   }
 
-  state.skillCooldowns.purifyReadyAt = state.lastTimestamp + PURIFY_COOLDOWN_MS;
-  state.skillReadySoundArmed.purify = true;
+  state.skillCooldowns.parryReadyAt = state.lastTimestamp + PARRY_COOLDOWN_MS;
+  state.skillReadySoundArmed.parry = true;
+  state.parryEndsAt = state.lastTimestamp + PARRY_WINDOW_MS;
   state.activeSkillEffect = {
-    type: "purify",
+    type: "parry",
     x: player.x,
     y: player.y,
-    endsAt: state.lastTimestamp + 280,
+    startedAt: state.lastTimestamp,
+    endsAt: state.parryEndsAt,
+  };
+}
+
+function resolveParry(sourceName, sourceMonster = null) {
+  if (state.lastTimestamp >= state.parryEndsAt) {
+    return false;
+  }
+
+  state.parryEndsAt = 0;
+  state.invulnerableUntil = Math.max(state.invulnerableUntil, state.lastTimestamp + 140);
+  state.stamina = Math.min(STAMINA_MAX, state.stamina + 20);
+  state.activeSkillEffect = {
+    type: "parryHit",
+    x: player.x,
+    y: player.y,
+    startedAt: state.lastTimestamp,
+    endsAt: state.lastTimestamp + 260,
   };
 
-  let affected = false;
-
-  for (const monster of currentLevel().monsters ?? []) {
-    if (monster.defeated || !isMonsterActive(monster)) {
-      continue;
-    }
-
-    const distance = Math.hypot(player.x - monster.x, player.y - monster.y);
-
-    if (distance <= PURIFY_RANGE) {
-      affected = true;
-      monster.slowedUntil = state.lastTimestamp + 1300;
-      monster.weakenedUntil = state.lastTimestamp + 1800;
-      damageMonster(monster, monster.isBoss ? 3 : 2, { purify: true, stun: !monster.isBoss });
-    }
+  if (sourceMonster && !sourceMonster.defeated) {
+    damageMonster(sourceMonster, sourceMonster.isBoss ? 2 : 3, { knockback: true, stun: true });
   }
 
-  for (const item of currentLevel().interactables ?? []) {
-    if (
-      item.used ||
-      item.purified ||
-      !["offerBribe", "splitChoice", "fillCorruption", "ideologyTrap"].includes(item.interactionType)
-    ) {
-      continue;
-    }
-
-    const distance = Math.hypot(player.x - item.x, player.y - item.y);
-
-    if (distance <= PURIFY_RANGE) {
-      item.purified = true;
-      affected = true;
-      adjustSaDoa(-8, "Bạn đã thanh tẩy được một mầm Tha hóa.");
-    }
-  }
-
-  if (!affected) {
-    showStoryToast("Quầng thanh tẩy lan ra nhưng chưa chạm tới mục tiêu nào.");
-  }
+  showStoryToast(`Phản đòn ${sourceName} thành công!`);
+  return true;
 }
 
 function isTargetInRange(target, range) {
@@ -6151,7 +6201,7 @@ function updateMonsters(deltaSeconds) {
       } else if (monster.archetype === "support") {
         applySupportPulse(monster);
       } else if (distance <= MONSTER_TOUCH_RANGE + 10) {
-        damagePlayer(Math.max(1, Math.round((monster.damage ?? 1) * settings.enemyDamage)), monster.name);
+        damagePlayer(Math.max(1, Math.round((monster.damage ?? 1) * settings.enemyDamage)), monster.name, monster);
       }
     }
   }
@@ -6169,6 +6219,7 @@ function spawnEnemyProjectile(monster) {
     expiresAt: state.lastTimestamp + 1800,
     damage: Math.max(1, Math.round((monster.damage ?? 1) * getDifficultySettings().enemyDamage)),
     sourceName: monster.name,
+    sourceMonster: monster,
   });
 }
 
@@ -6199,7 +6250,7 @@ function updateEnemyProjectiles(deltaSeconds) {
     }
 
     if (Math.hypot(player.x - projectile.x, player.y - projectile.y) < 14) {
-      damagePlayer(projectile.damage, projectile.sourceName);
+      damagePlayer(projectile.damage, projectile.sourceName, projectile.sourceMonster);
       state.enemyProjectiles.splice(index, 1);
     }
   }
@@ -6264,7 +6315,7 @@ function damageBreakable(breakable, amount) {
 }
 
 function damageMonster(monster, amount, effects = {}) {
-  if (monster.weakenedUntil > state.lastTimestamp && !effects.purify) {
+  if (monster.weakenedUntil > state.lastTimestamp && !effects.ignoreWeakness) {
     amount += 1;
   }
   monster.health = Math.max(0, monster.health - amount);
@@ -6310,7 +6361,11 @@ function damageMonster(monster, amount, effects = {}) {
   showStoryToast(`${monster.name} đã bị đánh bại.`);
 }
 
-function damagePlayer(amount, sourceName = "bóng tối") {
+function damagePlayer(amount, sourceName = "bóng tối", sourceMonster = null) {
+  if (resolveParry(sourceName, sourceMonster)) {
+    return;
+  }
+
   if (state.lastTimestamp < state.invulnerableUntil) {
     return;
   }
@@ -6527,7 +6582,7 @@ function updateInteractionPrompt() {
   const nearbyMonster = getNearestMonster(72);
 
   if (nearbyMonster) {
-    interactionPrompt.textContent = `J tấn công • K thanh tẩy ${nearbyMonster.name}`;
+    interactionPrompt.textContent = `J tấn công • K phản đòn ${nearbyMonster.name}`;
     interactionPrompt.classList.remove("hidden");
     updateContextualControls("combat");
     return;
@@ -6552,10 +6607,10 @@ function updateContextualControls(context) {
   }
 
   const hints = {
-    interact: "E tương tác • J/K kỹ năng • B sách",
-    combat: "J tấn công/tích lực • Shift né • K thanh tẩy",
+    interact: "E tương tác • J tấn công • K phản đòn • B sách",
+    combat: "J tấn công/tích lực • Shift né • K phản đòn",
     exit: "Theo lối ra • E khi có điểm tương tác",
-    move: "WASD di chuyển • Shift né • J/K kỹ năng • B sách",
+    move: "WASD di chuyển • Shift né • J tấn công • K phản đòn • B sách",
   };
   actionHint.textContent = hints[context] ?? hints.move;
 }
@@ -9881,14 +9936,40 @@ function drawLevelHazards() {
 }
 
 function drawBreakables() {
-  for (const breakable of currentLevel().breakables ?? []) {
+  for (const [index, breakable] of (currentLevel().breakables ?? []).entries()) {
     if (breakable.destroyed) {
       continue;
     }
+    drawBreakableSprite(breakable, index);
+  }
+}
+
+function drawBreakableSprite(breakable, index) {
+  const width = Math.max(18, breakable.width + 6);
+  const height = Math.max(18, breakable.height + 6);
+  const left = Math.round(breakable.x - width / 2);
+  const top = Math.round(breakable.y - height / 2);
+  const sprite = index % 3 === 1 ? KENNEY_ROGUELIKE_SPRITES.barrel : KENNEY_ROGUELIKE_SPRITES.crate;
+  const damaged = breakable.health < (breakable.maxHealth ?? 2);
+
+  ctx.fillStyle = "rgba(12, 14, 18, 0.28)";
+  ctx.fillRect(left + 3, top + height - 3, width - 6, 3);
+
+  if (!drawKenneyRoguelikeSprite(sprite, left, top, width, height, { filter: damaged ? "brightness(0.82) saturate(0.76)" : "brightness(1.05) saturate(1.02)" })) {
     ctx.fillStyle = "#76523b";
-    ctx.fillRect(breakable.x - breakable.width / 2, breakable.y - breakable.height / 2, breakable.width, breakable.height);
+    ctx.fillRect(left, top, width, height);
     ctx.strokeStyle = "#cf9f62";
-    ctx.strokeRect(breakable.x - breakable.width / 2 + 1, breakable.y - breakable.height / 2 + 1, breakable.width - 2, breakable.height - 2);
+    ctx.strokeRect(left + 1, top + 1, width - 2, height - 2);
+  }
+
+  if (damaged) {
+    ctx.strokeStyle = "rgba(55, 28, 24, 0.86)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(left + 5, top + 4);
+    ctx.lineTo(left + width / 2, top + height - 5);
+    ctx.lineTo(left + width - 5, top + 6);
+    ctx.stroke();
   }
 }
 
@@ -10423,16 +10504,15 @@ function drawMonsterTelegraph(monster) {
 }
 
 function drawMonsterSprite(monster, hitFlash) {
-  if (monster.archetype) {
-    return false;
-  }
-
-  const config = MONSTER_SPRITE_CONFIG[monster.variant];
-  const spriteSet = monsterSprites[monster.variant];
+  const artKey = getMonsterArtKey(monster);
+  const config = MONSTER_SPRITE_CONFIG[artKey];
+  const spriteSet = monsterSprites[artKey];
   const isAttacking = state.lastTimestamp < (monster.attackEndsAt ?? 0);
   const animationKey = monster.animationState === "run" || isAttacking ? "run" : "idle";
   const animation = config?.animations?.[animationKey] ?? config?.animations?.idle;
-  const sprite = spriteSet?.[animationKey] ?? spriteSet?.idle;
+  const sprite = config?.directional
+    ? spriteSet?.[getMonsterSpriteDirection(monster)]
+    : spriteSet?.[animationKey] ?? spriteSet?.idle;
 
   if (!config || !animation || !canDrawSprite(sprite)) {
     return false;
@@ -10466,6 +10546,24 @@ function drawMonsterSprite(monster, hitFlash) {
   }
 
   return true;
+}
+
+function getMonsterArtKey(monster) {
+  if (monster.isBoss) {
+    return "pixellabWarden";
+  }
+  if (monster.archetype === "melee") {
+    return "pixellabRaider";
+  }
+  if (monster.archetype === "support") {
+    return "pixellabChanter";
+  }
+  return monster.variant;
+}
+
+function getMonsterSpriteDirection(monster) {
+  const direction = monster.attackDirection ?? getDirectionFromVector(player.x - monster.x, player.y - monster.y);
+  return { down: "south", up: "north", left: "west", right: "east" }[direction] ?? "south";
 }
 
 function getMonsterPalette(variant, hitFlash) {
@@ -10954,13 +11052,15 @@ function drawSkillEffect() {
     ctx.beginPath();
     ctx.arc(state.activeSkillEffect.x, state.activeSkillEffect.y, 14 + progress * 20, 0, Math.PI * 2);
     ctx.stroke();
-  } else {
-    const radius = 22 + Math.sin(state.lastTimestamp * 0.04) * 4;
+  } else if (state.activeSkillEffect.type === "parry" || state.activeSkillEffect.type === "parryHit") {
+    const progress = getTimedProgress(state.activeSkillEffect.startedAt, state.activeSkillEffect.endsAt);
+    const success = state.activeSkillEffect.type === "parryHit";
+    const radius = success ? 18 + progress * 32 : 18 + Math.sin(state.lastTimestamp * 0.05) * 3;
     ctx.beginPath();
     ctx.arc(state.activeSkillEffect.x, state.activeSkillEffect.y, radius, 0, Math.PI * 2);
-    ctx.fillStyle = "rgba(200, 244, 190, 0.22)";
+    ctx.fillStyle = success ? "rgba(255, 211, 102, 0.24)" : "rgba(146, 208, 255, 0.18)";
     ctx.fill();
-    ctx.strokeStyle = "rgba(245, 255, 221, 0.75)";
+    ctx.strokeStyle = success ? "rgba(255, 240, 179, 0.92)" : "rgba(194, 235, 255, 0.9)";
     ctx.lineWidth = 3;
     ctx.stroke();
   }
