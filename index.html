@@ -3,11 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <title>Nếu Không Có Đảng - Hành Trình Qua Những Ngã Rẽ Lịch Sử</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=20260712-opening-copy-fix">
 </head>
 <body>
   <div class="page-shell">
@@ -36,7 +39,7 @@
               <div class="hud-chip meter-chip">
                 <span class="status-label">Sinh lực</span>
                 <span class="meter-track hp-meter"><span id="hp-fill" class="meter-fill hp-fill"></span></span>
-                <span id="hp-value" class="meter-value">5 / 5</span>
+                <span id="hp-value" class="meter-value">36 / 36</span>
               </div>
               <div class="hud-chip meter-chip corruption-chip">
                 <span class="status-label">Tha hóa</span>
@@ -76,9 +79,9 @@
           <div class="title-glow"></div>
           <p class="kicker">Trò chơi tương tác lịch sử</p>
           <h1>NẾU KHÔNG CÓ<br>ĐẢNG CỘNG SẢN VIỆT NAM</h1>
-          <p class="start-question">Lịch sử dân tộc sẽ đi về đâu?</p>
+          <p class="start-question">THE CROSSROADS: NHÀ DU HÀNH THỜI GIAN</p>
           <p class="intro-copy">
-            Khám phá 4 khu vực lớn nối với Cánh Cửa Lịch Sử ở trung tâm, thu thập đủ 5 vật phẩm then chốt và giữ thanh Tha hóa ở mức an toàn để mở ra Good Ending thật sự.
+            Hãy trở thành một người vô danh du hành về các nhánh thời gian khác nhau, chứng kiến câu chuyện của các thời đại đó để mở ra tương lai thật sự, hoặc vi phạm vào sai lầm và rơi vào cái kết tệ nhất.
           </p>
           <div class="start-objectives" aria-hidden="true">
             <p>Đi qua 4 khu vực bằng các cổng chuyển cảnh</p>
@@ -92,13 +95,13 @@
 
       <section id="opening-intro" class="overlay intro-overlay hidden" aria-hidden="true" role="dialog" aria-modal="true">
         <div class="intro-card">
-          <p class="intro-kicker">Lời dẫn nhập</p>
+          <p class="intro-kicker">THE CROSSROADS</p>
           <div class="intro-header">
-            <p id="opening-speaker" class="intro-speaker">Người kể sử</p>
+            <p id="opening-speaker" class="intro-speaker">Nhà du hành thời gian</p>
             <p id="opening-progress" class="intro-progress">1 / 4</p>
           </div>
           <p id="opening-text" class="intro-text">
-            Hỡi lữ khách vô danh, trước mặt người là cánh cửa dẫn vào những ngã rẽ lịch sử.
+            Hãy trở thành một người vô danh du hành về các nhánh thời gian khác nhau.
           </p>
           <div class="intro-footer">
             <p class="intro-hint">E / Phím cách để tiếp tục</p>
@@ -121,20 +124,20 @@
         <div class="slide-card">
           <img class="slide-book-art" src="assets/ui/book-open.png" alt="" aria-hidden="true">
           <div id="book-controls" class="book-controls hidden" aria-hidden="true">
-            <button id="story-prev-button" class="pixel-button book-nav-button" type="button">Truoc</button>
+            <button id="story-prev-button" class="pixel-button book-nav-button" type="button">Trước</button>
             <div class="book-progress">
-              <p class="book-progress-label">Chuong da mo</p>
+              <p class="book-progress-label">Chương đã mở</p>
               <p id="book-page-indicator" class="book-page-indicator">1 / 1</p>
             </div>
             <button id="story-next-button" class="pixel-button book-nav-button" type="button">Sau</button>
           </div>
-          <button id="close-slide-button" class="close-button" type="button" aria-label="Dong sach">X</button>
+          <button id="close-slide-button" class="close-button" type="button" aria-label="Đóng sách">X</button>
           <div class="slide-spread">
             <div class="slide-page slide-left">
               <div class="slide-copy">
-                <p id="slide-kicker" class="slide-kicker">Kham pha</p>
-                <h2 id="slide-title">Tieu de</h2>
-                <p id="slide-text" class="slide-text">Noi dung</p>
+                <p id="slide-kicker" class="slide-kicker">Khám phá</p>
+                <h2 id="slide-title">Tiêu đề</h2>
+                <p id="slide-text" class="slide-text">Nội dung</p>
               </div>
             </div>
             <div class="slide-page slide-right">
@@ -142,7 +145,7 @@
                 <div id="slide-image-frame" class="image-frame">
                   <div id="slide-image" class="slide-image" aria-hidden="true"></div>
                 </div>
-                <p id="slide-caption" class="slide-caption">Hinh minh hoa</p>
+                <p id="slide-caption" class="slide-caption">Hình minh họa</p>
                 <div id="slide-gallery" class="slide-gallery hidden" aria-live="polite"></div>
               </div>
             </div>
@@ -152,23 +155,23 @@
 
       <section id="end-overlay" class="overlay end-overlay hidden" aria-hidden="true" role="dialog" aria-modal="true">
         <div class="end-card">
-          <p class="menu-label">Hanh trinh hoan tat</p>
-          <h2 id="end-title">LICH SU DA TRA LOI</h2>
+          <p class="menu-label">Hành trình hoàn tất</p>
+          <h2 id="end-title">LỊCH SỬ ĐÃ TRẢ LỜI</h2>
           <div id="end-art-frame" class="end-art-frame hidden" aria-hidden="true">
             <canvas id="end-art-cinematic" class="end-art-cinematic" aria-hidden="true"></canvas>
             <img id="end-art-image" class="end-art-image" alt="">
             <canvas id="end-art-overlay" class="end-art-overlay" aria-hidden="true"></canvas>
           </div>
           <p id="end-copy" class="end-copy">
-            Ban da di qua 5 nga re de thay rang neu khong co Dang Cong san Viet Nam, dan toc co the chim trong be tac, chia cat va khung hoang. Chinh duong loi dung dan da mo ra con duong doc lap, thong nhat va doi moi.
+            Bạn đã đi qua 5 ngã rẽ để thấy rằng nếu không có Đảng Cộng sản Việt Nam, dân tộc có thể chìm trong bế tắc, chia cắt và khủng hoảng. Chính đường lối đúng đắn đã mở ra con đường độc lập, thống nhất và đổi mới.
           </p>
-          <p id="end-summary" class="end-summary">Thu thap du 5 vat pham va kiem che Tha hoa de di toi ket cuc tot nhat.</p>
-          <button id="return-start-button" class="pixel-button" type="button">Ve man hinh dau</button>
+          <p id="end-summary" class="end-summary">Thu thập đủ 5 vật phẩm và kiềm chế Tha hóa để đi tới kết cục tốt nhất.</p>
+          <button id="return-start-button" class="pixel-button" type="button">Về màn hình đầu</button>
         </div>
       </section>
     </main>
   </div>
 
-  <script type="module" src="game.js"></script>
+  <script type="module" src="game.js?v=20260712-opening-copy-fix"></script>
 </body>
 </html>

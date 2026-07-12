@@ -91,7 +91,7 @@ const PLAYER_SPEED = 92;
 const INTERACTION_RADIUS = 30;
 const STORY_UNLOCK_TOAST_MS = 2800;
 const RELIC_BOOK_OPEN_DELAY_MS = 900;
-const PLAYER_MAX_HEALTH = 5;
+const PLAYER_MAX_HEALTH = 36;
 const SA_DOA_MAX = 100;
 const SA_DOA_BAD_ENDING = 60;
 const STRIKE_COOLDOWN_MS = 420;
@@ -811,20 +811,20 @@ const ENDING_CINEMATIC_DEFINITIONS = {
 
 const OPENING_DIALOGUE = [
   {
-    speaker: "Cảnh 1",
-    text: "Sương mù đang phủ kín những ngã rẽ lịch sử.",
+    speaker: "Nhà du hành thời gian",
+    text: "Hãy trở thành một người vô danh du hành về các nhánh thời gian khác nhau.",
   },
   {
     speaker: "Cảnh 2",
-    text: "Bốn khu vực đang mở ra. Năm tín vật đang chờ được tập hợp.",
+    text: "Hãy chứng kiến câu chuyện của các thời đại đó để mở ra tương lai thật sự.",
   },
   {
     speaker: "Cảnh 3",
-    text: "Mọi lời hứa vinh hoa đều có giá của nó: thanh Tha hóa sẽ dâng lên.",
+    text: "Những lựa chọn đúng sẽ đưa bạn đến cánh cửa của tương lai thật sự.",
   },
   {
     speaker: "Cảnh 4",
-    text: "Nếu giữ vững chính khí, ngươi có thể mở Cánh Cửa Lịch Sử và viết nên Good Ending.",
+    text: "Nhưng nếu vi phạm vào sai lầm, bạn sẽ rơi vào cái kết tệ nhất.",
   },
 ];
 
@@ -846,21 +846,22 @@ function createQuestState() {
 }
 
 function configureOpeningCopy() {
-  startQuestion.textContent = "Nếu lịch sử rẽ sang hướng khác, Việt Nam sẽ về đâu?";
-  startCopy.textContent = "4 khu vực. 5 tín vật. 1 Cánh Cửa Lịch Sử đang chờ được mở.";
+  startQuestion.textContent = "THE CROSSROADS: NHÀ DU HÀNH THỜI GIAN";
+  startCopy.textContent =
+    "Hãy trở thành một người vô danh du hành về các nhánh thời gian khác nhau, chứng kiến câu chuyện của các thời đại đó để mở ra tương lai thật sự, hoặc vi phạm vào sai lầm và rơi vào cái kết tệ nhất.";
   startControls.textContent = "WASD di chuyển • E tương tác • J/K kỹ năng • B mở sách";
 
   const objectiveLabels = [
-    "Tiến qua 4 khu vực",
-    "Tìm đủ 5 tín vật",
-    "Giữ Tha hóa thấp",
+    "Bước qua 4 nhánh thời gian",
+    "Thu thập đủ 5 tín vật",
+    "Tránh sai lầm để không rơi vào Bad Ending",
   ];
 
   startObjectiveItems.forEach((item, index) => {
     item.textContent = objectiveLabels[index] ?? "";
   });
 
-  openingKicker.textContent = "Dẫn nhập";
+  openingKicker.textContent = "THE CROSSROADS";
   openingHint.textContent = "E / Phím cách để tiếp tục";
 }
 
@@ -1895,7 +1896,7 @@ function createVillageLevel() {
     monsters: [
       {
         id: "village-wraith",
-        name: "Bóng đói khát",
+        name: "Quái vật đa chiều",
         variant: "wraith",
         x: 726,
         y: 380,
@@ -2201,7 +2202,7 @@ function createCrossroadsLevel() {
     monsters: [
       {
         id: "bridge-devourer",
-        name: "Thú nuốt ranh giới",
+        name: "Quái vật đa chiều",
         variant: "devourer",
         x: 286,
         y: 354,
@@ -2291,7 +2292,7 @@ function createSpringLevel() {
     monsters: [
       {
         id: "future-blight",
-        name: "Tàn dư hỗn mang",
+        name: "Quái vật đa chiều",
         variant: "blight",
         x: 692,
         y: 314,
@@ -2985,7 +2986,7 @@ function createPortMazeLevel() {
     monsters: [
       {
         id: "colonial-overseer",
-        name: "Lính canh thực dân",
+        name: "Quái vật đa chiều",
         variant: "devourer",
         x: 700,
         y: 498,
@@ -3332,7 +3333,7 @@ function createRedSquareLevel() {
     monsters: [
       {
         id: "southern-tyrant",
-        name: "Bộ máy áp bức miền Nam",
+        name: "Quái vật đa chiều",
         variant: "blight",
         x: 588,
         y: 476,
@@ -3552,9 +3553,9 @@ function createHubDecorations() {
     })),
     portals: [
       { x: 218, y: 262, color: "#cdd7ef", glow: "#7ea3d7", title: "Khu 1", subtitle: "Sương mù", labelOffsetY: 44 },
-      { x: 740, y: 262, color: "#efd6ab", glow: "#d59f62", title: "Khu 2", subtitle: "Nha go", labelOffsetY: 44 },
-      { x: 280, y: 476, color: "#f3d85b", glow: "#bf4739", title: "Khu 3", subtitle: "Cau gay", labelOffsetY: -74 },
-      { x: 680, y: 476, color: "#d9f0a7", glow: "#6db05a", title: "Khu 4", subtitle: "Doi Moi", labelOffsetY: -74 },
+      { x: 740, y: 262, color: "#efd6ab", glow: "#d59f62", title: "Khu 2", subtitle: "Nhà gỗ", labelOffsetY: 44 },
+      { x: 280, y: 476, color: "#f3d85b", glow: "#bf4739", title: "Khu 3", subtitle: "Cầu gãy", labelOffsetY: -74 },
+      { x: 680, y: 476, color: "#d9f0a7", glow: "#6db05a", title: "Khu 4", subtitle: "Đổi Mới", labelOffsetY: -74 },
     ],
     plaza: { x: 238, y: 146, width: 484, height: 354 },
     gate: { x: 445, y: 198, width: 70, height: 82 },
@@ -3900,8 +3901,8 @@ function applyDebugEndingFromUrl() {
   state.endingId = endingId;
   state.endingSummary =
     endingId === "good"
-      ? "Preview Good Ending duoc mo bang ?debugEnding=good."
-      : "Preview Bad Ending duoc mo bang ?debugEnding=bad.";
+      ? "Preview Good Ending được mở bằng ?debugEnding=good."
+      : "Preview Bad Ending được mở bằng ?debugEnding=bad.";
 
   state.inventory.clear();
 
@@ -4077,14 +4078,14 @@ function getInteractionDialogue(item) {
   const lines = [
     item.slide?.caption,
     item.slide?.text,
-    item.prompt ? `Ban dung lai de ${item.prompt}.` : "",
+    item.prompt ? `Bạn dừng lại để ${item.prompt}.` : "",
     item.kind === "npc"
-      ? "Nhan vat nay van con mot manh cau chuyen, du chua co hoi thoai rieng."
-      : "Dau tich nay van con gia an va chua kip ke het cau chuyen cua minh.",
+      ? "Nhân vật này vẫn còn một mảnh câu chuyện, dù chưa có hội thoại riêng."
+      : "Dấu tích này vẫn còn giấu ẩn và chưa kịp kể hết câu chuyện của mình.",
   ].filter(Boolean);
 
   return {
-    speaker: item.kind === "npc" ? "Nhan chung" : "Dau tich",
+    speaker: item.kind === "npc" ? "Nhân chứng" : "Dấu tích",
     lines: lines.slice(0, 2),
   };
 }
@@ -5618,57 +5619,57 @@ function getHubNavigationTarget() {
 
 function getVillageNavigationTarget() {
   if (state.quests.zone1RewardClaimed) {
-    return createExitNavigationTarget(getLevelExit("back-to-hub-1"), "Quay ve trung tam", "#f3d777");
+    return createExitNavigationTarget(getLevelExit("back-to-hub-1"), "Quay về trung tâm", "#f3d777");
   }
 
   if (!state.quests.zone1Started) {
-    return createInteractableNavigationTarget(getLevelInteractable("le-paria-stack"), "Nhan bao Le Paria", "#d7ebff");
+    return createInteractableNavigationTarget(getLevelInteractable("le-paria-stack"), "Nhận báo Le Paria", "#d7ebff");
   }
 
   const workerTargets = pickNearestNavigationTarget([
     state.quests.zone1Delivered.has("worker-1")
       ? null
-      : createInteractableNavigationTarget(getLevelInteractable("worker-harbor-1"), "Dua bao cho cong nhan 1", "#d7ebff"),
+      : createInteractableNavigationTarget(getLevelInteractable("worker-harbor-1"), "Đưa báo cho công nhân 1", "#d7ebff"),
     state.quests.zone1Delivered.has("worker-2")
       ? null
-      : createInteractableNavigationTarget(getLevelInteractable("worker-harbor-2"), "Dua bao cho cong nhan 2", "#d7ebff"),
+      : createInteractableNavigationTarget(getLevelInteractable("worker-harbor-2"), "Đưa báo cho công nhân 2", "#d7ebff"),
     state.quests.zone1Delivered.has("worker-3")
       ? null
-      : createInteractableNavigationTarget(getLevelInteractable("worker-harbor-3"), "Dua bao cho cong nhan 3", "#d7ebff"),
+      : createInteractableNavigationTarget(getLevelInteractable("worker-harbor-3"), "Đưa báo cho công nhân 3", "#d7ebff"),
   ]);
 
   if (workerTargets) {
     return workerTargets;
   }
 
-  return createInteractableNavigationTarget(getLevelInteractable("red-compass-reward"), "Nhan Chiec La Ban Do", "#f3d777");
+  return createInteractableNavigationTarget(getLevelInteractable("red-compass-reward"), "Nhận Chiếc La Bàn Đỏ", "#f3d777");
 }
 
 function getArchiveNavigationTarget() {
   if (state.quests.zone2RewardClaimed) {
-    return createExitNavigationTarget(getLevelExit("back-to-hub-2"), "Quay ve trung tam", "#f3d777");
+    return createExitNavigationTarget(getLevelExit("back-to-hub-2"), "Quay về trung tâm", "#f3d777");
   }
 
   if (state.quests.zone2Fragments.size < 3) {
     return pickNearestNavigationTarget([
       state.quests.zone2Fragments.has("west")
         ? null
-        : createInteractableNavigationTarget(getLevelInteractable("delegate-west"), "Hoa giai phong phia Tay", "#f4d9af"),
+        : createInteractableNavigationTarget(getLevelInteractable("delegate-west"), "Thuyết phục nhóm phía Tây", "#f4d9af"),
       state.quests.zone2Fragments.has("east")
         ? null
-        : createInteractableNavigationTarget(getLevelInteractable("delegate-east"), "Hoa giai phong phia Dong", "#f4d9af"),
+        : createInteractableNavigationTarget(getLevelInteractable("delegate-east"), "Thuyết phục nhóm phía Đông", "#f4d9af"),
       state.quests.zone2Fragments.has("north")
         ? null
-        : createInteractableNavigationTarget(getLevelInteractable("delegate-north"), "Hoa giai phong phia Bac", "#f4d9af"),
+        : createInteractableNavigationTarget(getLevelInteractable("delegate-north"), "Thuyết phục nhóm phía Bắc", "#f4d9af"),
     ]);
   }
 
-  return createInteractableNavigationTarget(getLevelInteractable("unity-round-table"), "Dat 3 manh vo len ban tron", "#f3d777");
+  return createInteractableNavigationTarget(getLevelInteractable("unity-round-table"), "Đặt 3 mảnh vỡ lên bàn tròn", "#f3d777");
 }
 
 function getCrossroadsNavigationTarget() {
   if (state.quests.zone3ThreadClaimed && state.quests.zone3MapClaimed) {
-    return createExitNavigationTarget(getLevelExit("back-to-hub-3"), "Quay ve trung tam", "#f3d777");
+    return createExitNavigationTarget(getLevelExit("back-to-hub-3"), "Quay về trung tâm", "#f3d777");
   }
 
   const targets = [];
@@ -5678,20 +5679,20 @@ function getCrossroadsNavigationTarget() {
       targets.push(
         state.quests.zone3Recruits.has("farmer")
           ? null
-          : createInteractableNavigationTarget(getLevelInteractable("recruit-farmer"), "Moi nong dan vao mat tran", "#f3dc7f"),
+          : createInteractableNavigationTarget(getLevelInteractable("recruit-farmer"), "Mời nông dân vào mặt trận", "#f3dc7f"),
         state.quests.zone3Recruits.has("worker")
           ? null
-          : createInteractableNavigationTarget(getLevelInteractable("recruit-worker"), "Moi cong nhan vao mat tran", "#f3dc7f"),
+          : createInteractableNavigationTarget(getLevelInteractable("recruit-worker"), "Mời công nhân vào mặt trận", "#f3dc7f"),
         state.quests.zone3Recruits.has("intellectual")
           ? null
-          : createInteractableNavigationTarget(getLevelInteractable("recruit-intellectual"), "Moi tri thuc yeu nuoc", "#f3dc7f"),
+          : createInteractableNavigationTarget(getLevelInteractable("recruit-intellectual"), "Mời trí thức yêu nước", "#f3dc7f"),
         state.quests.zone3Recruits.has("bourgeois")
           ? null
-          : createInteractableNavigationTarget(getLevelInteractable("recruit-bourgeois"), "Moi tu san dan toc", "#f3dc7f")
+          : createInteractableNavigationTarget(getLevelInteractable("recruit-bourgeois"), "Mời tư sản dân tộc", "#f3dc7f")
       );
     } else {
       targets.push(
-        createInteractableNavigationTarget(getLevelInteractable("vietminh-cadre"), "Nhan Soi Chi Do Viet Minh", "#f3d777")
+        createInteractableNavigationTarget(getLevelInteractable("vietminh-cadre"), "Nhận Sợi Chỉ Đỏ Việt Minh", "#f3d777")
       );
     }
   }
@@ -5701,22 +5702,22 @@ function getCrossroadsNavigationTarget() {
       targets.push(
         state.quests.zone3HamletsFreed.has("hamlet-1")
           ? null
-          : createInteractableNavigationTarget(getLevelInteractable("hamlet-1"), "Pha ap chien luoc 1", "#f08a61"),
+          : createInteractableNavigationTarget(getLevelInteractable("hamlet-1"), "Phá ấp chiến lược 1", "#f08a61"),
         state.quests.zone3HamletsFreed.has("hamlet-2")
           ? null
-          : createInteractableNavigationTarget(getLevelInteractable("hamlet-2"), "Pha ap chien luoc 2", "#f08a61"),
+          : createInteractableNavigationTarget(getLevelInteractable("hamlet-2"), "Phá ấp chiến lược 2", "#f08a61"),
         state.quests.zone3HamletsFreed.has("hamlet-3")
           ? null
-          : createInteractableNavigationTarget(getLevelInteractable("hamlet-3"), "Pha ap chien luoc 3", "#f08a61")
+          : createInteractableNavigationTarget(getLevelInteractable("hamlet-3"), "Phá ấp chiến lược 3", "#f08a61")
       );
     } else {
       const boss = getLevelMonster("southern-tyrant");
 
       if (boss && !boss.defeated) {
-        targets.push(createMonsterNavigationTarget(boss, "Danh bai bo may ap buc", "#e96558"));
+        targets.push(createMonsterNavigationTarget(boss, "Đánh bại bộ máy áp bức", "#e96558"));
       } else {
         targets.push(
-          createInteractableNavigationTarget(getLevelInteractable("resistance-commander"), "Nhan Ban do Vi tuyen 17", "#f3d777")
+          createInteractableNavigationTarget(getLevelInteractable("resistance-commander"), "Nhận Bản đồ Vĩ tuyến 17", "#f3d777")
         );
       }
     }
@@ -5727,20 +5728,20 @@ function getCrossroadsNavigationTarget() {
 
 function getSpringNavigationTarget() {
   if (state.quests.zone4GearClaimed) {
-    return createExitNavigationTarget(getLevelExit("back-to-hub-4"), "Quay ve trung tam", "#f3d777");
+    return createExitNavigationTarget(getLevelExit("back-to-hub-4"), "Quay về trung tâm", "#f3d777");
   }
 
   if (state.quests.zone4Barriers.size < 3) {
     return pickNearestNavigationTarget([
       state.quests.zone4Barriers.has("wall-1")
         ? null
-        : createInteractableNavigationTarget(getLevelInteractable("bao-cap-wall-1"), "Pha hang rao 1", "#d7efab"),
+        : createInteractableNavigationTarget(getLevelInteractable("bao-cap-wall-1"), "Phá hàng rào 1", "#d7efab"),
       state.quests.zone4Barriers.has("wall-2")
         ? null
-        : createInteractableNavigationTarget(getLevelInteractable("bao-cap-wall-2"), "Pha hang rao 2", "#d7efab"),
+        : createInteractableNavigationTarget(getLevelInteractable("bao-cap-wall-2"), "Phá hàng rào 2", "#d7efab"),
       state.quests.zone4Barriers.has("wall-3")
         ? null
-        : createInteractableNavigationTarget(getLevelInteractable("bao-cap-wall-3"), "Pha hang rao 3", "#d7efab"),
+        : createInteractableNavigationTarget(getLevelInteractable("bao-cap-wall-3"), "Phá hàng rào 3", "#d7efab"),
     ]);
   }
 
@@ -5748,17 +5749,17 @@ function getSpringNavigationTarget() {
     return pickNearestNavigationTarget([
       state.quests.zone4Farmers.has("farmer-1")
         ? null
-        : createInteractableNavigationTarget(getLevelInteractable("farmer-khoan-1"), "Trao Khoan 10 cho nong dan 1", "#d7efab"),
+        : createInteractableNavigationTarget(getLevelInteractable("farmer-khoan-1"), "Trao Khoán 10 cho nông dân 1", "#d7efab"),
       state.quests.zone4Farmers.has("farmer-2")
         ? null
-        : createInteractableNavigationTarget(getLevelInteractable("farmer-khoan-2"), "Trao Khoan 10 cho nong dan 2", "#d7efab"),
+        : createInteractableNavigationTarget(getLevelInteractable("farmer-khoan-2"), "Trao Khoán 10 cho nông dân 2", "#d7efab"),
       state.quests.zone4Farmers.has("farmer-3")
         ? null
-        : createInteractableNavigationTarget(getLevelInteractable("farmer-khoan-3"), "Trao Khoan 10 cho nong dan 3", "#d7efab"),
+        : createInteractableNavigationTarget(getLevelInteractable("farmer-khoan-3"), "Trao Khoán 10 cho nông dân 3", "#d7efab"),
     ]);
   }
 
-  return createInteractableNavigationTarget(getLevelInteractable("doi-moi-leader"), "Nhan Banh rang Doi Moi", "#f3d777");
+  return createInteractableNavigationTarget(getLevelInteractable("doi-moi-leader"), "Nhận Bánh răng Đổi Mới", "#f3d777");
 }
 
 function getNavigationObjective() {
