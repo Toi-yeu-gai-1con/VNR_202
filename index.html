@@ -10,13 +10,13 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20260712-ending-polish-pass">
+  <link rel="stylesheet" href="styles.css?v=20260712-hud-map-audio-music-retry-v2">
 </head>
 <body>
   <div class="page-shell">
     <main class="game-shell">
       <div class="game-frame">
-        <canvas id="game-canvas" width="320" height="180" aria-label="Màn chơi lịch sử Việt Nam"></canvas>
+        <canvas id="game-canvas" width="416" height="234" aria-label="Màn chơi lịch sử Việt Nam"></canvas>
         <button id="pause-button" class="pixel-button pause-button" type="button" aria-label="Tạm dừng trò chơi">Tạm dừng</button>
         <button id="story-book-button" class="pixel-button story-book-button hidden" type="button" aria-label="Mở các câu chuyện đã mở khóa">
           <span class="story-book-label">Sách lịch sử</span>
@@ -53,10 +53,6 @@
                 <span class="status-label">Tín vật</span>
                 <span id="inventory-value">0 / 5</span>
               </div>
-              <div class="hud-chip status-chip skill-chip">
-                <span class="status-label">Kỹ năng</span>
-                <span id="skill-value">J/K OK</span>
-              </div>
             </div>
             <div class="action-footer">
               <p class="action-hint">E tương tác | J/K | B sách</p>
@@ -64,6 +60,10 @@
             </div>
           </div>
         </div>
+        <aside id="minimap" class="minimap hidden" aria-hidden="true">
+          <span class="minimap-label">Bản đồ</span>
+          <canvas id="minimap-canvas" width="144" height="96"></canvas>
+        </aside>
         <section id="dialogue-box" class="dialogue-box hidden" aria-hidden="true" role="dialog" aria-live="polite">
           <div class="dialogue-header">
             <p id="dialogue-speaker" class="dialogue-speaker">Người dẫn chuyện</p>
@@ -174,9 +174,11 @@
           </div>
         </div>
       </section>
+      <button id="sound-button" class="pixel-button sound-button" type="button" aria-label="Tắt âm thanh" aria-pressed="true">♫</button>
+      <button id="fullscreen-button" class="pixel-button fullscreen-button" type="button" aria-label="Mở toàn màn hình" aria-pressed="false">⛶</button>
     </main>
   </div>
 
-  <script type="module" src="game.js?v=20260712-ending-polish-pass"></script>
+  <script type="module" src="game.js?v=20260712-hud-map-audio-music-retry-v3"></script>
 </body>
 </html>

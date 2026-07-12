@@ -1,8 +1,16 @@
 const canvas = document.getElementById("game-canvas");
 const ctx = canvas.getContext("2d");
+const minimap = document.getElementById("minimap");
+const minimapCanvas = document.getElementById("minimap-canvas");
+const minimapCtx = minimapCanvas?.getContext("2d") ?? null;
+const gameShell = document.querySelector(".game-shell");
 const gameFrame = document.querySelector(".game-frame");
 
 ctx.imageSmoothingEnabled = false;
+
+if (minimapCtx) {
+  minimapCtx.imageSmoothingEnabled = false;
+}
 
 const startScreen = document.getElementById("start-screen");
 const pauseMenu = document.getElementById("pause-menu");
@@ -37,6 +45,8 @@ const startControls = startScreen.querySelector(".start-controls");
 
 const startButton = document.getElementById("start-button");
 const pauseButton = document.getElementById("pause-button");
+const soundButton = document.getElementById("sound-button");
+const fullscreenButton = document.getElementById("fullscreen-button");
 const resumeButton = document.getElementById("resume-button");
 const restartButton = document.getElementById("restart-button");
 const aboutButton = document.getElementById("about-button");
@@ -59,7 +69,6 @@ const hpValue = document.getElementById("hp-value");
 const saDoaFill = document.getElementById("sa-doa-fill");
 const saDoaValue = document.getElementById("sa-doa-value");
 const inventoryValue = document.getElementById("inventory-value");
-const skillValue = document.getElementById("skill-value");
 const endTitle = document.getElementById("end-title");
 const endCopy = document.getElementById("end-copy");
 const endSummary = document.getElementById("end-summary");
@@ -972,6 +981,7 @@ const musicSounds = loadMusicSounds();
 let storyToastTimeoutId = 0;
 let corruptionWarningTimeoutId = 0;
 let relicBookOpenTimeoutId = 0;
+let audioRetryQueued = false;
 
 const state = {
   mode: "start",
@@ -986,6 +996,7 @@ const state = {
   activeInteractionId: null,
   aboutFromPause: false,
   pendingEnding: false,
+  soundMuted: false,
   health: PLAYER_MAX_HEALTH,
   saDoa: 0,
   inventory: new Set(),
@@ -1026,6 +1037,8 @@ updateProgressHud();
 
 startButton.addEventListener("click", withUiClickSound(startGame));
 pauseButton.addEventListener("click", withUiClickSound(togglePause));
+soundButton.addEventListener("click", toggleSound);
+fullscreenButton.addEventListener("click", withUiClickSound(toggleFullscreen));
 resumeButton.addEventListener("click", withUiClickSound(resumeGame));
 restartButton.addEventListener("click", withUiClickSound(restartGame));
 storyBookButton.addEventListener("click", withUiClickSound(() => openStoryBook()));
@@ -1041,6 +1054,64 @@ openingNextButton.addEventListener("click", withUiClickSound(advanceOpeningIntro
 storyPrevButton.addEventListener("click", withUiClickSound(() => showStoryBookEntry(-1)));
 storyNextButton.addEventListener("click", withUiClickSound(() => showStoryBookEntry(1)));
 returnStartButton.addEventListener("click", withUiClickSound(handleReturnFromEnding));
+document.addEventListener("fullscreenchange", updateFullscreenButton);
+updateFullscreenButton();
+updateSoundButton();
+
+function toggleFullscreen() {
+  if (!gameShell || !document.fullscreenEnabled) {
+    return;
+  }
+
+  const fullscreenAction = document.fullscreenElement === gameShell
+    ? document.exitFullscreen()
+    : gameShell.requestFullscreen();
+
+  fullscreenAction?.catch(() => updateFullscreenButton());
+}
+
+function updateFullscreenButton() {
+  if (!fullscreenButton) {
+    return;
+  }
+
+  const isFullscreen = document.fullscreenElement === gameShell;
+  fullscreenButton.setAttribute("aria-pressed", String(isFullscreen));
+  fullscreenButton.setAttribute("aria-label", isFullscreen ? "Thoát toàn màn hình" : "Mở toàn màn hình");
+  fullscreenButton.title = isFullscreen ? "Thoát toàn màn hình" : "Mở toàn màn hình";
+  fullscreenButton.textContent = isFullscreen ? "×" : "⛶";
+}
+
+function toggleSound() {
+  state.soundMuted = !state.soundMuted;
+
+  for (const sound of [
+    ...Object.values(uiSounds),
+    ...Object.values(ambienceSounds),
+    ...Object.values(musicSounds),
+  ]) {
+    sound.muted = state.soundMuted;
+  }
+
+  updateSoundButton();
+
+  if (!state.soundMuted) {
+    syncAmbienceAudio();
+    playUiSound(uiSounds.pixelClick);
+  }
+}
+
+function updateSoundButton() {
+  if (!soundButton) {
+    return;
+  }
+
+  const soundEnabled = !state.soundMuted;
+  soundButton.setAttribute("aria-pressed", String(soundEnabled));
+  soundButton.setAttribute("aria-label", soundEnabled ? "Tắt âm thanh" : "Bật âm thanh");
+  soundButton.title = soundEnabled ? "Tắt âm thanh" : "Bật âm thanh";
+  soundButton.textContent = soundEnabled ? "♫" : "×";
+}
 
 window.addEventListener("keydown", (event) => {
   if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " "].includes(event.key)) {
@@ -1298,8 +1369,13 @@ function loadAmbienceSounds() {
 
 function loadMusicSounds() {
   return {
+    hub: loadSound("assets/audio/hub-unexplored-expansion.mp3", 0.24, { loop: true }),
     portMaze: loadSound("assets/audio/unforgiving_himalayas_looping.ogg", 0.24, { loop: true }),
+    archive: loadSound("assets/audio/archive-cave-theme.ogg", 0.26, { loop: true }),
+    crossroads: loadSound("assets/audio/crossroads-ancient-power.ogg", 0.22, { loop: true }),
+    spring: loadSound("assets/audio/spring-town-theme.mp3", 0.26, { loop: true }),
     badEnding: loadSound("assets/audio/Bad Ending - Mob of The Dead - Soundtrack.mp3", 0.28, { loop: true }),
+    goodEnding: loadSound("assets/audio/good-ending-legend-will-rise.mp3", 0.3, { loop: true }),
   };
 }
 
@@ -1367,22 +1443,54 @@ function playLoopingSound(sound) {
 
   try {
     const playback = sound.play();
-    playback?.catch(() => {});
+    playback?.catch(queueAudioRetry);
   } catch {
-    // Ignore browsers that temporarily block ambient playback.
+    queueAudioRetry();
   }
 }
 
-function stopSound(sound) {
+function queueAudioRetry() {
+  if (audioRetryQueued || state.soundMuted) {
+    return;
+  }
+
+  audioRetryQueued = true;
+  const retry = () => {
+    window.removeEventListener("pointerdown", retry);
+    window.removeEventListener("keydown", retry);
+    audioRetryQueued = false;
+    if (!state.soundMuted) {
+      syncAmbienceAudio();
+    }
+  };
+
+  window.addEventListener("pointerdown", retry, { once: true });
+  window.addEventListener("keydown", retry, { once: true });
+}
+
+function pauseLoopingSound(sound) {
   if (!sound) {
     return;
   }
 
   try {
     sound.pause();
+  } catch {
+    // Ignore browsers that temporarily reject audio pausing.
+  }
+}
+
+function resetSound(sound) {
+  if (!sound) {
+    return;
+  }
+
+  pauseLoopingSound(sound);
+
+  try {
     sound.currentTime = 0;
   } catch {
-    // Ignore browsers that do not allow resetting audio immediately.
+    // Ignore browsers that temporarily reject resetting audio.
   }
 }
 
@@ -1391,7 +1499,7 @@ function syncLoopingSoundGroup(soundGroup, activeSounds) {
 
   for (const sound of Object.values(soundGroup)) {
     if (!activeSet.has(sound)) {
-      stopSound(sound);
+      pauseLoopingSound(sound);
     }
   }
 
@@ -1400,15 +1508,38 @@ function syncLoopingSoundGroup(soundGroup, activeSounds) {
   }
 }
 
+function resetSoundGroup(soundGroup) {
+  for (const sound of Object.values(soundGroup)) {
+    resetSound(sound);
+  }
+}
+
+function resetMusicForNewSession() {
+  resetSoundGroup(musicSounds);
+  resetSoundGroup(ambienceSounds);
+}
+
 function syncAmbienceAudio() {
   const activeAmbience = [];
   const activeMusic = [];
 
   if (state.mode === "ending" && state.endingId === "bad") {
     activeMusic.push(musicSounds.badEnding);
-  } else if (state.mode !== "start" && state.currentLevelId === "village") {
-    activeAmbience.push(ambienceSounds.rain);
-    activeMusic.push(musicSounds.portMaze);
+  } else if (state.mode === "ending" && state.endingId === "good") {
+    activeMusic.push(musicSounds.goodEnding);
+  } else if (state.mode !== "start") {
+    if (state.currentLevelId === "hub") {
+      activeMusic.push(musicSounds.hub);
+    } else if (state.currentLevelId === "village") {
+      activeAmbience.push(ambienceSounds.rain);
+      activeMusic.push(musicSounds.portMaze);
+    } else if (state.currentLevelId === "archive") {
+      activeMusic.push(musicSounds.archive);
+    } else if (state.currentLevelId === "crossroads") {
+      activeMusic.push(musicSounds.crossroads);
+    } else if (state.currentLevelId === "spring") {
+      activeMusic.push(musicSounds.spring);
+    }
   }
 
   syncLoopingSoundGroup(ambienceSounds, activeAmbience);
@@ -4001,30 +4132,13 @@ function resetGameplayProgress() {
 function updateProgressHud() {
   const hpPercent = (state.health / PLAYER_MAX_HEALTH) * 100;
   const saDoaPercent = (state.saDoa / SA_DOA_MAX) * 100;
-  const strikeCooldown = getRemainingCooldownMs(state.skillCooldowns.strikeReadyAt);
-  const purifyCooldown = getRemainingCooldownMs(state.skillCooldowns.purifyReadyAt);
 
   hpFill.style.width = `${hpPercent}%`;
   hpValue.textContent = `${state.health} / ${PLAYER_MAX_HEALTH}`;
   saDoaFill.style.width = `${saDoaPercent}%`;
   saDoaValue.textContent = `${state.saDoa}%`;
   inventoryValue.textContent = `${state.inventory.size} / ${RELIC_TARGET_COUNT}`;
-  skillValue.textContent = strikeCooldown <= 0 && purifyCooldown <= 0
-    ? "J/K OK"
-    : `${formatCooldownLabel("J", strikeCooldown)} | ${formatCooldownLabel("K", purifyCooldown)}`;
   updateCorruptionEffects();
-}
-
-function getRemainingCooldownMs(readyAt) {
-  return Math.max(0, Math.ceil(readyAt - state.lastTimestamp));
-}
-
-function formatCooldownLabel(key, remainingMs) {
-  if (remainingMs <= 0) {
-    return `${key} OK`;
-  }
-
-  return `${key} ${(remainingMs / 1000).toFixed(1)}s`;
 }
 
 function currentLevel() {
@@ -4062,6 +4176,16 @@ function createDebugSnapshot() {
       zone4Barriers: Array.from(state.quests.zone4Barriers),
       zone4Farmers: Array.from(state.quests.zone4Farmers),
       zone4GearClaimed: state.quests.zone4GearClaimed,
+    },
+    audio: {
+      muted: state.soundMuted,
+      music: Object.fromEntries(
+        Object.entries(musicSounds).map(([id, sound]) => [id, {
+          paused: sound.paused,
+          readyState: sound.readyState,
+          currentTime: Number(sound.currentTime.toFixed(2)),
+        }])
+      ),
     },
   };
 }
@@ -4590,6 +4714,7 @@ function advanceOpeningIntro() {
 }
 
 function beginGameSession() {
+  resetMusicForNewSession();
   state.mode = "playing";
   state.aboutFromPause = false;
   state.openingStep = 0;
@@ -4672,6 +4797,7 @@ function resumeGame() {
 }
 
 function restartGame() {
+  resetMusicForNewSession();
   state.mode = "playing";
   state.activeInteractionId = null;
   state.aboutFromPause = false;
@@ -4860,6 +4986,7 @@ function updateEndingCinematicUiState() {
 
 function showEndOverlay() {
   const ending = ENDING_DEFINITIONS[state.endingId] ?? ENDING_DEFINITIONS.bad;
+  resetSound(musicSounds[state.endingId === "good" ? "goodEnding" : "badEnding"]);
 
   state.mode = "ending";
   state.endingCinematic = createEndingCinematicState(state.endingId ?? "bad");
@@ -6589,6 +6716,101 @@ function render() {
   drawAtmosphere();
   drawVignette();
   drawNavigationAssist();
+  drawMiniMap();
+}
+
+function drawMiniMap() {
+  if (!minimap || !minimapCtx || !minimapCanvas) {
+    return;
+  }
+
+  const shouldShow = state.mode === "playing";
+  minimap.classList.toggle("hidden", !shouldShow);
+  minimap.setAttribute("aria-hidden", String(!shouldShow));
+
+  if (!shouldShow) {
+    return;
+  }
+
+  const mapWidth = minimapCanvas.width;
+  const mapHeight = minimapCanvas.height;
+  const inset = 4;
+  const drawableWidth = mapWidth - inset * 2;
+  const drawableHeight = mapHeight - inset * 2;
+  const scaleX = drawableWidth / WORLD.width;
+  const scaleY = drawableHeight / WORLD.height;
+  const level = currentLevel();
+
+  minimapCtx.clearRect(0, 0, mapWidth, mapHeight);
+  minimapCtx.fillStyle = getMiniMapBackground(level.id);
+  minimapCtx.fillRect(0, 0, mapWidth, mapHeight);
+  minimapCtx.fillStyle = "rgba(8, 13, 20, 0.54)";
+  minimapCtx.fillRect(inset, inset, drawableWidth, drawableHeight);
+  minimapCtx.strokeStyle = "rgba(242, 225, 180, 0.52)";
+  minimapCtx.lineWidth = 1;
+  minimapCtx.strokeRect(inset + 0.5, inset + 0.5, drawableWidth - 1, drawableHeight - 1);
+
+  const toMapPoint = (x, y) => ({
+    x: Math.round(inset + x * scaleX),
+    y: Math.round(inset + y * scaleY),
+  });
+  const drawPoint = (x, y, color, size = 3) => {
+    const point = toMapPoint(x, y);
+    const offset = Math.floor(size / 2);
+    minimapCtx.fillStyle = color;
+    minimapCtx.fillRect(point.x - offset, point.y - offset, size, size);
+  };
+
+  for (const exit of level.exits) {
+    if (state.blockedExitIds.has(exit.id)) {
+      continue;
+    }
+
+    const center = getExitCenter(exit);
+    drawPoint(center.x, center.y, exit.guide?.color ?? "#f3d777", 3);
+  }
+
+  for (const item of level.interactables) {
+    if (item.collected || item.used || !shouldDrawInteractable(item)) {
+      continue;
+    }
+
+    const point = getInteractionPoint(item);
+    const color = item.interactionType === "pickup" ? "#eec96d" : "#a7c7f3";
+    drawPoint(point.x, point.y, color, 2);
+  }
+
+  const objective = getNavigationObjective();
+  if (objective) {
+    drawPoint(objective.x, objective.y, objective.color, 4);
+  }
+
+  minimapCtx.strokeStyle = "rgba(223, 241, 255, 0.82)";
+  minimapCtx.lineWidth = 1;
+  minimapCtx.strokeRect(
+    Math.round(inset + camera.x * scaleX) + 0.5,
+    Math.round(inset + camera.y * scaleY) + 0.5,
+    Math.max(1, Math.round(VIEWPORT.width * scaleX)),
+    Math.max(1, Math.round(VIEWPORT.height * scaleY))
+  );
+
+  drawPoint(player.x, player.y, "#fff5d2", 4);
+  drawPoint(player.x, player.y, "#4aa8ff", 2);
+}
+
+function getMiniMapBackground(levelId) {
+  switch (levelId) {
+    case "village":
+      return "#263849";
+    case "archive":
+      return "#4c3529";
+    case "crossroads":
+      return "#793e37";
+    case "spring":
+      return "#4c7c45";
+    default:
+      return "#203849";
+  }
 }
 
 function drawWorld() {

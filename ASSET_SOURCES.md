@@ -36,3 +36,21 @@ This project uses a small subset of free game assets:
 - `assets/effects/petal-pink.png`
   - Created for this project.
 
+## Music
+
+- Unexplored Expansion by Bo Jingles and TAD: https://opengameart.org/content/unexplored-expansion
+  - License: CC0.
+  - Used for the central hub.
+- Cave Theme by Brandon75689: https://opengameart.org/content/cave-theme
+  - License: CC0.
+  - Used for Zone 2 (archive).
+- Ancient Power Of Serpents by Kevin MacLeod (via josepharaoh99): https://opengameart.org/content/ancient-power-of-serpents
+  - License: CC0.
+  - Used for Zone 3 (crossroads).
+- Town Theme RPG by cynicmusic: https://opengameart.org/content/town-theme-rpg
+  - License: CC0.
+  - Used for Zone 4 (spring valley).
+- A Legend Will Rise (Orchestral) by CodeManu: https://opengameart.org/content/a-legend-will-rise-orchestral
+  - License: CC0.
+  - Used for the good ending.
+
