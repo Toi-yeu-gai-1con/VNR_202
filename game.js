@@ -968,6 +968,7 @@ const effectSprites = loadEffectSprites();
 const monsterSprites = loadMonsterSprites();
 const uiSounds = loadUiSounds();
 const ambienceSounds = loadAmbienceSounds();
+const musicSounds = loadMusicSounds();
 let storyToastTimeoutId = 0;
 let corruptionWarningTimeoutId = 0;
 let relicBookOpenTimeoutId = 0;
@@ -1295,6 +1296,13 @@ function loadAmbienceSounds() {
   };
 }
 
+function loadMusicSounds() {
+  return {
+    portMaze: loadSound("assets/audio/unforgiving_himalayas_looping.ogg", 0.24, { loop: true }),
+    badEnding: loadSound("assets/audio/The Caretaker - Its just a burning memory (2016).mp3", 0.28, { loop: true }),
+  };
+}
+
 function loadDirectionalSprites(prefix) {
   return {
     up: loadSprite(`assets/player/${prefix}_up.png`),
@@ -1378,22 +1386,33 @@ function stopSound(sound) {
   }
 }
 
-function syncAmbienceAudio() {
-  let activeAmbience = null;
+function syncLoopingSoundGroup(soundGroup, activeSounds) {
+  const activeSet = new Set(activeSounds.filter(Boolean));
 
-  if (state.mode !== "start" && state.currentLevelId === "village") {
-    activeAmbience = ambienceSounds.rain;
-  }
-
-  for (const sound of Object.values(ambienceSounds)) {
-    if (sound !== activeAmbience) {
+  for (const sound of Object.values(soundGroup)) {
+    if (!activeSet.has(sound)) {
       stopSound(sound);
     }
   }
 
-  if (activeAmbience) {
-    playLoopingSound(activeAmbience);
+  for (const sound of activeSet) {
+    playLoopingSound(sound);
   }
+}
+
+function syncAmbienceAudio() {
+  const activeAmbience = [];
+  const activeMusic = [];
+
+  if (state.mode === "ending" && state.endingId === "bad") {
+    activeMusic.push(musicSounds.badEnding);
+  } else if (state.mode !== "start" && state.currentLevelId === "village") {
+    activeAmbience.push(ambienceSounds.rain);
+    activeMusic.push(musicSounds.portMaze);
+  }
+
+  syncLoopingSoundGroup(ambienceSounds, activeAmbience);
+  syncLoopingSoundGroup(musicSounds, activeMusic);
 }
 
 function canDrawSprite(image) {
@@ -4861,6 +4880,7 @@ function showEndOverlay() {
   endOverlay.setAttribute("aria-label", ending.title);
   endOverlay.classList.remove("hidden");
   endOverlay.setAttribute("aria-hidden", "false");
+  syncAmbienceAudio();
   syncEndingArtCinematicCanvas();
   syncEndingSceneOverlayCanvas();
   updateEndingCinematicUiState();
