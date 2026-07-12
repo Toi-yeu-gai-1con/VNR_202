@@ -44,6 +44,7 @@ const startObjectiveItems = Array.from(startScreen.querySelectorAll(".start-obje
 const startControls = startScreen.querySelector(".start-controls");
 
 const startButton = document.getElementById("start-button");
+const continueButton = document.getElementById("continue-button");
 const pauseButton = document.getElementById("pause-button");
 const soundButton = document.getElementById("sound-button");
 const fullscreenButton = document.getElementById("fullscreen-button");
@@ -52,6 +53,15 @@ const restartButton = document.getElementById("restart-button");
 const aboutButton = document.getElementById("about-button");
 const closeSlideButton = document.getElementById("close-slide-button");
 const returnStartButton = document.getElementById("return-start-button");
+const actionHint = document.getElementById("action-hint");
+const tutorialOverlay = document.getElementById("tutorial-overlay");
+const tutorialCopy = document.getElementById("tutorial-copy");
+const tutorialNextButton = document.getElementById("tutorial-next-button");
+const zoneSummaryOverlay = document.getElementById("zone-summary-overlay");
+const zoneSummaryTitle = document.getElementById("zone-summary-title");
+const zoneSummaryCopy = document.getElementById("zone-summary-copy");
+const zoneSummaryStats = document.getElementById("zone-summary-stats");
+const zoneSummaryCloseButton = document.getElementById("zone-summary-close-button");
 
 const slideKicker = document.getElementById("slide-kicker");
 const slideTitle = document.getElementById("slide-title");
@@ -118,6 +128,8 @@ const MONSTER_TOUCH_RANGE = 18;
 const MONSTER_CONTACT_DAMAGE_COOLDOWN_MS = 900;
 const RESPAWN_INVULNERABILITY_MS = 1400;
 const RELIC_TARGET_COUNT = 5;
+const SAVE_STORAGE_KEY = "crossroads-save-v1";
+const SAVE_VERSION = 1;
 const PLAYER_ATTACK_ANIMATION_MS = 260;
 const MONSTER_ATTACK_ANIMATION_MS = 260;
 const ATTACK_LUNGE_DISTANCE = 4;
@@ -1009,6 +1021,13 @@ const state = {
   endingId: null,
   endingSummary: "",
   endingCinematic: null,
+  tutorialStep: 0,
+  tutorialSeen: false,
+  completedZones: new Set(),
+  zoneSummaryLevelId: null,
+  cameraShakeUntil: 0,
+  cameraShakeStrength: 0,
+  combatFlashUntil: 0,
   highCorruptionWarningShown: false,
   respawnLevelId: "hub",
   respawnSpawn: null,
@@ -1030,12 +1049,261 @@ const levels = {
   crossroads: createRedSquareLevel(),
   spring: createDoiMoiValleyLevel(),
 };
+
+const BOSS_DEFINITIONS = {
+  village: { id: "village-corruption-guard", name: "Kẻ Canh Gác Tha Hóa", variant: "devourer", x: 774, y: 456 },
+  archive: { id: "archive-shadow-curator", name: "Bóng Ma Lưu Trữ", variant: "wraith", x: 480, y: 286 },
+  crossroads: { id: "southern-tyrant", name: "Bộ Máy Áp Bức", variant: "blight", x: 588, y: 476 },
+  spring: { id: "spring-bureaucracy-beast", name: "Quái Thú Quan Liêu", variant: "blight", x: 500, y: 306 },
+};
+
+function ensureBosses() {
+  for (const [levelId, definition] of Object.entries(BOSS_DEFINITIONS)) {
+    const level = levels[levelId];
+    if (!level) {
+      continue;
+    }
+
+    level.monsters ??= [];
+    const existingBoss = level.monsters.find((monster) => monster.id === definition.id);
+    if (existingBoss) {
+      Object.assign(existingBoss, definition, { isBoss: true, maxHealth: Math.max(existingBoss.maxHealth, 12), damage: Math.max(existingBoss.damage, 2) });
+      continue;
+    }
+
+    level.monsters.push({
+      ...definition,
+      width: 32,
+      height: 32,
+      maxHealth: 12,
+      damage: 2,
+      aggroRadius: 150,
+      patrolRadius: 22,
+      isBoss: true,
+    });
+  }
+}
+
+ensureBosses();
+
+function serializeQuestState() {
+  return {
+    zone1Started: state.quests.zone1Started,
+    zone1Delivered: [...state.quests.zone1Delivered],
+    zone1RewardClaimed: state.quests.zone1RewardClaimed,
+    zone2Fragments: [...state.quests.zone2Fragments],
+    zone2RewardClaimed: state.quests.zone2RewardClaimed,
+    zone3Recruits: [...state.quests.zone3Recruits],
+    zone3ThreadClaimed: state.quests.zone3ThreadClaimed,
+    zone3HamletsFreed: [...state.quests.zone3HamletsFreed],
+    zone3BossDefeated: state.quests.zone3BossDefeated,
+    zone3MapClaimed: state.quests.zone3MapClaimed,
+    zone4Barriers: [...state.quests.zone4Barriers],
+    zone4Farmers: [...state.quests.zone4Farmers],
+    zone4GearClaimed: state.quests.zone4GearClaimed,
+  };
+}
+
+function restoreQuestState(savedQuests = {}) {
+  state.quests = {
+    zone1Started: Boolean(savedQuests.zone1Started),
+    zone1Delivered: new Set(savedQuests.zone1Delivered ?? []),
+    zone1RewardClaimed: Boolean(savedQuests.zone1RewardClaimed),
+    zone2Fragments: new Set(savedQuests.zone2Fragments ?? []),
+    zone2RewardClaimed: Boolean(savedQuests.zone2RewardClaimed),
+    zone3Recruits: new Set(savedQuests.zone3Recruits ?? []),
+    zone3ThreadClaimed: Boolean(savedQuests.zone3ThreadClaimed),
+    zone3HamletsFreed: new Set(savedQuests.zone3HamletsFreed ?? []),
+    zone3BossDefeated: Boolean(savedQuests.zone3BossDefeated),
+    zone3MapClaimed: Boolean(savedQuests.zone3MapClaimed),
+    zone4Barriers: new Set(savedQuests.zone4Barriers ?? []),
+    zone4Farmers: new Set(savedQuests.zone4Farmers ?? []),
+    zone4GearClaimed: Boolean(savedQuests.zone4GearClaimed),
+  };
+}
+
+function getRuntimeSaveState() {
+  return Object.fromEntries(
+    Object.entries(levels).map(([levelId, level]) => [levelId, {
+      interactables: Object.fromEntries((level.interactables ?? []).map((item) => [item.id, {
+        collected: Boolean(item.collected), used: Boolean(item.used), purified: Boolean(item.purified), activated: Boolean(item.activated),
+      }])),
+      monsters: Object.fromEntries((level.monsters ?? []).map((monster) => [monster.id, {
+        health: monster.health, defeated: Boolean(monster.defeated),
+      }])),
+    }])
+  );
+}
+
+function restoreRuntimeSaveState(runtime = {}) {
+  for (const [levelId, level] of Object.entries(levels)) {
+    const savedLevel = runtime[levelId] ?? {};
+    for (const item of level.interactables ?? []) {
+      const savedItem = savedLevel.interactables?.[item.id];
+      if (savedItem) {
+        item.collected = Boolean(savedItem.collected);
+        item.used = Boolean(savedItem.used);
+        item.purified = Boolean(savedItem.purified);
+        item.activated = Boolean(savedItem.activated);
+      }
+    }
+    for (const monster of level.monsters ?? []) {
+      const savedMonster = savedLevel.monsters?.[monster.id];
+      if (savedMonster) {
+        monster.health = clamp(Number(savedMonster.health) || 0, 0, monster.maxHealth);
+        monster.defeated = Boolean(savedMonster.defeated);
+      }
+    }
+  }
+}
+
+function saveGameProgress() {
+  if (state.mode !== "playing") {
+    return;
+  }
+
+  try {
+    localStorage.setItem(SAVE_STORAGE_KEY, JSON.stringify({
+      version: SAVE_VERSION,
+      currentLevelId: state.currentLevelId,
+      player: { x: player.x, y: player.y, direction: player.direction },
+      respawnLevelId: state.respawnLevelId,
+      respawnSpawn: cloneSpawnPoint(state.respawnSpawn),
+      health: state.health,
+      saDoa: state.saDoa,
+      inventory: [...state.inventory],
+      unlockedStoryIds: [...state.unlockedStoryIds],
+      completedZones: [...state.completedZones],
+      tutorialSeen: state.tutorialSeen,
+      quests: serializeQuestState(),
+      runtime: getRuntimeSaveState(),
+    }));
+  } catch {
+    // Saving is optional when browser storage is unavailable.
+  }
+}
+
+function loadSavedProgress() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(SAVE_STORAGE_KEY) ?? "null");
+    return saved?.version === SAVE_VERSION && levels[saved.currentLevelId] ? saved : null;
+  } catch {
+    return null;
+  }
+}
+
+function refreshContinueButton() {
+  const hasSave = Boolean(loadSavedProgress());
+  continueButton.classList.toggle("hidden", !hasSave);
+  continueButton.disabled = !hasSave;
+}
+
+function clearSavedProgress() {
+  try {
+    localStorage.removeItem(SAVE_STORAGE_KEY);
+  } catch {
+    // Ignore unavailable storage.
+  }
+  refreshContinueButton();
+}
+
+function continueSavedGame() {
+  const saved = loadSavedProgress();
+  if (!saved) {
+    refreshContinueButton();
+    return;
+  }
+
+  restoreQuestState(saved.quests);
+  restoreRuntimeSaveState(saved.runtime);
+  state.inventory = new Set(saved.inventory ?? []);
+  state.unlockedStoryIds = new Set(saved.unlockedStoryIds ?? []);
+  state.completedZones = new Set(saved.completedZones ?? []);
+  state.tutorialSeen = Boolean(saved.tutorialSeen);
+  state.health = clamp(Number(saved.health) || PLAYER_MAX_HEALTH, 1, PLAYER_MAX_HEALTH);
+  state.saDoa = clamp(Number(saved.saDoa) || 0, 0, SA_DOA_MAX);
+  state.respawnLevelId = levels[saved.respawnLevelId] ? saved.respawnLevelId : saved.currentLevelId;
+  state.respawnSpawn = cloneSpawnPoint(saved.respawnSpawn ?? levels[state.respawnLevelId].spawn);
+  state.mode = "playing";
+  startScreen.classList.add("hidden");
+  startScreen.setAttribute("aria-hidden", "true");
+  hideOpeningIntro();
+  hideTutorial();
+  loadLevel(saved.currentLevelId, saved.player, { updateRespawnCheckpoint: false, save: false });
+  showStoryToast("Đã khôi phục hành trình từ điểm lưu gần nhất.");
+  syncAmbienceAudio();
+}
+
+function showTutorial() {
+  if (state.tutorialSeen) {
+    return;
+  }
+
+  state.tutorialStep = 0;
+  state.mode = "tutorial";
+  tutorialCopy.textContent = "Di chuyển bằng WASD hoặc phím mũi tên. Đi theo mũi tên vàng để tới mục tiêu.";
+  tutorialNextButton.textContent = "Tiếp tục";
+  tutorialOverlay.classList.remove("hidden");
+  tutorialOverlay.setAttribute("aria-hidden", "false");
+}
+
+function advanceTutorial() {
+  const steps = [
+    "Di chuyển bằng WASD hoặc phím mũi tên. Đi theo mũi tên vàng để tới mục tiêu.",
+    "Khi đứng gần nhân vật hoặc vật thể, nhấn E để tương tác. Các điểm có thể tương tác sẽ phát sáng.",
+    "Nhấn J để tấn công và K để thanh tẩy. Quái vật sẽ lóe đỏ trước khi ra đòn, hãy giữ khoảng cách.",
+  ];
+
+  state.tutorialStep += 1;
+  if (state.tutorialStep >= steps.length) {
+    state.tutorialSeen = true;
+    hideTutorial();
+    state.mode = "playing";
+    saveGameProgress();
+    return;
+  }
+
+  tutorialCopy.textContent = steps[state.tutorialStep];
+  tutorialNextButton.textContent = state.tutorialStep === steps.length - 1 ? "Vào hành trình" : "Tiếp tục";
+}
+
+function hideTutorial() {
+  tutorialOverlay.classList.add("hidden");
+  tutorialOverlay.setAttribute("aria-hidden", "true");
+}
+
+function showZoneSummary(levelId, relicId) {
+  const level = levels[levelId];
+  if (!level || state.completedZones.has(levelId)) {
+    return;
+  }
+
+  state.completedZones.add(levelId);
+  state.zoneSummaryLevelId = levelId;
+  state.mode = "summary";
+  zoneSummaryTitle.textContent = `${level.label} đã được bảo toàn`;
+  zoneSummaryCopy.textContent = `Bạn đã giành lại ${RELIC_DEFINITIONS[relicId]?.label ?? "một tín vật"} và mở thêm một chương lịch sử.`;
+  zoneSummaryStats.textContent = `Tín vật ${state.inventory.size}/${RELIC_TARGET_COUNT} • Tha hóa ${state.saDoa}% • Điểm lưu đã cập nhật`;
+  zoneSummaryOverlay.classList.remove("hidden");
+  zoneSummaryOverlay.setAttribute("aria-hidden", "false");
+  saveGameProgress();
+}
+
+function closeZoneSummary() {
+  zoneSummaryOverlay.classList.add("hidden");
+  zoneSummaryOverlay.setAttribute("aria-hidden", "true");
+  state.zoneSummaryLevelId = null;
+  state.mode = "playing";
+  updateInteractionPrompt();
+  saveGameProgress();
+}
 const storyRegistry = createStoryRegistry(levels);
 initializeLevelRuntime();
 configureOpeningCopy();
 updateProgressHud();
 
 startButton.addEventListener("click", withUiClickSound(startGame));
+continueButton.addEventListener("click", withUiClickSound(continueSavedGame));
 pauseButton.addEventListener("click", withUiClickSound(togglePause));
 soundButton.addEventListener("click", toggleSound);
 fullscreenButton.addEventListener("click", withUiClickSound(toggleFullscreen));
@@ -1054,9 +1322,12 @@ openingNextButton.addEventListener("click", withUiClickSound(advanceOpeningIntro
 storyPrevButton.addEventListener("click", withUiClickSound(() => showStoryBookEntry(-1)));
 storyNextButton.addEventListener("click", withUiClickSound(() => showStoryBookEntry(1)));
 returnStartButton.addEventListener("click", withUiClickSound(handleReturnFromEnding));
+tutorialNextButton.addEventListener("click", withUiClickSound(advanceTutorial));
+zoneSummaryCloseButton.addEventListener("click", withUiClickSound(closeZoneSummary));
 document.addEventListener("fullscreenchange", updateFullscreenButton);
 updateFullscreenButton();
 updateSoundButton();
+refreshContinueButton();
 
 function toggleFullscreen() {
   if (!gameShell || !document.fullscreenEnabled) {
@@ -4055,6 +4326,8 @@ function initializeLevelRuntime() {
       monster.lastContactAt = 0;
       monster.attackStartedAt = 0;
       monster.attackEndsAt = 0;
+      monster.telegraphStartsAt = 0;
+      monster.telegraphEndsAt = 0;
       monster.attackDirection = "down";
       monster.animationState = "idle";
       monster.phase = monster.phase ?? Math.random() * Math.PI * 2;
@@ -4081,6 +4354,10 @@ function setRespawnCheckpoint(levelId, spawnOverride = null) {
 
 function shouldPreserveMonsterDefeatOnRespawn(monster) {
   if (monster.dropItemId && state.inventory.has(monster.dropItemId)) {
+    return true;
+  }
+
+  if (monster.isBoss && monster.defeated) {
     return true;
   }
 
@@ -4120,6 +4397,11 @@ function resetGameplayProgress() {
   state.endingId = null;
   state.endingSummary = "";
   state.endingCinematic = null;
+  state.completedZones.clear();
+  state.zoneSummaryLevelId = null;
+  state.cameraShakeUntil = 0;
+  state.cameraShakeStrength = 0;
+  state.combatFlashUntil = 0;
   state.highCorruptionWarningShown = false;
   state.puzzleState.archiveSequence = 0;
   state.puzzleState.archiveSolved = false;
@@ -4680,6 +4962,7 @@ function legacyStartGame() {
   slideModal.setAttribute("aria-hidden", "true");
   resetStoryProgress();
   loadLevel("hub");
+  showTutorial();
   showStoryToast("Mục tiêu mới: đi qua 4 khu vực, tìm đủ 5 vật phẩm và giữ thanh Tha hóa ở mức an toàn.");
 }
 
@@ -4715,6 +4998,7 @@ function advanceOpeningIntro() {
 
 function beginGameSession() {
   resetMusicForNewSession();
+  clearSavedProgress();
   state.mode = "playing";
   state.aboutFromPause = false;
   state.openingStep = 0;
@@ -4730,6 +5014,7 @@ function beginGameSession() {
   slideModal.setAttribute("aria-hidden", "true");
   resetStoryProgress();
   loadLevel("hub");
+  showTutorial();
   showStoryToast("Mục tiêu mới: đi qua 4 khu vực, tìm đủ 5 vật phẩm và giữ thanh Tha hóa ở mức an toàn.");
 }
 
@@ -4827,6 +5112,9 @@ function loadLevel(levelId, spawnOverride, options = {}) {
 
   if (options.updateRespawnCheckpoint !== false) {
     setRespawnCheckpoint(levelId, spawn);
+    if (levelId !== "hub" && state.mode === "playing") {
+      showStoryToast(`Điểm lưu mới: ${level.label}.`);
+    }
   }
 
   player.x = spawn.x;
@@ -4846,6 +5134,9 @@ function loadLevel(levelId, spawnOverride, options = {}) {
   syncAmbienceAudio();
   updateStoryBookButton();
   updateProgressHud();
+  if (options.save !== false) {
+    saveGameProgress();
+  }
 }
 
 function updateLevelChrome() {
@@ -5583,16 +5874,27 @@ function updateMonsters(deltaSeconds) {
     monster.x = clamp(monster.x, currentLevel().bounds.minX, currentLevel().bounds.maxX);
     monster.y = clamp(monster.y, currentLevel().bounds.minY, currentLevel().bounds.maxY);
 
-    if (
-      distance <= MONSTER_TOUCH_RANGE &&
-      state.lastTimestamp - monster.lastContactAt >= MONSTER_CONTACT_DAMAGE_COOLDOWN_MS
-    ) {
+    const telegraphRange = MONSTER_TOUCH_RANGE + (monster.isBoss ? 48 : 30);
+    const canStartAttack = state.lastTimestamp - monster.lastContactAt >= MONSTER_CONTACT_DAMAGE_COOLDOWN_MS;
+
+    if (!monster.telegraphEndsAt && distance <= telegraphRange && canStartAttack) {
+      monster.telegraphStartsAt = state.lastTimestamp;
+      monster.telegraphEndsAt = state.lastTimestamp + (monster.isBoss ? 520 : 340);
+      monster.attackDirection = getDirectionFromVector(player.x - monster.x, player.y - monster.y);
+      monster.animationState = "telegraph";
+    }
+
+    if (monster.telegraphEndsAt && state.lastTimestamp >= monster.telegraphEndsAt) {
       monster.lastContactAt = state.lastTimestamp;
       monster.attackStartedAt = state.lastTimestamp;
       monster.attackEndsAt = state.lastTimestamp + MONSTER_ATTACK_ANIMATION_MS;
-      monster.attackDirection = getDirectionFromVector(player.x - monster.x, player.y - monster.y);
+      monster.telegraphStartsAt = 0;
+      monster.telegraphEndsAt = 0;
       monster.animationState = "attack";
-      damagePlayer(monster.damage ?? 1, monster.name);
+
+      if (distance <= MONSTER_TOUCH_RANGE + 10) {
+        damagePlayer(monster.damage ?? 1, monster.name);
+      }
     }
   }
 }
@@ -5600,12 +5902,15 @@ function updateMonsters(deltaSeconds) {
 function damageMonster(monster, amount) {
   monster.health = Math.max(0, monster.health - amount);
   monster.hitFlashUntil = state.lastTimestamp + 180;
+  state.cameraShakeUntil = state.lastTimestamp + (monster.isBoss ? 150 : 90);
+  state.cameraShakeStrength = monster.isBoss ? 4 : 2;
 
   if (monster.health > 0) {
     return;
   }
 
   monster.defeated = true;
+  saveGameProgress();
 
   if (monster.id === "southern-tyrant") {
     state.quests.zone3BossDefeated = true;
@@ -5626,6 +5931,9 @@ function damagePlayer(amount, sourceName = "bóng tối") {
 
   state.invulnerableUntil = state.lastTimestamp + 820;
   state.health = Math.max(0, state.health - amount);
+  state.cameraShakeUntil = state.lastTimestamp + 180;
+  state.cameraShakeStrength = 5;
+  state.combatFlashUntil = state.lastTimestamp + 150;
   updateProgressHud();
 
   if (state.health > 0) {
@@ -5775,6 +6083,22 @@ function updateCamera() {
   camera.y = clamp(player.y - VIEWPORT.height / 2, 0, WORLD.height - VIEWPORT.height);
 }
 
+function getCameraShakeOffset() {
+  const isShaking = state.lastTimestamp < state.cameraShakeUntil;
+  const magnitude = isShaking ? state.cameraShakeStrength : 0;
+  return {
+    x: magnitude ? Math.round(Math.sin(state.lastTimestamp * 0.19) * magnitude) : 0,
+    y: magnitude ? Math.round(Math.cos(state.lastTimestamp * 0.27) * magnitude * 0.6) : 0,
+  };
+}
+
+function applyCameraTransform() {
+  const offset = getCameraShakeOffset();
+  const offsetX = offset.x;
+  const offsetY = offset.y;
+  ctx.translate(-camera.x + offsetX, -camera.y + offsetY);
+}
+
 function handleLevelTransitions() {
   refreshBlockedExits();
 
@@ -5804,6 +6128,7 @@ function updateInteractionPrompt() {
     state.activeInteractionId = candidate.id;
     interactionPrompt.textContent = `Nhấn E để ${candidate.prompt}`;
     interactionPrompt.classList.remove("hidden");
+    updateContextualControls("interact");
     return;
   }
 
@@ -5813,6 +6138,7 @@ function updateInteractionPrompt() {
   if (nearbyMonster) {
     interactionPrompt.textContent = `J tấn công • K thanh tẩy ${nearbyMonster.name}`;
     interactionPrompt.classList.remove("hidden");
+    updateContextualControls("combat");
     return;
   }
 
@@ -5821,10 +6147,26 @@ function updateInteractionPrompt() {
   if (exitHint) {
     interactionPrompt.textContent = exitHint.prompt;
     interactionPrompt.classList.remove("hidden");
+    updateContextualControls("exit");
     return;
   }
 
   interactionPrompt.classList.add("hidden");
+  updateContextualControls("move");
+}
+
+function updateContextualControls(context) {
+  if (!actionHint) {
+    return;
+  }
+
+  const hints = {
+    interact: "E tương tác • J/K kỹ năng • B sách",
+    combat: "J tấn công • K thanh tẩy • Di chuyển để né",
+    exit: "Theo lối ra • E khi có điểm tương tác",
+    move: "WASD di chuyển • E tương tác • J/K kỹ năng • B sách",
+  };
+  actionHint.textContent = hints[context] ?? hints.move;
 }
 
 function getActiveExitHint() {
@@ -5848,9 +6190,20 @@ function updateQuestChip() {
 
   const objective = getNavigationObjective();
 
+  const progress = getZoneProgressText(state.currentLevelId);
   questChip.textContent = objective
-    ? `${objective.label} - ${formatNavigationDistance(objective.distance)}`
-    : "Tu do tham hiem";
+    ? `${progress} • ${objective.label} - ${formatNavigationDistance(objective.distance)}`
+    : `${progress} • Tự do thám hiểm`;
+}
+
+function getZoneProgressText(levelId) {
+  switch (levelId) {
+    case "village": return `Công nhân ${state.quests.zone1Delivered.size}/3`;
+    case "archive": return `Mảnh ghép ${state.quests.zone2Fragments.size}/3`;
+    case "crossroads": return `Lực lượng ${state.quests.zone3Recruits.size}/4`;
+    case "spring": return `Nông hộ ${state.quests.zone4Farmers.size}/3`;
+    default: return `Tín vật ${state.inventory.size}/${RELIC_TARGET_COUNT}`;
+  }
 }
 
 function isExitNear(exit) {
@@ -6322,7 +6675,7 @@ function drawObjectiveBeacon(objective, pulse) {
   const markerY = Math.round(objective.y - 20 + bob);
 
   ctx.save();
-  ctx.translate(-camera.x, -camera.y);
+  applyCameraTransform();
   drawWorldWarmGlow(markerX, markerY, NAVIGATION_ASSIST.objectiveGlowRadius, 0.14 * pulse);
 
   ctx.save();
@@ -6341,7 +6694,7 @@ function drawPlayerNavigationArrow(objective, pulse) {
   const arrowY = player.y + NAVIGATION_ASSIST.playerArrowYOffset + (objective.dy / objective.distance) * offset;
 
   ctx.save();
-  ctx.translate(-camera.x, -camera.y);
+  applyCameraTransform();
   drawWorldWarmGlow(arrowX, arrowY, NAVIGATION_ASSIST.playerGlowRadius, 0.12 * pulse);
 
   ctx.save();
@@ -6417,6 +6770,7 @@ function handleInteraction() {
 
   if (candidate.interactionType) {
     handleSystemInteraction(candidate);
+    saveGameProgress();
     return;
   }
 
@@ -6649,6 +7003,7 @@ function collectRelic(itemId, guidance = "") {
     : "";
   state.inventory.add(itemId);
   updateProgressHud();
+  saveGameProgress();
 
   showStoryToast(
     [
@@ -6664,12 +7019,17 @@ function collectRelic(itemId, guidance = "") {
     scheduleRelicBookOpen(relic.storyId);
   }
 
+  if (state.currentLevelId !== "hub") {
+    window.setTimeout(() => showZoneSummary(state.currentLevelId, itemId), 180);
+  }
+
   return true;
 }
 
 function adjustSaDoa(delta, message = "") {
   state.saDoa = clamp(state.saDoa + delta, 0, SA_DOA_MAX);
   updateProgressHud();
+  saveGameProgress();
 
   if (message) {
     showStoryToast(message);
@@ -6715,8 +7075,19 @@ function render() {
   drawSkillEffect();
   drawAtmosphere();
   drawVignette();
+  drawCombatFeedback();
   drawNavigationAssist();
   drawMiniMap();
+}
+
+function drawCombatFeedback() {
+  if (state.lastTimestamp >= state.combatFlashUntil) {
+    return;
+  }
+
+  const progress = (state.combatFlashUntil - state.lastTimestamp) / 150;
+  ctx.fillStyle = `rgba(221, 73, 73, ${0.16 * clamp(progress, 0, 1)})`;
+  ctx.fillRect(0, 0, VIEWPORT.width, VIEWPORT.height);
 }
 
 function drawMiniMap() {
@@ -6776,8 +7147,18 @@ function drawMiniMap() {
     }
 
     const point = getInteractionPoint(item);
-    const color = item.interactionType === "pickup" ? "#eec96d" : "#a7c7f3";
+    const color = item.interactionType === "pickup"
+      ? "#eec96d"
+      : ["offerBribe", "splitChoice", "fillCorruption", "ideologyTrap"].includes(item.interactionType)
+        ? "#e96b67"
+        : "#a7c7f3";
     drawPoint(point.x, point.y, color, 2);
+  }
+
+  for (const monster of level.monsters ?? []) {
+    if (!monster.defeated) {
+      drawPoint(monster.x, monster.y, monster.isBoss ? "#f1b452" : "#e96558", monster.isBoss ? 4 : 2);
+    }
   }
 
   const objective = getNavigationObjective();
@@ -6796,6 +7177,16 @@ function drawMiniMap() {
 
   drawPoint(player.x, player.y, "#fff5d2", 4);
   drawPoint(player.x, player.y, "#4aa8ff", 2);
+  drawMiniMapLegend();
+}
+
+function drawMiniMapLegend() {
+  minimap.title = "Vàng: lối ra hoặc mục tiêu • xanh: tương tác • đỏ: quái • cam: boss";
+  const markers = ["#f3d777", "#a7c7f3", "#e96558", "#f1b452"];
+  markers.forEach((color, index) => {
+    minimapCtx.fillStyle = color;
+    minimapCtx.fillRect(7 + index * 6, 7, 3, 3);
+  });
 }
 
 function getMiniMapBackground(levelId) {
@@ -6817,7 +7208,7 @@ function drawWorld() {
   ctx.clearRect(0, 0, VIEWPORT.width, VIEWPORT.height);
 
   ctx.save();
-  ctx.translate(-camera.x, -camera.y);
+  applyCameraTransform();
 
   if (state.currentLevelId === "hub") {
     drawHubWorld(currentLevel().decorations);
@@ -9040,7 +9431,7 @@ function drawFallbackBlossomTree(tree) {
 
 function drawInteractables() {
   ctx.save();
-  ctx.translate(-camera.x, -camera.y);
+  applyCameraTransform();
 
   for (const item of currentLevel().interactables) {
     if (!shouldDrawInteractable(item)) {
@@ -9474,6 +9865,10 @@ function drawMonster(monster) {
   const shadowWidth = spriteConfig?.shadowWidth ?? 20;
   const isAttacking = state.lastTimestamp < (monster.attackEndsAt ?? 0);
 
+  if (monster.telegraphEndsAt && state.lastTimestamp < monster.telegraphEndsAt) {
+    drawMonsterTelegraph(monster);
+  }
+
   ctx.fillStyle = "rgba(12, 14, 18, 0.28)";
   ctx.fillRect(monster.x - shadowWidth / 2, monster.y + 10, shadowWidth, 4);
 
@@ -9507,6 +9902,24 @@ function drawMonster(monster) {
   }
 
   drawMonsterHealthBar(monster);
+}
+
+function drawMonsterTelegraph(monster) {
+  const duration = Math.max(1, monster.telegraphEndsAt - monster.telegraphStartsAt);
+  const progress = clamp((state.lastTimestamp - monster.telegraphStartsAt) / duration, 0, 1);
+  const radius = (monster.isBoss ? 30 : 20) + progress * (monster.isBoss ? 18 : 10);
+
+  ctx.save();
+  ctx.globalAlpha = 0.18 + progress * 0.28;
+  ctx.fillStyle = "#e95d59";
+  ctx.beginPath();
+  ctx.arc(monster.x, monster.y + 8, radius, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.globalAlpha = 0.8;
+  ctx.strokeStyle = "#fff1c4";
+  ctx.lineWidth = monster.isBoss ? 2 : 1;
+  ctx.stroke();
+  ctx.restore();
 }
 
 function drawMonsterSprite(monster, hitFlash) {
@@ -9588,13 +10001,15 @@ function getMonsterPalette(variant, hitFlash) {
 }
 
 function drawMonsterHealthBar(monster) {
-  const width = 18;
+  const width = monster.isBoss ? 34 : 18;
   const ratio = monster.health / monster.maxHealth;
+  const y = monster.y - (monster.isBoss ? 26 : 18);
+  const height = monster.isBoss ? 5 : 4;
 
   ctx.fillStyle = "rgba(18, 20, 23, 0.84)";
-  ctx.fillRect(monster.x - 9, monster.y - 18, width, 4);
-  ctx.fillStyle = "#95cf5f";
-  ctx.fillRect(monster.x - 8, monster.y - 17, Math.max(0, Math.round((width - 2) * ratio)), 2);
+  ctx.fillRect(monster.x - width / 2, y, width, height);
+  ctx.fillStyle = monster.isBoss ? "#f1b452" : "#95cf5f";
+  ctx.fillRect(monster.x - width / 2 + 1, y + 1, Math.max(0, Math.round((width - 2) * ratio)), Math.max(1, height - 2));
 }
 
 function drawRuinedDesk(item) {
@@ -9793,6 +10208,14 @@ function drawInteractionMarker(item) {
   const markerX = Math.round(item.x);
   const markerY = Math.round(item.y - item.height - 10 + bob);
 
+  ctx.save();
+  ctx.globalAlpha = 0.18 + (Math.sin(state.lastTimestamp / 140) + 1) * 0.08;
+  ctx.fillStyle = "#ffe38b";
+  ctx.beginPath();
+  ctx.arc(item.x, item.y + 8, 19, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
   let markerColor = "#dce8ff";
 
   if (state.currentLevelId === "archive") {
@@ -9818,7 +10241,10 @@ function getPlayerAttackProgress() {
 
 function drawPlayer() {
   ctx.save();
-  ctx.translate(Math.round(player.x - camera.x), Math.round(player.y - camera.y));
+  const shake = getCameraShakeOffset();
+  const isInvulnerable = state.lastTimestamp < state.invulnerableUntil;
+  ctx.globalAlpha = isInvulnerable && Math.floor(state.lastTimestamp / 80) % 2 === 0 ? 0.48 : 1;
+  ctx.translate(Math.round(player.x - camera.x + shake.x), Math.round(player.y - camera.y + shake.y));
 
   ctx.fillStyle = "rgba(10, 12, 16, 0.32)";
   ctx.fillRect(-7, 9, 14, 4);
@@ -10011,7 +10437,7 @@ function drawSkillEffect() {
   }
 
   ctx.save();
-  ctx.translate(-camera.x, -camera.y);
+  applyCameraTransform();
 
   if (state.activeSkillEffect.type === "strike") {
     const { x, y, direction } = state.activeSkillEffect;
