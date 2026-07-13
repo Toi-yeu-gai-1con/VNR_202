@@ -13,6 +13,9 @@ import { createMiniMapRenderer } from "../rendering/minimap-renderer.js";
 import { createCoordinateSystem } from "../rendering/coordinate-system.js";
 import { LEVEL_ASSET_GROUPS, getAssetGroupForSource, isCriticalAsset } from "../data/asset-manifest.js";
 import { BOSS_DEFINITIONS, COMBAT_DENSITY, COMBAT_ROSTER } from "../data/combat-config.js";
+import { GAMEPLAY_BALANCE, getDifficultySettings } from "../data/gameplay-balance.js";
+import { AUDIO_TRACKS, getAudioSourceCandidates, resolveAudioSource } from "../data/media-sources.js";
+import { BUILD_VERSION, withAssetVersion } from "../data/build-info.js";
 import { PLAYER_FOOTPRINT, PLAYER_SPRITE, NPC_SPRITE, ENVIRONMENT_SPRITES, TILECRAFT_TERRAIN, PIXEL_CRAWLER_TERRAIN, VILLAGE_SKYLINE_Y, VILLAGE_PROP_SPRITES, PIXEL_CRAWLER_BUILDING_SPRITES, HUB_PORTAL_SPRITE, SWORD_SLASH_SPRITE, PIXEL_CRAWLER_TREE_SPRITE, KENNEY_ROGUELIKE_TILE, KENNEY_ROGUELIKE_SPRITES, PIXEL_CRAWLER_VEGETATION_SPRITES, PIXEL_CRAWLER_TOOL_CLUSTER_SPRITES, CAINOS_PROP_SPRITES, LIMEZU_INTERIOR_SPRITES, HOUSE_INTERIOR_A_SPRITES, MONSTER_SPRITE_CONFIG } from "../data/render-config.js";
 
 const canvas = document.getElementById("game-canvas");
@@ -66,6 +69,7 @@ const startQuestion = startScreen.querySelector(".start-question");
 const startCopy = startScreen.querySelector(".intro-copy");
 const startObjectiveItems = Array.from(startScreen.querySelectorAll(".start-objectives p"));
 const startControls = startScreen.querySelector(".start-controls");
+const buildVersionLabel = document.getElementById("build-version");
 
 const startButton = document.getElementById("start-button");
 const continueButton = document.getElementById("continue-button");
@@ -140,37 +144,37 @@ const PORT_MAZE_DOOR = {
   spawnX: 178,
   spawnY: 238,
 };
-const PLAYER_SPEED = 92;
-const INTERACTION_RADIUS = 30;
+const PLAYER_SPEED = GAMEPLAY_BALANCE.player.speed;
+const INTERACTION_RADIUS = GAMEPLAY_BALANCE.player.interactionRadius;
 const STORY_UNLOCK_TOAST_MS = 2800;
 const RELIC_BOOK_OPEN_DELAY_MS = 900;
-const PLAYER_MAX_HEALTH = 36;
-const SA_DOA_MAX = 100;
-const SA_DOA_BAD_ENDING = 60;
-const CORRUPTION_GLITCH_THRESHOLD = 50;
+const PLAYER_MAX_HEALTH = GAMEPLAY_BALANCE.player.maxHealth;
+const SA_DOA_MAX = GAMEPLAY_BALANCE.corruption.max;
+const SA_DOA_BAD_ENDING = GAMEPLAY_BALANCE.corruption.badEndingThreshold;
+const CORRUPTION_GLITCH_THRESHOLD = GAMEPLAY_BALANCE.corruption.glitchThreshold;
 const CORRUPTION_WARNING_MS = 2600;
-const DEATH_SA_DOA_PENALTY = 12;
-const STRIKE_COOLDOWN_MS = 420;
-const PARRY_COOLDOWN_MS = 760;
-const PARRY_WINDOW_MS = 260;
-const STRIKE_RANGE = 48;
-const MONSTER_SPEED = 38;
-const STAMINA_MAX = 100;
-const STAMINA_REGEN_PER_SECOND = 32;
-const DODGE_COST = 28;
-const DODGE_DISTANCE = 54;
-const DODGE_COOLDOWN_MS = 420;
-const CHARGED_STRIKE_THRESHOLD_MS = 360;
-const PROJECTILE_SPEED = 136;
-const MONSTER_TOUCH_RANGE = 18;
-const MONSTER_CONTACT_DAMAGE_COOLDOWN_MS = 900;
-const RESPAWN_INVULNERABILITY_MS = 1400;
+const DEATH_SA_DOA_PENALTY = GAMEPLAY_BALANCE.corruption.deathPenalty;
+const STRIKE_COOLDOWN_MS = GAMEPLAY_BALANCE.combat.strike.cooldownMs;
+const PARRY_COOLDOWN_MS = GAMEPLAY_BALANCE.combat.parry.cooldownMs;
+const PARRY_WINDOW_MS = GAMEPLAY_BALANCE.combat.parry.windowMs;
+const STRIKE_RANGE = GAMEPLAY_BALANCE.combat.strike.range;
+const MONSTER_SPEED = GAMEPLAY_BALANCE.mob.baseSpeed;
+const STAMINA_MAX = GAMEPLAY_BALANCE.stamina.max;
+const STAMINA_REGEN_PER_SECOND = GAMEPLAY_BALANCE.stamina.regenPerSecond;
+const DODGE_COST = GAMEPLAY_BALANCE.stamina.dodgeCost;
+const DODGE_DISTANCE = GAMEPLAY_BALANCE.stamina.dodgeDistance;
+const DODGE_COOLDOWN_MS = GAMEPLAY_BALANCE.stamina.dodgeCooldownMs;
+const CHARGED_STRIKE_THRESHOLD_MS = GAMEPLAY_BALANCE.combat.strike.chargedThresholdMs;
+const PROJECTILE_SPEED = GAMEPLAY_BALANCE.mob.projectileSpeed;
+const MONSTER_TOUCH_RANGE = GAMEPLAY_BALANCE.mob.touchRange;
+const MONSTER_CONTACT_DAMAGE_COOLDOWN_MS = GAMEPLAY_BALANCE.mob.contactDamageCooldownMs;
+const RESPAWN_INVULNERABILITY_MS = GAMEPLAY_BALANCE.mob.respawnInvulnerabilityMs;
 const RELIC_TARGET_COUNT = 5;
 const SAVE_STORAGE_KEY = "crossroads-save-v1";
 const SAVE_VERSION = 1;
-const PLAYER_ATTACK_ANIMATION_MS = 260;
-const MONSTER_ATTACK_ANIMATION_MS = 260;
-const ATTACK_LUNGE_DISTANCE = 4;
+const PLAYER_ATTACK_ANIMATION_MS = GAMEPLAY_BALANCE.combat.strike.animationMs;
+const MONSTER_ATTACK_ANIMATION_MS = GAMEPLAY_BALANCE.mob.attackAnimationMs;
+const ATTACK_LUNGE_DISTANCE = GAMEPLAY_BALANCE.combat.strike.lungeDistance;
 const NAVIGATION_ASSIST = {
   objectiveGlowRadius: 18,
   playerGlowRadius: 18,
@@ -190,6 +194,7 @@ const REQUIRED_RELIC_IDS = [
   "doi-moi-gear",
 ];
 function configureOpeningCopy() {
+  buildVersionLabel.textContent = `Phiên bản ${BUILD_VERSION}`;
   startQuestion.textContent = "THE CROSSROADS: NHÀ DU HÀNH THỜI GIAN";
   startCopy.textContent =
     "Hãy trở thành một người vô danh du hành về các nhánh thời gian khác nhau, chứng kiến câu chuyện của các thời đại đó để mở ra tương lai thật sự, hoặc vi phạm vào sai lầm và rơi vào cái kết tệ nhất.";
@@ -538,7 +543,7 @@ function isMonsterActive(monster) {
   if (!monster.spawnRank) {
     return true;
   }
-  const difficultyBonus = state.difficulty === "challenge" ? 1 : state.difficulty === "story" ? -1 : 0;
+  const difficultyBonus = GAMEPLAY_BALANCE.difficulty.spawnBudgetOffset[state.difficulty] ?? 0;
   const budget = Math.max(1, (COMBAT_DENSITY[state.currentLevelId] ?? 3) + difficultyBonus);
   return monster.spawnRank <= budget;
 }
@@ -590,14 +595,6 @@ function setDifficulty(difficulty) {
     button.classList.toggle('is-selected', button.dataset.difficulty === difficulty);
     button.setAttribute('aria-pressed', String(button.dataset.difficulty === difficulty));
   });
-}
-
-function getDifficultySettings() {
-  return {
-    story: { enemyHealth: 0.75, enemyDamage: 0.65, enemySpeed: 0.82, dropChance: 0.5 },
-    normal: { enemyHealth: 1, enemyDamage: 1, enemySpeed: 1, dropChance: 0.34 },
-    challenge: { enemyHealth: 1.35, enemyDamage: 1.4, enemySpeed: 1.16, dropChance: 0.22 },
-  }[state.difficulty] ?? { enemyHealth: 1, enemyDamage: 1, enemySpeed: 1, dropChance: 0.34 };
 }
 
 function continueSavedGame() {
@@ -998,11 +995,11 @@ function loadEnvironmentSprites() {
     archiveParquet: loadSprite("assets/environment/archive/Birch_Parquet_01_basecolor.png"),
     archiveHouseInterior: loadSprite("assets/environment/archive/HouseInteriorA.png"),
     generatedWorlds: {
-      colonialHarbor: loadSprite("assets/environment/generated-worlds/colonial-harbor-hero.png"),
-      archiveInterior: loadSprite("assets/environment/generated-worlds/archive-interior-hero.png"),
-      revolutionSquare: loadSprite("assets/environment/generated-worlds/revolution-square-hero.png"),
-      factoryValley: loadSprite("assets/environment/generated-worlds/factory-valley-hero.png"),
-      historyHub: loadSprite("assets/environment/generated-worlds/history-hub-hero.png"),
+      colonialHarbor: loadSprite("assets/environment/generated-worlds/colonial-harbor-hero.webp"),
+      archiveInterior: loadSprite("assets/environment/generated-worlds/archive-interior-hero.webp"),
+      revolutionSquare: loadSprite("assets/environment/generated-worlds/revolution-square-hero.webp"),
+      factoryValley: loadSprite("assets/environment/generated-worlds/factory-valley-hero.webp"),
+      historyHub: loadSprite("assets/environment/generated-worlds/history-hub-hero.webp"),
     },
     generatedObjects: {
       finalHistoryGate: loadSprite("assets/environment/generated-objects/final-history-gate.png"),
@@ -1164,20 +1161,20 @@ function loadUiSounds() {
 
 function loadAmbienceSounds() {
   return {
-    rain: loadSound("assets/audio/rain-ambient.mp3", 0.18, { loop: true }),
-    fireplace: loadSound("assets/audio/fireplace-ambient.mp3", 0.14, { loop: true }),
+    rain: loadSound(AUDIO_TRACKS.rain, 0.18, { loop: true }),
+    fireplace: loadSound(AUDIO_TRACKS.fireplace, 0.14, { loop: true }),
   };
 }
 
 function loadMusicSounds() {
   return {
-    hub: loadSound("assets/audio/hub-unexplored-expansion.mp3", 0.24, { loop: true }),
-    portMaze: loadSound("assets/audio/unforgiving_himalayas_looping.ogg", 0.24, { loop: true }),
-    archive: loadSound("assets/audio/archive-cave-theme.ogg", 0.26, { loop: true }),
-    crossroads: loadSound("assets/audio/crossroads-ancient-power.ogg", 0.22, { loop: true }),
-    spring: loadSound("assets/audio/spring-town-theme.mp3", 0.26, { loop: true }),
-    badEnding: loadSound("assets/audio/Bad Ending - Mob of The Dead - Soundtrack.mp3", 0.28, { loop: true }),
-    goodEnding: loadSound("assets/audio/good-ending-legend-will-rise.mp3", 0.3, { loop: true }),
+    hub: loadSound(AUDIO_TRACKS.hub, 0.24, { loop: true }),
+    portMaze: loadSound(AUDIO_TRACKS.portMaze, 0.24, { loop: true }),
+    archive: loadSound(AUDIO_TRACKS.archive, 0.26, { loop: true }),
+    crossroads: loadSound(AUDIO_TRACKS.crossroads, 0.22, { loop: true }),
+    spring: loadSound(AUDIO_TRACKS.spring, 0.26, { loop: true }),
+    badEnding: loadSound(AUDIO_TRACKS.badEnding, 0.28, { loop: true }),
+    goodEnding: loadSound(AUDIO_TRACKS.goodEnding, 0.3, { loop: true }),
   };
 }
 
@@ -1208,7 +1205,7 @@ function loadSprite(src) {
   const entry = assetManager.register({
     key: `image:${src}`,
     type: "image",
-    src,
+    src: withAssetVersion(src),
     group,
     critical: isCriticalAsset(src, group),
     handle: image,
@@ -1218,15 +1215,17 @@ function loadSprite(src) {
 
 function loadSound(src, volume = 1, options = {}) {
   const sound = new Audio();
+  const sources = getAudioSourceCandidates(src);
+  const selectedSource = resolveAudioSource(sources, sound);
   sound.preload = "auto";
   sound.volume = volume;
   sound.loop = Boolean(options.loop);
-  const group = getAssetGroupForSource(src);
   const entry = assetManager.register({
     key: `audio:${src}`,
     type: "audio",
-    src,
-    group,
+    src: withAssetVersion(selectedSource.src),
+    sources: sources.map((source) => ({ ...source, src: withAssetVersion(source.src) })),
+    group: getAssetGroupForSource(selectedSource.src),
     critical: false,
     handle: sound,
     volume,
@@ -1768,7 +1767,7 @@ function createStoryRegistry(levelMap) {
 }
 
 function initializeLevelRuntime() {
-  const difficulty = getDifficultySettings();
+  const difficulty = getDifficultySettings(state.difficulty);
   for (const level of Object.values(levels)) {
     level.drops = [];
     for (const trap of level.traps ?? []) {
@@ -3567,7 +3566,7 @@ function resolveParry(sourceName, sourceMonster = null) {
 
   state.parryEndsAt = 0;
   state.invulnerableUntil = Math.max(state.invulnerableUntil, state.lastTimestamp + 140);
-  state.stamina = Math.min(STAMINA_MAX, state.stamina + 20);
+  state.stamina = Math.min(STAMINA_MAX, state.stamina + GAMEPLAY_BALANCE.combat.parry.staminaReward);
   state.activeSkillEffect = {
     type: "parryHit",
     x: player.x,
@@ -3616,7 +3615,7 @@ function updateMonsters(deltaSeconds) {
     const dx = player.x - monster.x;
     const dy = player.y - monster.y;
     const distance = Math.hypot(dx, dy);
-    const settings = getDifficultySettings();
+    const settings = getDifficultySettings(state.difficulty);
     const isStunned = state.lastTimestamp < (monster.stunnedUntil ?? 0);
     let targetX = monster.homeX + Math.cos(state.lastTimestamp * 0.001 + monster.phase) * (monster.patrolRadius ?? 18);
     let targetY = monster.homeY + Math.sin(state.lastTimestamp * 0.0012 + monster.phase) * (monster.patrolRadius ?? 18);
@@ -3686,7 +3685,7 @@ function spawnEnemyProjectile(monster) {
     velocityX: (dx / length) * PROJECTILE_SPEED,
     velocityY: (dy / length) * PROJECTILE_SPEED,
     expiresAt: state.lastTimestamp + 1800,
-    damage: Math.max(1, Math.round((monster.damage ?? 1) * getDifficultySettings().enemyDamage)),
+    damage: Math.max(1, Math.round((monster.damage ?? 1) * getDifficultySettings(state.difficulty).enemyDamage)),
     sourceName: monster.name,
     sourceMonster: monster,
   });
@@ -3732,13 +3731,13 @@ function isWorldPointInBounds(x, y) {
 
 function spawnMonsterDrop(monster) {
   const guaranteed = monster.isBoss;
-  if (!guaranteed && Math.random() > getDifficultySettings().dropChance) {
+  if (!guaranteed && Math.random() > getDifficultySettings(state.difficulty).dropChance) {
     return;
   }
   currentLevel().drops.push({
     x: monster.x,
     y: monster.y,
-    type: monster.isBoss || state.health < PLAYER_MAX_HEALTH * 0.55 ? "health" : "stamina",
+    type: monster.isBoss || state.health < PLAYER_MAX_HEALTH * GAMEPLAY_BALANCE.drops.healthPriorityThreshold ? "health" : "stamina",
     expiresAt: state.lastTimestamp + 12000,
   });
 }
@@ -3753,9 +3752,9 @@ function updateWorldDrops() {
     }
     if (Math.hypot(player.x - drop.x, player.y - drop.y) < 20) {
       if (drop.type === "health") {
-        state.health = Math.min(PLAYER_MAX_HEALTH, state.health + 6);
+        state.health = Math.min(PLAYER_MAX_HEALTH, state.health + GAMEPLAY_BALANCE.drops.healthAmount);
       } else {
-        state.stamina = Math.min(STAMINA_MAX, state.stamina + 34);
+        state.stamina = Math.min(STAMINA_MAX, state.stamina + GAMEPLAY_BALANCE.drops.staminaAmount);
       }
       drops.splice(index, 1);
       showStoryToast(drop.type === "health" ? "Nhặt được hồi phục sinh lực." : "Nhặt được năng lượng chiến đấu.");

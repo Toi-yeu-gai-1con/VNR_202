@@ -5,7 +5,7 @@ const game = readFileSync(new URL("../src/runtime/game-runtime.js", import.meta.
 const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const combatConfig = readFileSync(new URL("../src/data/combat-config.js", import.meta.url), "utf8");
 
-assert.match(game, /const STAMINA_MAX = 100;/, "Expected stamina system.");
+assert.match(game, /GAMEPLAY_BALANCE\.stamina\.max/, "Expected stamina system to use data-owned balance.");
 assert.match(game, /function useDodge\(/, "Expected dodge action.");
 assert.match(game, /function startStrikeCharge\(/, "Expected charged strike input.");
 assert.match(game, /comboStep/, "Expected strike combo state.");

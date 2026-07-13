@@ -633,7 +633,7 @@ button {
     radial-gradient(circle at 50% 14%, rgba(237, 184, 88, 0.18), transparent 22%),
     linear-gradient(135deg, rgba(123, 22, 22, 0.22), transparent 46%),
     linear-gradient(180deg, rgba(11, 13, 19, 0.44), rgba(9, 11, 16, 0.9)),
-    url("assets/ui/generated/start-screen-hero.png") center 34% / cover no-repeat,
+    url("assets/ui/generated/start-screen-hero.webp") center 34% / cover no-repeat,
     repeating-linear-gradient(
       135deg,
       rgba(255, 255, 255, 0.04) 0 12px,
@@ -772,6 +772,13 @@ button {
   color: #dbcdb7;
   font-size: clamp(0.88rem, 1.24vw, 1rem);
   line-height: 1.14;
+}
+
+.build-version {
+  margin: 0.45rem 0 0;
+  color: rgba(255, 242, 194, 0.66);
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
 }
 
 .tutorial-overlay,

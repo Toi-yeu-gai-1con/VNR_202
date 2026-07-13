@@ -105,7 +105,7 @@ export const RELIC_STORY_SLIDES = {
         caption: "Hai nh\u00e0 y\u00eau n\u01b0\u1edbc Phan B\u1ed9i Ch\u00e2u v\u00e0 Phan Ch\u00e2u Trinh ti\u00eau bi\u1ec3u cho n\u1ed7 l\u1ef1c t\u00ecm \u0111\u01b0\u1eddng c\u1ee9u n\u01b0\u1edbc \u0111\u1ea7u th\u1ebf k\u1ef7 XX.",
       },
       {
-        src: "assets/story/level1/duong-kach-menh.png",
+        src: "assets/story/level1/duong-kach-menh.webp",
         alt: "T\u00e1c ph\u1ea9m \u0110\u01b0\u1eddng K\u00e1ch M\u1ec7nh",
         caption: "T\u00e1c ph\u1ea9m \u0110\u01b0\u1eddng K\u00e1ch M\u1ec7nh \u0111\u1eb7t n\u1ec1n t\u1ea3ng l\u00fd lu\u1eadn, m\u1edf ra kim ch\u1ec9 nam cho con \u0111\u01b0\u1eddng c\u1ee7a c\u00e1ch m\u1ea1ng Vi\u1ec7t Nam.",
       },
@@ -121,7 +121,7 @@ export const RELIC_STORY_SLIDES = {
     caption: "Ba tổ chức rời rạc hợp nhất thành một đội tiên phong lãnh đạo cách mạng",
     gallery: [
       {
-        src: "assets/story/level2/party-unification-1930.png",
+        src: "assets/story/level2/party-unification-1930.webp",
         alt: "H\u1ee3p nh\u1ea5t c\u00e1c t\u1ed5 ch\u1ee9c c\u1ed9ng s\u1ea3n n\u0103m 1930",
         caption: "H\u1ed9i ngh\u1ecb h\u1ee3p nh\u1ea5t c\u00e1c t\u1ed5 ch\u1ee9c c\u1ed9ng s\u1ea3n n\u0103m 1930 d\u01b0\u1edbi s\u1ef1 ch\u1ee7 tr\u00ec c\u1ee7a Nguy\u1ec5n \u00c1i Qu\u1ed1c.",
       },
@@ -142,7 +142,7 @@ export const RELIC_STORY_SLIDES = {
         caption: "M\u1eb7t tr\u1eadn Vi\u1ec7t Nam \u0110\u1ed9c l\u1eadp \u0110\u1ed3ng minh (Vi\u1ec7t Minh) th\u00e0nh l\u1eadp n\u0103m 1941, quy t\u1ee5 s\u1ee9c m\u1ea1nh \u0111\u1ea1i \u0111o\u00e0n k\u1ebft to\u00e0n d\u00e2n t\u1ed9c.",
       },
       {
-        src: "assets/story/level3/august-revolution-1945.png",
+        src: "assets/story/level3/august-revolution-1945.webp",
         alt: "M\u00edt tinh t\u1ea1i Qu\u1ea3ng tr\u01b0\u1eddng Ba \u0110\u00ecnh ng\u00e0y 2 th\u00e1ng 9 n\u0103m 1945",
         caption: "Cu\u1ed9c m\u00edt tinh t\u1ea1i Qu\u1ea3ng tr\u01b0\u1eddng Ba \u0110\u00ecnh ng\u00e0y 2/9/1945, d\u1ea5u m\u1ed1c khai sinh n\u01b0\u1edbc Vi\u1ec7t Nam D\u00e2n ch\u1ee7 C\u1ed9ng h\u00f2a.",
       },
@@ -209,7 +209,7 @@ const RELIC_STORY_PRESENTATION_UPDATES = {
         caption: "Các sĩ phu yêu nước đầu thế kỷ XX nỗ lực tìm đường cứu nước.",
       },
       {
-        src: "assets/story/level1/duong-kach-menh.png",
+        src: "assets/story/level1/duong-kach-menh.webp",
         alt: "Tác phẩm Đường Kách Mệnh",
         caption: "Đường Kách Mệnh đặt nền lý luận cho con đường cách mạng Việt Nam.",
       },
@@ -220,7 +220,7 @@ const RELIC_STORY_PRESENTATION_UPDATES = {
       "Cuối năm 1929, ba tổ chức cộng sản ra đời nhưng hoạt động riêng rẽ, có nguy cơ chia rẽ phong trào. Hội nghị hợp nhất đầu năm 1930 do Nguyễn Ái Quốc chủ trì đã lập nên Đảng Cộng sản Việt Nam, tạo một đội tiên phong thống nhất.",
     gallery: [
       {
-        src: "assets/story/level2/party-unification-1930.png",
+        src: "assets/story/level2/party-unification-1930.webp",
         alt: "Hợp nhất các tổ chức cộng sản năm 1930",
         caption: "Hội nghị hợp nhất năm 1930 tạo nên một đội tiên phong thống nhất.",
       },
@@ -236,7 +236,7 @@ const RELIC_STORY_PRESENTATION_UPDATES = {
         caption: "Việt Minh quy tụ sức mạnh đại đoàn kết toàn dân tộc.",
       },
       {
-        src: "assets/story/level3/august-revolution-1945.png",
+        src: "assets/story/level3/august-revolution-1945.webp",
         alt: "Mít tinh tại Quảng trường Ba Đình ngày 2 tháng 9 năm 1945",
         caption: "Cách mạng Tháng Tám mở ra kỷ nguyên độc lập cho dân tộc.",
       },
@@ -285,14 +285,14 @@ export const ENDING_DEFINITIONS = {
     title: "GOOD ENDING: ĐẠI THẮNG & PHÁT TRIỂN",
     copy:
       "Dưới sự lãnh đạo của Đảng Cộng sản Việt Nam, dân tộc ta đã giành lại độc lập, thống nhất và đang vững bước trên con đường dân giàu, nước mạnh. Sự lãnh đạo của Đảng là nhân tố hàng đầu bảo đảm mọi thắng lợi.",
-    artSrc: "assets/environment/generated-worlds/good-ending-hero.png",
+    artSrc: "assets/environment/generated-worlds/good-ending-hero.webp",
     artAlt: "Khung cảnh kết thúc tốt với quảng trường đoàn kết, ngọn đuốc rực sáng, ruộng lúa và công trình hiện đại.",
   },
   bad: {
     title: "BAD ENDING: MẤT NƯỚC / CHỆCH HƯỚNG",
     copy:
       "Không có ngọn cờ dẫn đường đúng đắn và bản lĩnh kiên định, lịch sử dân tộc đã rẽ sang một bóng đen nô lệ và chia cắt mới. Đất nước tiếp tục bị các thế lực thù địch thao túng hoặc chệch khỏi con đường xã hội chủ nghĩa.",
-    artSrc: "assets/environment/generated-worlds/bad-ending-hero.png",
+    artSrc: "assets/environment/generated-worlds/bad-ending-hero.webp",
     artAlt: "Khung cảnh kết thúc xấu với xã hội đen tối hiện đại, trụ Tha hóa, chia rẽ và lệ thuộc.",
   },
 };
