@@ -27,6 +27,10 @@ export function createMiniMapRenderer({
   isMonsterActive,
   getNavigationObjective,
   getCamera,
+  getVisibleWorldRect = () => {
+    const camera = getCamera();
+    return { x: camera.x, y: camera.y, width: viewport.width, height: viewport.height };
+  },
   getPlayer,
 }) {
   function drawLegend() {
@@ -59,7 +63,7 @@ export function createMiniMapRenderer({
     const scaleX = drawableWidth / world.width;
     const scaleY = drawableHeight / world.height;
     const level = getCurrentLevel();
-    const camera = getCamera();
+    const visibleWorld = getVisibleWorldRect();
     const player = getPlayer();
 
     minimapCtx.clearRect(0, 0, mapWidth, mapHeight);
@@ -119,10 +123,10 @@ export function createMiniMapRenderer({
     minimapCtx.strokeStyle = "rgba(223, 241, 255, 0.82)";
     minimapCtx.lineWidth = 1;
     minimapCtx.strokeRect(
-      Math.round(inset + camera.x * scaleX) + 0.5,
-      Math.round(inset + camera.y * scaleY) + 0.5,
-      Math.max(1, Math.round(viewport.width * scaleX)),
-      Math.max(1, Math.round(viewport.height * scaleY))
+      Math.round(inset + visibleWorld.x * scaleX) + 0.5,
+      Math.round(inset + visibleWorld.y * scaleY) + 0.5,
+      Math.max(1, Math.round(visibleWorld.width * scaleX)),
+      Math.max(1, Math.round(visibleWorld.height * scaleY))
     );
 
     drawPoint(player.x, player.y, "#fff5d2", 4);

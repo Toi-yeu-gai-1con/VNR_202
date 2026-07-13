@@ -17,6 +17,10 @@
     <main class="game-shell">
       <div class="game-frame">
         <canvas id="game-canvas" width="416" height="234" aria-label="Màn chơi lịch sử Việt Nam"></canvas>
+        <canvas id="debug-canvas" class="debug-canvas hidden" width="416" height="234" aria-hidden="true"></canvas>
+        <aside id="debug-overlay" class="debug-overlay hidden" aria-hidden="true">
+          <pre id="debug-values" class="debug-values"></pre>
+        </aside>
         <button id="pause-button" class="pixel-button pause-button" type="button" aria-label="Tạm dừng trò chơi">Tạm dừng</button>
         <button id="story-book-button" class="pixel-button story-book-button hidden" type="button" aria-label="Mở các câu chuyện đã mở khóa">
           <span class="story-book-label">Sách lịch sử</span>

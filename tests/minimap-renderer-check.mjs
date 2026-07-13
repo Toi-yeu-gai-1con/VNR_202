@@ -36,6 +36,7 @@ const renderer = createMiniMapRenderer({
   isMonsterActive: () => true,
   getNavigationObjective: () => ({ x: 60, y: 20, color: "#ffffff" }),
   getCamera: () => ({ x: 0, y: 0 }),
+  getVisibleWorldRect: () => ({ x: 0, y: 0, width: 40, height: 32 }),
   getPlayer: () => ({ x: 10, y: 10 }),
 });
 
@@ -44,6 +45,7 @@ assert.equal(classNames.has("hidden"), false, "The minimap is visible during gam
 assert.equal(minimap.title.includes("boss"), true, "The minimap keeps an accessible legend.");
 assert.equal(operations.some((operation) => operation[0] === "fill" && operation[1] === "#f3d777"), true, "Exits receive a gold minimap marker.");
 assert.equal(operations.some((operation) => operation[0] === "fill" && operation[1] === "#e96558"), true, "Active monsters receive a red minimap marker.");
+assert.equal(operations.some((operation) => operation[0] === "stroke" && operation[4] === 18 && operation[5] === 14), true, "The minimap camera frame uses the coordinate system's visible world rectangle.");
 
 state.mode = "paused";
 operations.length = 0;

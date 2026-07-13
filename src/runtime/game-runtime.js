@@ -4,17 +4,23 @@ import { createAssetManager } from "../core/asset-manager.js";
 import { createPageLifecycleController } from "../core/page-lifecycle.js";
 import { createRuntimeLoop } from "../core/runtime-loop.js";
 import { createSceneController } from "../core/scene-controller.js";
+import { createDebugOverlay } from "../debug/debug-overlay.js";
 import { createAudioSystem } from "../systems/audio-system.js";
 import { createLevelDefinitions } from "../systems/level-definitions.js";
 import { createSaveSystem } from "../systems/save-system.js";
 import { INTERACTION_DIALOGUES, RELIC_DEFINITIONS, RELIC_STORY_SLIDES, ENDING_DEFINITIONS, ENDING_OVERLAY_SCENES, ENDING_CINEMATIC_DEFINITIONS, OPENING_DIALOGUE } from "../data/story-content.js";
 import { createMiniMapRenderer } from "../rendering/minimap-renderer.js";
+import { createCoordinateSystem } from "../rendering/coordinate-system.js";
 import { LEVEL_ASSET_GROUPS, getAssetGroupForSource, isCriticalAsset } from "../data/asset-manifest.js";
 import { BOSS_DEFINITIONS, COMBAT_DENSITY, COMBAT_ROSTER } from "../data/combat-config.js";
 import { PLAYER_FOOTPRINT, PLAYER_SPRITE, NPC_SPRITE, ENVIRONMENT_SPRITES, TILECRAFT_TERRAIN, PIXEL_CRAWLER_TERRAIN, VILLAGE_SKYLINE_Y, VILLAGE_PROP_SPRITES, PIXEL_CRAWLER_BUILDING_SPRITES, HUB_PORTAL_SPRITE, SWORD_SLASH_SPRITE, PIXEL_CRAWLER_TREE_SPRITE, KENNEY_ROGUELIKE_TILE, KENNEY_ROGUELIKE_SPRITES, PIXEL_CRAWLER_VEGETATION_SPRITES, PIXEL_CRAWLER_TOOL_CLUSTER_SPRITES, CAINOS_PROP_SPRITES, LIMEZU_INTERIOR_SPRITES, HOUSE_INTERIOR_A_SPRITES, MONSTER_SPRITE_CONFIG } from "../data/render-config.js";
 
 const canvas = document.getElementById("game-canvas");
 const ctx = canvas.getContext("2d");
+const debugCanvas = document.getElementById("debug-canvas");
+const debugCtx = debugCanvas?.getContext("2d") ?? null;
+const debugOverlayPanel = document.getElementById("debug-overlay");
+const debugValues = document.getElementById("debug-values");
 const minimap = document.getElementById("minimap");
 const minimapCanvas = document.getElementById("minimap-canvas");
 const minimapCtx = minimapCanvas?.getContext("2d") ?? null;
@@ -22,6 +28,9 @@ const gameShell = document.querySelector(".game-shell");
 const gameFrame = document.querySelector(".game-frame");
 
 ctx.imageSmoothingEnabled = false;
+if (debugCtx) {
+  debugCtx.imageSmoothingEnabled = false;
+}
 
 if (minimapCtx) {
   minimapCtx.imageSmoothingEnabled = false;
@@ -215,6 +224,9 @@ let corruptionWarningTimeoutId = 0;
 let relicBookOpenTimeoutId = 0;
 let pendingAssetLoad = null;
 let audioLoadWarningShown = false;
+let debugOverlay = null;
+let smoothedFps = 0;
+let lastDebugTextUpdateAt = 0;
 
 const state = {
   mode: "start",
@@ -295,12 +307,19 @@ Object.defineProperty(state, "mode", {
 });
 
 const player = createPlayer();
-const camera = { x: 0, y: 0 };
+const camera = { x: 0, y: 0, zoom: 1 };
 const levels = createLevelDefinitions({
   world: WORLD,
   viewport: VIEWPORT,
   portMazeDoor: PORT_MAZE_DOOR,
   getState: () => state,
+});
+
+const coordinateSystem = createCoordinateSystem({
+  world: WORLD,
+  viewport: VIEWPORT,
+  getCamera: () => camera,
+  getRenderOffset: getCameraShakeOffset,
 });
 
 const saveSystem = createSaveSystem({
@@ -354,6 +373,7 @@ const miniMapRenderer = createMiniMapRenderer({
   isMonsterActive,
   getNavigationObjective,
   getCamera: () => camera,
+  getVisibleWorldRect: () => coordinateSystem.getVisibleWorldRect(),
   getPlayer: () => player,
 });
 
@@ -1924,7 +1944,10 @@ function shouldEnableDebugTools() {
 }
 
 function createDebugSnapshot() {
+  const playerScreen = coordinateSystem.worldToScreen(player);
   return {
+    fps: smoothedFps,
+    suspended: frameLoop.isSuspended(),
     mode: state.mode,
     currentLevelId: state.currentLevelId,
     respawnLevelId: state.respawnLevelId,
@@ -1935,8 +1958,13 @@ function createDebugSnapshot() {
     player: {
       x: player.x,
       y: player.y,
+      screenX: playerScreen.x,
+      screenY: playerScreen.y,
       direction: player.direction,
     },
+    camera: { ...camera },
+    questSummary: getZoneProgressText(state.currentLevelId),
+    activeMonsterCount: (currentLevel().monsters ?? []).filter((monster) => isMonsterActive(monster)).length,
     quests: {
       zone1Started: state.quests.zone1Started,
       zone1Delivered: Array.from(state.quests.zone1Delivered),
@@ -1976,10 +2004,48 @@ function createDebugSnapshot() {
   };
 }
 
+function getDebugGeometry() {
+  return {
+    playerFootprint: getPlayerFootprint(player.x, player.y),
+    colliders: getActiveColliders(),
+    exits: currentLevel().exits.map((exit) => exit.kind === "rect"
+      ? { x: exit.x, y: exit.y, width: exit.width, height: exit.height }
+      : { x: exit.triggerX - 2, y: exit.minY, width: 4, height: exit.maxY - exit.minY }),
+    interactables: currentLevel().interactables
+      .filter((item) => !item.collected && !item.used && shouldDrawInteractable(item))
+      .map((item) => ({ ...getInteractionPoint(item), radius: item.interactionRadius ?? INTERACTION_RADIUS })),
+    monsters: (currentLevel().monsters ?? [])
+      .filter((monster) => isMonsterActive(monster))
+      .map((monster) => ({ x: monster.x, y: monster.y, aggroRadius: monster.aggroRadius ?? 120, isBoss: monster.isBoss })),
+  };
+}
+
 function installDebugTools() {
   if (!shouldEnableDebugTools()) {
     return;
   }
+
+  debugOverlay = createDebugOverlay({
+    panel: debugOverlayPanel,
+    canvas: debugCanvas,
+    values: debugValues,
+    ctx: debugCtx,
+    viewport: VIEWPORT,
+    getSnapshot: createDebugSnapshot,
+    getGeometry: getDebugGeometry,
+    worldRectToScreenRect: (rect) => coordinateSystem.worldRectToScreenRect(rect),
+    worldToScreen: (point) => coordinateSystem.worldToScreen(point),
+  });
+
+  window.addEventListener("keydown", (event) => {
+    if (normalizeKey(event.key) !== "f3") {
+      return;
+    }
+
+    event.preventDefault();
+    debugOverlay.toggle();
+    debugOverlay.update();
+  });
 
   window.__CROSSROADS_DEBUG__ = {
     beginSession() {
@@ -2140,6 +2206,10 @@ function applyDebugEndingFromUrl() {
 
 function frame({ now: timestamp, deltaSeconds }) {
   state.lastTimestamp = timestamp;
+  if (deltaSeconds > 0) {
+    const instantFps = 1 / deltaSeconds;
+    smoothedFps = smoothedFps === 0 ? instantFps : smoothedFps * 0.86 + instantFps * 0.14;
+  }
 
   if (state.mode === "playing") {
     updatePlayer(deltaSeconds);
@@ -2158,6 +2228,13 @@ function frame({ now: timestamp, deltaSeconds }) {
   render();
   renderEndingArtCinematic();
   renderEndingSceneOverlay();
+  if (debugOverlay?.isVisible()) {
+    const updateText = timestamp - lastDebugTextUpdateAt >= 250;
+    debugOverlay.update({ updateText });
+    if (updateText) {
+      lastDebugTextUpdateAt = timestamp;
+    }
+  }
 }
 
 function resetStoryProgress() {
@@ -3917,8 +3994,15 @@ function getPlayerFootprint(x, y) {
 }
 
 function updateCamera() {
-  camera.x = clamp(player.x - VIEWPORT.width / 2, 0, WORLD.width - VIEWPORT.width);
-  camera.y = clamp(player.y - VIEWPORT.height / 2, 0, WORLD.height - VIEWPORT.height);
+  const visibleWorld = coordinateSystem.getVisibleWorldRect();
+  const nextCamera = coordinateSystem.clampCameraPosition({
+    x: player.x - visibleWorld.width / 2,
+    y: player.y - visibleWorld.height / 2,
+    zoom: camera.zoom,
+  });
+  camera.x = nextCamera.x;
+  camera.y = nextCamera.y;
+  camera.zoom = nextCamera.zoom;
 }
 
 function getCameraShakeOffset() {
@@ -3931,10 +4015,9 @@ function getCameraShakeOffset() {
 }
 
 function applyCameraTransform() {
-  const offset = getCameraShakeOffset();
-  const offsetX = offset.x;
-  const offsetY = offset.y;
-  ctx.translate(-camera.x + offsetX, -camera.y + offsetY);
+  const origin = coordinateSystem.worldToScreen({ x: 0, y: 0 }, { includeRenderOffset: true });
+  ctx.translate(origin.x, origin.y);
+  ctx.scale(camera.zoom, camera.zoom);
 }
 
 function handleLevelTransitions() {
@@ -4496,8 +4579,9 @@ function getExitCenter(exit) {
 }
 
 function isWorldPointOnScreen(x, y, margin = 18) {
-  const screenX = x - camera.x;
-  const screenY = y - camera.y;
+  const point = coordinateSystem.worldToScreen({ x, y });
+  const screenX = point.x;
+  const screenY = point.y;
 
   return (
     screenX >= margin &&
@@ -8177,10 +8261,10 @@ function getPlayerAttackProgress() {
 
 function drawPlayer() {
   ctx.save();
-  const shake = getCameraShakeOffset();
+  const playerScreen = coordinateSystem.worldToScreen(player, { includeRenderOffset: true });
   const isInvulnerable = state.lastTimestamp < state.invulnerableUntil;
   ctx.globalAlpha = isInvulnerable && Math.floor(state.lastTimestamp / 80) % 2 === 0 ? 0.48 : 1;
-  ctx.translate(Math.round(player.x - camera.x + shake.x), Math.round(player.y - camera.y + shake.y));
+  ctx.translate(Math.round(playerScreen.x), Math.round(playerScreen.y));
 
   ctx.fillStyle = "rgba(10, 12, 16, 0.32)";
   ctx.fillRect(-7, 9, 14, 4);

@@ -15,6 +15,35 @@ async function snapshot(page) {
   return page.evaluate(() => window.__CROSSROADS_DEBUG__.getSnapshot());
 }
 
+test("F3 reveals debug geometry only in an explicit debug session", async ({ page }, testInfo) => {
+  await page.goto("/");
+  await expect(page.locator("#start-screen")).toBeVisible();
+  await page.keyboard.press("F3");
+  await expect(page.locator("#debug-overlay")).toHaveClass(/hidden/);
+
+  await openDebugSession(page);
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("village"));
+  await expect.poll(() => page.evaluate(() => window.__CROSSROADS_DEBUG__.getSnapshot().currentLevelId)).toBe("village");
+  await page.keyboard.press("F3");
+  await expect(page.locator("#debug-overlay")).not.toHaveClass(/hidden/);
+  await expect(page.locator("#debug-canvas")).not.toHaveClass(/hidden/);
+  await expect(page.locator("#debug-values")).toContainText("FPS");
+  await page.screenshot({ path: testInfo.outputPath("debug-overlay.png"), fullPage: true });
+  await page.keyboard.press("F3");
+  await expect(page.locator("#debug-overlay")).toHaveClass(/hidden/);
+});
+
+test("debug overlay remains legible at a wide desktop viewport", async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  await openDebugSession(page);
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("village"));
+  await page.keyboard.press("F3");
+  const overlayBox = await page.locator("#debug-overlay").boundingBox();
+  expect(overlayBox?.width).toBeLessThan(480);
+  expect(overlayBox?.height).toBeLessThan(180);
+  await page.screenshot({ path: testInfo.outputPath("debug-overlay-wide.png"), fullPage: true });
+});
+
 test("held movement stops on blur and paused scenes ignore movement", async ({ page }) => {
   await openDebugSession(page);
   const start = await snapshot(page);
