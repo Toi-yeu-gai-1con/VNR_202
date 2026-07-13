@@ -1208,7 +1208,7 @@ const ZONE_PROFILES = {
         "farmer-khoan-2": { x: 508, y: 390 },
         "farmer-khoan-3": { x: 542, y: 382 },
       },
-      irrigationStation: { x: 510, y: 354, width: 156, height: 120 },
+      irrigationStation: { x: 520, y: 346, width: 88, height: 69 },
     },
     active: { tint: "rgba(141, 166, 132, 0.1)", particleCount: 18, copy: "Máy tái thiết vẫn bị chặn bởi những rào cản cũ. Hãy mở đường cho sức sống trở lại." },
     completed: { tint: "rgba(164, 220, 146, 0.14)", particleCount: 11, copy: "Nước đã chảy trở lại qua máy tái thiết. Thung lũng bắt đầu hồi phục từng nhịp." },
@@ -1253,12 +1253,6 @@ function getZoneProgressStage(levelId = state.currentLevelId) {
     default:
       return 0;
   }
-}
-
-function getZoneProgressLabel(levelId = state.currentLevelId) {
-  const stage = getZoneProgressStage(levelId);
-  const labels = ["Đang khởi động", "Chuyển biến", "Đang hồi sinh", "Đã đổi thay"];
-  return labels[stage] ?? labels[0];
 }
 
 function getZoneNpcDisplay(npc) {
@@ -11460,6 +11454,43 @@ function drawZoneLandmark(profile) {
     ctx.fillRect(Math.round(x - width / 2), Math.round(y - 10), width, 10);
   }
 
+  drawZoneLandmarkMotion(profile);
+
+  ctx.restore();
+}
+
+function drawZoneLandmarkMotion(profile) {
+  const { x, y } = profile.landmarkPosition;
+  const phase = state.lastTimestamp * 0.004;
+
+  ctx.save();
+  ctx.globalCompositeOperation = "screen";
+
+  if (profile.atmosphere === "storm") {
+    const pulse = 0.42 + Math.sin(phase * 1.8) * 0.2;
+    ctx.fillStyle = `rgba(255, 223, 132, ${pulse})`;
+    ctx.fillRect(x - 4, y - 76, 8, 8);
+    ctx.fillStyle = "rgba(255, 230, 162, 0.24)";
+    ctx.fillRect(x - 18, y - 70, 36, 18);
+  } else if (profile.atmosphere === "paper") {
+    ctx.strokeStyle = "rgba(255, 228, 150, 0.62)";
+    ctx.lineWidth = 2;
+    ctx.setLineDash([3, 4]);
+    ctx.lineDashOffset = -state.lastTimestamp * 0.018;
+    ctx.beginPath();
+    ctx.arc(x, y - 48, 22 + Math.sin(phase) * 3, 0, Math.PI * 2);
+    ctx.stroke();
+  } else if (profile.atmosphere === "smoke") {
+    const flutter = Math.round(Math.sin(phase * 1.25) * 4);
+    ctx.fillStyle = "rgba(255, 221, 109, 0.68)";
+    ctx.fillRect(x + 12, y - 82, 2, 24);
+    ctx.fillStyle = "rgba(226, 71, 57, 0.72)";
+    ctx.fillRect(x + 14, y - 82, 16 + flutter, 9);
+  } else if (state.quests.zone4GearClaimed) {
+    ctx.fillStyle = "rgba(183, 236, 158, 0.26)";
+    ctx.fillRect(x - 24, y - 20, 48, 3);
+  }
+
   ctx.restore();
 }
 
@@ -11476,28 +11507,7 @@ function drawZoneProgressScene(profile) {
   } else if (profile.levelId === "spring") {
     drawSpringRecoveryScene(profile, stage);
   }
-  drawZoneProgressPlaque(profile, stage);
   ctx.restore();
-}
-
-function drawZoneProgressPlaque(profile, stage) {
-  const { x, y } = profile.landmarkPosition;
-  const plaqueY = y + 18;
-
-  ctx.fillStyle = "rgba(13, 18, 24, 0.72)";
-  ctx.fillRect(x - 30, plaqueY, 60, 10);
-  ctx.strokeStyle = "rgba(245, 213, 127, 0.68)";
-  ctx.strokeRect(x - 30, plaqueY, 60, 10);
-
-  for (let index = 0; index < 3; index += 1) {
-    ctx.fillStyle = index < stage ? "#f3d777" : "#4e5b66";
-    ctx.fillRect(x - 22 + index * 16, plaqueY + 3, 10, 4);
-  }
-
-  ctx.fillStyle = "rgba(255, 239, 186, 0.9)";
-  ctx.font = "8px monospace";
-  ctx.textAlign = "center";
-  ctx.fillText(getZoneProgressLabel(profile.levelId), x, plaqueY - 4);
 }
 
 function drawVillageRecoveryScene(profile, stage) {
@@ -11548,63 +11558,73 @@ function drawCrossroadsRecoveryScene(profile, stage) {
 }
 
 function drawSpringRecoveryScene(profile, stage) {
-  const clearedBarriers = state.quests.zone4Barriers.size;
-  const plantedFields = state.quests.zone4Farmers.size;
-
-  for (let index = 0; index < clearedBarriers; index += 1) {
-    drawClearedBarrierPath(profile.progress.barrierPositions[index], index);
-  }
-
-  if (plantedFields > 0) {
-    drawRestoredIrrigationStation(profile);
-  }
-
-  if (stage === 3) {
-    drawWorldWarmGlow(profile.landmarkPosition.x + 54, profile.landmarkPosition.y, 76, 0.2);
-  }
+  drawDoiMoiStation(profile);
 }
 
-function drawClearedBarrierPath(gap, index) {
-  ctx.save();
-  ctx.fillStyle = "#9e7a4c";
-  ctx.fillRect(gap.x - 36, gap.y - 9, 72, 18);
-  ctx.fillStyle = "#d6ba79";
-  ctx.fillRect(gap.x - 30, gap.y - 4, 60, 9);
-  ctx.fillStyle = "#7d633f";
-  ctx.fillRect(gap.x - 38, gap.y - 16, 4, 22);
-  ctx.fillRect(gap.x + 34, gap.y - 16, 4, 22);
-  ctx.fillStyle = "#5d984e";
-  for (let tuft = 0; tuft < 6; tuft += 1) {
-    const offset = tuft * 11 - 28;
-    ctx.fillRect(gap.x + offset, gap.y + (tuft % 2 ? 8 : -13), 2, 5);
-    ctx.fillRect(gap.x + offset + 2, gap.y + (tuft % 2 ? 6 : -11), 2, 7);
-  }
-  ctx.fillStyle = "rgba(93, 172, 210, 0.66)";
-  ctx.fillRect(gap.x - 24 + index * 3, gap.y - 1, 18, 3);
-  ctx.restore();
-}
-
-function drawRestoredIrrigationStation(profile) {
+function drawDoiMoiStation(profile) {
   const station = profile.progress.irrigationStation;
   const asset = environmentSprites.recovery?.doiMoiIrrigationStation;
+  const restored = state.quests.zone4GearClaimed;
 
   if (canDrawSprite(asset)) {
     ctx.save();
-    ctx.globalAlpha = 0.96;
+    ctx.globalAlpha = restored ? 0.92 : 0.74;
+    ctx.filter = restored
+      ? "brightness(1.03) saturate(1.04)"
+      : "grayscale(0.62) brightness(0.68) saturate(0.5) contrast(1.04)";
     ctx.drawImage(asset, station.x - station.width / 2, station.y - station.height, station.width, station.height);
     ctx.restore();
-    return;
+
+    if (!restored) {
+      ctx.save();
+      ctx.strokeStyle = "rgba(42, 27, 21, 0.72)";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(station.x - 44, station.y - 72);
+      ctx.lineTo(station.x - 20, station.y - 46);
+      ctx.lineTo(station.x - 4, station.y - 64);
+      ctx.moveTo(station.x + 16, station.y - 82);
+      ctx.lineTo(station.x + 34, station.y - 55);
+      ctx.stroke();
+      ctx.restore();
+      return;
+    }
+
+    drawDoiMoiWaterwheel(station);
   }
+}
+
+function drawDoiMoiWaterwheel(station) {
+  const wheelX = station.x - station.width * 0.28;
+  const wheelY = station.y - station.height * 0.45;
+  const radius = station.width * 0.11;
+  const rotation = state.lastTimestamp * 0.006;
 
   ctx.save();
-  ctx.fillStyle = "#7c5638";
-  ctx.fillRect(station.x - 40, station.y - 48, 80, 44);
-  ctx.fillStyle = "#adc97a";
-  ctx.fillRect(station.x - 34, station.y - 56, 68, 10);
-  ctx.fillStyle = "#67a9c4";
-  ctx.fillRect(station.x - 58, station.y - 4, 40, 9);
-  ctx.fillStyle = "#8fbd54";
-  ctx.fillRect(station.x + 10, station.y - 12, 42, 16);
+  ctx.translate(wheelX, wheelY);
+  ctx.rotate(rotation);
+  ctx.strokeStyle = "rgba(246, 214, 142, 0.74)";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(0, 0, radius, 0, Math.PI * 2);
+  ctx.stroke();
+  for (let spoke = 0; spoke < 4; spoke += 1) {
+    ctx.rotate(Math.PI / 2);
+    ctx.beginPath();
+    ctx.moveTo(0, -radius);
+    ctx.lineTo(0, radius);
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  ctx.save();
+  ctx.globalCompositeOperation = "screen";
+  ctx.fillStyle = "rgba(147, 219, 242, 0.6)";
+  for (let drop = 0; drop < 3; drop += 1) {
+    const x = wheelX + 8 + drop * 4;
+    const y = wheelY + radius + ((state.lastTimestamp * 0.05 + drop * 9) % 12);
+    ctx.fillRect(Math.round(x), Math.round(y), 2, 5);
+  }
   ctx.restore();
 }
 

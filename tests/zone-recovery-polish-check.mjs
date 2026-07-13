@@ -8,8 +8,13 @@ assert.match(game, /drawNpcSpriteActor\(recoveredNpc\)/, "Recovered characters m
 assert.match(game, /zone2TowerActivated/, "Archive tower activation must persist in quest state.");
 assert.match(game, /interactionType: "activateArchiveLens"/, "The archive tower needs a real interaction step.");
 assert.match(game, /archive-lens-console/, "Navigation needs a target for the archive tower.");
-assert.match(game, /function drawRestoredIrrigationStation\(profile\)/, "Zone 4 needs a dedicated reconstructed landmark renderer.");
-assert.match(game, /doi-moi-irrigation-station\.png/, "Zone 4 must load the original irrigation-station art.");
+assert.match(game, /function drawZoneLandmarkMotion\(profile\)/, "Landmarks need a dedicated animation renderer.");
+assert.match(game, /drawZoneLandmarkMotion\(profile\);/, "Each landmark must render its motion layer.");
+assert.doesNotMatch(game, /drawZoneProgressPlaque/, "World-state labels must not cover the map.");
+assert.match(game, /doi-moi-irrigation-station\.png/, "Zone 4 needs its restoration landmark art.");
+assert.match(game, /function drawDoiMoiStation\(profile\)/, "Zone 4 needs a staged restoration renderer.");
+assert.match(game, /state\.quests\.zone4GearClaimed/, "The station can only become fully restored after the Đổi Mới gear is claimed.");
+assert.doesNotMatch(game, /drawClearedBarrierPath/, "Cleared barriers should reveal the existing map without decorative grass blocks.");
 assert.doesNotMatch(game, /function drawCrossroadsRecoveryScene[\s\S]*?ctx\.fillRect\(member\.x - 5/, "Zone 3 recovery cannot use rectangle people.");
 
 console.log("PASS: zone recovery presentation uses animated actors and real interactions.");
