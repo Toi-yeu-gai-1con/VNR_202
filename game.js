@@ -5,6 +5,7 @@ import { createSceneController } from "./src/core/scene-controller.js";
 import { createAudioSystem } from "./src/systems/audio-system.js";
 import { INTERACTION_DIALOGUES, RELIC_DEFINITIONS, RELIC_STORY_SLIDES, ENDING_DEFINITIONS, ENDING_OVERLAY_SCENES, ENDING_CINEMATIC_DEFINITIONS, OPENING_DIALOGUE } from "./src/data/story-content.js";
 import { createMiniMapRenderer } from "./src/rendering/minimap-renderer.js";
+import { LEVEL_ASSET_GROUPS, getAssetGroupForSource, isCriticalAsset } from "./src/data/asset-manifest.js";
 
 const canvas = document.getElementById("game-canvas");
 const ctx = canvas.getContext("2d");
@@ -498,14 +499,6 @@ function configureOpeningCopy() {
   openingKicker.textContent = "THE CROSSROADS";
   openingHint.textContent = "E / Phím cách để tiếp tục";
 }
-
-const LEVEL_ASSET_GROUPS = Object.freeze({
-  hub: "hub",
-  village: "zone1",
-  archive: "zone2",
-  crossroads: "zone3",
-  spring: "zone4",
-});
 
 const keys = new Set();
 const assetManager = createAssetManager({});
@@ -1560,46 +1553,6 @@ function loadNpcSpriteSet(id) {
     up: loadSprite(`${basePath}/up.png`),
     upleft: loadSprite(`${basePath}/upleft.png`),
   };
-}
-
-function getAssetGroupForSource(src) {
-  if (src.includes("good-ending") || src.includes("bad-ending")) {
-    return "ending";
-  }
-
-  if (src.includes("hub-unexplored") || src.includes("history-hub") || src.includes("final-history-gate") || src.includes("historyDoor") || src.includes("portal-spinning")) {
-    return "hub";
-  }
-
-  if (src.includes("unforgiving_himalayas") || src.includes("rain-ambient") || src.includes("colonial-harbor") || src.includes("storm-shelter") || src.includes("mutterpixel-ruined-village")) {
-    return "zone1";
-  }
-
-  if (src.includes("archive-cave") || src.includes("environment/archive") || src.includes("archive-interior") || src.includes("archive-lens") || src.includes("paper-bundle") || src.includes("fragment-table") || src.includes("compass-pedestal")) {
-    return "zone2";
-  }
-
-  if (src.includes("crossroads-ancient") || src.includes("revolution-square") || src.includes("faction-standard") || src.includes("strategic-hamlet") || src.includes("bureaucracy-wall")) {
-    return "zone3";
-  }
-
-  if (src.includes("spring-town") || src.includes("factory-valley") || src.includes("restoration-engine") || src.includes("doi-moi") || src.includes("ration-market")) {
-    return "zone4";
-  }
-
-  return "core";
-}
-
-function isCriticalAsset(src, group) {
-  if (src.includes("assets/audio/")) {
-    return false;
-  }
-
-  if (group === "core") {
-    return src.includes("assets/player/") || src.includes("assets/npcs/") || src.includes("assets/monsters/");
-  }
-
-  return true;
 }
 
 function loadSprite(src) {

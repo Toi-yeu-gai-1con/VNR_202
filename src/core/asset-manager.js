@@ -104,9 +104,17 @@ export function createAssetManager(manifest, adapters = {}) {
       throw new Error(`Unknown asset group: ${groupId}`);
     }
 
-    await Promise.all(
-      entries.map((entry) => loadEntry(entry, options).catch(() => null))
-    );
+    const concurrency = Math.max(1, Math.min(options.concurrency ?? 4, entries.length));
+    let nextEntryIndex = 0;
+    const loadNextEntry = async () => {
+      while (nextEntryIndex < entries.length) {
+        const entry = entries[nextEntryIndex];
+        nextEntryIndex += 1;
+        await loadEntry(entry, options).catch(() => null);
+      }
+    };
+
+    await Promise.all(Array.from({ length: concurrency }, loadNextEntry));
 
     const failedKeys = entries
       .filter((entry) => errorsByKey.has(entry.key))

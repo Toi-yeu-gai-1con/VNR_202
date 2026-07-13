@@ -48,4 +48,28 @@ assert.equal(hub.ready, true, "Dynamically registered browser assets can be load
 assert.equal(lazyManager.getImage("hub-gate"), lazyImage, "A lazy browser image keeps its stable object identity.");
 assert.ok(events.includes("loaded"), "Consumers can observe asset loading progress.");
 
+let activeLoads = 0;
+let peakLoads = 0;
+const constrainedManager = createAssetManager(
+  {
+    zone2: Array.from({ length: 7 }, (_, index) => ({
+      key: `archive-${index}`,
+      type: "image",
+      src: `archive-${index}.png`,
+      critical: true,
+    })),
+  },
+  {
+    loadImage: async (entry) => {
+      activeLoads += 1;
+      peakLoads = Math.max(peakLoads, activeLoads);
+      await new Promise((resolve) => setTimeout(resolve, 5));
+      activeLoads -= 1;
+      return { kind: "image", key: entry.key };
+    },
+  }
+);
+await constrainedManager.loadGroup("zone2");
+assert.ok(peakLoads <= 4, "Asset groups load at most four assets concurrently.");
+
 console.log("PASS: grouped assets load by stable key and critical failures can be retried.");
