@@ -44,6 +44,9 @@ This project uses a small subset of free game assets:
 - Original zone landmarks
   - Created for this project with the built-in image generation workflow, then background-keyed to transparent PNG.
   - Used for the four persistent zone landmarks in `assets/landmarks/`: storm shelter beacon, archive lens tower, faction standard, and restoration engine.
+- Original Đổi Mới irrigation station
+  - Created for this project with the built-in image generation workflow, then background-keyed to transparent PNG.
+  - Used for the restored rural cooperative scene in `assets/recovery/doi-moi-irrigation-station.png`.
 
 ## Music
 

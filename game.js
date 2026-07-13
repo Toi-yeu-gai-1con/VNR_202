@@ -1007,6 +1007,7 @@ function createQuestState() {
     zone1Delivered: new Set(),
     zone1RewardClaimed: false,
     zone2Fragments: new Set(),
+    zone2TowerActivated: false,
     zone2RewardClaimed: false,
     zone3Recruits: new Set(),
     zone3ThreadClaimed: false,
@@ -1109,6 +1110,7 @@ const state = {
     archiveSolved: false,
   },
   quests: createQuestState(),
+  zoneActorMoveStartedAt: {},
   lastTimestamp: 0,
 };
 
@@ -1135,7 +1137,11 @@ const ZONE_PROFILES = {
     npcId: "nguyen-ai-quoc",
     npcOffset: { x: -18, y: -6 },
     progress: {
-      workerPositions: [{ x: 380, y: 500 }, { x: 646, y: 506 }, { x: 724, y: 486 }],
+      workerPositions: {
+        "worker-harbor-1": { x: 354, y: 272 },
+        "worker-harbor-2": { x: 386, y: 280 },
+        "worker-harbor-3": { x: 418, y: 272 },
+      },
     },
     active: { tint: "rgba(134, 181, 222, 0.14)", particleCount: 24, copy: "Mưa vẫn phủ kín bến cảng. Hãy đưa tiếng nói thức tỉnh đến những người đang chờ đợi." },
     completed: { tint: "rgba(245, 205, 115, 0.13)", particleCount: 9, copy: "Đèn hiệu đã sáng. Những người lao động quanh bến cảng đang giữ vững liên lạc." },
@@ -1152,7 +1158,11 @@ const ZONE_PROFILES = {
     npcId: "delegate-north",
     npcOffset: { x: 0, y: -14 },
     progress: {
-      routeNodes: [{ id: "west", x: 192, y: 248 }, { id: "north", x: 480, y: 152 }, { id: "east", x: 768, y: 248 }],
+      delegatePositions: {
+        "delegate-west": { x: 264, y: 304 },
+        "delegate-north": { x: 300, y: 300 },
+        "delegate-east": { x: 336, y: 304 },
+      },
     },
     active: { tint: "rgba(222, 174, 106, 0.11)", particleCount: 19, copy: "Bụi giấy vẫn che phủ các manh mối. Hãy tìm đường nối những tư liệu bị chia cắt." },
     completed: { tint: "rgba(255, 231, 160, 0.14)", particleCount: 10, copy: "Thấu kính lưu trữ đã soi rõ đường đi. Những người giữ tư liệu đã thống nhất tiếng nói." },
@@ -1169,7 +1179,12 @@ const ZONE_PROFILES = {
     npcId: "vietminh-cadre",
     npcOffset: { x: 14, y: 0 },
     progress: {
-      crowdPositions: [{ x: 396, y: 266 }, { x: 432, y: 280 }, { x: 528, y: 280 }, { x: 564, y: 266 }],
+      crowdPositions: {
+        "recruit-farmer": { x: 396, y: 266 },
+        "recruit-worker": { x: 432, y: 280 },
+        "recruit-intellectual": { x: 528, y: 280 },
+        "recruit-bourgeois": { x: 564, y: 266 },
+      },
       hamletPositions: [{ x: 210, y: 478 }, { x: 482, y: 468 }, { x: 784, y: 474 }],
     },
     active: { tint: "rgba(216, 102, 70, 0.1)", particleCount: 20, copy: "Khói vẫn bao quanh quảng trường. Mỗi lời thuyết phục có thể kéo một lực lượng về phía đoàn kết." },
@@ -1188,7 +1203,12 @@ const ZONE_PROFILES = {
     npcOffset: { x: -12, y: 8 },
     progress: {
       barrierPositions: [{ x: 388, y: 404 }, { x: 480, y: 400 }, { x: 572, y: 404 }],
-      fieldPositions: [{ x: 208, y: 452 }, { x: 698, y: 318 }, { x: 824, y: 110 }],
+      farmerPositions: {
+        "farmer-khoan-1": { x: 474, y: 382 },
+        "farmer-khoan-2": { x: 508, y: 390 },
+        "farmer-khoan-3": { x: 542, y: 382 },
+      },
+      irrigationStation: { x: 510, y: 354, width: 156, height: 120 },
     },
     active: { tint: "rgba(141, 166, 132, 0.1)", particleCount: 18, copy: "Máy tái thiết vẫn bị chặn bởi những rào cản cũ. Hãy mở đường cho sức sống trở lại." },
     completed: { tint: "rgba(164, 220, 146, 0.14)", particleCount: 11, copy: "Nước đã chảy trở lại qua máy tái thiết. Thung lũng bắt đầu hồi phục từng nhịp." },
@@ -1253,6 +1273,53 @@ function getZoneNpcDisplay(npc) {
     y: npc.y + profile.npcOffset.y,
     animation: "walk",
     frameOffset: 0.35,
+  };
+}
+
+function startZoneNpcMove(npcId) {
+  state.zoneActorMoveStartedAt[npcId] = state.lastTimestamp;
+}
+
+function getZoneRecoveryNpcDisplay(npc) {
+  const profile = getZoneProfile();
+  if (!profile?.progress) {
+    return npc;
+  }
+
+  let destination = null;
+  let recovered = false;
+
+  if (npc.interactionType === "deliverPaper" && state.quests.zone1Delivered.has(npc.workerId)) {
+    destination = profile.progress.workerPositions?.[npc.id] ?? null;
+    recovered = Boolean(destination);
+  } else if (npc.interactionType === "collectFragment" && state.quests.zone2Fragments.has(npc.fragmentId)) {
+    destination = profile.progress.delegatePositions?.[npc.id] ?? null;
+    recovered = Boolean(destination);
+  } else if (npc.interactionType === "recruit" && state.quests.zone3Recruits.has(npc.recruitId)) {
+    destination = profile.progress.crowdPositions?.[npc.id] ?? null;
+    recovered = Boolean(destination);
+  } else if (npc.interactionType === "deliverKhoan10" && state.quests.zone4Farmers.has(npc.farmerId)) {
+    destination = profile.progress.farmerPositions?.[npc.id] ?? null;
+    recovered = Boolean(destination);
+  }
+
+  if (!recovered || !destination) {
+    return npc;
+  }
+
+  const startedAt = state.zoneActorMoveStartedAt[npc.id];
+  const progress = Number.isFinite(startedAt) ? clamp((state.lastTimestamp - startedAt) / 1250, 0, 1) : 1;
+  const eased = 1 - (1 - progress) * (1 - progress);
+  const dx = destination.x - npc.x;
+  const dy = destination.y - npc.y;
+
+  return {
+    ...npc,
+    x: npc.x + dx * eased,
+    y: npc.y + dy * eased,
+    direction: getDirectionFromVector(dx, dy),
+    animation: progress < 1 ? "walk" : "idle",
+    frameOffset: Math.abs(dx) + Math.abs(dy),
   };
 }
 
@@ -1360,6 +1427,7 @@ function serializeQuestState() {
     zone1Delivered: [...state.quests.zone1Delivered],
     zone1RewardClaimed: state.quests.zone1RewardClaimed,
     zone2Fragments: [...state.quests.zone2Fragments],
+    zone2TowerActivated: state.quests.zone2TowerActivated,
     zone2RewardClaimed: state.quests.zone2RewardClaimed,
     zone3Recruits: [...state.quests.zone3Recruits],
     zone3ThreadClaimed: state.quests.zone3ThreadClaimed,
@@ -1378,6 +1446,7 @@ function restoreQuestState(savedQuests = {}) {
     zone1Delivered: new Set(savedQuests.zone1Delivered ?? []),
     zone1RewardClaimed: Boolean(savedQuests.zone1RewardClaimed),
     zone2Fragments: new Set(savedQuests.zone2Fragments ?? []),
+    zone2TowerActivated: Boolean(savedQuests.zone2TowerActivated),
     zone2RewardClaimed: Boolean(savedQuests.zone2RewardClaimed),
     zone3Recruits: new Set(savedQuests.zone3Recruits ?? []),
     zone3ThreadClaimed: Boolean(savedQuests.zone3ThreadClaimed),
@@ -1870,6 +1939,9 @@ function loadEnvironmentSprites() {
       archiveLensTower: loadSprite("assets/landmarks/archive-lens-tower.png"),
       factionStandard: loadSprite("assets/landmarks/faction-standard.png"),
       restorationEngine: loadSprite("assets/landmarks/restoration-engine.png"),
+    },
+    recovery: {
+      doiMoiIrrigationStation: loadSprite("assets/recovery/doi-moi-irrigation-station.png"),
     },
     ruinedVillageBuildings: Array.from({ length: 7 }, (_, index) =>
       loadSprite(`assets/environment/mutterpixel-ruined-village/spr_old_building_${index + 1}.png`)
@@ -3998,6 +4070,18 @@ function createUnityHouseLevel() {
         interactionType: "rewardEmblem",
       },
       {
+        id: "archive-lens-console",
+        x: 300,
+        y: 280,
+        width: 54,
+        height: 54,
+        kind: "object",
+        variant: "archive-lens-console",
+        prompt: "kích hoạt Tháp lưu trữ",
+        interactionType: "activateArchiveLens",
+        interactionRadius: 58,
+      },
+      {
         id: "split-blade",
         x: 760,
         y: 486,
@@ -4869,6 +4953,7 @@ function createDebugSnapshot() {
       zone1Delivered: Array.from(state.quests.zone1Delivered),
       zone1RewardClaimed: state.quests.zone1RewardClaimed,
       zone2Fragments: Array.from(state.quests.zone2Fragments),
+      zone2TowerActivated: state.quests.zone2TowerActivated,
       zone2RewardClaimed: state.quests.zone2RewardClaimed,
       zone3Recruits: Array.from(state.quests.zone3Recruits),
       zone3ThreadClaimed: state.quests.zone3ThreadClaimed,
@@ -7138,7 +7223,11 @@ function getArchiveNavigationTarget() {
     ]);
   }
 
-  return createInteractableNavigationTarget(getLevelInteractable("unity-round-table"), "Đặt 3 mảnh vỡ lên bàn tròn", "#f3d777");
+  if (!state.quests.zone2TowerActivated) {
+    return createInteractableNavigationTarget(getLevelInteractable("archive-lens-console"), "Kích hoạt Tháp lưu trữ", "#f3d777");
+  }
+
+  return createInteractableNavigationTarget(getLevelInteractable("unity-round-table"), "Nhận Biểu trưng Thống nhất", "#f3d777");
 }
 
 function getCrossroadsNavigationTarget() {
@@ -7458,8 +7547,10 @@ function isInteractableAvailable(item) {
       return !item.used && !item.purified;
     case "collectFragment":
       return !state.quests.zone2Fragments.has(item.fragmentId);
+    case "activateArchiveLens":
+      return state.quests.zone2Fragments.size === 3 && !state.quests.zone2TowerActivated;
     case "rewardEmblem":
-      return !state.quests.zone2RewardClaimed;
+      return state.quests.zone2TowerActivated && !state.quests.zone2RewardClaimed;
     case "splitChoice":
       return !item.used && !item.purified;
     case "recruit":
@@ -7520,6 +7611,7 @@ function handleSystemInteraction(item) {
         return;
       }
       state.quests.zone1Delivered.add(item.workerId);
+      startZoneNpcMove(item.id);
       showStoryToast(`Đã phát ${state.quests.zone1Delivered.size}/3 tờ báo cho công nhân.`);
       if (state.quests.zone1Delivered.size === 3) {
         showStoryToast("Khối công nhân đã thức tỉnh. Hãy quay lại gặp người liên lạc.");
@@ -7540,11 +7632,17 @@ function handleSystemInteraction(item) {
       return;
     case "collectFragment":
       state.quests.zone2Fragments.add(item.fragmentId);
+      startZoneNpcMove(item.id);
       showStoryToast(`Bạn đã hòa giải được ${state.quests.zone2Fragments.size}/3 nhóm trong căn nhà ba gian.`);
       return;
+    case "activateArchiveLens":
+      state.quests.zone2TowerActivated = true;
+      item.collected = true;
+      showStoryToast("Tháp lưu trữ đã ghép ba nguồn tư liệu. Hãy trở về bàn tròn để nhận biểu trưng thống nhất.");
+      return;
     case "rewardEmblem":
-      if (state.quests.zone2Fragments.size < 3) {
-        showStoryToast("Bàn tròn vẫn thiếu những mảnh hợp nhất từ ba căn phòng.");
+      if (!state.quests.zone2TowerActivated) {
+        showStoryToast("Ba nguồn tư liệu cần được kích hoạt tại Tháp lưu trữ trước.");
         return;
       }
       state.quests.zone2RewardClaimed = true;
@@ -7557,6 +7655,7 @@ function handleSystemInteraction(item) {
       return;
     case "recruit":
       state.quests.zone3Recruits.add(item.recruitId);
+      startZoneNpcMove(item.id);
       showStoryToast(`Khối đại đoàn kết đã quy tụ ${state.quests.zone3Recruits.size}/4 lực lượng.`);
       return;
     case "rewardThread":
@@ -7602,6 +7701,7 @@ function handleSystemInteraction(item) {
         return;
       }
       state.quests.zone4Farmers.add(item.farmerId);
+      startZoneNpcMove(item.id);
       showStoryToast(`Khoán 10 đã tới ${state.quests.zone4Farmers.size}/3 hộ nông dân.`);
       return;
     case "rewardGear":
@@ -10187,37 +10287,41 @@ function shouldDrawInteractable(item) {
   }
 
   if (item.interactionType === "rewardEmblem") {
-    return state.quests.zone2Fragments.size === 3 && !state.quests.zone2RewardClaimed;
+    return state.quests.zone2TowerActivated && !state.quests.zone2RewardClaimed;
+  }
+
+  if (item.interactionType === "activateArchiveLens") {
+    return state.quests.zone2Fragments.size === 3 && !state.quests.zone2TowerActivated;
   }
 
   return !item.collected;
 }
 
 function drawNpc(npc) {
-  const displayNpc = getZoneNpcDisplay(npc);
+  const recoveredNpc = getZoneRecoveryNpcDisplay(getZoneNpcDisplay(npc));
   ctx.fillStyle = "rgba(11, 13, 16, 0.35)";
-  ctx.fillRect(displayNpc.x - 7, displayNpc.y + 8, 14, 4);
+  ctx.fillRect(recoveredNpc.x - 7, recoveredNpc.y + 8, 14, 4);
 
-  if (drawNpcSpriteActor(displayNpc)) {
+  if (drawNpcSpriteActor(recoveredNpc)) {
     return;
   }
 
   ctx.fillStyle = "#35292b";
-  ctx.fillRect(displayNpc.x - 6, displayNpc.y - 10, 12, 4);
+  ctx.fillRect(recoveredNpc.x - 6, recoveredNpc.y - 10, 12, 4);
 
   ctx.fillStyle = "#d5b59a";
-  ctx.fillRect(displayNpc.x - 4, displayNpc.y - 8, 8, 6);
+  ctx.fillRect(recoveredNpc.x - 4, recoveredNpc.y - 8, 8, 6);
 
   ctx.fillStyle = "#6a635d";
-  ctx.fillRect(displayNpc.x - 6, displayNpc.y - 2, 12, 8);
+  ctx.fillRect(recoveredNpc.x - 6, recoveredNpc.y - 2, 12, 8);
 
   ctx.fillStyle = "#4a4b50";
-  ctx.fillRect(displayNpc.x - 7, displayNpc.y + 1, 4, 7);
-  ctx.fillRect(displayNpc.x + 3, displayNpc.y + 3, 3, 6);
+  ctx.fillRect(recoveredNpc.x - 7, recoveredNpc.y + 1, 4, 7);
+  ctx.fillRect(recoveredNpc.x + 3, recoveredNpc.y + 3, 3, 6);
 
   ctx.fillStyle = "#2a2527";
-  ctx.fillRect(displayNpc.x - 4, displayNpc.y + 6, 4, 7);
-  ctx.fillRect(displayNpc.x + 1, displayNpc.y + 8, 4, 5);
+  ctx.fillRect(recoveredNpc.x - 4, recoveredNpc.y + 6, 4, 7);
+  ctx.fillRect(recoveredNpc.x + 1, recoveredNpc.y + 8, 4, 5);
 }
 
 function drawObject(item) {
@@ -10233,6 +10337,11 @@ function drawObject(item) {
 
   if (item.variant === "unity-table") {
     drawUnityTable(item);
+    return;
+  }
+
+  if (item.variant === "archive-lens-console") {
+    drawArchiveLensConsole(item);
     return;
   }
 
@@ -10299,6 +10408,20 @@ function drawObject(item) {
   if (item.variant === "grand-tree") {
     drawGrandTree(item);
   }
+}
+
+function drawArchiveLensConsole(item) {
+  const pulse = 0.65 + (Math.sin(state.lastTimestamp * 0.006) + 1) * 0.16;
+  ctx.save();
+  ctx.globalCompositeOperation = "screen";
+  ctx.strokeStyle = `rgba(255, 225, 138, ${pulse})`;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(item.x, item.y + 6, 24 + Math.sin(state.lastTimestamp * 0.004) * 3, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.fillStyle = "rgba(255, 230, 144, 0.28)";
+  ctx.fillRect(item.x - 5, item.y + 1, 10, 10);
+  ctx.restore();
 }
 
 function drawFinalHistoryGate(item) {
@@ -11378,74 +11501,35 @@ function drawZoneProgressPlaque(profile, stage) {
 }
 
 function drawVillageRecoveryScene(profile, stage) {
-  const workers = profile.progress.workerPositions;
-  const recoveredCount = Math.min(workers.length, state.quests.zone1Delivered.size);
   const beacon = profile.landmarkPosition;
-
-  ctx.fillStyle = stage > 0 ? "rgba(248, 201, 102, 0.18)" : "rgba(87, 125, 154, 0.18)";
-  ctx.fillRect(beacon.x - 58, beacon.y + 6, 116, 22);
-
-  for (let index = 0; index < recoveredCount; index += 1) {
-    const worker = workers[index];
-    const bob = Math.sin(state.lastTimestamp * 0.004 + index) * 2;
-    ctx.fillStyle = "rgba(248, 216, 137, 0.2)";
-    ctx.fillRect(worker.x - 10, worker.y - 14 + bob, 20, 22);
-    ctx.fillStyle = index % 2 ? "#53667a" : "#7b5141";
-    ctx.fillRect(worker.x - 4, worker.y - 8 + bob, 8, 12);
-    ctx.fillStyle = "#d9b494";
-    ctx.fillRect(worker.x - 3, worker.y - 13 + bob, 6, 6);
-    ctx.fillStyle = "#e7c64e";
-    ctx.fillRect(worker.x + 5, worker.y - 4 + bob, 5, 3);
-  }
-
-  if (stage === 3) {
-    ctx.fillStyle = "rgba(252, 224, 135, 0.3)";
-    ctx.fillRect(beacon.x - 82, beacon.y + 28, 164, 4);
+  if (stage > 0) {
+    drawWorldWarmGlow(beacon.x + 82, beacon.y + 40, 42, 0.12 + stage * 0.035);
   }
 }
 
 function drawArchiveRecoveryScene(profile, stage) {
   const center = profile.landmarkPosition;
-  const activeNodes = profile.progress.routeNodes.filter((node) => state.quests.zone2Fragments.has(node.id));
+  const gatheredCount = state.quests.zone2Fragments.size;
 
-  ctx.save();
-  ctx.lineWidth = 3;
-  ctx.strokeStyle = "rgba(246, 208, 114, 0.68)";
-  ctx.setLineDash([5, 5]);
-  ctx.lineDashOffset = -state.lastTimestamp * 0.018;
-  for (const node of activeNodes) {
-    ctx.beginPath();
-    ctx.moveTo(center.x, center.y - 18);
-    ctx.lineTo(node.x, node.y);
-    ctx.stroke();
-    ctx.fillStyle = "#f3d777";
-    ctx.fillRect(node.x - 5, node.y - 5, 10, 10);
-    ctx.fillStyle = "#fff0bc";
-    ctx.fillRect(node.x - 2, node.y - 2, 4, 4);
+  if (gatheredCount > 0) {
+    drawWorldWarmGlow(center.x, center.y - 10, 34 + gatheredCount * 8, 0.1 + gatheredCount * 0.03);
   }
-  ctx.restore();
 
-  if (stage === 3) {
-    ctx.fillStyle = "rgba(253, 229, 148, 0.22)";
-    ctx.fillRect(center.x - 72, center.y + 24, 144, 5);
+  if (gatheredCount === 3 && !state.quests.zone2TowerActivated) {
+    ctx.save();
+    ctx.strokeStyle = "rgba(255, 228, 148, 0.86)";
+    ctx.lineWidth = 2;
+    ctx.setLineDash([4, 4]);
+    ctx.lineDashOffset = -state.lastTimestamp * 0.02;
+    ctx.beginPath();
+    ctx.arc(center.x, center.y + 4, 32, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
   }
 }
 
 function drawCrossroadsRecoveryScene(profile, stage) {
-  const crowdCount = state.quests.zone3Recruits.size;
   const freedHamlets = state.quests.zone3HamletsFreed.size;
-
-  for (let index = 0; index < crowdCount; index += 1) {
-    const member = profile.progress.crowdPositions[index];
-    const bob = Math.sin(state.lastTimestamp * 0.004 + index * 0.7) * 2;
-    ctx.fillStyle = ["#6f8a5b", "#8a6049", "#6a6f91", "#a8864f"][index];
-    ctx.fillRect(member.x - 5, member.y - 10 + bob, 10, 14);
-    ctx.fillStyle = "#d8b093";
-    ctx.fillRect(member.x - 3, member.y - 15 + bob, 6, 6);
-    ctx.fillStyle = "#e8cf5e";
-    ctx.fillRect(member.x + 7, member.y - 12 + bob, 2, 14);
-    ctx.fillRect(member.x + 9, member.y - 12 + bob, 7, 5);
-  }
 
   for (let index = 0; index < freedHamlets; index += 1) {
     const hamlet = profile.progress.hamletPositions[index];
@@ -11468,29 +11552,60 @@ function drawSpringRecoveryScene(profile, stage) {
   const plantedFields = state.quests.zone4Farmers.size;
 
   for (let index = 0; index < clearedBarriers; index += 1) {
-    const gap = profile.progress.barrierPositions[index];
-    ctx.fillStyle = "rgba(187, 222, 139, 0.22)";
-    ctx.fillRect(gap.x - 34, gap.y - 13, 68, 26);
-    ctx.fillStyle = "#78ad56";
-    ctx.fillRect(gap.x - 30, gap.y + 5, 60, 4);
-    ctx.fillStyle = "#d8ce8a";
-    ctx.fillRect(gap.x - 18, gap.y + 1, 36, 2);
+    drawClearedBarrierPath(profile.progress.barrierPositions[index], index);
   }
 
-  for (let index = 0; index < plantedFields; index += 1) {
-    const field = profile.progress.fieldPositions[index];
-    ctx.fillStyle = "rgba(127, 180, 79, 0.32)";
-    ctx.fillRect(field.x - 18, field.y - 7, 36, 14);
-    ctx.fillStyle = "#9dd06b";
-    for (let shoot = 0; shoot < 4; shoot += 1) {
-      ctx.fillRect(field.x - 12 + shoot * 8, field.y - 10 - (shoot % 2), 2, 8);
-    }
+  if (plantedFields > 0) {
+    drawRestoredIrrigationStation(profile);
   }
 
   if (stage === 3) {
-    ctx.fillStyle = "rgba(182, 232, 143, 0.26)";
-    ctx.fillRect(profile.landmarkPosition.x - 96, profile.landmarkPosition.y + 26, 192, 6);
+    drawWorldWarmGlow(profile.landmarkPosition.x + 54, profile.landmarkPosition.y, 76, 0.2);
   }
+}
+
+function drawClearedBarrierPath(gap, index) {
+  ctx.save();
+  ctx.fillStyle = "#9e7a4c";
+  ctx.fillRect(gap.x - 36, gap.y - 9, 72, 18);
+  ctx.fillStyle = "#d6ba79";
+  ctx.fillRect(gap.x - 30, gap.y - 4, 60, 9);
+  ctx.fillStyle = "#7d633f";
+  ctx.fillRect(gap.x - 38, gap.y - 16, 4, 22);
+  ctx.fillRect(gap.x + 34, gap.y - 16, 4, 22);
+  ctx.fillStyle = "#5d984e";
+  for (let tuft = 0; tuft < 6; tuft += 1) {
+    const offset = tuft * 11 - 28;
+    ctx.fillRect(gap.x + offset, gap.y + (tuft % 2 ? 8 : -13), 2, 5);
+    ctx.fillRect(gap.x + offset + 2, gap.y + (tuft % 2 ? 6 : -11), 2, 7);
+  }
+  ctx.fillStyle = "rgba(93, 172, 210, 0.66)";
+  ctx.fillRect(gap.x - 24 + index * 3, gap.y - 1, 18, 3);
+  ctx.restore();
+}
+
+function drawRestoredIrrigationStation(profile) {
+  const station = profile.progress.irrigationStation;
+  const asset = environmentSprites.recovery?.doiMoiIrrigationStation;
+
+  if (canDrawSprite(asset)) {
+    ctx.save();
+    ctx.globalAlpha = 0.96;
+    ctx.drawImage(asset, station.x - station.width / 2, station.y - station.height, station.width, station.height);
+    ctx.restore();
+    return;
+  }
+
+  ctx.save();
+  ctx.fillStyle = "#7c5638";
+  ctx.fillRect(station.x - 40, station.y - 48, 80, 44);
+  ctx.fillStyle = "#adc97a";
+  ctx.fillRect(station.x - 34, station.y - 56, 68, 10);
+  ctx.fillStyle = "#67a9c4";
+  ctx.fillRect(station.x - 58, station.y - 4, 40, 9);
+  ctx.fillStyle = "#8fbd54";
+  ctx.fillRect(station.x + 10, station.y - 12, 42, 16);
+  ctx.restore();
 }
 
 function drawZoneAtmosphere(profile) {
