@@ -1,5 +1,6 @@
 import { createQuestState } from "./src/data/quests.js";
 import { ZONE_PROFILES } from "./src/data/zone-profiles.js";
+import { createAssetManager } from "./src/core/asset-manager.js";
 
 const canvas = document.getElementById("game-canvas");
 const ctx = canvas.getContext("2d");
@@ -93,6 +94,11 @@ const endArtImage = document.getElementById("end-art-image");
 const endArtCinematicCtx = endArtCinematic?.getContext("2d") ?? null;
 const endArtOverlay = document.getElementById("end-art-overlay");
 const endArtOverlayCtx = endArtOverlay?.getContext("2d") ?? null;
+const assetLoadingOverlay = document.getElementById("asset-loading-overlay");
+const assetLoadingTitle = document.getElementById("asset-loading-title");
+const assetLoadingCopy = document.getElementById("asset-loading-copy");
+const assetRetryButton = document.getElementById("asset-retry-button");
+const assetReturnButton = document.getElementById("asset-return-button");
 
 if (endArtCinematicCtx) {
   endArtCinematicCtx.imageSmoothingEnabled = false;
@@ -1024,7 +1030,16 @@ function configureOpeningCopy() {
   openingHint.textContent = "E / Phím cách để tiếp tục";
 }
 
+const LEVEL_ASSET_GROUPS = Object.freeze({
+  hub: "hub",
+  village: "zone1",
+  archive: "zone2",
+  crossroads: "zone3",
+  spring: "zone4",
+});
+
 const keys = new Set();
+const assetManager = createAssetManager({});
 const playerSprites = loadPlayerSprites();
 const npcSprites = loadVillageNpcSprites();
 const environmentSprites = loadEnvironmentSprites();
@@ -1037,6 +1052,7 @@ let storyToastTimeoutId = 0;
 let corruptionWarningTimeoutId = 0;
 let relicBookOpenTimeoutId = 0;
 let audioRetryQueued = false;
+let pendingAssetLoad = null;
 
 const state = {
   mode: "start",
@@ -1663,6 +1679,8 @@ storyNextButton.addEventListener("click", withUiClickSound(() => showStoryBookEn
 returnStartButton.addEventListener("click", withUiClickSound(handleReturnFromEnding));
 tutorialNextButton.addEventListener("click", withUiClickSound(advanceTutorial));
 zoneSummaryCloseButton.addEventListener("click", withUiClickSound(closeZoneSummary));
+assetRetryButton.addEventListener("click", withUiClickSound(retryPendingAssetLoad));
+assetReturnButton.addEventListener("click", withUiClickSound(returnFromAssetFailure));
 difficultyControls.addEventListener("click", (event) => {
   const button = event.target.closest("[data-difficulty]");
   if (button) {
@@ -1860,11 +1878,33 @@ window.addEventListener("keyup", (event) => {
   }
 });
 
-loadLevel("hub");
-applyDebugLevelFromUrl();
-applyDebugEndingFromUrl();
-installDebugTools();
-requestAnimationFrame(frame);
+void bootGame();
+
+async function bootGame() {
+  showAssetLoading("Đang chuẩn bị trung tâm", "Đang tải nhân vật, âm thanh và Cánh Cửa Lịch Sử.");
+  const core = await assetManager.loadGroup("core");
+  const hub = await assetManager.loadGroup("hub");
+
+  if (!core.ready || !hub.ready) {
+    pendingAssetLoad = {
+      groupId: !core.ready ? "core" : "hub",
+      levelId: "hub",
+      spawnOverride: null,
+      options: { assetsReady: true },
+      previousMode: "start",
+    };
+    showAssetLoading("Không thể chuẩn bị hành trình", "Một asset bắt buộc chưa tải được. Hãy kiểm tra kết nối rồi thử lại.", true);
+    return;
+  }
+
+  hideAssetLoading();
+  loadLevel("hub", undefined, { assetsReady: true });
+  applyDebugLevelFromUrl();
+  applyDebugEndingFromUrl();
+  installDebugTools();
+  requestAnimationFrame(frame);
+  preloadNextZoneAssets();
+}
 
 function createPlayer() {
   return {
@@ -2109,18 +2149,77 @@ function loadNpcSpriteSet(id) {
   };
 }
 
+function getAssetGroupForSource(src) {
+  if (src.includes("good-ending") || src.includes("bad-ending")) {
+    return "ending";
+  }
+
+  if (src.includes("hub-unexplored") || src.includes("history-hub") || src.includes("final-history-gate") || src.includes("historyDoor") || src.includes("portal-spinning")) {
+    return "hub";
+  }
+
+  if (src.includes("unforgiving_himalayas") || src.includes("rain-ambient") || src.includes("colonial-harbor") || src.includes("storm-shelter") || src.includes("mutterpixel-ruined-village")) {
+    return "zone1";
+  }
+
+  if (src.includes("archive-cave") || src.includes("environment/archive") || src.includes("archive-interior") || src.includes("archive-lens") || src.includes("paper-bundle") || src.includes("fragment-table") || src.includes("compass-pedestal")) {
+    return "zone2";
+  }
+
+  if (src.includes("crossroads-ancient") || src.includes("revolution-square") || src.includes("faction-standard") || src.includes("strategic-hamlet") || src.includes("bureaucracy-wall")) {
+    return "zone3";
+  }
+
+  if (src.includes("spring-town") || src.includes("factory-valley") || src.includes("restoration-engine") || src.includes("doi-moi") || src.includes("ration-market")) {
+    return "zone4";
+  }
+
+  return "core";
+}
+
+function isCriticalAsset(src, group) {
+  if (src.includes("assets/audio/")) {
+    return false;
+  }
+
+  if (group === "core") {
+    return src.includes("assets/player/") || src.includes("assets/npcs/") || src.includes("assets/monsters/");
+  }
+
+  return true;
+}
+
 function loadSprite(src) {
   const image = new Image();
-  image.src = src;
-  return image;
+  const group = getAssetGroupForSource(src);
+  const entry = assetManager.register({
+    key: `image:${src}`,
+    type: "image",
+    src,
+    group,
+    critical: isCriticalAsset(src, group),
+    handle: image,
+  });
+  return entry.handle ?? image;
 }
 
 function loadSound(src, volume = 1, options = {}) {
-  const sound = new Audio(src);
+  const sound = new Audio();
   sound.preload = "auto";
   sound.volume = volume;
   sound.loop = Boolean(options.loop);
-  return sound;
+  const group = getAssetGroupForSource(src);
+  const entry = assetManager.register({
+    key: `audio:${src}`,
+    type: "audio",
+    src,
+    group,
+    critical: false,
+    handle: sound,
+    volume,
+    loop: Boolean(options.loop),
+  });
+  return entry.handle ?? sound;
 }
 
 function playUiSound(sound) {
@@ -5648,7 +5747,113 @@ function restartGame() {
   showStoryToast("Hành trình khởi động lại. Hãy giữ vững chính khí, tránh Tha hóa và tìm đủ 5 vật phẩm.");
 }
 
+function getAssetGroupForLevel(levelId) {
+  return LEVEL_ASSET_GROUPS[levelId] ?? "hub";
+}
+
+function getAssetGroupLabel(groupId) {
+  return {
+    core: "nhân vật và hiệu ứng cốt lõi",
+    hub: "Cánh Cửa Lịch Sử",
+    zone1: "Khu 1: Đêm mưa thuộc địa",
+    zone2: "Khu 2: Kho lưu trữ",
+    zone3: "Khu 3: Quảng trường",
+    zone4: "Khu 4: Thung lũng Đổi Mới",
+    ending: "đoạn kết lịch sử",
+  }[groupId] ?? "cảnh quan";
+}
+
+function showAssetLoading(title, copy, failed = false) {
+  assetLoadingTitle.textContent = title;
+  assetLoadingCopy.textContent = copy;
+  assetRetryButton.classList.toggle("hidden", !failed);
+  assetReturnButton.classList.toggle("hidden", !failed || pendingAssetLoad?.groupId === "hub" || pendingAssetLoad?.groupId === "core");
+  assetLoadingOverlay.classList.remove("hidden");
+  assetLoadingOverlay.setAttribute("aria-hidden", "false");
+}
+
+function hideAssetLoading() {
+  assetLoadingOverlay.classList.add("hidden");
+  assetLoadingOverlay.setAttribute("aria-hidden", "true");
+  assetRetryButton.classList.add("hidden");
+  assetReturnButton.classList.add("hidden");
+}
+
+async function ensureLevelAssets(levelId, spawnOverride, options = {}, retry = false) {
+  const groupId = getAssetGroupForLevel(levelId);
+  const result = retry ? await assetManager.retryGroup(groupId) : await assetManager.loadGroup(groupId);
+
+  if (!result.ready) {
+    showAssetLoading(
+      `Không thể tải ${getAssetGroupLabel(groupId)}`,
+      "Asset bắt buộc chưa sẵn sàng. Trò chơi sẽ không thay bằng hình tạm; hãy thử tải lại hoặc quay về trung tâm.",
+      true
+    );
+    return false;
+  }
+
+  const pending = pendingAssetLoad;
+  pendingAssetLoad = null;
+  hideAssetLoading();
+  state.mode = pending?.previousMode === "loading" ? "playing" : (pending?.previousMode ?? state.mode);
+  loadLevel(levelId, spawnOverride, { ...options, assetsReady: true });
+  preloadNextZoneAssets();
+  return true;
+}
+
+function retryPendingAssetLoad() {
+  if (!pendingAssetLoad) {
+    return;
+  }
+
+  showAssetLoading(`Đang tải lại ${getAssetGroupLabel(pendingAssetLoad.groupId)}`, "Đang kiểm tra lại các asset bắt buộc.");
+  void ensureLevelAssets(
+    pendingAssetLoad.levelId,
+    pendingAssetLoad.spawnOverride,
+    pendingAssetLoad.options,
+    true
+  );
+}
+
+function returnFromAssetFailure() {
+  pendingAssetLoad = null;
+  hideAssetLoading();
+  state.mode = "playing";
+  loadLevel("hub", undefined, { assetsReady: true });
+}
+
+function preloadNextZoneAssets() {
+  const nextLevelId = ["village", "archive", "crossroads", "spring"].find(
+    (levelId) => levelId !== state.currentLevelId && !state.completedZones.has(levelId)
+  );
+
+  if (!nextLevelId) {
+    void assetManager.preloadGroup("ending");
+    return;
+  }
+
+  void assetManager.preloadGroup(getAssetGroupForLevel(nextLevelId));
+}
+
 function loadLevel(levelId, spawnOverride, options = {}) {
+  const groupId = getAssetGroupForLevel(levelId);
+  const groupStatus = assetManager.getGroupStatus(groupId);
+
+  if (!options.assetsReady && !groupStatus.ready) {
+    pendingAssetLoad = {
+      groupId,
+      levelId,
+      spawnOverride,
+      options,
+      previousMode: state.mode,
+    };
+    state.mode = "loading";
+    clearPressedKeys();
+    showAssetLoading(`Đang tải ${getAssetGroupLabel(groupId)}`, "Đang chuẩn bị các sprite, âm thanh và hiệu ứng của khu vực này.");
+    void ensureLevelAssets(levelId, spawnOverride, options);
+    return false;
+  }
+
   state.currentLevelId = levelId;
   state.activeInteractionId = null;
   state.pendingEnding = false;

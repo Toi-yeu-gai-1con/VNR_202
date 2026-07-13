@@ -34,4 +34,18 @@ const retriedZone = await manager.retryGroup("zone1");
 assert.equal(retriedZone.ready, true, "Retry reloads only failed entries and unlocks the group.");
 assert.equal(attempts.get("beacon"), 2, "The failed entry is retried exactly once.");
 
+const lazyManager = createAssetManager({}, {
+  loadImage: async (entry) => entry.handle,
+  loadAudio: async (entry) => entry.handle,
+});
+const lazyImage = { kind: "image", key: "hub-gate" };
+const events = [];
+lazyManager.subscribe((event) => events.push(event.type));
+lazyManager.register({ key: "hub-gate", type: "image", src: "hub-gate.png", group: "hub", critical: true, handle: lazyImage });
+assert.equal(lazyManager.getGroupStatus("hub").ready, false, "An unrequested critical group is not ready yet.");
+const hub = await lazyManager.loadGroup("hub");
+assert.equal(hub.ready, true, "Dynamically registered browser assets can be loaded by group.");
+assert.equal(lazyManager.getImage("hub-gate"), lazyImage, "A lazy browser image keeps its stable object identity.");
+assert.ok(events.includes("loaded"), "Consumers can observe asset loading progress.");
+
 console.log("PASS: grouped assets load by stable key and critical failures can be retried.");
