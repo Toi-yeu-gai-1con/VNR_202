@@ -2,11 +2,12 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const game = readFileSync(new URL("../game.js", import.meta.url), "utf8");
+const profiles = readFileSync(new URL("../src/data/zone-profiles.js", import.meta.url), "utf8");
 
-assert.match(game, /const ZONE_PROFILES = \{[\s\S]*?zone1:[\s\S]*?stormShelterBeacon/, "Zone 1 needs a landmark profile.");
-assert.match(game, /zone2:[\s\S]*?archiveLensTower/, "Zone 2 needs a landmark profile.");
-assert.match(game, /zone3:[\s\S]*?factionStandard/, "Zone 3 needs a landmark profile.");
-assert.match(game, /zone4:[\s\S]*?restorationEngine/, "Zone 4 needs a landmark profile.");
+assert.match(profiles, /ZONE_PROFILES[\s\S]*?zone1:[\s\S]*?stormShelterBeacon/, "Zone 1 needs a landmark profile.");
+assert.match(profiles, /zone2:[\s\S]*?archiveLensTower/, "Zone 2 needs a landmark profile.");
+assert.match(profiles, /zone3:[\s\S]*?factionStandard/, "Zone 3 needs a landmark profile.");
+assert.match(profiles, /zone4:[\s\S]*?restorationEngine/, "Zone 4 needs a landmark profile.");
 assert.match(game, /function getZonePresentation\(levelId\)/, "Zone completion must drive a reusable presentation state.");
 assert.match(game, /function drawZoneLandmark\(profile\)/, "Zone landmarks need a dedicated renderer.");
 assert.match(game, /function drawZoneAtmosphere\(profile\)/, "Each zone needs profile-controlled atmosphere.");

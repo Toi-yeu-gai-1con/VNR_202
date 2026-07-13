@@ -1,3 +1,6 @@
+import { createQuestState } from "./src/data/quests.js";
+import { ZONE_PROFILES } from "./src/data/zone-profiles.js";
+
 const canvas = document.getElementById("game-canvas");
 const ctx = canvas.getContext("2d");
 const minimap = document.getElementById("minimap");
@@ -1001,25 +1004,6 @@ const OPENING_DIALOGUE = [
   },
 ];
 
-function createQuestState() {
-  return {
-    zone1Started: false,
-    zone1Delivered: new Set(),
-    zone1RewardClaimed: false,
-    zone2Fragments: new Set(),
-    zone2TowerActivated: false,
-    zone2RewardClaimed: false,
-    zone3Recruits: new Set(),
-    zone3ThreadClaimed: false,
-    zone3HamletsFreed: new Set(),
-    zone3BossDefeated: false,
-    zone3MapClaimed: false,
-    zone4Barriers: new Set(),
-    zone4Farmers: new Set(),
-    zone4GearClaimed: false,
-  };
-}
-
 function configureOpeningCopy() {
   startQuestion.textContent = "THE CROSSROADS: NHÀ DU HÀNH THỜI GIAN";
   startCopy.textContent =
@@ -1124,7 +1108,7 @@ const levels = {
   spring: createDoiMoiValleyLevel(),
 };
 
-const ZONE_PROFILES = {
+const LEGACY_ZONE_PROFILES = {
   zone1: {
     levelId: "village",
     verb: "Bảo vệ người dân giữa mưa bão",
