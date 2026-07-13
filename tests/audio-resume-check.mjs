@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
-const source = readFileSync(new URL("../game.js", import.meta.url), "utf8");
+const source = readFileSync(new URL("../src/runtime/game-runtime.js", import.meta.url), "utf8");
 const audioSource = readFileSync(new URL("../src/systems/audio-system.js", import.meta.url), "utf8");
 
 assert.match(

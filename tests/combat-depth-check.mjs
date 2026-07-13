@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
-const game = readFileSync(new URL("../game.js", import.meta.url), "utf8");
+const game = readFileSync(new URL("../src/runtime/game-runtime.js", import.meta.url), "utf8");
 const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const combatConfig = readFileSync(new URL("../src/data/combat-config.js", import.meta.url), "utf8");
 

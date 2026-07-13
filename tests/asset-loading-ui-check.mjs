@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
-const game = readFileSync(new URL("../game.js", import.meta.url), "utf8");
+const game = readFileSync(new URL("../src/runtime/game-runtime.js", import.meta.url), "utf8");
 
 assert.match(html, /id="asset-loading-overlay"/, "The game needs a dedicated loading and recovery overlay.");
 assert.match(html, /id="asset-retry-button"/, "Critical asset errors need an explicit retry action.");

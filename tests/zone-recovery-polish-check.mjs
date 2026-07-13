@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
-const game = readFileSync(new URL("../game.js", import.meta.url), "utf8");
+const game = readFileSync(new URL("../src/runtime/game-runtime.js", import.meta.url), "utf8");
 const levels = readFileSync(new URL("../src/systems/level-definitions.js", import.meta.url), "utf8");
 
 assert.match(game, /function getZoneRecoveryNpcDisplay\(npc\)/, "Recovered characters need to reuse the NPC display pipeline.");

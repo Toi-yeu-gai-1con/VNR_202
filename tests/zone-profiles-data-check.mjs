@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { ZONE_PROFILES } from "../src/data/zone-profiles.js";
 
-const game = readFileSync(new URL("../game.js", import.meta.url), "utf8");
+const game = readFileSync(new URL("../src/runtime/game-runtime.js", import.meta.url), "utf8");
 
 assert.deepEqual(Object.keys(ZONE_PROFILES), ["zone1", "zone2", "zone3", "zone4"], "All four zone profiles live in content data.");
 assert.equal(ZONE_PROFILES.zone1.levelId, "village", "Zone 1 keeps its level identity.");
