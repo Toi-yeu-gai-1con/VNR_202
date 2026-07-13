@@ -1,6 +1,8 @@
 import { createQuestState } from "../data/quests.js";
 import { ZONE_PROFILES } from "../data/zone-profiles.js";
 import { createAssetManager } from "../core/asset-manager.js";
+import { createPageLifecycleController } from "../core/page-lifecycle.js";
+import { createRuntimeLoop } from "../core/runtime-loop.js";
 import { createSceneController } from "../core/scene-controller.js";
 import { createAudioSystem } from "../systems/audio-system.js";
 import { createLevelDefinitions } from "../systems/level-definitions.js";
@@ -324,6 +326,18 @@ const audioSystem = createAudioSystem({
   getZoneProfile,
   getCurrentLevel: currentLevel,
   getPlayer: () => player,
+});
+
+const frameLoop = createRuntimeLoop({
+  onFrame: frame,
+});
+
+const pageLifecycle = createPageLifecycleController({
+  clearInput: clearPressedKeys,
+  suspendRuntime: () => frameLoop.suspend(),
+  resumeRuntime: () => frameLoop.resume(),
+  suspendAudio: () => audioSystem.suspend(),
+  resumeAudio: () => audioSystem.resume(),
 });
 
 const miniMapRenderer = createMiniMapRenderer({
@@ -777,13 +791,6 @@ function clearPressedKeys() {
   player.isMoving = false;
 }
 
-window.addEventListener("blur", clearPressedKeys);
-document.addEventListener("visibilitychange", () => {
-  if (document.hidden) {
-    clearPressedKeys();
-  }
-});
-
 window.addEventListener("keydown", (event) => {
   if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " "].includes(event.key)) {
     event.preventDefault();
@@ -927,7 +934,8 @@ async function bootGame() {
   applyDebugLevelFromUrl();
   applyDebugEndingFromUrl();
   installDebugTools();
-  requestAnimationFrame(frame);
+  frameLoop.start();
+  pageLifecycle.install();
   preloadNextZoneAssets();
 }
 
@@ -2107,8 +2115,7 @@ function applyDebugEndingFromUrl() {
   showEndOverlay();
 }
 
-function frame(timestamp) {
-  const deltaSeconds = Math.min((timestamp - state.lastTimestamp) / 1000 || 0, 0.033);
+function frame({ now: timestamp, deltaSeconds }) {
   state.lastTimestamp = timestamp;
 
   if (state.mode === "playing") {
@@ -2128,7 +2135,6 @@ function frame(timestamp) {
   render();
   renderEndingArtCinematic();
   renderEndingSceneOverlay();
-  requestAnimationFrame(frame);
 }
 
 function resetStoryProgress() {

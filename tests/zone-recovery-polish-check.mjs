@@ -18,8 +18,8 @@ assert.match(game, /function drawZoneLandmarkAnimationFrame\(frames, x, y, width
 assert.match(game, /const frame = frames\[Math\.floor\(state\.lastTimestamp \/ 180\) % frames\.length\];/, "Landmark animations must advance through their normalized frame list.");
 assert.doesNotMatch(game, /function drawZoneLandmarkMotion\(profile\)/, "Canvas overlay effects cannot replace landmark sprite animation.");
 assert.match(game, /function clearPressedKeys\(\) \{\s*keys\.clear\(\);/s, "Input needs a shared clear-state helper.");
-assert.match(game, /window\.addEventListener\("blur", clearPressedKeys\);/, "Input must clear when the game loses focus.");
-assert.match(game, /document\.addEventListener\("visibilitychange", \(\) => \{\s*if \(document\.hidden\) \{\s*clearPressedKeys\(\);/s, "Input must clear when the tab is hidden.");
+assert.match(game, /createPageLifecycleController\(\{[\s\S]*?clearInput: clearPressedKeys,[\s\S]*?suspendRuntime: \(\) => frameLoop\.suspend\(\),[\s\S]*?resumeRuntime: \(\) => frameLoop\.resume\(\),/s, "Input, visibility, and runtime suspension must share the lifecycle controller.");
+assert.match(game, /pageLifecycle\.install\(\);/, "The live runtime must install lifecycle protection after boot.");
 assert.doesNotMatch(game, /drawZoneProgressPlaque/, "World-state labels must not cover the map.");
 assert.match(game, /doi-moi-irrigation-station\.png/, "Zone 4 needs its restoration landmark art.");
 assert.match(game, /function drawDoiMoiStation\(profile\)/, "Zone 4 needs a staged restoration renderer.");

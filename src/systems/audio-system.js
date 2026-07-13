@@ -9,6 +9,7 @@ export function createAudioSystem({
   eventTarget = window,
 }) {
   let audioRetryQueued = false;
+  let suspended = false;
 
   function queueAudioRetry() {
     if (audioRetryQueued || state.soundMuted) {
@@ -51,7 +52,7 @@ export function createAudioSystem({
   }
 
   function playLoopingSound(sound) {
-    if (!sound || !sound.paused) {
+    if (suspended || !sound || !sound.paused) {
       return;
     }
 
@@ -137,6 +138,10 @@ export function createAudioSystem({
   }
 
   function syncAmbienceAudio() {
+    if (suspended) {
+      return;
+    }
+
     const activeAmbience = [];
     const activeMusic = [];
 
@@ -168,6 +173,28 @@ export function createAudioSystem({
     }
   }
 
+  function suspend() {
+    if (suspended) {
+      return;
+    }
+
+    suspended = true;
+    for (const sound of [...Object.values(ambienceSounds), ...Object.values(musicSounds)]) {
+      pauseLoopingSound(sound);
+    }
+  }
+
+  function resume() {
+    if (!suspended) {
+      return;
+    }
+
+    suspended = false;
+    if (!state.soundMuted) {
+      syncAmbienceAudio();
+    }
+  }
+
   return {
     playUiSound,
     withUiClickSound,
@@ -178,5 +205,7 @@ export function createAudioSystem({
     syncAmbienceAudio,
     syncZoneAmbientAudio,
     setMuted,
+    suspend,
+    resume,
   };
 }

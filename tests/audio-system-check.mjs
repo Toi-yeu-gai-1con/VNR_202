@@ -52,4 +52,19 @@ audio.setMuted(true);
 assert.equal(zone.muted, true, "Muting applies to every active music track.");
 assert.equal(click.muted, true, "Muting also applies to UI audio.");
 
+audio.setMuted(false);
+zone.currentTime = 37.25;
+rain.currentTime = 14.5;
+audio.suspend();
+assert.equal(zone.paused, true, "Suspending pauses the active music track without resetting it.");
+assert.equal(rain.paused, true, "Suspending also pauses active ambience.");
+assert.equal(zone.currentTime, 37.25, "Suspending preserves the music playback position.");
+assert.equal(rain.currentTime, 14.5, "Suspending preserves the ambience playback position.");
+
+audio.resume();
+assert.equal(zone.paused, false, "Resuming restores the active zone music track.");
+assert.equal(rain.paused, false, "Resuming restores the active zone ambience.");
+assert.equal(zone.currentTime, 37.25, "Resuming does not rewind the music track.");
+assert.equal(rain.currentTime, 14.5, "Resuming does not rewind ambience.");
+
 console.log("PASS: audio state, zone mixing, and mute behavior are isolated in one system.");
