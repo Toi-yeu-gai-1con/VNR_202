@@ -8,8 +8,14 @@ assert.match(game, /drawNpcSpriteActor\(recoveredNpc\)/, "Recovered characters m
 assert.match(game, /zone2TowerActivated/, "Archive tower activation must persist in quest state.");
 assert.match(game, /interactionType: "activateArchiveLens"/, "The archive tower needs a real interaction step.");
 assert.match(game, /archive-lens-console/, "Navigation needs a target for the archive tower.");
-assert.match(game, /function drawZoneLandmarkMotion\(profile\)/, "Landmarks need a dedicated animation renderer.");
-assert.match(game, /drawZoneLandmarkMotion\(profile\);/, "Each landmark must render its motion layer.");
+assert.match(game, /landmarkAnimations:/, "Landmarks need a dedicated sprite-sheet collection.");
+assert.match(game, /storm-shelter-beacon-animated\.png/, "Zone 1 must load its animated landmark strip.");
+assert.match(game, /archive-lens-tower-animated\.png/, "Zone 2 must load its animated landmark strip.");
+assert.match(game, /faction-standard-animated\.png/, "Zone 3 must load its animated landmark strip.");
+assert.match(game, /restoration-engine-animated\.png/, "Zone 4 must load its animated landmark strip.");
+assert.match(game, /function drawZoneLandmarkSpriteFrame\(spriteSheet, x, y, width, height\)/, "Landmarks need a frame-cropping renderer.");
+assert.match(game, /Math\.floor\(state\.lastTimestamp \/ 180\) % 4/, "Landmark strips must advance through four time-based frames.");
+assert.doesNotMatch(game, /function drawZoneLandmarkMotion\(profile\)/, "Canvas overlay effects cannot replace landmark sprite animation.");
 assert.doesNotMatch(game, /drawZoneProgressPlaque/, "World-state labels must not cover the map.");
 assert.match(game, /doi-moi-irrigation-station\.png/, "Zone 4 needs its restoration landmark art.");
 assert.match(game, /function drawDoiMoiStation\(profile\)/, "Zone 4 needs a staged restoration renderer.");

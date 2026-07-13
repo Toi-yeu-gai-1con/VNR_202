@@ -1934,6 +1934,12 @@ function loadEnvironmentSprites() {
       factionStandard: loadSprite("assets/landmarks/faction-standard.png"),
       restorationEngine: loadSprite("assets/landmarks/restoration-engine.png"),
     },
+    landmarkAnimations: {
+      stormShelterBeacon: loadSprite("assets/landmarks/storm-shelter-beacon-animated.png"),
+      archiveLensTower: loadSprite("assets/landmarks/archive-lens-tower-animated.png"),
+      factionStandard: loadSprite("assets/landmarks/faction-standard-animated.png"),
+      restorationEngine: loadSprite("assets/landmarks/restoration-engine-animated.png"),
+    },
     recovery: {
       doiMoiIrrigationStation: loadSprite("assets/recovery/doi-moi-irrigation-station.png"),
     },
@@ -11426,6 +11432,7 @@ function drawZoneLandmark(profile) {
   const presentation = getZonePresentation(profile.levelId);
   const details = profile[presentation];
   const landmark = environmentSprites.landmarks?.[profile.landmark];
+  const animatedLandmark = environmentSprites.landmarkAnimations?.[profile.landmark];
   const { x, y } = profile.landmarkPosition;
   const { width, height } = profile.landmarkSize;
   const pulse = 0.78 + (Math.sin(state.lastTimestamp * 0.003 + x) + 1) * 0.08;
@@ -11446,7 +11453,9 @@ function drawZoneLandmark(profile) {
   ctx.globalCompositeOperation = "source-over";
   ctx.globalAlpha = presentation === "completed" ? 1 : 0.86;
 
-  if (canDrawSprite(landmark)) {
+  if (canDrawSprite(animatedLandmark)) {
+    drawZoneLandmarkSpriteFrame(animatedLandmark, x, y, width, height);
+  } else if (canDrawSprite(landmark)) {
     ctx.drawImage(landmark, Math.round(x - width / 2), Math.round(y - height), width, height);
   } else {
     ctx.fillStyle = presentation === "completed" ? "#e8c670" : "#8d9bae";
@@ -11454,44 +11463,24 @@ function drawZoneLandmark(profile) {
     ctx.fillRect(Math.round(x - width / 2), Math.round(y - 10), width, 10);
   }
 
-  drawZoneLandmarkMotion(profile);
-
   ctx.restore();
 }
 
-function drawZoneLandmarkMotion(profile) {
-  const { x, y } = profile.landmarkPosition;
-  const phase = state.lastTimestamp * 0.004;
+function drawZoneLandmarkSpriteFrame(spriteSheet, x, y, width, height) {
+  const frame = Math.floor(state.lastTimestamp / 180) % 4;
+  const frameWidth = Math.floor(spriteSheet.naturalWidth / 4);
 
-  ctx.save();
-  ctx.globalCompositeOperation = "screen";
-
-  if (profile.atmosphere === "storm") {
-    const pulse = 0.42 + Math.sin(phase * 1.8) * 0.2;
-    ctx.fillStyle = `rgba(255, 223, 132, ${pulse})`;
-    ctx.fillRect(x - 4, y - 76, 8, 8);
-    ctx.fillStyle = "rgba(255, 230, 162, 0.24)";
-    ctx.fillRect(x - 18, y - 70, 36, 18);
-  } else if (profile.atmosphere === "paper") {
-    ctx.strokeStyle = "rgba(255, 228, 150, 0.62)";
-    ctx.lineWidth = 2;
-    ctx.setLineDash([3, 4]);
-    ctx.lineDashOffset = -state.lastTimestamp * 0.018;
-    ctx.beginPath();
-    ctx.arc(x, y - 48, 22 + Math.sin(phase) * 3, 0, Math.PI * 2);
-    ctx.stroke();
-  } else if (profile.atmosphere === "smoke") {
-    const flutter = Math.round(Math.sin(phase * 1.25) * 4);
-    ctx.fillStyle = "rgba(255, 221, 109, 0.68)";
-    ctx.fillRect(x + 12, y - 82, 2, 24);
-    ctx.fillStyle = "rgba(226, 71, 57, 0.72)";
-    ctx.fillRect(x + 14, y - 82, 16 + flutter, 9);
-  } else if (state.quests.zone4GearClaimed) {
-    ctx.fillStyle = "rgba(183, 236, 158, 0.26)";
-    ctx.fillRect(x - 24, y - 20, 48, 3);
-  }
-
-  ctx.restore();
+  ctx.drawImage(
+    spriteSheet,
+    frameWidth * frame,
+    0,
+    frameWidth,
+    spriteSheet.naturalHeight,
+    Math.round(x - width / 2),
+    Math.round(y - height),
+    width,
+    height
+  );
 }
 
 function drawZoneProgressScene(profile) {
