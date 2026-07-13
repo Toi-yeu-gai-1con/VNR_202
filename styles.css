@@ -376,6 +376,11 @@ button {
   line-height: 1;
 }
 
+.sound-button.has-load-warning {
+  outline: 2px solid #efb35a;
+  outline-offset: 2px;
+}
+
 .game-shell:fullscreen {
   width: 100vw;
   height: 100dvh;

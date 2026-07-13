@@ -29,6 +29,7 @@ assert.equal(manager.getImage("player").key, "player", "Loaded images are retrie
 const failedZone = await manager.loadGroup("zone1");
 assert.equal(failedZone.ready, false, "A failed critical asset blocks a zone group.");
 assert.deepEqual(failedZone.failedKeys, ["beacon"], "The failed critical asset is reported.");
+assert.deepEqual(manager.getFailedEntries({ type: "image" }).map((entry) => entry.key), ["beacon"], "Consumers can distinguish recoverable image failures from audio failures.");
 
 const retriedZone = await manager.retryGroup("zone1");
 assert.equal(retriedZone.ready, true, "Retry reloads only failed entries and unlocks the group.");

@@ -158,6 +158,11 @@ export function createAssetManager(manifest, adapters = {}) {
         failedKeys,
       };
     },
+    getFailedEntries({ type } = {}) {
+      return [...errorsByKey.keys()]
+        .map((key) => entriesByKey.get(key))
+        .filter((entry) => entry && (!type || entry.type === type));
+    },
     subscribe(listener) {
       listeners.add(listener);
       return () => listeners.delete(listener);

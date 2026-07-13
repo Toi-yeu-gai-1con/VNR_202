@@ -212,6 +212,7 @@ let storyToastTimeoutId = 0;
 let corruptionWarningTimeoutId = 0;
 let relicBookOpenTimeoutId = 0;
 let pendingAssetLoad = null;
+let audioLoadWarningShown = false;
 
 const state = {
   mode: "start",
@@ -697,6 +698,19 @@ updateFullscreenButton();
 updateSoundButton();
 refreshContinueButton();
 
+assetManager.subscribe((event) => {
+  if (event.type === "failed" && event.entry.type === "audio" && !audioLoadWarningShown) {
+    audioLoadWarningShown = true;
+    showStoryToast("Âm thanh chưa sẵn sàng. Nhấn nút âm thanh để thử lại.");
+  }
+
+  if (event.type === "loaded" && event.entry.type === "audio" && !assetManager.getFailedEntries({ type: "audio" }).length) {
+    audioLoadWarningShown = false;
+  }
+
+  updateSoundButton();
+});
+
 function toggleFullscreen() {
   if (!gameShell || !document.fullscreenEnabled) {
     return;
@@ -728,6 +742,7 @@ function toggleSound() {
 
   if (!state.soundMuted) {
     playUiSound(uiSounds.pixelClick);
+    void retryFailedAudioAssets();
   }
 }
 
@@ -737,10 +752,24 @@ function updateSoundButton() {
   }
 
   const soundEnabled = !state.soundMuted;
+  const audioHasFailed = assetManager.getFailedEntries({ type: "audio" }).length > 0;
   soundButton.setAttribute("aria-pressed", String(soundEnabled));
+  soundButton.classList.toggle("has-load-warning", audioHasFailed);
   soundButton.setAttribute("aria-label", soundEnabled ? "Tắt âm thanh" : "Bật âm thanh");
   soundButton.title = soundEnabled ? "Tắt âm thanh" : "Bật âm thanh";
   soundButton.textContent = soundEnabled ? "♫" : "×";
+}
+
+async function retryFailedAudioAssets() {
+  const failedGroups = [...new Set(assetManager.getFailedEntries({ type: "audio" }).map((entry) => entry.group))];
+  if (!failedGroups.length) {
+    return true;
+  }
+
+  await Promise.all(failedGroups.map((groupId) => assetManager.retryGroup(groupId)));
+  syncAmbienceAudio();
+  updateSoundButton();
+  return assetManager.getFailedEntries({ type: "audio" }).length === 0;
 }
 
 function clearPressedKeys() {
