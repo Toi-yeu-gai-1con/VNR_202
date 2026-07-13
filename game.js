@@ -4,6 +4,7 @@ import { createAssetManager } from "./src/core/asset-manager.js";
 import { createSceneController } from "./src/core/scene-controller.js";
 import { createAudioSystem } from "./src/systems/audio-system.js";
 import { INTERACTION_DIALOGUES, RELIC_DEFINITIONS, RELIC_STORY_SLIDES, ENDING_DEFINITIONS, ENDING_OVERLAY_SCENES, ENDING_CINEMATIC_DEFINITIONS, OPENING_DIALOGUE } from "./src/data/story-content.js";
+import { createMiniMapRenderer } from "./src/rendering/minimap-renderer.js";
 
 const canvas = document.getElementById("game-canvas");
 const ctx = canvas.getContext("2d");
@@ -619,96 +620,22 @@ const audioSystem = createAudioSystem({
   getPlayer: () => player,
 });
 
-const LEGACY_ZONE_PROFILES = {
-  zone1: {
-    levelId: "village",
-    verb: "Bảo vệ người dân giữa mưa bão",
-    landmark: "stormShelterBeacon",
-    landmarkPosition: { x: 300, y: 220 },
-    landmarkSize: { width: 86, height: 108 },
-    atmosphere: "storm",
-    ambience: ["rain"],
-    music: "portMaze",
-    npcId: "nguyen-ai-quoc",
-    npcOffset: { x: -18, y: -6 },
-    progress: {
-      workerPositions: {
-        "worker-harbor-1": { x: 354, y: 272 },
-        "worker-harbor-2": { x: 386, y: 280 },
-        "worker-harbor-3": { x: 418, y: 272 },
-      },
-    },
-    active: { tint: "rgba(134, 181, 222, 0.14)", particleCount: 24, copy: "Mưa vẫn phủ kín bến cảng. Hãy đưa tiếng nói thức tỉnh đến những người đang chờ đợi." },
-    completed: { tint: "rgba(245, 205, 115, 0.13)", particleCount: 9, copy: "Đèn hiệu đã sáng. Những người lao động quanh bến cảng đang giữ vững liên lạc." },
-  },
-  zone2: {
-    levelId: "archive",
-    verb: "Khám phá và giải mã kho lưu trữ",
-    landmark: "archiveLensTower",
-    landmarkPosition: { x: 300, y: 280 },
-    landmarkSize: { width: 100, height: 96 },
-    atmosphere: "paper",
-    ambience: ["fireplace"],
-    music: "archive",
-    npcId: "delegate-north",
-    npcOffset: { x: 0, y: -14 },
-    progress: {
-      delegatePositions: {
-        "delegate-west": { x: 264, y: 304 },
-        "delegate-north": { x: 300, y: 300 },
-        "delegate-east": { x: 336, y: 304 },
-      },
-    },
-    active: { tint: "rgba(222, 174, 106, 0.11)", particleCount: 19, copy: "Bụi giấy vẫn che phủ các manh mối. Hãy tìm đường nối những tư liệu bị chia cắt." },
-    completed: { tint: "rgba(255, 231, 160, 0.14)", particleCount: 10, copy: "Thấu kính lưu trữ đã soi rõ đường đi. Những người giữ tư liệu đã thống nhất tiếng nói." },
-  },
-  zone3: {
-    levelId: "crossroads",
-    verb: "Thuyết phục các lực lượng và bảo vệ khối đoàn kết",
-    landmark: "factionStandard",
-    landmarkPosition: { x: 300, y: 230 },
-    landmarkSize: { width: 88, height: 112 },
-    atmosphere: "smoke",
-    ambience: ["fireplace"],
-    music: "crossroads",
-    npcId: "vietminh-cadre",
-    npcOffset: { x: 14, y: 0 },
-    progress: {
-      crowdPositions: {
-        "recruit-farmer": { x: 396, y: 266 },
-        "recruit-worker": { x: 432, y: 280 },
-        "recruit-intellectual": { x: 528, y: 280 },
-        "recruit-bourgeois": { x: 564, y: 266 },
-      },
-      hamletPositions: [{ x: 210, y: 478 }, { x: 482, y: 468 }, { x: 784, y: 474 }],
-    },
-    active: { tint: "rgba(216, 102, 70, 0.1)", particleCount: 20, copy: "Khói vẫn bao quanh quảng trường. Mỗi lời thuyết phục có thể kéo một lực lượng về phía đoàn kết." },
-    completed: { tint: "rgba(247, 206, 102, 0.14)", particleCount: 10, copy: "Lá cờ ở quảng trường đã được gìn giữ. Những người từng phân vân nay cùng nhìn về một phía." },
-  },
-  zone4: {
-    levelId: "spring",
-    verb: "Phá rào cản và khôi phục môi trường",
-    landmark: "restorationEngine",
-    landmarkPosition: { x: 300, y: 380 },
-    landmarkSize: { width: 102, height: 92 },
-    atmosphere: "recovery",
-    ambience: ["fireplace"],
-    music: "spring",
-    npcId: "doi-moi-leader",
-    npcOffset: { x: -12, y: 8 },
-    progress: {
-      barrierPositions: [{ x: 388, y: 404 }, { x: 480, y: 400 }, { x: 572, y: 404 }],
-      farmerPositions: {
-        "farmer-khoan-1": { x: 474, y: 382 },
-        "farmer-khoan-2": { x: 508, y: 390 },
-        "farmer-khoan-3": { x: 542, y: 382 },
-      },
-      irrigationStation: { x: 520, y: 346, width: 88, height: 69 },
-    },
-    active: { tint: "rgba(141, 166, 132, 0.1)", particleCount: 18, copy: "Máy tái thiết vẫn bị chặn bởi những rào cản cũ. Hãy mở đường cho sức sống trở lại." },
-    completed: { tint: "rgba(164, 220, 146, 0.14)", particleCount: 11, copy: "Nước đã chảy trở lại qua máy tái thiết. Thung lũng bắt đầu hồi phục từng nhịp." },
-  },
-};
+const miniMapRenderer = createMiniMapRenderer({
+  minimap,
+  minimapCanvas,
+  minimapCtx,
+  world: WORLD,
+  viewport: VIEWPORT,
+  getState: () => state,
+  getCurrentLevel: currentLevel,
+  getExitCenter,
+  getInteractionPoint,
+  shouldDrawInteractable,
+  isMonsterActive,
+  getNavigationObjective,
+  getCamera: () => camera,
+  getPlayer: () => player,
+});
 
 function getZoneProfile(levelId = state.currentLevelId) {
   return Object.values(ZONE_PROFILES).find((profile) => profile.levelId === levelId) ?? null;
@@ -7407,117 +7334,7 @@ function drawCombatFeedback() {
 }
 
 function drawMiniMap() {
-  if (!minimap || !minimapCtx || !minimapCanvas) {
-    return;
-  }
-
-  const shouldShow = state.mode === "playing";
-  minimap.classList.toggle("hidden", !shouldShow);
-  minimap.setAttribute("aria-hidden", String(!shouldShow));
-
-  if (!shouldShow) {
-    return;
-  }
-
-  const mapWidth = minimapCanvas.width;
-  const mapHeight = minimapCanvas.height;
-  const inset = 4;
-  const drawableWidth = mapWidth - inset * 2;
-  const drawableHeight = mapHeight - inset * 2;
-  const scaleX = drawableWidth / WORLD.width;
-  const scaleY = drawableHeight / WORLD.height;
-  const level = currentLevel();
-
-  minimapCtx.clearRect(0, 0, mapWidth, mapHeight);
-  minimapCtx.fillStyle = getMiniMapBackground(level.id);
-  minimapCtx.fillRect(0, 0, mapWidth, mapHeight);
-  minimapCtx.fillStyle = "rgba(8, 13, 20, 0.54)";
-  minimapCtx.fillRect(inset, inset, drawableWidth, drawableHeight);
-  minimapCtx.strokeStyle = "rgba(242, 225, 180, 0.52)";
-  minimapCtx.lineWidth = 1;
-  minimapCtx.strokeRect(inset + 0.5, inset + 0.5, drawableWidth - 1, drawableHeight - 1);
-
-  const toMapPoint = (x, y) => ({
-    x: Math.round(inset + x * scaleX),
-    y: Math.round(inset + y * scaleY),
-  });
-  const drawPoint = (x, y, color, size = 3) => {
-    const point = toMapPoint(x, y);
-    const offset = Math.floor(size / 2);
-    minimapCtx.fillStyle = color;
-    minimapCtx.fillRect(point.x - offset, point.y - offset, size, size);
-  };
-
-  for (const exit of level.exits) {
-    if (state.blockedExitIds.has(exit.id)) {
-      continue;
-    }
-
-    const center = getExitCenter(exit);
-    drawPoint(center.x, center.y, exit.guide?.color ?? "#f3d777", 3);
-  }
-
-  for (const item of level.interactables) {
-    if (item.collected || item.used || !shouldDrawInteractable(item)) {
-      continue;
-    }
-
-    const point = getInteractionPoint(item);
-    const color = item.interactionType === "pickup"
-      ? "#eec96d"
-      : ["offerBribe", "splitChoice", "fillCorruption", "ideologyTrap"].includes(item.interactionType)
-        ? "#e96b67"
-        : "#a7c7f3";
-    drawPoint(point.x, point.y, color, 2);
-  }
-
-  for (const monster of level.monsters ?? []) {
-    if (!monster.defeated && isMonsterActive(monster)) {
-      drawPoint(monster.x, monster.y, monster.isBoss ? "#f1b452" : "#e96558", monster.isBoss ? 4 : 2);
-    }
-  }
-
-  const objective = getNavigationObjective();
-  if (objective) {
-    drawPoint(objective.x, objective.y, objective.color, 4);
-  }
-
-  minimapCtx.strokeStyle = "rgba(223, 241, 255, 0.82)";
-  minimapCtx.lineWidth = 1;
-  minimapCtx.strokeRect(
-    Math.round(inset + camera.x * scaleX) + 0.5,
-    Math.round(inset + camera.y * scaleY) + 0.5,
-    Math.max(1, Math.round(VIEWPORT.width * scaleX)),
-    Math.max(1, Math.round(VIEWPORT.height * scaleY))
-  );
-
-  drawPoint(player.x, player.y, "#fff5d2", 4);
-  drawPoint(player.x, player.y, "#4aa8ff", 2);
-  drawMiniMapLegend();
-}
-
-function drawMiniMapLegend() {
-  minimap.title = "Vàng: lối ra hoặc mục tiêu • xanh: tương tác • đỏ: quái • cam: boss";
-  const markers = ["#f3d777", "#a7c7f3", "#e96558", "#f1b452"];
-  markers.forEach((color, index) => {
-    minimapCtx.fillStyle = color;
-    minimapCtx.fillRect(7 + index * 6, 7, 3, 3);
-  });
-}
-
-function getMiniMapBackground(levelId) {
-  switch (levelId) {
-    case "village":
-      return "#263849";
-    case "archive":
-      return "#4c3529";
-    case "crossroads":
-      return "#793e37";
-    case "spring":
-      return "#4c7c45";
-    default:
-      return "#203849";
-  }
+  miniMapRenderer.draw();
 }
 
 function drawWorld() {
