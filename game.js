@@ -4,6 +4,7 @@ import { createAssetManager } from "./src/core/asset-manager.js";
 import { createSceneController } from "./src/core/scene-controller.js";
 import { createAudioSystem } from "./src/systems/audio-system.js";
 import { createLevelDefinitions } from "./src/systems/level-definitions.js";
+import { createSaveSystem } from "./src/systems/save-system.js";
 import { INTERACTION_DIALOGUES, RELIC_DEFINITIONS, RELIC_STORY_SLIDES, ENDING_DEFINITIONS, ENDING_OVERLAY_SCENES, ENDING_CINEMATIC_DEFINITIONS, OPENING_DIALOGUE } from "./src/data/story-content.js";
 import { createMiniMapRenderer } from "./src/rendering/minimap-renderer.js";
 import { LEVEL_ASSET_GROUPS, getAssetGroupForSource, isCriticalAsset } from "./src/data/asset-manifest.js";
@@ -299,6 +300,21 @@ const levels = createLevelDefinitions({
   getState: () => state,
 });
 
+const saveSystem = createSaveSystem({
+  storage: {
+    getItem: (...args) => localStorage.getItem(...args),
+    setItem: (...args) => localStorage.setItem(...args),
+    removeItem: (...args) => localStorage.removeItem(...args),
+  },
+  saveKey: SAVE_STORAGE_KEY,
+  version: SAVE_VERSION,
+  getState: () => state,
+  getLevels: () => levels,
+  getPlayer: () => player,
+  cloneSpawnPoint,
+  clamp,
+});
+
 const audioSystem = createAudioSystem({
   state,
   uiSounds,
@@ -495,113 +511,27 @@ function isMonsterActive(monster) {
 ensureCombatRoster();
 
 function serializeQuestState() {
-  return {
-    zone1Started: state.quests.zone1Started,
-    zone1Delivered: [...state.quests.zone1Delivered],
-    zone1RewardClaimed: state.quests.zone1RewardClaimed,
-    zone2Fragments: [...state.quests.zone2Fragments],
-    zone2TowerActivated: state.quests.zone2TowerActivated,
-    zone2RewardClaimed: state.quests.zone2RewardClaimed,
-    zone3Recruits: [...state.quests.zone3Recruits],
-    zone3ThreadClaimed: state.quests.zone3ThreadClaimed,
-    zone3HamletsFreed: [...state.quests.zone3HamletsFreed],
-    zone3BossDefeated: state.quests.zone3BossDefeated,
-    zone3MapClaimed: state.quests.zone3MapClaimed,
-    zone4Barriers: [...state.quests.zone4Barriers],
-    zone4Farmers: [...state.quests.zone4Farmers],
-    zone4GearClaimed: state.quests.zone4GearClaimed,
-  };
+  return saveSystem.serializeQuestState();
 }
 
 function restoreQuestState(savedQuests = {}) {
-  state.quests = {
-    zone1Started: Boolean(savedQuests.zone1Started),
-    zone1Delivered: new Set(savedQuests.zone1Delivered ?? []),
-    zone1RewardClaimed: Boolean(savedQuests.zone1RewardClaimed),
-    zone2Fragments: new Set(savedQuests.zone2Fragments ?? []),
-    zone2TowerActivated: Boolean(savedQuests.zone2TowerActivated),
-    zone2RewardClaimed: Boolean(savedQuests.zone2RewardClaimed),
-    zone3Recruits: new Set(savedQuests.zone3Recruits ?? []),
-    zone3ThreadClaimed: Boolean(savedQuests.zone3ThreadClaimed),
-    zone3HamletsFreed: new Set(savedQuests.zone3HamletsFreed ?? []),
-    zone3BossDefeated: Boolean(savedQuests.zone3BossDefeated),
-    zone3MapClaimed: Boolean(savedQuests.zone3MapClaimed),
-    zone4Barriers: new Set(savedQuests.zone4Barriers ?? []),
-    zone4Farmers: new Set(savedQuests.zone4Farmers ?? []),
-    zone4GearClaimed: Boolean(savedQuests.zone4GearClaimed),
-  };
+  saveSystem.restoreQuestState(savedQuests);
 }
 
 function getRuntimeSaveState() {
-  return Object.fromEntries(
-    Object.entries(levels).map(([levelId, level]) => [levelId, {
-      interactables: Object.fromEntries((level.interactables ?? []).map((item) => [item.id, {
-        collected: Boolean(item.collected), used: Boolean(item.used), purified: Boolean(item.purified), activated: Boolean(item.activated),
-      }])),
-      monsters: Object.fromEntries((level.monsters ?? []).map((monster) => [monster.id, {
-        health: monster.health, defeated: Boolean(monster.defeated),
-      }])),
-    }])
-  );
+  return saveSystem.getRuntimeState();
 }
 
 function restoreRuntimeSaveState(runtime = {}) {
-  for (const [levelId, level] of Object.entries(levels)) {
-    const savedLevel = runtime[levelId] ?? {};
-    for (const item of level.interactables ?? []) {
-      const savedItem = savedLevel.interactables?.[item.id];
-      if (savedItem) {
-        item.collected = Boolean(savedItem.collected);
-        item.used = Boolean(savedItem.used);
-        item.purified = Boolean(savedItem.purified);
-        item.activated = Boolean(savedItem.activated);
-      }
-    }
-    for (const monster of level.monsters ?? []) {
-      const savedMonster = savedLevel.monsters?.[monster.id];
-      if (savedMonster) {
-        monster.health = clamp(Number(savedMonster.health) || 0, 0, monster.runtimeMaxHealth ?? monster.maxHealth);
-        monster.defeated = Boolean(savedMonster.defeated);
-      }
-    }
-  }
+  saveSystem.restoreRuntimeState(runtime);
 }
 
 function saveGameProgress() {
-  if (state.mode !== "playing") {
-    return;
-  }
-
-  try {
-    localStorage.setItem(SAVE_STORAGE_KEY, JSON.stringify({
-      version: SAVE_VERSION,
-      currentLevelId: state.currentLevelId,
-      player: { x: player.x, y: player.y, direction: player.direction },
-      respawnLevelId: state.respawnLevelId,
-      respawnSpawn: cloneSpawnPoint(state.respawnSpawn),
-      health: state.health,
-      stamina: state.stamina,
-      saDoa: state.saDoa,
-      inventory: [...state.inventory],
-      unlockedStoryIds: [...state.unlockedStoryIds],
-      completedZones: [...state.completedZones],
-      difficulty: state.difficulty,
-      tutorialSeen: state.tutorialSeen,
-      quests: serializeQuestState(),
-      runtime: getRuntimeSaveState(),
-    }));
-  } catch {
-    // Saving is optional when browser storage is unavailable.
-  }
+  return saveSystem.save();
 }
 
 function loadSavedProgress() {
-  try {
-    const saved = JSON.parse(localStorage.getItem(SAVE_STORAGE_KEY) ?? "null");
-    return saved?.version === SAVE_VERSION && levels[saved.currentLevelId] ? saved : null;
-  } catch {
-    return null;
-  }
+  return saveSystem.load();
 }
 
 function refreshContinueButton() {
@@ -611,11 +541,7 @@ function refreshContinueButton() {
 }
 
 function clearSavedProgress() {
-  try {
-    localStorage.removeItem(SAVE_STORAGE_KEY);
-  } catch {
-    // Ignore unavailable storage.
-  }
+  saveSystem.clear();
   refreshContinueButton();
 }
 
