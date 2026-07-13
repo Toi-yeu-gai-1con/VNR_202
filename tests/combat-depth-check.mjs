@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 
 const game = readFileSync(new URL("../game.js", import.meta.url), "utf8");
 const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
+const combatConfig = readFileSync(new URL("../src/data/combat-config.js", import.meta.url), "utf8");
 
 assert.match(game, /const STAMINA_MAX = 100;/, "Expected stamina system.");
 assert.match(game, /function useDodge\(/, "Expected dodge action.");
@@ -10,9 +11,9 @@ assert.match(game, /function startStrikeCharge\(/, "Expected charged strike inpu
 assert.match(game, /comboStep/, "Expected strike combo state.");
 assert.match(game, /function updateEnemyProjectiles\(/, "Expected ranged enemy projectiles.");
 assert.match(game, /skillReadySoundArmed/, "Expected a ready sound after skill cooldowns.");
-assert.match(game, /archetype: "ranged"/, "Expected ranged enemy archetype.");
-assert.match(game, /archetype: "support"/, "Expected support enemy archetype.");
-assert.match(game, /elite: true/, "Expected elite enemy behavior.");
+assert.match(combatConfig, /archetype: "ranged"/, "Expected ranged enemy archetype.");
+assert.match(combatConfig, /archetype: "support"/, "Expected support enemy archetype.");
+assert.match(combatConfig, /elite: true/, "Expected elite enemy behavior.");
 assert.match(game, /function isMonsterActive\(/, "Expected combat density to scale by zone and difficulty.");
 assert.match(game, /function updateWorldDrops\(/, "Expected health or stamina drops.");
 assert.match(game, /function updateLevelHazards\(/, "Expected area traps.");
