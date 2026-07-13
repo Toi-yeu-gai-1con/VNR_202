@@ -1,6 +1,7 @@
 import { createQuestState } from "./src/data/quests.js";
 import { ZONE_PROFILES } from "./src/data/zone-profiles.js";
 import { createAssetManager } from "./src/core/asset-manager.js";
+import { createSceneController } from "./src/core/scene-controller.js";
 
 const canvas = document.getElementById("game-canvas");
 const ctx = canvas.getContext("2d");
@@ -1113,6 +1114,24 @@ const state = {
   zoneActorMoveStartedAt: {},
   lastTimestamp: 0,
 };
+
+const sceneController = createSceneController(state.mode);
+Object.defineProperty(state, "mode", {
+  configurable: false,
+  enumerable: true,
+  get() {
+    return sceneController.current;
+  },
+  set(nextScene) {
+    if (nextScene === sceneController.current) {
+      return;
+    }
+
+    if (!sceneController.transition(nextScene)) {
+      throw new Error(`Invalid scene transition: ${sceneController.current} -> ${nextScene}`);
+    }
+  },
+});
 
 const player = createPlayer();
 const camera = { x: 0, y: 0 };
