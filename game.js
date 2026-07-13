@@ -1134,6 +1134,9 @@ const ZONE_PROFILES = {
     music: "portMaze",
     npcId: "nguyen-ai-quoc",
     npcOffset: { x: -18, y: -6 },
+    progress: {
+      workerPositions: [{ x: 380, y: 500 }, { x: 646, y: 506 }, { x: 724, y: 486 }],
+    },
     active: { tint: "rgba(134, 181, 222, 0.14)", particleCount: 24, copy: "Mưa vẫn phủ kín bến cảng. Hãy đưa tiếng nói thức tỉnh đến những người đang chờ đợi." },
     completed: { tint: "rgba(245, 205, 115, 0.13)", particleCount: 9, copy: "Đèn hiệu đã sáng. Những người lao động quanh bến cảng đang giữ vững liên lạc." },
   },
@@ -1148,6 +1151,9 @@ const ZONE_PROFILES = {
     music: "archive",
     npcId: "delegate-north",
     npcOffset: { x: 0, y: -14 },
+    progress: {
+      routeNodes: [{ id: "west", x: 192, y: 248 }, { id: "north", x: 480, y: 152 }, { id: "east", x: 768, y: 248 }],
+    },
     active: { tint: "rgba(222, 174, 106, 0.11)", particleCount: 19, copy: "Bụi giấy vẫn che phủ các manh mối. Hãy tìm đường nối những tư liệu bị chia cắt." },
     completed: { tint: "rgba(255, 231, 160, 0.14)", particleCount: 10, copy: "Thấu kính lưu trữ đã soi rõ đường đi. Những người giữ tư liệu đã thống nhất tiếng nói." },
   },
@@ -1162,6 +1168,10 @@ const ZONE_PROFILES = {
     music: "crossroads",
     npcId: "vietminh-cadre",
     npcOffset: { x: 14, y: 0 },
+    progress: {
+      crowdPositions: [{ x: 396, y: 266 }, { x: 432, y: 280 }, { x: 528, y: 280 }, { x: 564, y: 266 }],
+      hamletPositions: [{ x: 210, y: 478 }, { x: 482, y: 468 }, { x: 784, y: 474 }],
+    },
     active: { tint: "rgba(216, 102, 70, 0.1)", particleCount: 20, copy: "Khói vẫn bao quanh quảng trường. Mỗi lời thuyết phục có thể kéo một lực lượng về phía đoàn kết." },
     completed: { tint: "rgba(247, 206, 102, 0.14)", particleCount: 10, copy: "Lá cờ ở quảng trường đã được gìn giữ. Những người từng phân vân nay cùng nhìn về một phía." },
   },
@@ -1176,6 +1186,10 @@ const ZONE_PROFILES = {
     music: "spring",
     npcId: "doi-moi-leader",
     npcOffset: { x: -12, y: 8 },
+    progress: {
+      barrierPositions: [{ x: 388, y: 404 }, { x: 480, y: 400 }, { x: 572, y: 404 }],
+      fieldPositions: [{ x: 208, y: 452 }, { x: 698, y: 318 }, { x: 824, y: 110 }],
+    },
     active: { tint: "rgba(141, 166, 132, 0.1)", particleCount: 18, copy: "Máy tái thiết vẫn bị chặn bởi những rào cản cũ. Hãy mở đường cho sức sống trở lại." },
     completed: { tint: "rgba(164, 220, 146, 0.14)", particleCount: 11, copy: "Nước đã chảy trở lại qua máy tái thiết. Thung lũng bắt đầu hồi phục từng nhịp." },
   },
@@ -1200,6 +1214,31 @@ function getZonePresentationDetails(levelId = state.currentLevelId) {
   }
 
   return profile[getZonePresentation(levelId)];
+}
+
+function getZoneProgressStage(levelId = state.currentLevelId) {
+  if (getZonePresentation(levelId) === "completed") {
+    return 3;
+  }
+
+  switch (levelId) {
+    case "village":
+      return state.quests.zone1Delivered.size;
+    case "archive":
+      return state.quests.zone2Fragments.size;
+    case "crossroads":
+      return Math.min(3, Math.floor((state.quests.zone3Recruits.size + state.quests.zone3HamletsFreed.size) / 2));
+    case "spring":
+      return Math.min(3, Math.floor((state.quests.zone4Barriers.size + state.quests.zone4Farmers.size) / 2));
+    default:
+      return 0;
+  }
+}
+
+function getZoneProgressLabel(levelId = state.currentLevelId) {
+  const stage = getZoneProgressStage(levelId);
+  const labels = ["Đang khởi động", "Chuyển biến", "Đang hồi sinh", "Đã đổi thay"];
+  return labels[stage] ?? labels[0];
 }
 
 function getZoneNpcDisplay(npc) {
@@ -7825,6 +7864,7 @@ function drawWorld() {
 
   if (profile) {
     drawZoneLandmark(profile);
+    drawZoneProgressScene(profile);
   }
 
   drawLevelExitPortals(currentLevel().exits);
@@ -11298,6 +11338,159 @@ function drawZoneLandmark(profile) {
   }
 
   ctx.restore();
+}
+
+function drawZoneProgressScene(profile) {
+  const stage = getZoneProgressStage(profile.levelId);
+
+  ctx.save();
+  if (profile.levelId === "village") {
+    drawVillageRecoveryScene(profile, stage);
+  } else if (profile.levelId === "archive") {
+    drawArchiveRecoveryScene(profile, stage);
+  } else if (profile.levelId === "crossroads") {
+    drawCrossroadsRecoveryScene(profile, stage);
+  } else if (profile.levelId === "spring") {
+    drawSpringRecoveryScene(profile, stage);
+  }
+  drawZoneProgressPlaque(profile, stage);
+  ctx.restore();
+}
+
+function drawZoneProgressPlaque(profile, stage) {
+  const { x, y } = profile.landmarkPosition;
+  const plaqueY = y + 18;
+
+  ctx.fillStyle = "rgba(13, 18, 24, 0.72)";
+  ctx.fillRect(x - 30, plaqueY, 60, 10);
+  ctx.strokeStyle = "rgba(245, 213, 127, 0.68)";
+  ctx.strokeRect(x - 30, plaqueY, 60, 10);
+
+  for (let index = 0; index < 3; index += 1) {
+    ctx.fillStyle = index < stage ? "#f3d777" : "#4e5b66";
+    ctx.fillRect(x - 22 + index * 16, plaqueY + 3, 10, 4);
+  }
+
+  ctx.fillStyle = "rgba(255, 239, 186, 0.9)";
+  ctx.font = "8px monospace";
+  ctx.textAlign = "center";
+  ctx.fillText(getZoneProgressLabel(profile.levelId), x, plaqueY - 4);
+}
+
+function drawVillageRecoveryScene(profile, stage) {
+  const workers = profile.progress.workerPositions;
+  const recoveredCount = Math.min(workers.length, state.quests.zone1Delivered.size);
+  const beacon = profile.landmarkPosition;
+
+  ctx.fillStyle = stage > 0 ? "rgba(248, 201, 102, 0.18)" : "rgba(87, 125, 154, 0.18)";
+  ctx.fillRect(beacon.x - 58, beacon.y + 6, 116, 22);
+
+  for (let index = 0; index < recoveredCount; index += 1) {
+    const worker = workers[index];
+    const bob = Math.sin(state.lastTimestamp * 0.004 + index) * 2;
+    ctx.fillStyle = "rgba(248, 216, 137, 0.2)";
+    ctx.fillRect(worker.x - 10, worker.y - 14 + bob, 20, 22);
+    ctx.fillStyle = index % 2 ? "#53667a" : "#7b5141";
+    ctx.fillRect(worker.x - 4, worker.y - 8 + bob, 8, 12);
+    ctx.fillStyle = "#d9b494";
+    ctx.fillRect(worker.x - 3, worker.y - 13 + bob, 6, 6);
+    ctx.fillStyle = "#e7c64e";
+    ctx.fillRect(worker.x + 5, worker.y - 4 + bob, 5, 3);
+  }
+
+  if (stage === 3) {
+    ctx.fillStyle = "rgba(252, 224, 135, 0.3)";
+    ctx.fillRect(beacon.x - 82, beacon.y + 28, 164, 4);
+  }
+}
+
+function drawArchiveRecoveryScene(profile, stage) {
+  const center = profile.landmarkPosition;
+  const activeNodes = profile.progress.routeNodes.filter((node) => state.quests.zone2Fragments.has(node.id));
+
+  ctx.save();
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = "rgba(246, 208, 114, 0.68)";
+  ctx.setLineDash([5, 5]);
+  ctx.lineDashOffset = -state.lastTimestamp * 0.018;
+  for (const node of activeNodes) {
+    ctx.beginPath();
+    ctx.moveTo(center.x, center.y - 18);
+    ctx.lineTo(node.x, node.y);
+    ctx.stroke();
+    ctx.fillStyle = "#f3d777";
+    ctx.fillRect(node.x - 5, node.y - 5, 10, 10);
+    ctx.fillStyle = "#fff0bc";
+    ctx.fillRect(node.x - 2, node.y - 2, 4, 4);
+  }
+  ctx.restore();
+
+  if (stage === 3) {
+    ctx.fillStyle = "rgba(253, 229, 148, 0.22)";
+    ctx.fillRect(center.x - 72, center.y + 24, 144, 5);
+  }
+}
+
+function drawCrossroadsRecoveryScene(profile, stage) {
+  const crowdCount = state.quests.zone3Recruits.size;
+  const freedHamlets = state.quests.zone3HamletsFreed.size;
+
+  for (let index = 0; index < crowdCount; index += 1) {
+    const member = profile.progress.crowdPositions[index];
+    const bob = Math.sin(state.lastTimestamp * 0.004 + index * 0.7) * 2;
+    ctx.fillStyle = ["#6f8a5b", "#8a6049", "#6a6f91", "#a8864f"][index];
+    ctx.fillRect(member.x - 5, member.y - 10 + bob, 10, 14);
+    ctx.fillStyle = "#d8b093";
+    ctx.fillRect(member.x - 3, member.y - 15 + bob, 6, 6);
+    ctx.fillStyle = "#e8cf5e";
+    ctx.fillRect(member.x + 7, member.y - 12 + bob, 2, 14);
+    ctx.fillRect(member.x + 9, member.y - 12 + bob, 7, 5);
+  }
+
+  for (let index = 0; index < freedHamlets; index += 1) {
+    const hamlet = profile.progress.hamletPositions[index];
+    ctx.fillStyle = "rgba(244, 210, 111, 0.18)";
+    ctx.fillRect(hamlet.x - 20, hamlet.y - 16, 40, 22);
+    ctx.fillStyle = "#d9ba5c";
+    ctx.fillRect(hamlet.x - 1, hamlet.y - 21, 2, 20);
+    ctx.fillStyle = "#d94d42";
+    ctx.fillRect(hamlet.x + 1, hamlet.y - 21, 11, 6);
+  }
+
+  if (stage === 3) {
+    ctx.fillStyle = "rgba(236, 196, 86, 0.24)";
+    ctx.fillRect(profile.landmarkPosition.x - 112, profile.landmarkPosition.y + 32, 224, 5);
+  }
+}
+
+function drawSpringRecoveryScene(profile, stage) {
+  const clearedBarriers = state.quests.zone4Barriers.size;
+  const plantedFields = state.quests.zone4Farmers.size;
+
+  for (let index = 0; index < clearedBarriers; index += 1) {
+    const gap = profile.progress.barrierPositions[index];
+    ctx.fillStyle = "rgba(187, 222, 139, 0.22)";
+    ctx.fillRect(gap.x - 34, gap.y - 13, 68, 26);
+    ctx.fillStyle = "#78ad56";
+    ctx.fillRect(gap.x - 30, gap.y + 5, 60, 4);
+    ctx.fillStyle = "#d8ce8a";
+    ctx.fillRect(gap.x - 18, gap.y + 1, 36, 2);
+  }
+
+  for (let index = 0; index < plantedFields; index += 1) {
+    const field = profile.progress.fieldPositions[index];
+    ctx.fillStyle = "rgba(127, 180, 79, 0.32)";
+    ctx.fillRect(field.x - 18, field.y - 7, 36, 14);
+    ctx.fillStyle = "#9dd06b";
+    for (let shoot = 0; shoot < 4; shoot += 1) {
+      ctx.fillRect(field.x - 12 + shoot * 8, field.y - 10 - (shoot % 2), 2, 8);
+    }
+  }
+
+  if (stage === 3) {
+    ctx.fillStyle = "rgba(182, 232, 143, 0.26)";
+    ctx.fillRect(profile.landmarkPosition.x - 96, profile.landmarkPosition.y + 26, 192, 6);
+  }
 }
 
 function drawZoneAtmosphere(profile) {
