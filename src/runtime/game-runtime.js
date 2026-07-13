@@ -1928,6 +1928,7 @@ function createDebugSnapshot() {
     mode: state.mode,
     currentLevelId: state.currentLevelId,
     respawnLevelId: state.respawnLevelId,
+    endingId: state.endingId,
     health: state.health,
     saDoa: state.saDoa,
     inventory: Array.from(state.inventory),
@@ -1992,6 +1993,25 @@ function installDebugTools() {
       loadLevel(levelId, spawnOverride);
       return createDebugSnapshot();
     },
+    async triggerExit(exitId) {
+      const exit = currentLevel().exits.find((entry) => entry.id === exitId);
+      if (!exit?.target) {
+        return { transitioned: false, reason: "missing-exit", ...createDebugSnapshot() };
+      }
+
+      const group = await assetManager.loadGroup(getAssetGroupForLevel(exit.target));
+      if (!group.ready) {
+        return { transitioned: false, reason: "assets-unavailable", ...createDebugSnapshot() };
+      }
+
+      const center = getExitCenter(exit);
+      player.x = center.x;
+      player.y = center.y;
+      state.blockedExitIds.delete(exit.id);
+      updateCamera();
+      const transitioned = handleLevelTransitions();
+      return { transitioned, ...createDebugSnapshot() };
+    },
     setPlayerPosition(x, y) {
       player.x = clamp(x, currentLevel().bounds.minX, currentLevel().bounds.maxX);
       player.y = clamp(y, currentLevel().bounds.minY, currentLevel().bounds.maxY);
@@ -2022,6 +2042,9 @@ function installDebugTools() {
     damagePlayer(amount = PLAYER_MAX_HEALTH, sourceName = "debug") {
       damagePlayer(amount, sourceName);
       return createDebugSnapshot();
+    },
+    saveNow() {
+      return saveGameProgress();
     },
     dodge() {
       useDodge();
