@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "skills": {
+    "Pixel Art Animator": {
+      "source": "willibrandon/pixel-plugin",
+      "sourceType": "github",
+      "skillPath": "skills/pixel-art-animator/SKILL.md",
+      "computedHash": "4823747009715bf66bed4befbd6ff6645bbcde588c25f958febf7a7fc073f9e6"
+    },
+    "game-assets": {
+      "source": "opusgamelabs/game-creator",
+      "sourceType": "github",
+      "skillPath": "skills/game-assets/SKILL.md",
+      "computedHash": "11874de3054e82b21db3b090e45f65555b7540b22b8de98f692a38d7324acda8"
+    },
+    "pixel-art-sprites": {
+      "source": "omer-metin/skills-for-antigravity",
+      "sourceType": "github",
+      "skillPath": "skills/pixel-art-sprites/SKILL.md",
+      "computedHash": "6d7f3d45af2fa94e0fe9abe08575e859aa0f24297305ee8b89ac64a7534c9825"
+    },
+    "rpg": {
+      "source": "gamedev-skills/awesome-gamedev-agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/genres/rpg/SKILL.md",
+      "computedHash": "869058687d127370f7b57f20564376ac2f40e8c3cfbec83a172fe9cd48fc3470"
+    },
+    "web-games": {
+      "source": "ranbot-ai/awesome-skills",
+      "sourceType": "github",
+      "skillPath": "skills/game-development-web-games/SKILL.md",
+      "computedHash": "65b80ae546ce4637d0a5ba715f387db09dbad11ae5be3b2c5d1286c8440b26bb"
+    }
+  }
+}
