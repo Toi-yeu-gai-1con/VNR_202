@@ -1,0 +1,306 @@
+export const PLAYER_FOOTPRINT = { width: 8, height: 6, offsetY: 7 };
+export const PLAYER_SPRITE = {
+  frameWidth: 96,
+  frameHeight: 80,
+  cropX: 34,
+  cropY: 24,
+  cropWidth: 30,
+  cropHeight: 38,
+  drawWidth: 30,
+  drawHeight: 38,
+  drawOffsetX: -15,
+  drawOffsetY: -24,
+  frameCount: 8,
+  idleFrameDuration: 180,
+};
+export const NPC_SPRITE = {
+  frameWidth: 96,
+  frameHeight: 96,
+  cropX: 30,
+  cropY: 18,
+  cropWidth: 36,
+  cropHeight: 62,
+  drawWidth: 24,
+  drawHeight: 40,
+  idleFrames: 4,
+  walkFrames: 8,
+  idleFrameDuration: 240,
+  walkFrameDuration: 150,
+};
+export const ENVIRONMENT_SPRITES = {
+  deadBranches: [
+    { x: 0, y: 0, width: 28, height: 44 },
+    { x: 6, y: 56, width: 56, height: 24 },
+    { x: 0, y: 86, width: 82, height: 42 },
+  ],
+  dryGrass: [
+    { x: 0, y: 72, width: 24, height: 28 },
+    { x: 34, y: 68, width: 28, height: 30 },
+    { x: 22, y: 102, width: 24, height: 26 },
+    { x: 0, y: 112, width: 16, height: 16 },
+    { x: 58, y: 118, width: 40, height: 10 },
+  ],
+  barkStrip: { x: 0, y: 0, width: 24, height: 256 },
+};
+export const TILECRAFT_TERRAIN = {
+  tileSize: 16,
+  dirt: [
+    { col: 0, row: 3 },
+    { col: 1, row: 3 },
+    { col: 2, row: 3 },
+    { col: 0, row: 4 },
+    { col: 1, row: 4 },
+    { col: 2, row: 4 },
+  ],
+  water: [
+    { col: 3, row: 3 },
+    { col: 4, row: 3 },
+    { col: 3, row: 4 },
+    { col: 4, row: 4 },
+  ],
+  grass: [
+    { col: 5, row: 3 },
+    { col: 5, row: 4 },
+    { col: 6, row: 4 },
+    { col: 4, row: 7 },
+    { col: 5, row: 7 },
+    { col: 4, row: 8 },
+    { col: 5, row: 8 },
+    { col: 6, row: 8 },
+  ],
+  stone: [
+    { col: 7, row: 3 },
+    { col: 8, row: 3 },
+    { col: 7, row: 4 },
+    { col: 8, row: 4 },
+    { col: 2, row: 7 },
+    { col: 3, row: 7 },
+    { col: 2, row: 8 },
+    { col: 3, row: 8 },
+  ],
+};
+export const PIXEL_CRAWLER_TERRAIN = {
+  tileSize: 16,
+  grass: [
+    { col: 1, row: 10 },
+    { col: 2, row: 10 },
+    { col: 1, row: 11 },
+    { col: 2, row: 11 },
+  ],
+  dirt: [
+    { col: 10, row: 10 },
+    { col: 11, row: 10 },
+    { col: 12, row: 10 },
+    { col: 11, row: 11 },
+  ],
+  stone: [
+    { col: 6, row: 10 },
+    { col: 7, row: 10 },
+    { col: 8, row: 10 },
+    { col: 7, row: 11 },
+  ],
+  brick: [
+    { col: 16, row: 1 },
+    { col: 17, row: 1 },
+    { col: 18, row: 1 },
+    { col: 17, row: 2 },
+  ],
+};
+export const VILLAGE_SKYLINE_Y = 148;
+export const VILLAGE_PROP_SPRITES = {
+  fenceVine: { x: 0, y: 184, width: 760, height: 190 },
+  gate: { x: 232, y: 510, width: 300, height: 154 },
+  carts: [
+    { x: 128, y: 0, width: 16, height: 16 },
+    { x: 128, y: 16, width: 16, height: 16 },
+    { x: 128, y: 32, width: 16, height: 16 },
+  ],
+  crates: [
+    { x: 0, y: 32, width: 16, height: 16 },
+    { x: 16, y: 32, width: 16, height: 16 },
+    { x: 32, y: 32, width: 16, height: 16 },
+  ],
+};
+export const PIXEL_CRAWLER_BUILDING_SPRITES = {
+  historyGateDoor: { x: 128, y: 64, width: 64, height: 32 },
+};
+export const HUB_PORTAL_SPRITE = {
+  frameSize: 64,
+  columns: 3,
+  frameCount: 8,
+  frameDuration: 90,
+  drawSize: 68,
+};
+export const SWORD_SLASH_SPRITE = {
+  frames: [
+    { x: 64, y: 0, width: 58, height: 68, anchorX: 28, anchorY: 21, scale: 0.64 },
+    { x: 143, y: 0, width: 43, height: 74, anchorX: 24, anchorY: 23, scale: 0.62 },
+    { x: 205, y: 42, width: 35, height: 24, anchorX: 10, anchorY: 10, scale: 0.74 },
+  ],
+};
+export const PIXEL_CRAWLER_TREE_SPRITE = {
+  frameWidth: 64,
+  frameHeight: 96,
+  columns: 3,
+  displayVariants: [0, 1, 3, 4],
+};
+export const KENNEY_ROGUELIKE_TILE = {
+  size: 16,
+  spacing: 17,
+  margin: 1,
+};
+export const KENNEY_ROGUELIKE_SPRITES = {
+  torch: { col: 18, row: 7 },
+  candle: { col: 21, row: 7 },
+  treeGreen: { col: 13, row: 9 },
+  treeOrange: { col: 14, row: 9 },
+  treeTeal: { col: 15, row: 9 },
+  treePineGreen: { col: 16, row: 9 },
+  treePineOrange: { col: 17, row: 9 },
+  bush: { col: 28, row: 10 },
+  flowerPink: { col: 33, row: 10 },
+  fenceHorizontal: { col: 47, row: 23 },
+  fencePost: { col: 50, row: 23 },
+  crate: { col: 24, row: 0 },
+  barrel: { col: 22, row: 0 },
+  redFlag: { col: 52, row: 0 },
+};
+export const PIXEL_CRAWLER_VEGETATION_SPRITES = [
+  { x: 0, y: 0, width: 48, height: 48 },
+  { x: 48, y: 0, width: 48, height: 48 },
+  { x: 96, y: 0, width: 48, height: 48 },
+  { x: 144, y: 0, width: 48, height: 48 },
+  { x: 0, y: 48, width: 48, height: 48 },
+  { x: 48, y: 48, width: 48, height: 48 },
+  { x: 96, y: 48, width: 48, height: 48 },
+  { x: 144, y: 48, width: 48, height: 48 },
+  { x: 0, y: 96, width: 48, height: 48 },
+  { x: 48, y: 96, width: 48, height: 48 },
+  { x: 96, y: 96, width: 48, height: 48 },
+  { x: 144, y: 96, width: 48, height: 48 },
+];
+export const PIXEL_CRAWLER_TOOL_CLUSTER_SPRITES = [
+  { x: 16, y: 28, width: 48, height: 32 },
+  { x: 80, y: 24, width: 32, height: 42 },
+];
+export const CAINOS_PROP_SPRITES = {
+  cargoStack: { x: 64, y: 0, width: 64, height: 64, shadowWidth: 40, shadowHeight: 8, shadowOffsetY: 56 },
+  bench: { x: 288, y: 0, width: 64, height: 64, shadowWidth: 44, shadowHeight: 8, shadowOffsetY: 54 },
+  statue: { x: 448, y: 0, width: 64, height: 96, shadowWidth: 34, shadowHeight: 10, shadowOffsetY: 88 },
+  barrel: { x: 160, y: 96, width: 32, height: 32, shadowWidth: 18, shadowHeight: 6, shadowOffsetY: 28 },
+};
+export const LIMEZU_INTERIOR_SPRITES = {
+  bookshelfTall: { x: 240, y: 720, width: 96, height: 144, shadowWidth: 64, shadowHeight: 8, shadowOffsetY: 136 },
+  rugGold: { x: 384, y: 720, width: 144, height: 144, noShadow: true },
+  sofaSet: { x: 384, y: 864, width: 144, height: 96, shadowWidth: 86, shadowHeight: 8, shadowOffsetY: 86 },
+  deskCompact: { x: 0, y: 1728, width: 96, height: 96, shadowWidth: 62, shadowHeight: 8, shadowOffsetY: 88 },
+  deskWide: { x: 96, y: 1728, width: 144, height: 96, shadowWidth: 104, shadowHeight: 8, shadowOffsetY: 88 },
+  deskArchive: { x: 384, y: 1728, width: 96, height: 96, shadowWidth: 60, shadowHeight: 8, shadowOffsetY: 88 },
+  chalkboard: { x: 480, y: 1920, width: 96, height: 96, shadowWidth: 60, shadowHeight: 8, shadowOffsetY: 88 },
+};
+export const HOUSE_INTERIOR_A_SPRITES = {
+  cabinetTall: { x: 32, y: 0, width: 32, height: 32, shadowWidth: 20, shadowHeight: 6, shadowOffsetY: 28 },
+  chairDark: { x: 64, y: 0, width: 32, height: 32, shadowWidth: 14, shadowHeight: 5, shadowOffsetY: 28 },
+  chairWood: { x: 96, y: 0, width: 32, height: 32, shadowWidth: 14, shadowHeight: 5, shadowOffsetY: 28 },
+  chairRed: { x: 128, y: 0, width: 32, height: 32, shadowWidth: 16, shadowHeight: 5, shadowOffsetY: 28 },
+  chairScarlet: { x: 192, y: 0, width: 32, height: 32, shadowWidth: 14, shadowHeight: 5, shadowOffsetY: 28 },
+  writingTable: { x: 32, y: 32, width: 64, height: 32, shadowWidth: 44, shadowHeight: 7, shadowOffsetY: 26 },
+  dividerCabinet: { x: 96, y: 32, width: 32, height: 32, shadowWidth: 18, shadowHeight: 6, shadowOffsetY: 28 },
+  sideDesk: { x: 160, y: 32, width: 32, height: 32, shadowWidth: 18, shadowHeight: 6, shadowOffsetY: 28 },
+  cupboard: { x: 192, y: 32, width: 32, height: 32, shadowWidth: 20, shadowHeight: 6, shadowOffsetY: 28 },
+  stoveCabinet: { x: 224, y: 32, width: 32, height: 32, shadowWidth: 20, shadowHeight: 6, shadowOffsetY: 28 },
+  bookStack: { x: 0, y: 64, width: 32, height: 32, shadowWidth: 16, shadowHeight: 4, shadowOffsetY: 28 },
+  bench: { x: 32, y: 64, width: 32, height: 32, shadowWidth: 22, shadowHeight: 5, shadowOffsetY: 28 },
+  drawerCabinet: { x: 64, y: 64, width: 32, height: 32, shadowWidth: 18, shadowHeight: 5, shadowOffsetY: 28 },
+  chestSmall: { x: 160, y: 64, width: 32, height: 32, shadowWidth: 16, shadowHeight: 5, shadowOffsetY: 28 },
+  barrel: { x: 224, y: 64, width: 32, height: 32, shadowWidth: 18, shadowHeight: 6, shadowOffsetY: 28 },
+  mirror: { x: 96, y: 128, width: 32, height: 32, shadowWidth: 12, shadowHeight: 4, shadowOffsetY: 28 },
+  chestLarge: { x: 96, y: 192, width: 32, height: 32, shadowWidth: 18, shadowHeight: 5, shadowOffsetY: 28 },
+  crateOpen: { x: 128, y: 192, width: 32, height: 32, shadowWidth: 18, shadowHeight: 5, shadowOffsetY: 28 },
+  doorPanel: { x: 160, y: 192, width: 32, height: 32, shadowWidth: 18, shadowHeight: 5, shadowOffsetY: 28 },
+};
+export const MONSTER_SPRITE_CONFIG = {
+  rifleman: {
+    directional: true,
+    directionalAnimation: true,
+    drawWidth: 38,
+    drawHeight: 38,
+    drawOffsetX: -19,
+    drawOffsetY: -25,
+    shadowWidth: 20,
+    animations: {
+      idle: { frameWidth: 16, frameHeight: 16, frameCount: 4, frameDuration: 180 },
+      run: { frameWidth: 16, frameHeight: 16, frameCount: 7, frameDuration: 110 },
+    },
+  },
+  pixellabRaider: {
+    directional: true,
+    drawWidth: 40,
+    drawHeight: 40,
+    drawOffsetX: -20,
+    drawOffsetY: -27,
+    shadowWidth: 20,
+    animations: {
+      idle: { frameWidth: 68, frameHeight: 68, frameCount: 1, frameDuration: 180 },
+      run: { frameWidth: 68, frameHeight: 68, frameCount: 1, frameDuration: 110 },
+    },
+  },
+  pixellabChanter: {
+    directional: true,
+    drawWidth: 40,
+    drawHeight: 40,
+    drawOffsetX: -20,
+    drawOffsetY: -27,
+    shadowWidth: 20,
+    animations: {
+      idle: { frameWidth: 68, frameHeight: 68, frameCount: 1, frameDuration: 180 },
+      run: { frameWidth: 68, frameHeight: 68, frameCount: 1, frameDuration: 110 },
+    },
+  },
+  pixellabWarden: {
+    directional: true,
+    drawWidth: 48,
+    drawHeight: 48,
+    drawOffsetX: -24,
+    drawOffsetY: -34,
+    shadowWidth: 28,
+    animations: {
+      idle: { frameWidth: 68, frameHeight: 68, frameCount: 1, frameDuration: 180 },
+      run: { frameWidth: 68, frameHeight: 68, frameCount: 1, frameDuration: 110 },
+    },
+  },
+  wraith: {
+    drawWidth: 34,
+    drawHeight: 34,
+    drawOffsetX: -17,
+    drawOffsetY: -20,
+    shadowWidth: 18,
+    animations: {
+      idle: { frameWidth: 32, frameHeight: 32, frameCount: 4, frameDuration: 180 },
+      run: { frameWidth: 64, frameHeight: 64, frameCount: 6, frameDuration: 110 },
+    },
+  },
+  devourer: {
+    drawWidth: 36,
+    drawHeight: 36,
+    drawOffsetX: -18,
+    drawOffsetY: -22,
+    shadowWidth: 20,
+    animations: {
+      idle: { frameWidth: 32, frameHeight: 32, frameCount: 4, frameDuration: 180 },
+      run: { frameWidth: 64, frameHeight: 64, frameCount: 6, frameDuration: 110 },
+    },
+  },
+  blight: {
+    drawWidth: 36,
+    drawHeight: 36,
+    drawOffsetX: -18,
+    drawOffsetY: -22,
+    shadowWidth: 20,
+    animations: {
+      idle: { frameWidth: 32, frameHeight: 32, frameCount: 4, frameDuration: 180 },
+      run: { frameWidth: 64, frameHeight: 64, frameCount: 6, frameDuration: 110 },
+    },
+  },
+};
+
