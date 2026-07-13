@@ -2,12 +2,13 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const game = readFileSync(new URL("../game.js", import.meta.url), "utf8");
+const levels = readFileSync(new URL("../src/systems/level-definitions.js", import.meta.url), "utf8");
 
 assert.match(game, /function getZoneRecoveryNpcDisplay\(npc\)/, "Recovered characters need to reuse the NPC display pipeline.");
 assert.match(game, /drawNpcSpriteActor\(recoveredNpc\)/, "Recovered characters must render with the animated NPC sprite renderer.");
 assert.match(game, /zone2TowerActivated/, "Archive tower activation must persist in quest state.");
-assert.match(game, /interactionType: "activateArchiveLens"/, "The archive tower needs a real interaction step.");
-assert.match(game, /archive-lens-console/, "Navigation needs a target for the archive tower.");
+assert.match(levels, /interactionType: "activateArchiveLens"/, "The archive tower needs a real interaction step.");
+assert.match(levels, /archive-lens-console/, "Navigation needs a target for the archive tower.");
 assert.match(game, /landmarkAnimationFrames:/, "Landmark animation frames must be normalized before rendering.");
 assert.match(game, /stormShelterBeacon: \[/, "Zone 1 needs a normalized animation frame set.");
 assert.match(game, /archiveLensTower: \[/, "Zone 2 needs a normalized animation frame set.");
