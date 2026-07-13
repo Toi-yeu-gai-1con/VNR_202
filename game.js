@@ -1122,6 +1122,101 @@ const levels = {
   spring: createDoiMoiValleyLevel(),
 };
 
+const ZONE_PROFILES = {
+  zone1: {
+    levelId: "village",
+    verb: "Bảo vệ người dân giữa mưa bão",
+    landmark: "stormShelterBeacon",
+    landmarkPosition: { x: 300, y: 220 },
+    landmarkSize: { width: 86, height: 108 },
+    atmosphere: "storm",
+    ambience: ["rain"],
+    music: "portMaze",
+    npcId: "nguyen-ai-quoc",
+    npcOffset: { x: -18, y: -6 },
+    active: { tint: "rgba(134, 181, 222, 0.14)", particleCount: 24, copy: "Mưa vẫn phủ kín bến cảng. Hãy đưa tiếng nói thức tỉnh đến những người đang chờ đợi." },
+    completed: { tint: "rgba(245, 205, 115, 0.13)", particleCount: 9, copy: "Đèn hiệu đã sáng. Những người lao động quanh bến cảng đang giữ vững liên lạc." },
+  },
+  zone2: {
+    levelId: "archive",
+    verb: "Khám phá và giải mã kho lưu trữ",
+    landmark: "archiveLensTower",
+    landmarkPosition: { x: 300, y: 280 },
+    landmarkSize: { width: 100, height: 96 },
+    atmosphere: "paper",
+    ambience: ["fireplace"],
+    music: "archive",
+    npcId: "delegate-north",
+    npcOffset: { x: 0, y: -14 },
+    active: { tint: "rgba(222, 174, 106, 0.11)", particleCount: 19, copy: "Bụi giấy vẫn che phủ các manh mối. Hãy tìm đường nối những tư liệu bị chia cắt." },
+    completed: { tint: "rgba(255, 231, 160, 0.14)", particleCount: 10, copy: "Thấu kính lưu trữ đã soi rõ đường đi. Những người giữ tư liệu đã thống nhất tiếng nói." },
+  },
+  zone3: {
+    levelId: "crossroads",
+    verb: "Thuyết phục các lực lượng và bảo vệ khối đoàn kết",
+    landmark: "factionStandard",
+    landmarkPosition: { x: 300, y: 230 },
+    landmarkSize: { width: 88, height: 112 },
+    atmosphere: "smoke",
+    ambience: ["fireplace"],
+    music: "crossroads",
+    npcId: "vietminh-cadre",
+    npcOffset: { x: 14, y: 0 },
+    active: { tint: "rgba(216, 102, 70, 0.1)", particleCount: 20, copy: "Khói vẫn bao quanh quảng trường. Mỗi lời thuyết phục có thể kéo một lực lượng về phía đoàn kết." },
+    completed: { tint: "rgba(247, 206, 102, 0.14)", particleCount: 10, copy: "Lá cờ ở quảng trường đã được gìn giữ. Những người từng phân vân nay cùng nhìn về một phía." },
+  },
+  zone4: {
+    levelId: "spring",
+    verb: "Phá rào cản và khôi phục môi trường",
+    landmark: "restorationEngine",
+    landmarkPosition: { x: 300, y: 380 },
+    landmarkSize: { width: 102, height: 92 },
+    atmosphere: "recovery",
+    ambience: ["fireplace"],
+    music: "spring",
+    npcId: "doi-moi-leader",
+    npcOffset: { x: -12, y: 8 },
+    active: { tint: "rgba(141, 166, 132, 0.1)", particleCount: 18, copy: "Máy tái thiết vẫn bị chặn bởi những rào cản cũ. Hãy mở đường cho sức sống trở lại." },
+    completed: { tint: "rgba(164, 220, 146, 0.14)", particleCount: 11, copy: "Nước đã chảy trở lại qua máy tái thiết. Thung lũng bắt đầu hồi phục từng nhịp." },
+  },
+};
+
+function getZoneProfile(levelId = state.currentLevelId) {
+  return Object.values(ZONE_PROFILES).find((profile) => profile.levelId === levelId) ?? null;
+}
+
+function getZonePresentation(levelId) {
+  if (!getZoneProfile(levelId)) {
+    return "neutral";
+  }
+
+  return state.completedZones.has(levelId) ? "completed" : "active";
+}
+
+function getZonePresentationDetails(levelId = state.currentLevelId) {
+  const profile = getZoneProfile(levelId);
+  if (!profile) {
+    return null;
+  }
+
+  return profile[getZonePresentation(levelId)];
+}
+
+function getZoneNpcDisplay(npc) {
+  const profile = getZoneProfile();
+  if (!profile || getZonePresentation() !== "completed" || npc.id !== profile.npcId) {
+    return npc;
+  }
+
+  return {
+    ...npc,
+    x: npc.x + profile.npcOffset.x,
+    y: npc.y + profile.npcOffset.y,
+    animation: "walk",
+    frameOffset: 0.35,
+  };
+}
+
 const BOSS_DEFINITIONS = {
   village: { id: "village-corruption-guard", name: "Kẻ Canh Gác Tha Hóa", variant: "devourer", x: 774, y: 456 },
   archive: { id: "archive-shadow-curator", name: "Bóng Ma Lưu Trữ", variant: "wraith", x: 480, y: 286 },
@@ -1731,6 +1826,12 @@ function loadEnvironmentSprites() {
       bureaucracyWall: loadSprite("assets/environment/generated-objects/bureaucracy-wall.png"),
       rationMarket: loadSprite("assets/environment/generated-objects/ration-market.png"),
     },
+    landmarks: {
+      stormShelterBeacon: loadSprite("assets/landmarks/storm-shelter-beacon.png"),
+      archiveLensTower: loadSprite("assets/landmarks/archive-lens-tower.png"),
+      factionStandard: loadSprite("assets/landmarks/faction-standard.png"),
+      restorationEngine: loadSprite("assets/landmarks/restoration-engine.png"),
+    },
     ruinedVillageBuildings: Array.from({ length: 7 }, (_, index) =>
       loadSprite(`assets/environment/mutterpixel-ruined-village/spr_old_building_${index + 1}.png`)
     ),
@@ -2011,20 +2112,37 @@ function syncAmbienceAudio() {
   } else if (state.mode !== "start") {
     if (state.currentLevelId === "hub") {
       activeMusic.push(musicSounds.hub);
-    } else if (state.currentLevelId === "village") {
-      activeAmbience.push(ambienceSounds.rain);
-      activeMusic.push(musicSounds.portMaze);
-    } else if (state.currentLevelId === "archive") {
-      activeMusic.push(musicSounds.archive);
-    } else if (state.currentLevelId === "crossroads") {
-      activeMusic.push(musicSounds.crossroads);
-    } else if (state.currentLevelId === "spring") {
-      activeMusic.push(musicSounds.spring);
+    } else {
+      const zoneAudio = syncZoneAmbientAudio();
+      activeAmbience.push(...zoneAudio.ambience);
+      activeMusic.push(...zoneAudio.music);
     }
   }
 
   syncLoopingSoundGroup(ambienceSounds, activeAmbience);
   syncLoopingSoundGroup(musicSounds, activeMusic);
+}
+
+function syncZoneAmbientAudio() {
+  const profile = getZoneProfile();
+  if (!profile) {
+    return { ambience: [], music: [] };
+  }
+
+  const combatActive = currentLevel().monsters.some((monster) => !monster.defeated && Math.hypot(monster.x - player.x, monster.y - player.y) < (monster.aggroRadius ?? 100));
+  const music = musicSounds[profile.music];
+
+  if (music) {
+    const baseVolume = profile.music === "archive" || profile.music === "spring" ? 0.26 : 0.24;
+    music.volume = baseVolume * (combatActive ? 0.82 : 1);
+  }
+
+  const ambience = profile.ambience.map((key) => ambienceSounds[key]).filter(Boolean);
+  ambience.forEach((sound) => {
+    sound.volume = combatActive ? 0.1 : 0.16;
+  });
+
+  return { ambience, music: music ? [music] : [] };
 }
 
 function canDrawSprite(image) {
@@ -5419,6 +5537,10 @@ function loadLevel(levelId, spawnOverride, options = {}) {
 
   updateCamera();
   updateLevelChrome();
+  const presentation = getZonePresentationDetails(levelId);
+  if (presentation && getZonePresentation(levelId) === "completed" && options.announcePresentation !== false) {
+    showStoryToast(presentation.copy);
+  }
   updateInteractionPrompt();
   syncAmbienceAudio();
   updateStoryBookButton();
@@ -7697,6 +7819,12 @@ function drawWorld() {
     drawRedSquareWorld(currentLevel().decorations);
   } else {
     drawDoiMoiValleyWorld(currentLevel().decorations);
+  }
+
+  const profile = getZoneProfile();
+
+  if (profile) {
+    drawZoneLandmark(profile);
   }
 
   drawLevelExitPortals(currentLevel().exits);
@@ -10026,29 +10154,30 @@ function shouldDrawInteractable(item) {
 }
 
 function drawNpc(npc) {
+  const displayNpc = getZoneNpcDisplay(npc);
   ctx.fillStyle = "rgba(11, 13, 16, 0.35)";
-  ctx.fillRect(npc.x - 7, npc.y + 8, 14, 4);
+  ctx.fillRect(displayNpc.x - 7, displayNpc.y + 8, 14, 4);
 
-  if (drawNpcSpriteActor(npc)) {
+  if (drawNpcSpriteActor(displayNpc)) {
     return;
   }
 
   ctx.fillStyle = "#35292b";
-  ctx.fillRect(npc.x - 6, npc.y - 10, 12, 4);
+  ctx.fillRect(displayNpc.x - 6, displayNpc.y - 10, 12, 4);
 
   ctx.fillStyle = "#d5b59a";
-  ctx.fillRect(npc.x - 4, npc.y - 8, 8, 6);
+  ctx.fillRect(displayNpc.x - 4, displayNpc.y - 8, 8, 6);
 
   ctx.fillStyle = "#6a635d";
-  ctx.fillRect(npc.x - 6, npc.y - 2, 12, 8);
+  ctx.fillRect(displayNpc.x - 6, displayNpc.y - 2, 12, 8);
 
   ctx.fillStyle = "#4a4b50";
-  ctx.fillRect(npc.x - 7, npc.y + 1, 4, 7);
-  ctx.fillRect(npc.x + 3, npc.y + 3, 3, 6);
+  ctx.fillRect(displayNpc.x - 7, displayNpc.y + 1, 4, 7);
+  ctx.fillRect(displayNpc.x + 3, displayNpc.y + 3, 3, 6);
 
   ctx.fillStyle = "#2a2527";
-  ctx.fillRect(npc.x - 4, npc.y + 6, 4, 7);
-  ctx.fillRect(npc.x + 1, npc.y + 8, 4, 5);
+  ctx.fillRect(displayNpc.x - 4, displayNpc.y + 6, 4, 7);
+  ctx.fillRect(displayNpc.x + 1, displayNpc.y + 8, 4, 5);
 }
 
 function drawObject(item) {
@@ -11116,20 +11245,103 @@ function drawAtmosphere() {
   if (state.currentLevelId === "village") {
     drawFogDrift(decorations.fogBands ?? []);
     drawRain(decorations.rain ?? []);
+    drawZoneAtmosphere(getZoneProfile());
     return;
   }
 
   if (state.currentLevelId === "archive") {
     drawUnityHouseAtmosphere(decorations);
+    drawZoneAtmosphere(getZoneProfile());
     return;
   }
 
   if (state.currentLevelId === "crossroads") {
     drawRedSquareAtmosphere(decorations);
+    drawZoneAtmosphere(getZoneProfile());
     return;
   }
 
   drawDoiMoiAtmosphere(decorations);
+  drawZoneAtmosphere(getZoneProfile());
+}
+
+function drawZoneLandmark(profile) {
+  const presentation = getZonePresentation(profile.levelId);
+  const details = profile[presentation];
+  const landmark = environmentSprites.landmarks?.[profile.landmark];
+  const { x, y } = profile.landmarkPosition;
+  const { width, height } = profile.landmarkSize;
+  const pulse = 0.78 + (Math.sin(state.lastTimestamp * 0.003 + x) + 1) * 0.08;
+
+  ctx.save();
+  ctx.globalAlpha = presentation === "completed" ? 1 : 0.86;
+  ctx.fillStyle = "rgba(9, 13, 18, 0.24)";
+  ctx.fillRect(Math.round(x - width * 0.28), Math.round(y + height * 0.34), Math.round(width * 0.56), 7);
+  const glowRadius = Math.max(width, height) * 0.82;
+  const glow = ctx.createRadialGradient(x, y - height * 0.1, 0, x, y - height * 0.1, glowRadius);
+  glow.addColorStop(0, details.tint);
+  glow.addColorStop(0.55, "rgba(255, 224, 150, 0.06)");
+  glow.addColorStop(1, "rgba(0, 0, 0, 0)");
+  ctx.globalCompositeOperation = "screen";
+  ctx.globalAlpha = pulse;
+  ctx.fillStyle = glow;
+  ctx.fillRect(Math.round(x - glowRadius), Math.round(y - height * 0.1 - glowRadius), Math.round(glowRadius * 2), Math.round(glowRadius * 2));
+  ctx.globalCompositeOperation = "source-over";
+  ctx.globalAlpha = presentation === "completed" ? 1 : 0.86;
+
+  if (canDrawSprite(landmark)) {
+    ctx.drawImage(landmark, Math.round(x - width / 2), Math.round(y - height), width, height);
+  } else {
+    ctx.fillStyle = presentation === "completed" ? "#e8c670" : "#8d9bae";
+    ctx.fillRect(Math.round(x - 5), Math.round(y - height), 10, height);
+    ctx.fillRect(Math.round(x - width / 2), Math.round(y - 10), width, 10);
+  }
+
+  ctx.restore();
+}
+
+function drawZoneAtmosphere(profile) {
+  if (!profile) {
+    return;
+  }
+
+  const presentation = getZonePresentation(profile.levelId);
+  const details = profile[presentation];
+  const count = details.particleCount;
+  ctx.save();
+  ctx.globalCompositeOperation = "screen";
+
+  for (let index = 0; index < count; index += 1) {
+    const travel = state.lastTimestamp * (profile.atmosphere === "storm" ? 0.075 : 0.026) + index * 19;
+    const x = ((index * 67 + travel * (profile.atmosphere === "storm" ? 1.8 : 0.62)) % (VIEWPORT.width + 30)) - 15;
+    const y = ((index * 41 + travel) % (VIEWPORT.height + 26)) - 13;
+    let color = "rgba(255, 228, 165, 0.16)";
+    let width = 2;
+    let height = 2;
+
+    if (profile.atmosphere === "storm") {
+      color = presentation === "completed" ? "rgba(255, 222, 142, 0.16)" : "rgba(181, 219, 246, 0.18)";
+      width = presentation === "completed" ? 2 : 8;
+      height = 1;
+    } else if (profile.atmosphere === "paper") {
+      color = "rgba(255, 228, 177, 0.17)";
+      width = 3;
+      height = 2;
+    } else if (profile.atmosphere === "smoke") {
+      color = presentation === "completed" ? "rgba(255, 216, 126, 0.17)" : "rgba(159, 118, 94, 0.14)";
+      width = 5;
+      height = 3;
+    } else {
+      color = presentation === "completed" ? "rgba(182, 236, 152, 0.18)" : "rgba(239, 222, 150, 0.13)";
+      width = 3;
+      height = 2;
+    }
+
+    ctx.fillStyle = color;
+    ctx.fillRect(Math.round(x), Math.round(y), width, height);
+  }
+
+  ctx.restore();
 }
 
 function drawHubAtmosphere(decorations) {

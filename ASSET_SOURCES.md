@@ -41,6 +41,9 @@ This project uses a small subset of free game assets:
 - Military Character Pack by DravnirCreates: https://dravnircreates.itch.io/military-character-pack
   - License: CC BY 4.0; character art by DravnirCreates. The game crops and animates the supplied soldier walk sheets for ranged enemies.
   - Used for `assets/monsters/military-soldier/`.
+- Original zone landmarks
+  - Created for this project with the built-in image generation workflow, then background-keyed to transparent PNG.
+  - Used for the four persistent zone landmarks in `assets/landmarks/`: storm shelter beacon, archive lens tower, faction standard, and restoration engine.
 
 ## Music
 
