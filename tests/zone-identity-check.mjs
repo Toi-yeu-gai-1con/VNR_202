@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 
 const game = readFileSync(new URL("../game.js", import.meta.url), "utf8");
 const profiles = readFileSync(new URL("../src/data/zone-profiles.js", import.meta.url), "utf8");
+const audio = readFileSync(new URL("../src/systems/audio-system.js", import.meta.url), "utf8");
 
 assert.match(profiles, /ZONE_PROFILES[\s\S]*?zone1:[\s\S]*?stormShelterBeacon/, "Zone 1 needs a landmark profile.");
 assert.match(profiles, /zone2:[\s\S]*?archiveLensTower/, "Zone 2 needs a landmark profile.");
@@ -11,7 +12,7 @@ assert.match(profiles, /zone4:[\s\S]*?restorationEngine/, "Zone 4 needs a landma
 assert.match(game, /function getZonePresentation\(levelId\)/, "Zone completion must drive a reusable presentation state.");
 assert.match(game, /function drawZoneLandmark\(profile\)/, "Zone landmarks need a dedicated renderer.");
 assert.match(game, /function drawZoneAtmosphere\(profile\)/, "Each zone needs profile-controlled atmosphere.");
-assert.match(game, /function syncZoneAmbientAudio\(\)/, "Zone ambience needs a dedicated audio synchronizer.");
+assert.match(audio, /function syncZoneAmbientAudio\(\)/, "Zone ambience needs a dedicated audio synchronizer.");
 assert.match(game, /function getZoneProgressStage\(levelId = state\.currentLevelId\)/, "Quest progress needs to resolve to a reusable zone stage.");
 assert.match(game, /function drawZoneProgressScene\(profile\)/, "Quest progress needs a dedicated world renderer.");
 assert.match(game, /drawZoneProgressScene\(profile\);/, "The world renderer must draw the visible progress state.");

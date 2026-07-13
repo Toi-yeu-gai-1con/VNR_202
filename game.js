@@ -2,6 +2,7 @@ import { createQuestState } from "./src/data/quests.js";
 import { ZONE_PROFILES } from "./src/data/zone-profiles.js";
 import { createAssetManager } from "./src/core/asset-manager.js";
 import { createSceneController } from "./src/core/scene-controller.js";
+import { createAudioSystem } from "./src/systems/audio-system.js";
 
 const canvas = document.getElementById("game-canvas");
 const ctx = canvas.getContext("2d");
@@ -1052,7 +1053,6 @@ const musicSounds = loadMusicSounds();
 let storyToastTimeoutId = 0;
 let corruptionWarningTimeoutId = 0;
 let relicBookOpenTimeoutId = 0;
-let audioRetryQueued = false;
 let pendingAssetLoad = null;
 
 const state = {
@@ -1142,6 +1142,16 @@ const levels = {
   crossroads: createRedSquareLevel(),
   spring: createDoiMoiValleyLevel(),
 };
+
+const audioSystem = createAudioSystem({
+  state,
+  uiSounds,
+  ambienceSounds,
+  musicSounds,
+  getZoneProfile,
+  getCurrentLevel: currentLevel,
+  getPlayer: () => player,
+});
 
 const LEGACY_ZONE_PROFILES = {
   zone1: {
@@ -1736,20 +1746,11 @@ function updateFullscreenButton() {
 }
 
 function toggleSound() {
-  state.soundMuted = !state.soundMuted;
-
-  for (const sound of [
-    ...Object.values(uiSounds),
-    ...Object.values(ambienceSounds),
-    ...Object.values(musicSounds),
-  ]) {
-    sound.muted = state.soundMuted;
-  }
+  audioSystem.setMuted(!state.soundMuted);
 
   updateSoundButton();
 
   if (!state.soundMuted) {
-    syncAmbienceAudio();
     playUiSound(uiSounds.pixelClick);
   }
 }
@@ -2242,152 +2243,23 @@ function loadSound(src, volume = 1, options = {}) {
 }
 
 function playUiSound(sound) {
-  if (!sound) {
-    return;
-  }
-
-  try {
-    sound.pause();
-    sound.currentTime = 0;
-    const playback = sound.play();
-    playback?.catch(() => {});
-  } catch {
-    // Ignore browsers that temporarily block or delay UI sound playback.
-  }
+  audioSystem.playUiSound(sound);
 }
 
 function withUiClickSound(action) {
-  return (...args) => {
-    playUiSound(uiSounds.pixelClick);
-    action(...args);
-  };
-}
-
-function playLoopingSound(sound) {
-  if (!sound || !sound.paused) {
-    return;
-  }
-
-  try {
-    const playback = sound.play();
-    playback?.catch(queueAudioRetry);
-  } catch {
-    queueAudioRetry();
-  }
-}
-
-function queueAudioRetry() {
-  if (audioRetryQueued || state.soundMuted) {
-    return;
-  }
-
-  audioRetryQueued = true;
-  const retry = () => {
-    window.removeEventListener("pointerdown", retry);
-    window.removeEventListener("keydown", retry);
-    audioRetryQueued = false;
-    if (!state.soundMuted) {
-      syncAmbienceAudio();
-    }
-  };
-
-  window.addEventListener("pointerdown", retry, { once: true });
-  window.addEventListener("keydown", retry, { once: true });
-}
-
-function pauseLoopingSound(sound) {
-  if (!sound) {
-    return;
-  }
-
-  try {
-    sound.pause();
-  } catch {
-    // Ignore browsers that temporarily reject audio pausing.
-  }
+  return audioSystem.withUiClickSound(action);
 }
 
 function resetSound(sound) {
-  if (!sound) {
-    return;
-  }
-
-  pauseLoopingSound(sound);
-
-  try {
-    sound.currentTime = 0;
-  } catch {
-    // Ignore browsers that temporarily reject resetting audio.
-  }
-}
-
-function syncLoopingSoundGroup(soundGroup, activeSounds) {
-  const activeSet = new Set(activeSounds.filter(Boolean));
-
-  for (const sound of Object.values(soundGroup)) {
-    if (!activeSet.has(sound)) {
-      pauseLoopingSound(sound);
-    }
-  }
-
-  for (const sound of activeSet) {
-    playLoopingSound(sound);
-  }
-}
-
-function resetSoundGroup(soundGroup) {
-  for (const sound of Object.values(soundGroup)) {
-    resetSound(sound);
-  }
+  audioSystem.resetSound(sound);
 }
 
 function resetMusicForNewSession() {
-  resetSoundGroup(musicSounds);
-  resetSoundGroup(ambienceSounds);
+  audioSystem.resetMusicForNewSession();
 }
 
 function syncAmbienceAudio() {
-  const activeAmbience = [];
-  const activeMusic = [];
-
-  if (state.mode === "ending" && state.endingId === "bad") {
-    activeMusic.push(musicSounds.badEnding);
-  } else if (state.mode === "ending" && state.endingId === "good") {
-    activeMusic.push(musicSounds.goodEnding);
-  } else if (state.mode !== "start") {
-    if (state.currentLevelId === "hub") {
-      activeMusic.push(musicSounds.hub);
-    } else {
-      const zoneAudio = syncZoneAmbientAudio();
-      activeAmbience.push(...zoneAudio.ambience);
-      activeMusic.push(...zoneAudio.music);
-    }
-  }
-
-  syncLoopingSoundGroup(ambienceSounds, activeAmbience);
-  syncLoopingSoundGroup(musicSounds, activeMusic);
-}
-
-function syncZoneAmbientAudio() {
-  const profile = getZoneProfile();
-  if (!profile) {
-    return { ambience: [], music: [] };
-  }
-
-  const combatActive = currentLevel().monsters.some((monster) => !monster.defeated && Math.hypot(monster.x - player.x, monster.y - player.y) < (monster.aggroRadius ?? 100));
-  const music = musicSounds[profile.music];
-
-  if (music) {
-    const baseVolume = profile.music === "archive" || profile.music === "spring" ? 0.26 : 0.24;
-    music.volume = baseVolume * (combatActive ? 0.82 : 1);
-  }
-
-  const ambience = profile.ambience.map((key) => ambienceSounds[key]).filter(Boolean);
-  ambience.forEach((sound) => {
-    sound.volume = combatActive ? 0.1 : 0.16;
-  });
-
-  return { ambience, music: music ? [music] : [] };
+  audioSystem.syncAmbienceAudio();
 }
 
 function canDrawSprite(image) {
