@@ -46,7 +46,7 @@ This project uses a small subset of free game assets:
   - Used for the four persistent zone landmarks in `assets/landmarks/`: storm shelter beacon, archive lens tower, faction standard, and restoration engine.
 - Original animated zone-landmark sprite strips
   - Created for this project with the built-in image generation workflow, then background-keyed to transparent PNG.
-  - Four-frame strips used by the persistent landmarks in `assets/landmarks/*-animated.png`: lantern/flag, archive lens, flag/brazier, and waterwheel/water animations.
+  - Four-frame strips are normalized to a common bottom-center anchor before the persistent landmarks load their frames from `assets/landmarks/frames/`: lantern/flag, archive lens, flag/brazier, and waterwheel/water animations.
 - Original Đổi Mới irrigation station
   - Created for this project with the built-in image generation workflow, then background-keyed to transparent PNG.
   - Used for the restored rural cooperative scene in `assets/recovery/doi-moi-irrigation-station.png`.

@@ -1745,6 +1745,18 @@ function updateSoundButton() {
   soundButton.textContent = soundEnabled ? "♫" : "×";
 }
 
+function clearPressedKeys() {
+  keys.clear();
+  player.isMoving = false;
+}
+
+window.addEventListener("blur", clearPressedKeys);
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) {
+    clearPressedKeys();
+  }
+});
+
 window.addEventListener("keydown", (event) => {
   if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " "].includes(event.key)) {
     event.preventDefault();
@@ -1934,11 +1946,31 @@ function loadEnvironmentSprites() {
       factionStandard: loadSprite("assets/landmarks/faction-standard.png"),
       restorationEngine: loadSprite("assets/landmarks/restoration-engine.png"),
     },
-    landmarkAnimations: {
-      stormShelterBeacon: loadSprite("assets/landmarks/storm-shelter-beacon-animated.png"),
-      archiveLensTower: loadSprite("assets/landmarks/archive-lens-tower-animated.png"),
-      factionStandard: loadSprite("assets/landmarks/faction-standard-animated.png"),
-      restorationEngine: loadSprite("assets/landmarks/restoration-engine-animated.png"),
+    landmarkAnimationFrames: {
+      stormShelterBeacon: [
+        loadSprite("assets/landmarks/frames/storm-shelter-beacon/01.png"),
+        loadSprite("assets/landmarks/frames/storm-shelter-beacon/02.png"),
+        loadSprite("assets/landmarks/frames/storm-shelter-beacon/03.png"),
+        loadSprite("assets/landmarks/frames/storm-shelter-beacon/04.png"),
+      ],
+      archiveLensTower: [
+        loadSprite("assets/landmarks/frames/archive-lens-tower/01.png"),
+        loadSprite("assets/landmarks/frames/archive-lens-tower/02.png"),
+        loadSprite("assets/landmarks/frames/archive-lens-tower/03.png"),
+        loadSprite("assets/landmarks/frames/archive-lens-tower/04.png"),
+      ],
+      factionStandard: [
+        loadSprite("assets/landmarks/frames/faction-standard/01.png"),
+        loadSprite("assets/landmarks/frames/faction-standard/02.png"),
+        loadSprite("assets/landmarks/frames/faction-standard/03.png"),
+        loadSprite("assets/landmarks/frames/faction-standard/04.png"),
+      ],
+      restorationEngine: [
+        loadSprite("assets/landmarks/frames/restoration-engine/01.png"),
+        loadSprite("assets/landmarks/frames/restoration-engine/02.png"),
+        loadSprite("assets/landmarks/frames/restoration-engine/03.png"),
+        loadSprite("assets/landmarks/frames/restoration-engine/04.png"),
+      ],
     },
     recovery: {
       doiMoiIrrigationStation: loadSprite("assets/recovery/doi-moi-irrigation-station.png"),
@@ -11432,7 +11464,7 @@ function drawZoneLandmark(profile) {
   const presentation = getZonePresentation(profile.levelId);
   const details = profile[presentation];
   const landmark = environmentSprites.landmarks?.[profile.landmark];
-  const animatedLandmark = environmentSprites.landmarkAnimations?.[profile.landmark];
+  const animatedFrames = environmentSprites.landmarkAnimationFrames?.[profile.landmark];
   const { x, y } = profile.landmarkPosition;
   const { width, height } = profile.landmarkSize;
   const pulse = 0.78 + (Math.sin(state.lastTimestamp * 0.003 + x) + 1) * 0.08;
@@ -11453,8 +11485,8 @@ function drawZoneLandmark(profile) {
   ctx.globalCompositeOperation = "source-over";
   ctx.globalAlpha = presentation === "completed" ? 1 : 0.86;
 
-  if (canDrawSprite(animatedLandmark)) {
-    drawZoneLandmarkSpriteFrame(animatedLandmark, x, y, width, height);
+  if (animatedFrames?.every(canDrawSprite)) {
+    drawZoneLandmarkAnimationFrame(animatedFrames, x, y, width, height);
   } else if (canDrawSprite(landmark)) {
     ctx.drawImage(landmark, Math.round(x - width / 2), Math.round(y - height), width, height);
   } else {
@@ -11466,21 +11498,9 @@ function drawZoneLandmark(profile) {
   ctx.restore();
 }
 
-function drawZoneLandmarkSpriteFrame(spriteSheet, x, y, width, height) {
-  const frame = Math.floor(state.lastTimestamp / 180) % 4;
-  const frameWidth = Math.floor(spriteSheet.naturalWidth / 4);
-
-  ctx.drawImage(
-    spriteSheet,
-    frameWidth * frame,
-    0,
-    frameWidth,
-    spriteSheet.naturalHeight,
-    Math.round(x - width / 2),
-    Math.round(y - height),
-    width,
-    height
-  );
+function drawZoneLandmarkAnimationFrame(frames, x, y, width, height) {
+  const frame = frames[Math.floor(state.lastTimestamp / 180) % frames.length];
+  ctx.drawImage(frame, Math.round(x - width / 2), Math.round(y - height), width, height);
 }
 
 function drawZoneProgressScene(profile) {
