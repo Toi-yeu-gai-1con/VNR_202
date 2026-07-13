@@ -1,5 +1,8 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { createLevelDefinitions } from "../src/systems/level-definitions.js";
+
+const game = readFileSync(new URL("../game.js", import.meta.url), "utf8");
 
 const levels = createLevelDefinitions({
   world: { width: 960, height: 640 },
@@ -16,5 +19,8 @@ assert.equal(levels.crossroads.id, "crossroads", "Zone 3 keeps its stable id.");
 assert.equal(levels.spring.id, "spring", "Zone 4 keeps its stable id.");
 assert.equal(levels.village.exits[0].portal.x, 146, "The Zone 1 portal receives the configured portal geometry.");
 assert.equal(levels.village.exits[0].guide.visibleWhen(), true, "Exit guidance reads current quest state through its injected accessor.");
+for (const legacyFactory of ["createVillageLevel", "createArchiveLevel", "createCrossroadsLevel", "createSpringLevel"]) {
+  assert.doesNotMatch(game, new RegExp(`function ${legacyFactory}\\(`), `${legacyFactory} must not remain as a duplicate runtime definition.`);
+}
 
 console.log("PASS: active level definitions are isolated from the game runtime.");
