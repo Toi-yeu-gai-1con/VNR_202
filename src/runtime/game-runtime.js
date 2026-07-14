@@ -1,4 +1,6 @@
 import { createQuestState } from "../data/quests.js";
+import { createNarrativeState } from "../systems/narrative-state.js";
+import { resolveEnding } from "../systems/ending-resolver.js";
 import { ZONE_PROFILES } from "../data/zone-profiles.js";
 import { createAssetManager } from "../core/asset-manager.js";
 import { createPageLifecycleController } from "../core/page-lifecycle.js";
@@ -178,7 +180,7 @@ const MONSTER_CONTACT_DAMAGE_COOLDOWN_MS = GAMEPLAY_BALANCE.mob.contactDamageCoo
 const RESPAWN_INVULNERABILITY_MS = GAMEPLAY_BALANCE.mob.respawnInvulnerabilityMs;
 const RELIC_TARGET_COUNT = 5;
 const SAVE_STORAGE_KEY = "crossroads-save-v1";
-const SAVE_VERSION = 1;
+const SAVE_VERSION = 2;
 const PLAYER_ATTACK_ANIMATION_MS = GAMEPLAY_BALANCE.combat.strike.animationMs;
 const MONSTER_ATTACK_ANIMATION_MS = GAMEPLAY_BALANCE.mob.attackAnimationMs;
 const ATTACK_LUNGE_DISTANCE = GAMEPLAY_BALANCE.combat.strike.lungeDistance;
@@ -331,6 +333,7 @@ const state = {
     archiveSolved: false,
   },
   quests: createQuestState(),
+  narrative: createNarrativeState(),
   zoneActorMoveStartedAt: {},
   lastTimestamp: 0,
 };
@@ -613,6 +616,10 @@ function restoreRuntimeSaveState(runtime = {}) {
   saveSystem.restoreRuntimeState(runtime);
 }
 
+function restoreNarrativeSaveState(savedNarrative = {}) {
+  saveSystem.restoreNarrativeSaveState(savedNarrative);
+}
+
 function saveGameProgress() {
   return saveSystem.save();
 }
@@ -652,6 +659,7 @@ function continueSavedGame() {
   }
 
   restoreQuestState(saved.quests);
+  restoreNarrativeSaveState(saved.narrative);
   restoreRuntimeSaveState(saved.runtime);
   state.inventory = new Set(saved.inventory ?? []);
   state.unlockedStoryIds = new Set(saved.unlockedStoryIds ?? []);
@@ -2220,6 +2228,7 @@ function resetGameplayProgress() {
   state.puzzleState.archiveSequence = 0;
   state.puzzleState.archiveSolved = false;
   state.quests = createQuestState();
+  state.narrative = createNarrativeState();
   initializeLevelRuntime();
   setRespawnCheckpoint("hub");
   updateProgressHud();
@@ -2284,6 +2293,19 @@ function createDebugSnapshot() {
     health: state.health,
     saDoa: state.saDoa,
     inventory: Array.from(state.inventory),
+    narrative: {
+      choices: { ...state.narrative.choices },
+      branchFlags: { ...state.narrative.branchFlags },
+      npcRelations: { ...state.narrative.npcRelations },
+      themeScores: { ...state.narrative.themeScores },
+      endingRisks: { ...state.narrative.endingRisks },
+      endingsUnlocked: Array.from(state.narrative.endingsUnlocked),
+      endingCandidate: resolveEnding({
+        inventory: state.inventory,
+        saDoa: state.saDoa,
+        narrative: state.narrative,
+      }),
+    },
     player: {
       x: player.x,
       y: player.y,

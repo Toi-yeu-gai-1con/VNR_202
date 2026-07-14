@@ -20,6 +20,14 @@ export const GAMEPLAY_BALANCE = freezeBalance({
     glitchThreshold: 50,
     deathPenalty: 12,
   },
+  narrative: {
+    ending: {
+      goodMaxCorruption: 24,
+      zoneRiskThreshold: 3,
+      secretRiskThreshold: 1,
+      secretCorruption: 100,
+    },
+  },
   combat: {
     strike: { cooldownMs: 420, range: 48, chargedThresholdMs: 360, animationMs: 260, lungeDistance: 4 },
     parry: { cooldownMs: 760, windowMs: 260, staminaReward: 20 },

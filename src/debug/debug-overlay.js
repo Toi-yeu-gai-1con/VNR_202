@@ -42,6 +42,9 @@ export function createDebugOverlay({
       `Player ${snapshot.player.x.toFixed(1)}, ${snapshot.player.y.toFixed(1)} → ${snapshot.player.screenX.toFixed(1)}, ${snapshot.player.screenY.toFixed(1)} (${snapshot.player.direction})`,
       `Camera ${snapshot.camera.x.toFixed(1)}, ${snapshot.camera.y.toFixed(1)} • zoom ${snapshot.camera.zoom.toFixed(2)}`,
       `Checkpoint ${snapshot.respawnLevelId} • ${snapshot.questSummary}`,
+      snapshot.narrative
+        ? `Narrative ${snapshot.narrative.endingCandidate?.id ?? "pending"} • ${snapshot.narrative.endingCandidate?.reason ?? "no-candidate"}`
+        : "Narrative unavailable",
       `Quái đang hoạt động ${snapshot.activeMonsterCount}`,
     ].join("\n");
   }

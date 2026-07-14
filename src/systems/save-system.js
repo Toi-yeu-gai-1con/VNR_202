@@ -1,3 +1,5 @@
+import { restoreNarrativeState, serializeNarrativeState } from "./narrative-state.js";
+
 export function createSaveSystem({
   storage,
   saveKey,
@@ -114,6 +116,7 @@ export function createSaveSystem({
         difficulty: state.difficulty,
         tutorialSeen: state.tutorialSeen,
         quests: serializeQuestState(),
+        narrative: serializeNarrativeState(state.narrative),
         runtime: getRuntimeState(),
       }));
       return true;
@@ -125,10 +128,27 @@ export function createSaveSystem({
   function load() {
     try {
       const saved = JSON.parse(storage.getItem(saveKey) ?? "null");
-      return saved?.version === version && getLevels()[saved.currentLevelId] ? saved : null;
+      if (!saved || !getLevels()[saved.currentLevelId]) {
+        return null;
+      }
+
+      const savedVersion = Number(saved.version) || 1;
+      if (savedVersion > version) {
+        return null;
+      }
+
+      return {
+        ...saved,
+        version,
+        narrative: serializeNarrativeState(saved.narrative),
+      };
     } catch {
       return null;
     }
+  }
+
+  function restoreNarrativeSaveState(savedNarrative = {}) {
+    getState().narrative = restoreNarrativeState(savedNarrative);
   }
 
   function clear() {
@@ -140,5 +160,14 @@ export function createSaveSystem({
     }
   }
 
-  return { serializeQuestState, restoreQuestState, getRuntimeState, restoreRuntimeState, save, load, clear };
+  return {
+    serializeQuestState,
+    restoreQuestState,
+    getRuntimeState,
+    restoreRuntimeState,
+    restoreNarrativeSaveState,
+    save,
+    load,
+    clear,
+  };
 }
