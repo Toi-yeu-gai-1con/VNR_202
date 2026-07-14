@@ -48,21 +48,25 @@ A large supernatural figure in layered indigo robes with a face lost in shadow, 
 
 ## Zone 3 — Red Square and Broken Bridge
 
-### Bridge Raider — “Kẻ Cướp Cầu Gãy”
+Zone 3 contains two historical chapters, but its combat roster appears in the southern half of the map around the broken bridge and three strategic hamlets. Therefore all four hostile designs belong specifically to Chapter B (1954–1975): the temporary military demarcation line at the 17th parallel, strategic-hamlet coercion, psychological warfare, and the struggle for national reunification. Chapter A (1941–1945) remains focused on Việt Minh organization, mass mobilization, and NPC persuasion rather than these enemies.
 
-A stocky fighter in dark indigo clothing and a worn conical hat, using a rope-mounted pole hook. The rope swings during locomotion; the attack draws the pole back before a broad hooked sweep.
+The art uses historically grounded fictional silhouettes. Clothing, materials, weapons, and communications equipment must read as mid-twentieth-century field equipment without copying a real unit's insignia, flag, medals, or exact uniform. Hand crossbows, bamboo speaking horns, fantasy armor, foreign court dress, and modern plastic equipment are prohibited.
 
-### Division Marksman — “Xạ Thủ Chia Cắt”
+### Strategic-Hamlet Enforcer — “Lính Càn Quét Ấp”
 
-An olive-clad mercenary using a hand crossbow and small rattan buckler. The shield creates a recognizable silhouette without hiding the crossbow's aim, release, recoil, and recovery frames.
+The runtime ID remains `crossroads-raider`. A coercive field enforcer in faded clothing carries long wooden batons and wire cutters associated with the strategic-hamlet barriers. A compact coil of cut wire moves with locomotion. The attack draws the baton back before a broad horizontal sweep; the wire cutter, coil, hands, and body must move coherently.
 
-### Shadow Propagandist — “Kẻ Tuyên Truyền Bóng Tối”
+### Bridge Checkpoint Marksman — “Xạ Thủ Chốt Cầu”
 
-A red-brown agitator with a pamphlet satchel, hand bell, and period-appropriate bamboo speaking horn. Support actions use animated paper disturbance and sound-wave effects. No modern loudspeaker is permitted.
+The runtime ID remains `crossroads-marksman`. A bridge guard in faded olive field clothing and a plain steel helmet uses a wood-and-steel mid-century rifle with cloth ammunition pouches. The attack must show shouldering, aiming, firing, shoulder recoil, restrained muzzle smoke, and recovery. The rifle is never replaced by a hand crossbow or modern assault weapon.
 
-### Southern Tyrant — “Bộ Máy Áp Bức”
+### Psychological-Warfare Operator — “Nhân Viên Tâm Lý Chiến”
 
-A tall corrupted human commander in worn black and dull-gold military clothing, wielding a long polearm and a torn faction standard. The standard must not reproduce or degrade the Vietnamese national flag. Combat includes a polearm sweep, heavy stomp, and command action. Phase-two intensity is communicated by stronger cloak, smoke, and torn-standard motion rather than a model replacement.
+The runtime ID remains `crossroads-chanter`. A field operator carries a blank-paper leaflet satchel, a period metal loudhailer, and a portable field radio. Support animation opens or keys the radio, raises the loudhailer, and drives an animated disturbance through the blank leaflets. There is no readable propaganda text, bamboo horn, modern plastic megaphone, or supernatural talisman.
+
+### Repression Commander — “Chỉ Huy Bộ Máy Áp Bức”
+
+The runtime ID remains `southern-tyrant`. A tall imposing human commander wears a weathered olive-black field uniform and rain cape, with a long command baton and a field radio pack. The boss does not carry a faction standard. Combat uses a baton sweep, a heavy butt-or-boot slam, and a radio command pulse. Phase two intensifies coat, cable, smoke, and radio-static movement without replacing the human model or adding fantasy anatomy.
 
 ## Zone 4 — Đổi Mới Valley
 
