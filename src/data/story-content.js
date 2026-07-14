@@ -585,7 +585,7 @@ export const BAD_ENDING_RECOVERY = {
   walkDuration: 1700,
   complaintDuration: 3200,
   resetDuration: 2150,
-  corruptionAfterReset: 45,
+  corruptionAfterReset: 0,
   speaker: "David",
   lines: [
     "Lại một nhánh thời gian hỏng nữa... Tôi còn chưa uống xong cà phê.",

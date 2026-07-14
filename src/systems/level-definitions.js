@@ -103,6 +103,7 @@ function createPortMazeLevel() {
         width: PORT_MAZE_DOOR.width,
         height: PORT_MAZE_DOOR.height,
         target: "hub",
+        availableWhen: () => getState().quests.zone1RewardClaimed,
         spawn: { x: 480, y: 390, direction: "up" },
         portal: {
           x: PORT_MAZE_DOOR.portalX,
@@ -301,6 +302,7 @@ function createUnityHouseLevel() {
         width: 48,
         height: 48,
         target: "hub",
+        availableWhen: () => getState().quests.zone2RewardClaimed,
         spawn: { x: 480, y: 390, direction: "up" },
         portal: {
           x: 480,
@@ -436,6 +438,7 @@ function createRedSquareLevel() {
         width: 48,
         height: 48,
         target: "hub",
+        availableWhen: () => getState().quests.zone3ThreadClaimed && getState().quests.zone3MapClaimed,
         spawn: { x: 480, y: 390, direction: "up" },
         portal: { label: "Trung tam", labelOffsetY: 34, drawSize: 54, auraRadius: 42 },
         guide: {
@@ -664,6 +667,7 @@ function createDoiMoiValleyLevel() {
         width: 48,
         height: 48,
         target: "hub",
+        availableWhen: () => getState().quests.zone4GearClaimed,
         spawn: { x: 480, y: 390, direction: "up" },
         portal: { label: "Trung tam", labelOffsetY: -52, drawSize: 56, auraRadius: 44 },
         guide: {

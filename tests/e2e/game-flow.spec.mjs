@@ -83,6 +83,10 @@ test("player combat emits audible swing and incoming-hit cues", async ({ page },
 
   await page.keyboard.press("j");
   await expect.poll(() => page.evaluate(() => window.__playedAudioSources.some((source) => source.includes("strike-swing")))).toBe(true);
+  const strikeSources = await page.evaluate(() => window.__playedAudioSources.filter(
+    (source) => source.includes("strike-swing") || source.includes("player-attack")
+  ));
+  expect(strikeSources).toHaveLength(1);
 
   await page.evaluate(() => window.__CROSSROADS_DEBUG__.damagePlayer(1, "Playwright"));
   await expect.poll(() => page.evaluate(() => window.__playedAudioSources.some((source) => source.includes("player-hurt")))).toBe(true);
@@ -241,6 +245,18 @@ test("the employee forces the TVA briefing choice and opens the first dispatch p
   expect(result.transitioned).toBe(true);
   expect(result.currentLevelId).toBe("village");
   expect(result.quests.tvaPortalTarget).toBe(null);
+  await page.screenshot({ path: testInfo.outputPath("zone1-return-portal-locked.png"), fullPage: true });
+
+  const lockedReturn = await page.evaluate(() => window.__CROSSROADS_DEBUG__.triggerExit("back-to-hub-1"));
+  expect(lockedReturn.transitioned).toBe(false);
+  expect(lockedReturn.currentLevelId).toBe("village");
+
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.setPlayerPosition(250, 260));
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.completeTvaRoute("village"));
+  await page.screenshot({ path: testInfo.outputPath("zone1-return-portal-open.png"), fullPage: true });
+  const openReturn = await page.evaluate(() => window.__CROSSROADS_DEBUG__.triggerExit("back-to-hub-1"));
+  expect(openReturn.transitioned).toBe(true);
+  expect(openReturn.currentLevelId).toBe("hub");
 });
 
 test("reported relics unlock each later TVA coordinate in campaign order", async ({ page }) => {
@@ -274,6 +290,12 @@ test("reported relics unlock each later TVA coordinate in campaign order", async
     await page.locator('[data-dialogue-choice="finish-history"]').click();
     await expect(page.locator("#end-overlay")).toBeVisible();
     await expect.poll(() => snapshot(page).then((state) => state.endingId)).toBe("good");
+    await expect.poll(
+      () => snapshot(page).then((state) => state.audio.music.goodEnding.readyState),
+      { timeout: 10_000 },
+    ).toBeGreaterThan(0);
+    await expect.poll(() => snapshot(page).then((state) => state.audio.music.goodEnding.paused)).toBe(false);
+    await expect.poll(() => snapshot(page).then((state) => state.audio.music.goodEnding.currentTime)).toBeGreaterThan(0);
   }
 
   await expect.poll(() => snapshot(page).then((state) => state.quests.tvaReportedRelics.length)).toBe(5);
@@ -304,6 +326,12 @@ test("a bad ending is interrupted by the TVA employee and restores the checkpoin
   const checkpoint = await snapshot(page);
 
   await page.evaluate(() => window.__CROSSROADS_DEBUG__.triggerBadEnding());
+  await expect.poll(
+    () => snapshot(page).then((state) => state.audio.music.badEnding.readyState),
+    { timeout: 10_000 },
+  ).toBeGreaterThan(0);
+  await expect.poll(() => snapshot(page).then((state) => state.audio.music.badEnding.paused)).toBe(false);
+  await expect.poll(() => snapshot(page).then((state) => state.audio.music.badEnding.currentTime)).toBeGreaterThan(0);
   await page.evaluate(() => window.__CROSSROADS_DEBUG__.completeEndingCinematic());
   await expect.poll(() => snapshot(page).then((state) => state.badEndingRecovery?.phase)).toBe("linger");
 
@@ -313,9 +341,13 @@ test("a bad ending is interrupted by the TVA employee and restores the checkpoin
   await expect.poll(() => snapshot(page).then((state) => state.badEndingRecovery?.phase)).toBe("complaint");
   await page.screenshot({ path: testInfo.outputPath("bad-ending-tva-recovery.png"), fullPage: true });
 
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.setBadEndingRecoveryElapsed(8600));
+  await expect.poll(() => snapshot(page).then((state) => state.badEndingRecovery?.phase)).toBe("reset");
+  await page.screenshot({ path: testInfo.outputPath("bad-ending-m90-reset-action.png"), fullPage: true });
+
   await page.evaluate(() => window.__CROSSROADS_DEBUG__.setBadEndingRecoveryElapsed(9400));
   await expect.poll(() => snapshot(page).then((state) => state.badEndingRecovery?.phase)).toBe("reset");
-  await page.screenshot({ path: testInfo.outputPath("bad-ending-m90-reset.png"), fullPage: true });
+  await page.screenshot({ path: testInfo.outputPath("bad-ending-m90-reset-wave.png"), fullPage: true });
 
   await page.evaluate(() => window.__CROSSROADS_DEBUG__.setBadEndingRecoveryElapsed(11000));
   await expect.poll(() => snapshot(page).then((state) => state.mode)).toBe("playing");
@@ -324,7 +356,7 @@ test("a bad ending is interrupted by the TVA employee and restores the checkpoin
   expect(restored.player.x).toBeCloseTo(checkpoint.player.x, 1);
   expect(restored.player.y).toBeCloseTo(checkpoint.player.y, 1);
   expect(restored.endingId).toBe(null);
-  expect(restored.saDoa).toBeLessThan(60);
+  expect(restored.saDoa).toBe(0);
 });
 
 test("Zone 1 soldier offers a persistent choice and betrayal triggers the bad ending", async ({ page }, testInfo) => {

@@ -64,6 +64,12 @@ export const TVA_EMPLOYEE_SPRITE = {
 export const M90_RESET_ANIMATION = Object.freeze({
   frameWidth: 96,
   frameHeight: 96,
+  cropX: 30,
+  cropY: 18,
+  cropWidth: 36,
+  cropHeight: 62,
+  drawWidth: 24,
+  drawHeight: 40,
   frameDurations: Object.freeze([220, 120, 140, 180, 130, 220, 120, 300]),
   effectFrameWidth: 128,
   effectFrameHeight: 128,
