@@ -907,7 +907,7 @@ export const BAD_ENDING_RECOVERY = {
   lingerDuration: 2200,
   blackoutDuration: 700,
   walkDuration: 1700,
-  complaintDuration: 3200,
+  complaintDuration: 6000,
   resetDuration: 2150,
   corruptionAfterReset: 0,
   speaker: "David",

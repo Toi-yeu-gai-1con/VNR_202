@@ -66,8 +66,34 @@ export function createAudioSystem({
     }
   }
 
-  function playDialogueSound(sound) {
-    playUiSound(sound, "dialogueVolume");
+  function playDialogueSound(source, options = {}) {
+    if (!source || state.soundMuted || suspended) {
+      return;
+    }
+
+    const dialogueVolume = getVolumeSetting("dialogueVolume");
+    const localVolume = options.volume ?? getSourceVolume(source);
+    if (dialogueVolume <= 0 || localVolume <= 0) {
+      return;
+    }
+
+    const sound = typeof source.cloneNode === "function" ? source.cloneNode(true) : source;
+    sound.volume = Math.max(0, Math.min(1, localVolume * dialogueVolume));
+    sound.playbackRate = options.playbackRate ?? 1;
+    sound.muted = state.soundMuted;
+    activeSfx.add(sound);
+
+    const release = () => activeSfx.delete(sound);
+    if (typeof sound.addEventListener === "function") {
+      sound.addEventListener("ended", release, { once: true });
+    }
+    try {
+      sound.currentTime = 0;
+      sound.play()?.catch(queueAudioRetry);
+    } catch {
+      release();
+      queueAudioRetry();
+    }
   }
 
   function playSfx(key, options = {}) {

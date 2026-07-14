@@ -18,6 +18,16 @@ async function snapshot(page) {
   return page.evaluate(() => window.__CROSSROADS_DEBUG__.getSnapshot());
 }
 
+async function seekBadEndingRecovery(page, timelineKey, offset = 0) {
+  const recovery = await snapshot(page).then((state) => state.badEndingRecovery);
+  const elapsed = recovery?.timeline?.[timelineKey];
+  expect(elapsed, `Missing bad-ending recovery timeline key: ${timelineKey}`).toEqual(expect.any(Number));
+  return page.evaluate(
+    (targetElapsed) => window.__CROSSROADS_DEBUG__.setBadEndingRecoveryElapsed(targetElapsed),
+    elapsed + offset,
+  );
+}
+
 test("an optional challenge is selected before the run and reports a clear failure in the HUD", async ({ page }, testInfo) => {
   await page.goto("/?debugTools=1");
   await page.waitForFunction(() => Boolean(window.__CROSSROADS_DEBUG__));
@@ -98,11 +108,11 @@ test("the TVA dossier keeps ending, enemy, and achievement records out of the hi
 async function advanceDialogueToChoice(page, choiceId) {
   const choice = page.locator(`[data-dialogue-choice="${choiceId}"]`);
 
-  for (let step = 0; step < 12; step += 1) {
+  for (let step = 0; step < 30; step += 1) {
     if (await choice.isVisible()) {
       return choice;
     }
-    await page.locator("#dialogue-next-button").click();
+    await advanceDialogue(page);
   }
 
   await expect(choice).toBeVisible();
@@ -152,6 +162,32 @@ test("corruption HUD offers a keyboard-accessible explanation without revealing 
   await expect(helpButton).toHaveAttribute("aria-expanded", "false");
   await expect(helpTooltip).toBeHidden();
 });
+
+async function waitForDialogueComplete(page) {
+  await expect.poll(() => page.evaluate(() => {
+    const typewriter = window.__CROSSROADS_DEBUG__.getSnapshot().typewriter;
+    return !typewriter || typewriter.kind !== "dialogue" || typewriter.complete;
+  })).toBe(true);
+}
+
+async function finishDialogueLine(page) {
+  const isTyping = await page.evaluate(() => {
+    const typewriter = window.__CROSSROADS_DEBUG__.getSnapshot().typewriter;
+    return typewriter?.kind === "dialogue" && !typewriter.complete;
+  });
+  if (isTyping) {
+    await page.locator("#dialogue-next-button").click();
+  }
+  await waitForDialogueComplete(page);
+}
+
+async function advanceDialogue(page) {
+  await finishDialogueLine(page);
+  const nextButton = page.locator("#dialogue-next-button");
+  if (await nextButton.isVisible()) {
+    await nextButton.click();
+  }
+}
 
 test("F3 reveals debug geometry only in an explicit debug session", async ({ page }, testInfo) => {
   await page.goto("/");
@@ -494,33 +530,36 @@ test("the employee forces the TVA briefing choice and opens the first dispatch p
   await expect(page.locator("#dialogue-speaker")).toHaveText("David");
   await expect(page.locator("#dialogue-box")).toHaveAttribute("data-speaker", "david");
   await expect(page.locator("#dialogue-portrait")).toBeVisible();
+  await finishDialogueLine(page);
   await expect(page.locator("#dialogue-text")).toContainText("intake list");
-  await page.locator("#dialogue-next-button").click();
+  await advanceDialogue(page);
   await expect(page.locator("#dialogue-speaker")).toHaveText("Nhà du hành");
   await expect(page.locator("#dialogue-box")).toHaveAttribute("data-speaker", "traveler");
   await expect(page.locator("#dialogue-portrait")).toBeVisible();
+  await finishDialogueLine(page);
   await expect(page.locator("#dialogue-text")).toContainText("Đây là đâu");
   for (let line = 0; line < 9; line += 1) {
-    await page.locator("#dialogue-next-button").click();
+    await advanceDialogue(page);
   }
-  await expect(page.locator("#dialogue-choice-list")).toBeVisible();
+  await expect(page.locator("#dialogue-choice-list")).toBeVisible({ timeout: 10_000 });
   await expect(page.locator(".dialogue-choice-button")).toHaveCount(2);
   await page.screenshot({ path: testInfo.outputPath("tva-office-briefing.png"), fullPage: true });
 
   await page.locator('[data-dialogue-choice="refuse-assignment"]').click();
   await expect(page.locator("#dialogue-speaker")).toHaveText("Nhà du hành");
   for (let line = 0; line < 3; line += 1) {
-    await page.locator("#dialogue-next-button").click();
+    await advanceDialogue(page);
   }
   await page.locator('[data-dialogue-choice="forced-accept-assignment"]').click();
   await expect.poll(() => snapshot(page).then((state) => state.quests.tvaBriefingAccepted)).toBe(true);
 
   await page.locator('[data-dialogue-choice="dispatch-ready"]').click();
   await expect.poll(() => snapshot(page).then((state) => state.quests.tvaPortalTarget)).toBe("village");
+  await finishDialogueLine(page);
   await expect(page.locator("#dialogue-text")).toContainText("tọa độ không-thời gian");
   await page.screenshot({ path: testInfo.outputPath("tva-dispatch-portal.png"), fullPage: true });
-  await page.locator("#dialogue-next-button").click();
-  await page.locator("#dialogue-next-button").click();
+  await advanceDialogue(page);
+  await advanceDialogue(page);
   await expect.poll(() => snapshot(page).then((state) => state.mode)).toBe("playing");
 
   const result = await page.evaluate(() => window.__CROSSROADS_DEBUG__.triggerExit("tva-dispatch-portal"));
@@ -555,7 +594,7 @@ test("the TVA caseboard reveals only the authorized file and tracks it", async (
   await openDebugSession(page);
   await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("hub", { x: 480, y: 260, direction: "up" }));
   await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("tva-clerk-placeholder"));
-  for (let line = 0; line < 10; line += 1) await page.locator("#dialogue-next-button").click();
+  for (let line = 0; line < 10; line += 1) await advanceDialogue(page);
   await page.locator('[data-dialogue-choice="accept-assignment"]').click();
   await page.locator('[data-dialogue-choice="dispatch-later"]').click();
   await expect.poll(() => snapshot(page).then((state) => state.mode)).toBe("playing");
@@ -657,11 +696,57 @@ test("David remains interactable in the TVA hub", async ({ page }) => {
   await expect(page.locator("#dialogue-speaker")).toHaveText("David");
 });
 
-test("reported relics unlock each later TVA coordinate in campaign order", async ({ page }) => {
+test("dialogue types one character at a time with speaker voice blips", async ({ page }, testInfo) => {
+  await page.addInitScript(() => {
+    window.__playedDialogueSources = [];
+    const originalPlay = HTMLMediaElement.prototype.play;
+    HTMLMediaElement.prototype.play = function trackedDialoguePlay(...args) {
+      const source = this.currentSrc || this.src;
+      if (source.includes("sfx-blip")) {
+        window.__playedDialogueSources.push(source);
+      }
+      return originalPlay.apply(this, args);
+    };
+  });
+
   await openDebugSession(page);
   await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("hub", { x: 480, y: 260, direction: "up" }));
   await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("tva-clerk-placeholder"));
-  for (let line = 0; line < 10; line += 1) await page.locator("#dialogue-next-button").click();
+  await page.waitForTimeout(80);
+
+  const partial = await snapshot(page);
+  expect(partial.typewriter.kind).toBe("dialogue");
+  expect(partial.typewriter.visibleCount).toBeGreaterThan(0);
+  expect(partial.typewriter.visibleCount).toBeLessThan(partial.typewriter.totalCount);
+  await page.screenshot({ path: testInfo.outputPath("dialogue-typewriter-partial.png"), fullPage: true });
+  await expect.poll(() => page.evaluate(() => window.__playedDialogueSources.some((source) => source.includes("sfx-blipmale")))).toBe(true);
+
+  await waitForDialogueComplete(page);
+  await advanceDialogue(page);
+  await expect.poll(() => page.evaluate(() => window.__playedDialogueSources.filter((source) => source.includes("sfx-blipmale")).length)).toBeGreaterThan(1);
+  expect(await page.evaluate(() => window.__playedDialogueSources.some((source) => source.includes("sfx-blipfemale")))).toBe(false);
+});
+
+test("number keys cannot select a hidden choice while its dialogue line is still typing", async ({ page }) => {
+  await openDebugSession(page);
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("village"));
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("le-paria-stack"));
+  await expect.poll(() => snapshot(page).then((state) => state.typewriter?.complete)).toBe(false);
+  await expect(page.locator("#dialogue-choice-list")).toBeHidden();
+
+  await page.keyboard.press("1");
+
+  await expect.poll(() => snapshot(page).then((state) => state.mode)).toBe("dialogue");
+  await expect.poll(() => snapshot(page).then((state) => state.narrative.choices.zone1?.["paper-plan"] ?? null)).toBeNull();
+  await expect(page.locator("#dialogue-choice-list")).toBeHidden();
+});
+
+test("reported relics unlock each later TVA coordinate in campaign order", async ({ page }) => {
+  test.setTimeout(60_000);
+  await openDebugSession(page);
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("hub", { x: 480, y: 260, direction: "up" }));
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("tva-clerk-placeholder"));
+  for (let line = 0; line < 10; line += 1) await advanceDialogue(page);
   await page.locator('[data-dialogue-choice="accept-assignment"]').click();
   await page.locator('[data-dialogue-choice="dispatch-later"]').click();
 
@@ -677,8 +762,8 @@ test("reported relics unlock each later TVA coordinate in campaign order", async
     if (index < nextRoutes.length) {
       await (await advanceDialogueToChoice(page, "dispatch-ready")).click();
       await expect.poll(() => snapshot(page).then((state) => state.quests.tvaPortalTarget)).toBe(nextRoutes[index]);
-      await page.locator("#dialogue-next-button").click();
-      await page.locator("#dialogue-next-button").click();
+      await advanceDialogue(page);
+      await advanceDialogue(page);
       await page.evaluate(() => window.__CROSSROADS_DEBUG__.triggerExit("tva-dispatch-portal"));
       await expect(page.locator("#zone-title-overlay")).toBeVisible();
       await expect.poll(() => snapshot(page).then((state) => state.portalTransition)).toBeNull();
@@ -748,8 +833,8 @@ test("David reports the Zone 1 relic and dispatches Zone 2 after a recovered bad
   await page.locator('[data-dialogue-choice="dispatch-ready"]').click();
   await expect.poll(() => snapshot(page).then((state) => state.quests.tvaPortalTarget)).toBe("archive");
   await expect.poll(() => snapshot(page).then((state) => state.quests.tvaReportedRelics)).toContain("red-compass");
-  await page.locator("#dialogue-next-button").click();
-  await page.locator("#dialogue-next-button").click();
+  await advanceDialogue(page);
+  await advanceDialogue(page);
 
   const dispatch = await page.evaluate(() => window.__CROSSROADS_DEBUG__.triggerExit("tva-dispatch-portal"));
   expect(dispatch.transitioned).toBe(true);
@@ -871,21 +956,21 @@ test("a bad ending is interrupted by the TVA employee and restores the checkpoin
   await page.evaluate(() => window.__CROSSROADS_DEBUG__.completeEndingCinematic());
   await expect.poll(() => snapshot(page).then((state) => state.badEndingRecovery?.phase)).toBe("linger");
 
-  await page.evaluate(() => window.__CROSSROADS_DEBUG__.setBadEndingRecoveryElapsed(4700));
+  await seekBadEndingRecovery(page, "complaintAt", 100);
   await expect(page.locator("#bad-ending-recovery-dialogue")).toBeVisible();
   await expect(page.locator("#bad-ending-recovery-text")).not.toBeEmpty();
   await expect.poll(() => snapshot(page).then((state) => state.badEndingRecovery?.phase)).toBe("complaint");
   await page.screenshot({ path: testInfo.outputPath("bad-ending-tva-recovery.png"), fullPage: true });
 
-  await page.evaluate(() => window.__CROSSROADS_DEBUG__.setBadEndingRecoveryElapsed(8600));
+  await seekBadEndingRecovery(page, "resetAt", 700);
   await expect.poll(() => snapshot(page).then((state) => state.badEndingRecovery?.phase)).toBe("reset");
   await page.screenshot({ path: testInfo.outputPath("bad-ending-m90-reset-action.png"), fullPage: true });
 
-  await page.evaluate(() => window.__CROSSROADS_DEBUG__.setBadEndingRecoveryElapsed(9400));
+  await seekBadEndingRecovery(page, "resetAt", 1500);
   await expect.poll(() => snapshot(page).then((state) => state.badEndingRecovery?.phase)).toBe("reset");
   await page.screenshot({ path: testInfo.outputPath("bad-ending-m90-reset-wave.png"), fullPage: true });
 
-  await page.evaluate(() => window.__CROSSROADS_DEBUG__.setBadEndingRecoveryElapsed(11000));
+  await seekBadEndingRecovery(page, "completeAt", 50);
   await expect.poll(() => snapshot(page).then((state) => state.mode)).toBe("playing");
   const restored = await snapshot(page);
   expect(restored.currentLevelId).toBe(checkpoint.respawnLevelId);
@@ -906,9 +991,9 @@ test("Zone 1 choices record a recoverable risk and only trigger its bad ending a
 
   await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("colonial-recruiter"));
   await expect(page.locator("#dialogue-speaker")).toHaveText("Lính tuần tra Pháp");
-  await page.locator("#dialogue-next-button").click();
-  await page.locator("#dialogue-next-button").click();
-  await expect(page.locator("#dialogue-choice-list")).toBeVisible();
+  await advanceDialogue(page);
+  await advanceDialogue(page);
+  await expect(page.locator("#dialogue-choice-list")).toBeVisible({ timeout: 10_000 });
   await expect(page.locator(".dialogue-choice-button")).toHaveCount(3);
   await page.screenshot({ path: testInfo.outputPath("colonial-recruiter-dialogue.png"), fullPage: true });
 
@@ -921,8 +1006,8 @@ test("Zone 1 choices record a recoverable risk and only trigger its bad ending a
   await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("le-paria-stack"));
   await page.locator('[data-dialogue-choice="cargo-route"]').click();
   await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("colonial-recruiter"));
-  await page.locator("#dialogue-next-button").click();
-  await page.locator("#dialogue-next-button").click();
+  await advanceDialogue(page);
+  await advanceDialogue(page);
   await page.locator('[data-dialogue-choice="accept"]').click();
   await expect(page.locator("#end-overlay")).toBeHidden();
   await expect.poll(() => snapshot(page).then((state) => state.narrative.endingRisks.zone1)).toBe(1);
@@ -943,7 +1028,7 @@ test("Zone 1 choices record a recoverable risk and only trigger its bad ending a
   await expect(page.locator("#end-overlay")).toHaveAttribute("data-cinematic", "complete");
   await page.screenshot({ path: testInfo.outputPath("zone1-lost-compass-ending.png"), fullPage: true });
 
-  await page.evaluate(() => window.__CROSSROADS_DEBUG__.setBadEndingRecoveryElapsed(11_000));
+  await seekBadEndingRecovery(page, "completeAt", 50);
   await expect.poll(() => snapshot(page).then((state) => state.mode)).toBe("playing");
   const retry = await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("red-compass-reward"));
   expect(retry.currentLevelId).toBe("village");
@@ -1078,10 +1163,10 @@ test("a Zone 2 verdict that reaches maximum corruption cannot award its relic be
   await page.screenshot({ path: testInfo.outputPath("zone2-max-corruption-relic-sealed.png"), fullPage: true });
 
   await page.evaluate(() => window.__CROSSROADS_DEBUG__.completeEndingCinematic());
-  await page.evaluate(() => window.__CROSSROADS_DEBUG__.setBadEndingRecoveryElapsed(9400));
+  await seekBadEndingRecovery(page, "resetAt", 700);
   await expect.poll(() => snapshot(page).then((state) => state.badEndingRecovery?.phase)).toBe("reset");
   await page.screenshot({ path: testInfo.outputPath("zone2-max-corruption-reset-wave.png"), fullPage: true });
-  await page.evaluate(() => window.__CROSSROADS_DEBUG__.setBadEndingRecoveryElapsed(11000));
+  await seekBadEndingRecovery(page, "completeAt", 50);
   await expect.poll(() => snapshot(page).then((state) => state.mode)).toBe("playing");
   await expect.poll(() => snapshot(page).then((state) => state.currentLevelId)).toBe("archive");
   await expect.poll(() => snapshot(page).then((state) => state.inventory)).not.toContain("unified-emblem");
@@ -1135,7 +1220,7 @@ for (const recoveryChoice of ["protect-moment", "repair-fragment"]) {
     await expect.poll(() => snapshot(page).then((state) => state.endingId)).toBe("zone3a-missed-moment");
 
     await page.evaluate(() => window.__CROSSROADS_DEBUG__.completeEndingCinematic());
-    await page.evaluate(() => window.__CROSSROADS_DEBUG__.setBadEndingRecoveryElapsed(11000));
+    await seekBadEndingRecovery(page, "completeAt", 50);
     await expect.poll(() => snapshot(page).then((state) => state.mode)).toBe("playing");
     await expect.poll(() => snapshot(page).then((state) => state.narrative.branchFlags["zone3a.badConfirmed"] ?? false)).toBe(false);
     await expect.poll(() => snapshot(page).then((state) => state.narrative.endingRisks.zone3a)).toBe(1);

@@ -30,6 +30,7 @@ const goodEnding = sound();
 const zone1LostCompass = sound();
 const rain = sound();
 const click = sound();
+const dialogueBlip = sound();
 const baton = sound();
 const state = { mode: "playing", currentLevelId: "hub", endingId: null, soundMuted: false };
 const settings = { musicVolume: 0.5, sfxVolume: 0.5, dialogueVolume: 0.25 };
@@ -55,6 +56,16 @@ assert.equal(zone.playCalls, 0, "Zone music is not mixed into the hub.");
 audio.playDialogueSound(click);
 assert.equal(click.playCalls, 1, "Dialogue feedback uses a separately mixed audio channel.");
 assert.equal(click.volume, 0.25, "Dialogue feedback respects the persistent dialogue-volume preference rather than the effects slider.");
+
+audio.playDialogueSound(dialogueBlip, { volume: 0.2, playbackRate: 1.07 });
+assert.equal(dialogueBlip.playCalls, 1, "Dialogue voice blips play through the dialogue channel.");
+assert.equal(dialogueBlip.volume, 0.05, "Dialogue voice blips combine their local mix with the dialogue-volume preference.");
+assert.equal(dialogueBlip.playbackRate, 1.07, "Dialogue voice blips preserve their authored pitch variation.");
+
+settings.dialogueVolume = 0;
+audio.playDialogueSound(dialogueBlip, { volume: 0.2 });
+assert.equal(dialogueBlip.playCalls, 1, "A zero dialogue-volume preference silences voice blips without relying on the effects slider.");
+settings.dialogueVolume = 0.25;
 
 state.currentLevelId = "village";
 audio.syncAmbienceAudio();

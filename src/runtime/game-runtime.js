@@ -231,6 +231,28 @@ const PLAYER_SPEED = GAMEPLAY_BALANCE.player.speed;
 const INTERACTION_RADIUS = GAMEPLAY_BALANCE.player.interactionRadius;
 const STORY_UNLOCK_TOAST_MS = 2800;
 const RELIC_BOOK_OPEN_DELAY_MS = 900;
+const TYPEWRITER_INTERVALS = Object.freeze({
+  dialogue: 32,
+  opening: 34,
+  endingRecovery: 40,
+});
+const TYPEWRITER_PUNCTUATION_PAUSES = Object.freeze({
+  short: 70,
+  dash: 90,
+  sentence: 130,
+  ellipsis: 160,
+  lineBreak: 100,
+});
+const DIALOGUE_VOICE_BY_SPEAKER = Object.freeze({
+  David: "dialogueMale",
+  "Nhà du hành": "dialogueMale",
+  "Người liên lạc": "dialogueMale",
+  "Người nông dân": "dialogueMale",
+  "Lính tuần tra Pháp": "dialogueMale",
+  "Cán bộ Mặt trận": "dialogueMale",
+  "Người đưa bản thảo": "dialogueMale",
+  "Nữ giao liên": "dialogueFemale",
+});
 const PLAYER_MAX_HEALTH = GAMEPLAY_BALANCE.player.maxHealth;
 const DEATH_RESPAWN_DELAY_MS = GAMEPLAY_BALANCE.player.deathRespawnDelayMs;
 const SA_DOA_MAX = GAMEPLAY_BALANCE.corruption.max;
@@ -363,6 +385,7 @@ const state = {
   activeSlide: null,
   activeDialogue: null,
   activeDialogueIndex: 0,
+  typewriter: null,
   openingStep: 0,
   activeStoryIds: [],
   activeStoryIndex: 0,
@@ -1832,6 +1855,8 @@ function loadUiSounds() {
   return {
     bookPageFlip: loadSound("assets/audio/book-page-flip.mp3", 0.42),
     pixelClick: loadSound("assets/audio/ui-pixel-click.mp3", 0.34),
+    dialogueMale: loadSound("assets/audio/sfx/sfx-blipmale.wav", 0.2),
+    dialogueFemale: loadSound("assets/audio/sfx/sfx-blipfemale.wav", 0.2),
     attack1: loadSound("assets/audio/sfx/player-attack1.mp3", 0.34),
     attack2: loadSound("assets/audio/sfx/player-attack2.mp3", 0.32),
     parry: loadSound("assets/audio/sfx/player-parry.mp3", 0.38),
@@ -1958,8 +1983,8 @@ function playUiSound(sound) {
   audioSystem.playUiSound(sound);
 }
 
-function playDialogueSound(sound) {
-  audioSystem.playDialogueSound(sound);
+function playDialogueSound(sound, options) {
+  audioSystem.playDialogueSound(sound, options);
 }
 
 function playCombatSfx(key, options) {
@@ -2909,10 +2934,19 @@ function createDebugSnapshot() {
       corruption: state.saDoa,
       endingId: state.hubEpilogueEndingId,
     }).epilogue,
+    typewriter: state.typewriter
+      ? {
+          kind: state.typewriter.kind,
+          visibleCount: state.typewriter.visibleCount,
+          totalCount: state.typewriter.text.length,
+          complete: state.typewriter.complete,
+        }
+      : null,
     badEndingRecovery: state.badEndingRecovery
       ? {
           phase: state.badEndingRecovery.phase,
           elapsed: Math.max(0, state.lastTimestamp - state.badEndingRecovery.startedAt),
+          timeline: getBadEndingRecoveryTimeline(),
         }
       : null,
     health: state.health,
@@ -3291,6 +3325,7 @@ function frame({ now: timestamp, deltaSeconds }) {
   }
 
   updatePortalTransition();
+  updateTypewriter();
 
   if (state.mode === "playing" && timestamp >= state.hitStopUntil) {
     recordRunStat(state.runStats, "activeMilliseconds", Math.round(deltaSeconds * 1000));
@@ -3455,7 +3490,182 @@ function scheduleRelicBookOpen(storyId) {
   }, RELIC_BOOK_OPEN_DELAY_MS);
 }
 
+function getDialogueVoiceKey(speaker) {
+  return DIALOGUE_VOICE_BY_SPEAKER[speaker] ?? null;
+}
+
+function clearTypewriter(kind = null) {
+  if (!state.typewriter || (kind && state.typewriter.kind !== kind)) {
+    return;
+  }
+
+  state.typewriter = null;
+}
+
+function ensureTypewriter(kind, text, speaker) {
+  const voiceKey = getDialogueVoiceKey(speaker);
+  const intervalMs = TYPEWRITER_INTERVALS[kind] ?? TYPEWRITER_INTERVALS.dialogue;
+  const current = state.typewriter;
+
+  if (
+    current &&
+    current.kind === kind &&
+    current.text === text &&
+    current.speaker === speaker
+  ) {
+    return current;
+  }
+
+  state.typewriter = {
+    kind,
+    text,
+    speaker,
+    voiceKey,
+    intervalMs,
+    startedAt: state.lastTimestamp,
+    nextCharacterAt: state.lastTimestamp,
+    visibleCount: 0,
+    lettersSinceBlip: 0,
+    blipGroup: 0,
+    complete: text.length === 0,
+  };
+  return state.typewriter;
+}
+
+function applyTypewriterText(typewriter) {
+  const visibleText = typewriter.text.slice(0, typewriter.visibleCount);
+
+  if (typewriter.kind === "dialogue") {
+    dialogueText.textContent = visibleText;
+  } else if (typewriter.kind === "opening") {
+    openingText.textContent = visibleText;
+  } else if (typewriter.kind === "endingRecovery") {
+    badEndingRecoveryText.textContent = visibleText;
+  }
+}
+
+function emitDialogueBlip(typewriter, characterIndex) {
+  const character = typewriter.text[characterIndex];
+  if (!character || !/[\p{L}\p{N}]/u.test(character)) {
+    return;
+  }
+
+  typewriter.lettersSinceBlip += 1;
+  const cadence = typewriter.blipGroup % 2 === 0 ? 2 : 3;
+  if (typewriter.lettersSinceBlip < cadence) {
+    return;
+  }
+
+  typewriter.lettersSinceBlip = 0;
+  typewriter.blipGroup += 1;
+  const pitchPattern = [0.97, 1.01, 0.985];
+
+  if (!typewriter.voiceKey) {
+    return;
+  }
+
+  playDialogueSound(uiSounds[typewriter.voiceKey], {
+    volume: typewriter.kind === "endingRecovery" ? 0.16 : 0.18,
+    playbackRate: pitchPattern[typewriter.blipGroup % pitchPattern.length],
+  });
+}
+
+function getTypewriterPunctuationPauseForText(text, characterIndex) {
+  const character = text[characterIndex];
+  const nextCharacter = text[characterIndex + 1];
+
+  if (character === "\n") {
+    return TYPEWRITER_PUNCTUATION_PAUSES.lineBreak;
+  }
+  if (character === "," || character === ";" || character === ":") {
+    return TYPEWRITER_PUNCTUATION_PAUSES.short;
+  }
+  if (character === "-" || character === "\u2013" || character === "\u2014") {
+    return TYPEWRITER_PUNCTUATION_PAUSES.dash;
+  }
+  if (character === "\u2026") {
+    return TYPEWRITER_PUNCTUATION_PAUSES.ellipsis;
+  }
+  if (character === "." && nextCharacter === ".") {
+    return 0;
+  }
+  if (character === "." && text[characterIndex - 1] === ".") {
+    return nextCharacter === "." ? 0 : TYPEWRITER_PUNCTUATION_PAUSES.ellipsis;
+  }
+  if (character === "." || character === "!" || character === "?") {
+    return TYPEWRITER_PUNCTUATION_PAUSES.sentence;
+  }
+
+  return 0;
+}
+
+function getTypewriterPunctuationPause(typewriter, characterIndex) {
+  return getTypewriterPunctuationPauseForText(typewriter.text, characterIndex);
+}
+
+function getTypewriterRevealDuration(kind, text) {
+  const intervalMs = TYPEWRITER_INTERVALS[kind] ?? TYPEWRITER_INTERVALS.dialogue;
+  return Array.from(text).reduce(
+    (duration, _character, index) =>
+      duration + intervalMs + getTypewriterPunctuationPauseForText(text, index),
+    0
+  );
+}
+
+function updateTypewriter() {
+  const typewriter = state.typewriter;
+  if (!typewriter || typewriter.complete) {
+    return;
+  }
+
+  let revealedThisFrame = 0;
+  const maxCatchUpCharacters = 5;
+
+  while (
+    typewriter.visibleCount < typewriter.text.length &&
+    state.lastTimestamp >= typewriter.nextCharacterAt &&
+    revealedThisFrame < maxCatchUpCharacters
+  ) {
+    const characterIndex = typewriter.visibleCount;
+    emitDialogueBlip(typewriter, characterIndex);
+    typewriter.visibleCount += 1;
+    typewriter.nextCharacterAt +=
+      typewriter.intervalMs + getTypewriterPunctuationPause(typewriter, characterIndex);
+    revealedThisFrame += 1;
+  }
+
+  if (
+    revealedThisFrame === maxCatchUpCharacters &&
+    state.lastTimestamp >= typewriter.nextCharacterAt
+  ) {
+    typewriter.nextCharacterAt = state.lastTimestamp + typewriter.intervalMs;
+  }
+
+  typewriter.complete = typewriter.visibleCount >= typewriter.text.length;
+  applyTypewriterText(typewriter);
+
+  if (typewriter.complete && typewriter.kind === "dialogue") {
+    renderDialogue();
+  }
+}
+
+function revealActiveTypewriter(kind) {
+  const typewriter = state.typewriter;
+  if (!typewriter || typewriter.kind !== kind || typewriter.complete) {
+    return false;
+  }
+
+  typewriter.visibleCount = typewriter.text.length;
+  typewriter.complete = true;
+  applyTypewriterText(typewriter);
+  if (kind === "dialogue") {
+    renderDialogue();
+  }
+  return true;
+}
+
 function hideDialogue() {
+  clearTypewriter("dialogue");
   dialogueBox.classList.add("hidden");
   dialogueBox.setAttribute("aria-hidden", "true");
   dialogueBox.classList.remove("has-portrait");
@@ -3467,6 +3677,7 @@ function hideDialogue() {
 }
 
 function hideOpeningIntro() {
+  clearTypewriter("opening");
   openingIntro.classList.add("hidden");
   openingIntro.setAttribute("aria-hidden", "true");
   delete openingIntro.dataset.stage;
@@ -3482,9 +3693,10 @@ function renderOpeningIntro() {
   openingCard.style.animation = "none";
   openingCard.offsetHeight;
   openingCard.style.animation = "";
+  const typewriter = ensureTypewriter("opening", entry.text, entry.speaker);
   openingSpeaker.textContent = entry.speaker;
   openingProgress.textContent = `${state.openingStep + 1} / ${OPENING_DIALOGUE.length}`;
-  openingText.textContent = entry.text;
+  applyTypewriterText(typewriter);
   openingIntro.dataset.stage = entry.stage ?? "orient";
   openingNextButton.textContent = state.openingStep === OPENING_DIALOGUE.length - 1
     ? "Đi vào văn phòng"
@@ -3700,9 +3912,10 @@ function renderDialogue() {
   const currentEntry = dialogue.lines[state.activeDialogueIndex];
   const currentLine = typeof currentEntry === "string" ? currentEntry : currentEntry.text;
   const currentSpeaker = typeof currentEntry === "string" ? dialogue.speaker : currentEntry.speaker ?? dialogue.speaker;
+  const typewriter = ensureTypewriter("dialogue", currentLine, currentSpeaker);
   const lastLineIndex = dialogue.lines.length - 1;
   const storySeen = state.unlockedStoryIds.has(dialogue.storyId);
-  const choices = state.activeDialogueIndex === lastLineIndex ? dialogue.choices ?? [] : [];
+  const choices = state.activeDialogueIndex === lastLineIndex && typewriter.complete ? dialogue.choices ?? [] : [];
   const hasChoices = choices.length > 0;
 
   dialogueBox.dataset.speaker = currentSpeaker === "David"
@@ -3713,7 +3926,7 @@ function renderDialogue() {
   dialogueBox.dataset.portraitSpeaker = currentSpeaker;
   dialogueSpeaker.textContent = currentSpeaker;
   dialogueProgress.textContent = `${state.activeDialogueIndex + 1} / ${dialogue.lines.length}`;
-  dialogueText.textContent = currentLine;
+  applyTypewriterText(typewriter);
   dialogueNextButton.textContent = state.activeDialogueIndex === lastLineIndex
     ? (dialogue.closeLabel ?? (dialogue.storyId ? (storySeen ? "Đóng" : "Mở khóa chuyện") : "Đóng"))
     : "Tiếp tục";
@@ -3812,7 +4025,12 @@ function createDialogueChoiceButton(choice, index) {
 function getPendingDialogueChoices() {
   const dialogue = state.activeDialogue;
 
-  if (!dialogue || state.activeDialogueIndex !== dialogue.lines.length - 1) {
+  const typewriter = state.typewriter;
+  if (
+    !dialogue ||
+    state.activeDialogueIndex !== dialogue.lines.length - 1 ||
+    (typewriter?.kind === "dialogue" && !typewriter.complete)
+  ) {
     return [];
   }
 
@@ -3893,6 +4111,10 @@ function advanceDialogue() {
   const dialogue = state.activeDialogue;
 
   if (!dialogue) {
+    return;
+  }
+
+  if (revealActiveTypewriter("dialogue")) {
     return;
   }
 
@@ -4782,6 +5004,10 @@ function advanceOpeningIntro() {
     return;
   }
 
+  if (revealActiveTypewriter("opening")) {
+    return;
+  }
+
   if (state.openingStep < OPENING_DIALOGUE.length - 1) {
     state.openingStep += 1;
     renderOpeningIntro();
@@ -5311,7 +5537,20 @@ function getBadEndingRecoveryTimeline() {
   const blackoutAt = BAD_ENDING_RECOVERY.lingerDuration;
   const walkAt = blackoutAt + BAD_ENDING_RECOVERY.blackoutDuration;
   const complaintAt = walkAt + BAD_ENDING_RECOVERY.walkDuration;
-  const resetAt = complaintAt + BAD_ENDING_RECOVERY.complaintDuration;
+  const lineDurations = BAD_ENDING_RECOVERY.lines.map((line) =>
+    getTypewriterRevealDuration("endingRecovery", line)
+  );
+  const lineEndOffsets = [];
+  const dialogueRevealDuration = lineDurations.reduce((elapsed, duration) => {
+    const nextElapsed = elapsed + duration;
+    lineEndOffsets.push(nextElapsed);
+    return nextElapsed;
+  }, 0);
+  const complaintDuration = Math.max(
+    BAD_ENDING_RECOVERY.complaintDuration,
+    dialogueRevealDuration - BAD_ENDING_RECOVERY.resetDuration
+  );
+  const resetAt = complaintAt + complaintDuration;
 
   return {
     blackoutAt,
@@ -5319,6 +5558,7 @@ function getBadEndingRecoveryTimeline() {
     complaintAt,
     resetAt,
     completeAt: resetAt + BAD_ENDING_RECOVERY.resetDuration,
+    lineEndOffsets,
   };
 }
 
@@ -5358,13 +5598,13 @@ function getBadEndingRecoveryFrame(recovery = state.badEndingRecovery) {
     );
   }
 
-  const lineIndex = Math.min(
-    BAD_ENDING_RECOVERY.lines.length - 1,
-    Math.floor(
-      (phase === "complaint" ? phaseProgress : phase === "reset" ? 1 : 0) *
-        BAD_ENDING_RECOVERY.lines.length
-    )
+  const dialogueElapsed = Math.max(0, elapsed - timeline.complaintAt);
+  const scheduledLineIndex = timeline.lineEndOffsets.findIndex(
+    (lineEndOffset) => dialogueElapsed < lineEndOffset
   );
+  const lineIndex = scheduledLineIndex === -1
+    ? BAD_ENDING_RECOVERY.lines.length - 1
+    : scheduledLineIndex;
 
   return {
     elapsed,
@@ -5377,6 +5617,7 @@ function getBadEndingRecoveryFrame(recovery = state.badEndingRecovery) {
 
 function syncBadEndingRecoveryUi(frame = null) {
   if (!state.badEndingRecovery || !frame) {
+    clearTypewriter("endingRecovery");
     delete endOverlay.dataset.recoveryPhase;
     badEndingRecoveryDialogue?.classList.add("hidden");
     badEndingRecoveryDialogue?.setAttribute("aria-hidden", "true");
@@ -5391,11 +5632,23 @@ function syncBadEndingRecoveryUi(frame = null) {
   badEndingRecoveryDialogue?.classList.toggle("hidden", !showDialogue);
   badEndingRecoveryDialogue?.setAttribute("aria-hidden", showDialogue ? "false" : "true");
 
+  if (!showDialogue) {
+    clearTypewriter("endingRecovery");
+  }
+
   if (badEndingRecoverySpeaker) {
     badEndingRecoverySpeaker.textContent = BAD_ENDING_RECOVERY.speaker;
   }
   if (badEndingRecoveryText) {
-    badEndingRecoveryText.textContent = BAD_ENDING_RECOVERY.lines[frame.lineIndex] ?? "";
+    const recoveryLine = BAD_ENDING_RECOVERY.lines[frame.lineIndex] ?? "";
+    const typewriter = showDialogue
+      ? ensureTypewriter("endingRecovery", recoveryLine, BAD_ENDING_RECOVERY.speaker)
+      : null;
+    if (typewriter) {
+      applyTypewriterText(typewriter);
+    } else {
+      badEndingRecoveryText.textContent = "";
+    }
   }
 }
 
