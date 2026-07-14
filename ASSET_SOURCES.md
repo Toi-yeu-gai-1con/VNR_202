@@ -2,6 +2,11 @@
 
 This project uses a small subset of free game assets:
 
+- Adventurer 2D Top-Down by Mattz Art: https://xzany.itch.io/top-down-adventurer-character
+  - License/terms: included in `assets/FREE_Adventurer 2D Pixel Art/License.txt`; free/commercial project use and modification are allowed, with no standalone asset redistribution.
+  - Used for the player idle/run/attack1/attack2 sheets and the player action strips in `assets/player/`.
+  - Attack sheets are copied from the supplied free pack. Dash, heal, hurt, and death strips are normalized from the user-provided preview GIFs (`fall.gif`, `ZQXPQf.gif`, and `TwpTcu.gif`) using the fixed 96x80 canvas and nearest-neighbour pixel sampling.
+
 - Kenney UI Pack RPG Expansion: https://kenney.nl/assets/ui-pack-rpg-expansion
   - License: Creative Commons CC0
   - Used for menu panels, dialog panels, buttons, and close icon assets.

@@ -2,6 +2,8 @@ export const PLAYER_FOOTPRINT = { width: 8, height: 6, offsetY: 7 };
 export const PLAYER_SPRITE = {
   frameWidth: 96,
   frameHeight: 80,
+  drawCanvasOffsetX: -49,
+  drawCanvasOffsetY: -48,
   cropX: 34,
   cropY: 24,
   cropWidth: 30,
@@ -13,6 +15,20 @@ export const PLAYER_SPRITE = {
   frameCount: 8,
   idleFrameDuration: 180,
 };
+export const PLAYER_ANIMATIONS = Object.freeze({
+  idle: Object.freeze({ frameCount: 8, frameDuration: 180, loop: true }),
+  run: Object.freeze({ frameCount: 8, frameDuration: 95, loop: true }),
+  attack1: Object.freeze({ frameCount: 8, frameDuration: 50, loop: false }),
+  attack2: Object.freeze({ frameCount: 8, frameDuration: 50, loop: false }),
+  heal: Object.freeze({ frameCount: 12, frameDuration: 90, loop: false }),
+  hurt: Object.freeze({ frameCount: 4, frameDuration: 90, loop: false }),
+  dash: Object.freeze({ frameCount: 7, frameDuration: 70, loop: false }),
+  death: Object.freeze({
+    frameCount: 7,
+    frameDurations: Object.freeze([90, 90, 90, 90, 90, 90, 600]),
+    loop: false,
+  }),
+});
 export const NPC_SPRITE = {
   frameWidth: 96,
   frameHeight: 96,

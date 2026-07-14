@@ -16,7 +16,7 @@ import { BOSS_DEFINITIONS, COMBAT_DENSITY, COMBAT_ROSTER } from "../data/combat-
 import { GAMEPLAY_BALANCE, getDifficultySettings } from "../data/gameplay-balance.js";
 import { AUDIO_TRACKS, getAudioSourceCandidates, resolveAudioSource } from "../data/media-sources.js";
 import { BUILD_VERSION, withAssetVersion } from "../data/build-info.js";
-import { PLAYER_FOOTPRINT, PLAYER_SPRITE, NPC_SPRITE, ENVIRONMENT_SPRITES, TILECRAFT_TERRAIN, PIXEL_CRAWLER_TERRAIN, VILLAGE_SKYLINE_Y, VILLAGE_PROP_SPRITES, PIXEL_CRAWLER_BUILDING_SPRITES, HUB_PORTAL_SPRITE, SWORD_SLASH_SPRITE, PIXEL_CRAWLER_TREE_SPRITE, KENNEY_ROGUELIKE_TILE, KENNEY_ROGUELIKE_SPRITES, PIXEL_CRAWLER_VEGETATION_SPRITES, PIXEL_CRAWLER_TOOL_CLUSTER_SPRITES, CAINOS_PROP_SPRITES, LIMEZU_INTERIOR_SPRITES, HOUSE_INTERIOR_A_SPRITES, MONSTER_SPRITE_CONFIG } from "../data/render-config.js";
+import { PLAYER_FOOTPRINT, PLAYER_SPRITE, PLAYER_ANIMATIONS, NPC_SPRITE, ENVIRONMENT_SPRITES, TILECRAFT_TERRAIN, PIXEL_CRAWLER_TERRAIN, VILLAGE_SKYLINE_Y, VILLAGE_PROP_SPRITES, PIXEL_CRAWLER_BUILDING_SPRITES, HUB_PORTAL_SPRITE, SWORD_SLASH_SPRITE, PIXEL_CRAWLER_TREE_SPRITE, KENNEY_ROGUELIKE_TILE, KENNEY_ROGUELIKE_SPRITES, PIXEL_CRAWLER_VEGETATION_SPRITES, PIXEL_CRAWLER_TOOL_CLUSTER_SPRITES, CAINOS_PROP_SPRITES, LIMEZU_INTERIOR_SPRITES, HOUSE_INTERIOR_A_SPRITES, MONSTER_SPRITE_CONFIG } from "../data/render-config.js";
 
 const canvas = document.getElementById("game-canvas");
 const ctx = canvas.getContext("2d");
@@ -232,6 +232,7 @@ let audioLoadWarningShown = false;
 let debugOverlay = null;
 let smoothedFps = 0;
 let lastDebugTextUpdateAt = 0;
+let pendingRespawnResolve = null;
 
 const state = {
   mode: "start",
@@ -270,6 +271,8 @@ const state = {
   enemyProjectiles: [],
   invulnerableUntil: 0,
   activeSkillEffect: null,
+  activePlayerAnimation: null,
+  pendingRespawn: null,
   endingId: null,
   endingSummary: "",
   endingCinematic: null,
@@ -895,7 +898,7 @@ window.addEventListener("keydown", (event) => {
     return;
   }
 
-  if (state.mode === "playing" && key === "shift") {
+  if (state.mode === "playing" && key === "l") {
     useDodge();
     return;
   }
@@ -972,6 +975,12 @@ function loadPlayerSprites() {
   return {
     run: loadDirectionalSprites("run"),
     idle: loadDirectionalSprites("idle"),
+    attack1: loadDirectionalSprites("attack1"),
+    attack2: loadDirectionalSprites("attack2"),
+    dash: loadDirectionalSprites("dash"),
+    heal: loadDirectionalSprites("heal"),
+    hurt: loadDirectionalSprites("hurt"),
+    death: loadDirectionalSprites("death"),
   };
 }
 
@@ -1719,17 +1728,85 @@ function drawArchiveFloor(room, beams) {
   ctx.fillRect(floor.x, floor.y, floor.width, 14);
 }
 
-function getPlayerSpriteSheet() {
-  const animationSet = player.isMoving ? playerSprites.run : playerSprites.idle;
-  return animationSet[player.direction] ?? animationSet.down;
-}
-
-function getPlayerFrameIndex() {
-  if (player.isMoving) {
-    return Math.floor(player.walkTime) % PLAYER_SPRITE.frameCount;
+function getPlayerAnimationDuration(animationName) {
+  const animation = PLAYER_ANIMATIONS[animationName] ?? PLAYER_ANIMATIONS.idle;
+  if (animation.frameDurations) {
+    return animation.frameDurations.reduce((total, duration) => total + duration, 0);
   }
 
-  return Math.floor(state.lastTimestamp / PLAYER_SPRITE.idleFrameDuration) % PLAYER_SPRITE.frameCount;
+  return animation.frameCount * animation.frameDuration;
+}
+
+function startPlayerAnimation(animationName, options = {}) {
+  const animation = PLAYER_ANIMATIONS[animationName];
+  if (!animation) {
+    return false;
+  }
+
+  if (state.activePlayerAnimation?.name === "death" && animationName !== "death") {
+    return false;
+  }
+
+  const startedAt = options.startedAt ?? state.lastTimestamp;
+  state.activePlayerAnimation = {
+    name: animationName,
+    direction: options.direction ?? player.direction,
+    startedAt,
+    endsAt: startedAt + getPlayerAnimationDuration(animationName),
+  };
+  return true;
+}
+
+function getPlayerAnimationFrame() {
+  const active = state.activePlayerAnimation;
+  const animationName = active?.name ?? (player.isMoving ? "run" : "idle");
+  const animation = PLAYER_ANIMATIONS[animationName] ?? PLAYER_ANIMATIONS.idle;
+  const direction = active?.direction ?? player.direction;
+
+  if (!active) {
+    const frameIndex = player.isMoving
+      ? Math.floor(player.walkTime) % animation.frameCount
+      : Math.floor(state.lastTimestamp / animation.frameDuration) % animation.frameCount;
+    return { animationName, animation, direction, frameIndex };
+  }
+
+  let elapsed = Math.max(0, state.lastTimestamp - active.startedAt);
+  if (animation.frameDurations) {
+    let frameIndex = animation.frameCount - 1;
+    let cursor = 0;
+    for (let index = 0; index < animation.frameDurations.length; index += 1) {
+      cursor += animation.frameDurations[index];
+      if (elapsed < cursor) {
+        frameIndex = index;
+        break;
+      }
+    }
+    return { animationName, animation, direction, frameIndex };
+  }
+
+  return {
+    animationName,
+    animation,
+    direction,
+    frameIndex: Math.min(animation.frameCount - 1, Math.floor(elapsed / animation.frameDuration)),
+  };
+}
+
+function getActivePlayerAnimationName() {
+  return getPlayerAnimationFrame().animationName;
+}
+
+function updatePlayerAnimation() {
+  const active = state.activePlayerAnimation;
+  if (!active || state.lastTimestamp < active.endsAt) {
+    return;
+  }
+
+  const completedName = active.name;
+  state.activePlayerAnimation = null;
+  if (completedName === "death" && state.pendingRespawn) {
+    completePlayerRespawn();
+  }
 }
 
 function createStoryRegistry(levelMap) {
@@ -1884,6 +1961,9 @@ function resetGameplayProgress() {
   state.enemyProjectiles = [];
   state.invulnerableUntil = 0;
   state.activeSkillEffect = null;
+  state.activePlayerAnimation = null;
+  state.pendingRespawn = null;
+  pendingRespawnResolve = null;
   state.endingId = null;
   state.endingSummary = "";
   state.endingCinematic = null;
@@ -1931,7 +2011,7 @@ function updateCombatStatus() {
   }
   const charged = state.strikeChargeStartedAt ? " • Đang tích lực" : "";
   const parrying = state.lastTimestamp < state.parryEndsAt ? " • ĐỠ ĐÒN!" : "";
-  combatStatus.textContent = `Thể lực ${Math.round(state.stamina)}/${STAMINA_MAX} • Shift ${dodgeReady ? "sẵn sàng" : "hồi"} • J ${strikeReady ? "sẵn sàng" : "hồi"} • K ${parryReady ? "phản đòn" : "hồi"}${charged}${parrying}`;
+  combatStatus.textContent = `Thể lực ${Math.round(state.stamina)}/${STAMINA_MAX} • L ${dodgeReady ? "sẵn sàng" : "hồi"} • J ${strikeReady ? "sẵn sàng" : "hồi"} • K ${parryReady ? "phản đòn" : "hồi"}${charged}${parrying}`;
 }
 
 function currentLevel() {
@@ -1960,6 +2040,7 @@ function createDebugSnapshot() {
       screenX: playerScreen.x,
       screenY: playerScreen.y,
       direction: player.direction,
+      animation: getActivePlayerAnimationName(),
     },
     camera: { ...camera },
     questSummary: getZoneProgressText(state.currentLevelId),
@@ -2104,8 +2185,8 @@ function installDebugTools() {
 
       return createDebugSnapshot();
     },
-    damagePlayer(amount = PLAYER_MAX_HEALTH, sourceName = "debug") {
-      damagePlayer(amount, sourceName);
+    async damagePlayer(amount = PLAYER_MAX_HEALTH, sourceName = "debug") {
+      await damagePlayer(amount, sourceName);
       return createDebugSnapshot();
     },
     saveNow() {
@@ -2121,6 +2202,10 @@ function installDebugTools() {
     },
     strike(charged = false) {
       useStrikeSkill(charged);
+      return createDebugSnapshot();
+    },
+    playPlayerAnimation(animationName) {
+      startPlayerAnimation(animationName);
       return createDebugSnapshot();
     },
   };
@@ -2211,6 +2296,7 @@ function frame({ now: timestamp, deltaSeconds }) {
   }
 
   if (state.mode === "playing") {
+    updatePlayerAnimation();
     updatePlayer(deltaSeconds);
     updateMonsters(deltaSeconds);
     updateEnemyProjectiles(deltaSeconds);
@@ -2828,6 +2914,7 @@ function loadLevel(levelId, spawnOverride, options = {}) {
   state.activeInteractionId = null;
   state.pendingEnding = false;
   state.enemyProjectiles = [];
+  state.activePlayerAnimation = null;
 
   const level = currentLevel();
   const spawn = cloneSpawnPoint(spawnOverride ?? level.spawn) ?? level.spawn;
@@ -3479,6 +3566,8 @@ function useStrikeSkill(isCharged = false) {
   state.comboStep = state.lastTimestamp <= state.comboExpiresAt ? (state.comboStep % 3) + 1 : 1;
   state.comboExpiresAt = state.lastTimestamp + 700;
   const strikeDamage = isCharged ? 4 : state.comboStep === 3 ? 2 : 1;
+  const strikeAnimation = isCharged ? "attack2" : state.comboStep % 2 === 0 ? "attack2" : "attack1";
+  startPlayerAnimation(strikeAnimation, { direction: player.direction });
   state.activeSkillEffect = {
     type: isCharged ? "chargedStrike" : "strike",
     direction: player.direction,
@@ -3540,6 +3629,7 @@ function useDodge() {
   resolveLevelCollisions("x", player.x - original.x);
   resolveLevelCollisions("y", player.y - original.y);
   state.activeSkillEffect = { type: "dodge", x: original.x, y: original.y, direction: player.direction, startedAt: state.lastTimestamp, endsAt: state.dodgeEndsAt };
+  startPlayerAnimation("dash", { direction: player.direction });
 }
 
 function useParrySkill() {
@@ -3752,7 +3842,11 @@ function updateWorldDrops() {
     }
     if (Math.hypot(player.x - drop.x, player.y - drop.y) < 20) {
       if (drop.type === "health") {
+        const previousHealth = state.health;
         state.health = Math.min(PLAYER_MAX_HEALTH, state.health + GAMEPLAY_BALANCE.drops.healthAmount);
+        if (state.health > previousHealth) {
+          startPlayerAnimation("heal", { direction: player.direction });
+        }
       } else {
         state.stamina = Math.min(STAMINA_MAX, state.stamina + GAMEPLAY_BALANCE.drops.staminaAmount);
       }
@@ -3831,11 +3925,11 @@ function damageMonster(monster, amount, effects = {}) {
 
 function damagePlayer(amount, sourceName = "bóng tối", sourceMonster = null) {
   if (resolveParry(sourceName, sourceMonster)) {
-    return;
+    return Promise.resolve();
   }
 
   if (state.lastTimestamp < state.invulnerableUntil) {
-    return;
+    return Promise.resolve();
   }
 
   state.invulnerableUntil = state.lastTimestamp + 820;
@@ -3846,17 +3940,20 @@ function damagePlayer(amount, sourceName = "bóng tối", sourceMonster = null) 
   updateProgressHud();
 
   if (state.health > 0) {
+    startPlayerAnimation("hurt", { direction: player.direction });
     showStoryToast(`${sourceName} gây ${amount} sát thương.`);
-    return;
+    return Promise.resolve();
   }
 
-  state.health = PLAYER_MAX_HEALTH;
   state.activeSkillEffect = null;
-  state.invulnerableUntil = state.lastTimestamp + RESPAWN_INVULNERABILITY_MS;
 
   const respawnLevelId = state.respawnLevelId ?? state.currentLevelId;
   const respawnLevel = levels[respawnLevelId] ?? currentLevel();
   const respawnSpawn = cloneSpawnPoint(state.respawnSpawn ?? respawnLevel.spawn);
+  state.pendingRespawn = { levelId: respawnLevelId, spawn: respawnSpawn };
+  state.invulnerableUntil = state.lastTimestamp + getPlayerAnimationDuration("death") + RESPAWN_INVULNERABILITY_MS;
+  clearPressedKeys();
+  startPlayerAnimation("death", { direction: player.direction });
 
   adjustSaDoa(
     DEATH_SA_DOA_PENALTY,
@@ -3864,14 +3961,41 @@ function damagePlayer(amount, sourceName = "bóng tối", sourceMonster = null) 
   );
 
   if (state.mode === "ending") {
+    state.health = PLAYER_MAX_HEALTH;
+    state.pendingRespawn = null;
+    state.activePlayerAnimation = null;
+    return Promise.resolve();
+  }
+
+  return new Promise((resolve) => {
+    pendingRespawnResolve = resolve;
+  });
+}
+
+function completePlayerRespawn() {
+  const pendingRespawn = state.pendingRespawn;
+  if (!pendingRespawn) {
     return;
   }
 
-  resetLevelMonstersForRespawn(respawnLevelId);
-  loadLevel(respawnLevelId, respawnSpawn, { updateRespawnCheckpoint: false });
+  state.health = PLAYER_MAX_HEALTH;
+  state.pendingRespawn = null;
+  state.invulnerableUntil = state.lastTimestamp + RESPAWN_INVULNERABILITY_MS;
+  resetLevelMonstersForRespawn(pendingRespawn.levelId);
+  loadLevel(pendingRespawn.levelId, pendingRespawn.spawn, { updateRespawnCheckpoint: false });
+  const resolve = pendingRespawnResolve;
+  pendingRespawnResolve = null;
+  resolve?.();
 }
 
 function updatePlayer(deltaSeconds) {
+  if (state.pendingRespawn) {
+    player.isMoving = false;
+    player.walkTime = 0;
+    updateCamera();
+    return;
+  }
+
   if (state.lastTimestamp >= state.dodgeEndsAt) {
     state.stamina = Math.min(STAMINA_MAX, state.stamina + STAMINA_REGEN_PER_SECOND * deltaSeconds);
   }
@@ -4082,9 +4206,9 @@ function updateContextualControls(context) {
 
   const hints = {
     interact: "E tương tác • J tấn công • K phản đòn • B sách",
-    combat: "J tấn công/tích lực • Shift né • K phản đòn",
+    combat: "J tấn công/tích lực • L lướt • K phản đòn",
     exit: "Theo lối ra • E khi có điểm tương tác",
-    move: "WASD di chuyển • Shift né • J tấn công • K phản đòn • B sách",
+    move: "WASD di chuyển • L lướt • J tấn công • K phản đòn • B sách",
   };
   actionHint.textContent = hints[context] ?? hints.move;
 }
@@ -8251,7 +8375,7 @@ function drawInteractionMarker(item) {
 }
 
 function getPlayerAttackProgress() {
-  if (state.activeSkillEffect?.type !== "strike") {
+  if (state.activeSkillEffect?.type !== "strike" && state.activeSkillEffect?.type !== "chargedStrike") {
     return 0;
   }
 
@@ -8271,28 +8395,30 @@ function drawPlayer() {
   const attackProgress = getPlayerAttackProgress();
 
   if (attackProgress > 0) {
-    const attackOffset = getAttackLungeOffset(player.direction, attackProgress);
+    const attackDirection = state.activePlayerAnimation?.direction ?? player.direction;
+    const attackOffset = getAttackLungeOffset(attackDirection, attackProgress);
     const squash = Math.sin(attackProgress * Math.PI);
     ctx.translate(Math.round(attackOffset.x), Math.round(attackOffset.y));
     ctx.scale(1 + squash * 0.04, 1 - squash * 0.03);
   }
 
-  const sheet = getPlayerSpriteSheet();
+  const animationFrame = getPlayerAnimationFrame();
+  const sheet = playerSprites[animationFrame.animationName]?.[animationFrame.direction]
+    ?? playerSprites[animationFrame.animationName]?.down;
 
-  if (sheet.complete && sheet.naturalWidth > 0) {
-    const frameIndex = getPlayerFrameIndex();
-    const sourceX = frameIndex * PLAYER_SPRITE.frameWidth + PLAYER_SPRITE.cropX;
+  if (sheet?.complete && sheet.naturalWidth > 0) {
+    const sourceX = animationFrame.frameIndex * PLAYER_SPRITE.frameWidth;
 
     ctx.drawImage(
       sheet,
       sourceX,
-      PLAYER_SPRITE.cropY,
-      PLAYER_SPRITE.cropWidth,
-      PLAYER_SPRITE.cropHeight,
-      PLAYER_SPRITE.drawOffsetX,
-      PLAYER_SPRITE.drawOffsetY,
-      PLAYER_SPRITE.drawWidth,
-      PLAYER_SPRITE.drawHeight
+      0,
+      PLAYER_SPRITE.frameWidth,
+      PLAYER_SPRITE.frameHeight,
+      PLAYER_SPRITE.drawCanvasOffsetX,
+      PLAYER_SPRITE.drawCanvasOffsetY,
+      PLAYER_SPRITE.frameWidth,
+      PLAYER_SPRITE.frameHeight
     );
     ctx.restore();
     return;
@@ -8451,36 +8577,24 @@ function drawSwordSlashSprite(progress, scale, alpha) {
 }
 
 function drawSkillEffect() {
-  if (!state.activeSkillEffect) {
+  const effect = state.activeSkillEffect;
+  if (!effect || (effect.type !== "parry" && effect.type !== "parryHit")) {
     return;
   }
 
   ctx.save();
   applyCameraTransform();
 
-  if (state.activeSkillEffect.type === "strike" || state.activeSkillEffect.type === "chargedStrike") {
-    const { x, y, direction } = state.activeSkillEffect;
-    const progress = getTimedProgress(state.activeSkillEffect.startedAt, state.activeSkillEffect.endsAt);
-    drawAttackSlash(x, y, direction, progress, { scale: state.activeSkillEffect.type === "chargedStrike" ? 1.28 : 0.84, spriteStyle: "sword" });
-  } else if (state.activeSkillEffect.type === "dodge") {
-    const progress = getTimedProgress(state.activeSkillEffect.startedAt, state.activeSkillEffect.endsAt);
-    ctx.strokeStyle = "rgba(183, 229, 255, 0.82)";
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.arc(state.activeSkillEffect.x, state.activeSkillEffect.y, 14 + progress * 20, 0, Math.PI * 2);
-    ctx.stroke();
-  } else if (state.activeSkillEffect.type === "parry" || state.activeSkillEffect.type === "parryHit") {
-    const progress = getTimedProgress(state.activeSkillEffect.startedAt, state.activeSkillEffect.endsAt);
-    const success = state.activeSkillEffect.type === "parryHit";
-    const radius = success ? 18 + progress * 32 : 18 + Math.sin(state.lastTimestamp * 0.05) * 3;
-    ctx.beginPath();
-    ctx.arc(state.activeSkillEffect.x, state.activeSkillEffect.y, radius, 0, Math.PI * 2);
-    ctx.fillStyle = success ? "rgba(255, 211, 102, 0.24)" : "rgba(146, 208, 255, 0.18)";
-    ctx.fill();
-    ctx.strokeStyle = success ? "rgba(255, 240, 179, 0.92)" : "rgba(194, 235, 255, 0.9)";
-    ctx.lineWidth = 3;
-    ctx.stroke();
-  }
+  const progress = getTimedProgress(effect.startedAt, effect.endsAt);
+  const success = effect.type === "parryHit";
+  const radius = success ? 18 + progress * 32 : 18 + Math.sin(state.lastTimestamp * 0.05) * 3;
+  ctx.beginPath();
+  ctx.arc(effect.x, effect.y, radius, 0, Math.PI * 2);
+  ctx.fillStyle = success ? "rgba(255, 211, 102, 0.24)" : "rgba(146, 208, 255, 0.18)";
+  ctx.fill();
+  ctx.strokeStyle = success ? "rgba(255, 240, 179, 0.92)" : "rgba(194, 235, 255, 0.9)";
+  ctx.lineWidth = 3;
+  ctx.stroke();
 
   ctx.restore();
 }
