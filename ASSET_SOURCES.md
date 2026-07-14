@@ -43,6 +43,9 @@ This project uses a small subset of free game assets:
 - Original player skill SFX
   - Generated locally by `scripts/generate-skill-sfx.py` with deterministic oscillator/noise synthesis; no external samples or third-party recordings.
   - Used for dash, heal, hurt, and death feedback in `assets/audio/sfx/`.
+- Dialogue voice blips
+  - `sfx-blipmale.wav` and `sfx-blipfemale.wav`: provided by the project owner for per-character dialogue typewriter feedback.
+  - Used for the male/female dialogue blips in `assets/audio/sfx/`.
 - Pixabay sword combat SFX
   - `player-attack1.mp3`: “Sword sound 2” by Merrick079 (Freesound community), https://pixabay.com/sound-effects/sword-sound-2-36274/
   - `player-attack2.mp3`: “Sword Slash 01” by u_xjrmmgxfru, https://pixabay.com/sound-effects/sword-slash-01-266296/

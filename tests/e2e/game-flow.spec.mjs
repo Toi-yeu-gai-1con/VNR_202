@@ -18,6 +18,29 @@ async function snapshot(page) {
   return page.evaluate(() => window.__CROSSROADS_DEBUG__.getSnapshot());
 }
 
+async function waitForDialogueComplete(page) {
+  await expect.poll(() => page.evaluate(() => {
+    const typewriter = window.__CROSSROADS_DEBUG__.getSnapshot().typewriter;
+    return !typewriter || typewriter.kind !== "dialogue" || typewriter.complete;
+  })).toBe(true);
+}
+
+async function finishDialogueLine(page) {
+  const isTyping = await page.evaluate(() => {
+    const typewriter = window.__CROSSROADS_DEBUG__.getSnapshot().typewriter;
+    return typewriter?.kind === "dialogue" && !typewriter.complete;
+  });
+  if (isTyping) {
+    await page.locator("#dialogue-next-button").click();
+  }
+  await waitForDialogueComplete(page);
+}
+
+async function advanceDialogue(page) {
+  await finishDialogueLine(page);
+  await page.locator("#dialogue-next-button").click();
+}
+
 test("F3 reveals debug geometry only in an explicit debug session", async ({ page }, testInfo) => {
   await page.goto("/");
   await expect(page.locator("#start-screen")).toBeVisible();
@@ -216,32 +239,35 @@ test("the employee forces the TVA briefing choice and opens the first dispatch p
   await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("tva-clerk-placeholder"));
   await expect(page.locator("#dialogue-speaker")).toHaveText("David");
   await expect(page.locator("#dialogue-box")).toHaveAttribute("data-speaker", "david");
+  await finishDialogueLine(page);
   await expect(page.locator("#dialogue-text")).toContainText("intake list");
-  await page.locator("#dialogue-next-button").click();
+  await advanceDialogue(page);
   await expect(page.locator("#dialogue-speaker")).toHaveText("Nhà du hành");
   await expect(page.locator("#dialogue-box")).toHaveAttribute("data-speaker", "traveler");
+  await finishDialogueLine(page);
   await expect(page.locator("#dialogue-text")).toContainText("Đây là đâu");
   for (let line = 0; line < 9; line += 1) {
-    await page.locator("#dialogue-next-button").click();
+    await advanceDialogue(page);
   }
-  await expect(page.locator("#dialogue-choice-list")).toBeVisible();
+  await expect(page.locator("#dialogue-choice-list")).toBeVisible({ timeout: 10_000 });
   await expect(page.locator(".dialogue-choice-button")).toHaveCount(2);
   await page.screenshot({ path: testInfo.outputPath("tva-office-briefing.png"), fullPage: true });
 
   await page.locator('[data-dialogue-choice="refuse-assignment"]').click();
   await expect(page.locator("#dialogue-speaker")).toHaveText("Nhà du hành");
   for (let line = 0; line < 3; line += 1) {
-    await page.locator("#dialogue-next-button").click();
+    await advanceDialogue(page);
   }
   await page.locator('[data-dialogue-choice="forced-accept-assignment"]').click();
   await expect.poll(() => snapshot(page).then((state) => state.quests.tvaBriefingAccepted)).toBe(true);
 
   await page.locator('[data-dialogue-choice="dispatch-ready"]').click();
   await expect.poll(() => snapshot(page).then((state) => state.quests.tvaPortalTarget)).toBe("village");
+  await finishDialogueLine(page);
   await expect(page.locator("#dialogue-text")).toContainText("tọa độ không-thời gian");
   await page.screenshot({ path: testInfo.outputPath("tva-dispatch-portal.png"), fullPage: true });
-  await page.locator("#dialogue-next-button").click();
-  await page.locator("#dialogue-next-button").click();
+  await advanceDialogue(page);
+  await advanceDialogue(page);
   await expect.poll(() => snapshot(page).then((state) => state.mode)).toBe("playing");
 
   const result = await page.evaluate(() => window.__CROSSROADS_DEBUG__.triggerExit("tva-dispatch-portal"));
@@ -262,11 +288,41 @@ test("the employee forces the TVA briefing choice and opens the first dispatch p
   expect(openReturn.currentLevelId).toBe("hub");
 });
 
+test("dialogue types one character at a time with speaker voice blips", async ({ page }, testInfo) => {
+  await page.addInitScript(() => {
+    window.__playedDialogueSources = [];
+    const originalPlay = HTMLMediaElement.prototype.play;
+    HTMLMediaElement.prototype.play = function trackedDialoguePlay(...args) {
+      const source = this.currentSrc || this.src;
+      if (source.includes("sfx-blip")) {
+        window.__playedDialogueSources.push(source);
+      }
+      return originalPlay.apply(this, args);
+    };
+  });
+
+  await openDebugSession(page);
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("hub", { x: 480, y: 260, direction: "up" }));
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("tva-clerk-placeholder"));
+  await page.waitForTimeout(80);
+
+  const partial = await snapshot(page);
+  expect(partial.typewriter.kind).toBe("dialogue");
+  expect(partial.typewriter.visibleCount).toBeGreaterThan(0);
+  expect(partial.typewriter.visibleCount).toBeLessThan(partial.typewriter.totalCount);
+  await page.screenshot({ path: testInfo.outputPath("dialogue-typewriter-partial.png"), fullPage: true });
+  await expect.poll(() => page.evaluate(() => window.__playedDialogueSources.some((source) => source.includes("sfx-blipmale")))).toBe(true);
+
+  await waitForDialogueComplete(page);
+  await advanceDialogue(page);
+  await expect.poll(() => page.evaluate(() => window.__playedDialogueSources.some((source) => source.includes("sfx-blipfemale")))).toBe(true);
+});
+
 test("reported relics unlock each later TVA coordinate in campaign order", async ({ page }) => {
   await openDebugSession(page);
   await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("hub", { x: 480, y: 260, direction: "up" }));
   await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("tva-clerk-placeholder"));
-  for (let line = 0; line < 10; line += 1) await page.locator("#dialogue-next-button").click();
+  for (let line = 0; line < 10; line += 1) await advanceDialogue(page);
   await page.locator('[data-dialogue-choice="accept-assignment"]').click();
   await page.locator('[data-dialogue-choice="dispatch-later"]').click();
 
@@ -279,13 +335,13 @@ test("reported relics unlock each later TVA coordinate in campaign order", async
     await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("tva-clerk-placeholder"));
 
     const lineCount = index === routes.length - 1 ? 5 : 4;
-    for (let line = 1; line < lineCount; line += 1) await page.locator("#dialogue-next-button").click();
+    for (let line = 1; line < lineCount; line += 1) await advanceDialogue(page);
 
     if (index < nextRoutes.length) {
       await page.locator('[data-dialogue-choice="dispatch-ready"]').click();
       await expect.poll(() => snapshot(page).then((state) => state.quests.tvaPortalTarget)).toBe(nextRoutes[index]);
-      await page.locator("#dialogue-next-button").click();
-      await page.locator("#dialogue-next-button").click();
+      await advanceDialogue(page);
+      await advanceDialogue(page);
       await page.evaluate(() => window.__CROSSROADS_DEBUG__.triggerExit("tva-dispatch-portal"));
       continue;
     }
@@ -344,11 +400,11 @@ test("a bad ending is interrupted by the TVA employee and restores the checkpoin
   await expect.poll(() => snapshot(page).then((state) => state.badEndingRecovery?.phase)).toBe("complaint");
   await page.screenshot({ path: testInfo.outputPath("bad-ending-tva-recovery.png"), fullPage: true });
 
-  await page.evaluate(() => window.__CROSSROADS_DEBUG__.setBadEndingRecoveryElapsed(8600));
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.setBadEndingRecoveryElapsed(11400));
   await expect.poll(() => snapshot(page).then((state) => state.badEndingRecovery?.phase)).toBe("reset");
   await page.screenshot({ path: testInfo.outputPath("bad-ending-m90-reset-action.png"), fullPage: true });
 
-  await page.evaluate(() => window.__CROSSROADS_DEBUG__.setBadEndingRecoveryElapsed(9400));
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.setBadEndingRecoveryElapsed(12200));
   await expect.poll(() => snapshot(page).then((state) => state.badEndingRecovery?.phase)).toBe("reset");
   await page.screenshot({ path: testInfo.outputPath("bad-ending-m90-reset-wave.png"), fullPage: true });
 
@@ -371,9 +427,9 @@ test("Zone 1 soldier offers a persistent choice and betrayal triggers the bad en
 
   await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("colonial-recruiter"));
   await expect(page.locator("#dialogue-speaker")).toHaveText("Lính tuần tra Pháp");
-  await page.locator("#dialogue-next-button").click();
-  await page.locator("#dialogue-next-button").click();
-  await expect(page.locator("#dialogue-choice-list")).toBeVisible();
+  await advanceDialogue(page);
+  await advanceDialogue(page);
+  await expect(page.locator("#dialogue-choice-list")).toBeVisible({ timeout: 10_000 });
   await expect(page.locator(".dialogue-choice-button")).toHaveCount(2);
   await page.screenshot({ path: testInfo.outputPath("colonial-recruiter-dialogue.png"), fullPage: true });
 
@@ -385,8 +441,8 @@ test("Zone 1 soldier offers a persistent choice and betrayal triggers the bad en
   await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("village", { x: 832, y: 244, direction: "up" }));
   await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("le-paria-stack"));
   await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("colonial-recruiter"));
-  await page.locator("#dialogue-next-button").click();
-  await page.locator("#dialogue-next-button").click();
+  await advanceDialogue(page);
+  await advanceDialogue(page);
   await page.locator('[data-dialogue-choice="accept"]').click();
   await expect(page.locator("#end-overlay")).toBeVisible();
   await expect.poll(() => snapshot(page).then((state) => state.endingId)).toBe("bad");
