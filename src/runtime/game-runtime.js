@@ -1077,7 +1077,7 @@ function loadEnvironmentSprites() {
       revolutionSquare: loadSprite("assets/environment/generated-worlds/revolution-square-hero.webp"),
       factoryValley: loadSprite("assets/environment/generated-worlds/factory-valley-hero.webp"),
       historyHub: loadSprite("assets/environment/generated-worlds/history-hub-hero.webp"),
-      tvaOffice: loadSprite("assets/time-archive/environment/chronicle-office.webp"),
+      tvaOffice: loadSprite("assets/environment/generated-worlds/tva-office-hub.webp"),
     },
     generatedObjects: {
       finalHistoryGate: loadSprite("assets/environment/generated-objects/final-history-gate.png"),
@@ -1393,7 +1393,7 @@ function loadNpcSpriteSet(id) {
 }
 
 function loadTvaEmployeeSpriteSet() {
-  const basePath = "assets/time-archive/characters/agent-m90";
+  const basePath = "assets/npcs/tva-employee";
   return {
     down: loadSprite(`${basePath}/down.png`),
     downleft: loadSprite(`${basePath}/downleft.png`),

@@ -11,7 +11,7 @@ export function getAssetGroupForSource(src) {
     return "ending";
   }
 
-  if (/hub-unexplored|history-hub|time-archive|final-history-gate|historyDoor|portal-spinning/i.test(src)) {
+  if (/hub-unexplored|history-hub|time-archive|tva-office|tva-employee|final-history-gate|historyDoor|portal-spinning/i.test(src)) {
     return "hub";
   }
 

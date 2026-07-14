@@ -47,19 +47,19 @@ export const NPC_SPRITE = {
   walkFrameDuration: 150,
 };
 export const TVA_EMPLOYEE_SPRITE = {
-  frameWidth: 96,
-  frameHeight: 96,
-  cropX: 30,
-  cropY: 18,
-  cropWidth: 36,
-  cropHeight: 62,
-  drawWidth: 24,
-  drawHeight: 40,
+  frameWidth: 192,
+  frameHeight: 384,
+  cropX: 0,
+  cropY: 0,
+  cropWidth: 192,
+  cropHeight: 384,
+  drawWidth: 26,
+  drawHeight: 46,
   idleFrames: 4,
   walkFrames: 8,
   idleFrameDuration: 240,
   walkFrameDuration: 150,
-  smoothing: false,
+  smoothing: true,
 };
 export const M90_RESET_ANIMATION = Object.freeze({
   frameWidth: 96,

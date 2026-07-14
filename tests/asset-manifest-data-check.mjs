@@ -5,6 +5,8 @@ assert.equal(LEVEL_ASSET_GROUPS.hub, "hub", "The hub has a stable asset group.")
 assert.equal(LEVEL_ASSET_GROUPS.village, "zone1", "Zone 1 has a stable asset group.");
 assert.equal(getAssetGroupForSource("assets/time-archive/environment/chronicle-office.webp"), "hub", "The Chronicle Office backdrop loads with the hub.");
 assert.equal(getAssetGroupForSource("assets/time-archive/characters/agent-m90/down.png"), "hub", "M-90 loads with the hub.");
+assert.equal(getAssetGroupForSource("assets/environment/generated-worlds/tva-office-hub.webp"), "hub", "The restored TVA office loads with the hub.");
+assert.equal(getAssetGroupForSource("assets/npcs/tva-employee/down.png"), "hub", "High-resolution David loads with the hub.");
 assert.equal(getAssetGroupForSource("assets/environment/archive-cave.png"), "zone2", "Archive art is grouped with Zone 2.");
 assert.equal(getAssetGroupForSource("assets/environment/generated-objects/bureaucracy-wall.png"), "zone4", "Zone 4 bureaucracy barriers are ready before the scene renders.");
 assert.equal(getAssetGroupForSource("assets/audio/music/good-ending.mp3"), "ending", "Ending music is grouped with the ending scene.");

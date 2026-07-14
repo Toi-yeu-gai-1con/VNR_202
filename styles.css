@@ -708,7 +708,7 @@ button {
   padding: clamp(12px, 2.2vh, 20px);
   overflow: hidden;
   background-color: #211b15;
-  background-image: url("assets/time-archive/environment/chronicle-office.webp");
+  background-image: url("assets/environment/generated-worlds/tva-office-hub.webp");
   background-position: center 54%;
   background-repeat: no-repeat;
   background-size: cover;
@@ -966,7 +966,7 @@ button {
   overflow: hidden;
   padding: clamp(52px, 9vh, 82px) clamp(12px, 2vw, 24px);
   background-color: #211b15;
-  background-image: url("assets/time-archive/environment/chronicle-office.webp");
+  background-image: url("assets/environment/generated-worlds/tva-office-hub.webp");
   background-position: center 54%;
   background-repeat: no-repeat;
   background-size: cover;

@@ -11,8 +11,8 @@ import {
 
 assert.equal(PLAYER_SPRITE.frameCount, 8, "Player animation config stays data-owned.");
 assert.equal(NPC_SPRITE.walkFrames, 8, "NPC animation config stays data-owned.");
-assert.equal(TVA_EMPLOYEE_SPRITE.frameHeight, 96, "The TVA employee role uses M-90's normalized source atlas.");
-assert.equal(TVA_EMPLOYEE_SPRITE.smoothing, false, "M-90 keeps crisp nearest-neighbor pixel rendering.");
+assert.equal(TVA_EMPLOYEE_SPRITE.frameHeight, 384, "David uses the high-resolution TVA source atlas.");
+assert.equal(TVA_EMPLOYEE_SPRITE.smoothing, true, "David uses high-quality downsampling at runtime scale.");
 assert.equal(M90_RESET_ANIMATION.frameDurations.length, 8, "M-90 keeps all eight authored reset beats.");
 assert.equal(M90_RESET_ANIMATION.effectFrameCount, 8, "The reset wave keeps its complete reconstruction loop.");
 assert.equal(HUB_PORTAL_SPRITE.frameCount, 8, "Portal animation config stays data-owned.");
