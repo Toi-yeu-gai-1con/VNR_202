@@ -1,15 +1,18 @@
 export const TVA_EMPLOYEE_DIALOGUES = {
   introduction: {
-    speaker: "Nhân viên TVA",
+    speaker: "David",
     lines: [
-      { speaker: "Nhân viên TVA", text: "Bảy chồng biên bản, ba dòng thời gian lệch chuẩn... tuyệt thật, lại OT đến hết kỷ nguyên." },
-      { speaker: "Nhân viên TVA", text: "Khoan đã. Cậu là ai? Mã nhân sự, số hồ sơ biến thể, phòng ban phụ trách?" },
-      { speaker: "Nhà du hành", text: "Tôi còn chẳng biết mình đang ở đâu. Tôi chỉ nhớ mặt đất biến mất rồi rơi thẳng xuống đây." },
-      { speaker: "Nhân viên TVA", text: "Thôi, bỏ qua phần danh tính. Cậu còn nguyên tay chân, đi lại được và vừa sống sót qua một khe nứt thời gian. Thế là đủ hữu dụng rồi." },
-      { speaker: "Nhà du hành", text: "Hữu dụng? Ít nhất hãy nói cho tôi biết đây là đâu đã." },
-      { speaker: "Nhân viên TVA", text: "Đây là Cơ quan Phương sai Thời gian, gọi tắt là TVA. Chúng tôi theo dõi những nhánh lịch sử đi chệch khỏi quỹ đạo." },
-      { speaker: "Nhà du hành", text: "TVA? Vậy những dãy bàn vô tận và đống giấy kia dùng để kiểm soát thời gian sao?" },
-      { speaker: "Nhân viên TVA", text: "Mỗi tờ giấy là một sự kiện. Và vì cậu đã rơi vào đúng ca trực của tôi, giúp tôi xử lý vài hồ sơ tồn đọng đi. Đổi lại, tôi sẽ tìm tọa độ đưa cậu về nhà." },
+      { speaker: "David", text: "Hold it. You're not on today's intake list. Name, home timeline, and variant file number?" },
+      { speaker: "Nhà du hành", text: "Khoan đã... anh đang nói gì vậy? Đây là đâu? Tôi vừa rơi xuyên qua sàn nhà hay sao?" },
+      { speaker: "David", text: "Vietnamese? Right. Give me a second." },
+      { speaker: "David", text: "Một giây. Tôi đang hiệu chỉnh bộ phiên dịch cá nhân sang tiếng Việt... Xong. Giờ cậu nghe rõ tôi chứ?" },
+      { speaker: "Nhà du hành", text: "Rõ rồi. Anh vừa đổi ngôn ngữ của chính mình à?" },
+      { speaker: "David", text: "Chính xác. Thiết bị này điều chỉnh ngôn ngữ đầu ra. Tôi là David, nhân viên phụ trách ca trực này." },
+      { speaker: "Nhà du hành", text: "Vậy đây là đâu, David?" },
+      { speaker: "David", text: "Đây là TVA. TVA là viết tắt của Time Variance Authority, tạm dịch là Cơ quan Quản lý Phương sai Thời gian." },
+      { speaker: "David", text: "Chúng tôi theo dõi những nhánh lịch sử đi chệch khỏi dòng thời gian được ghi nhận. Cậu vừa rơi vào đây qua một khe nứt không-thời gian trái phép." },
+      { speaker: "Nhà du hành", text: "Tôi không cố ý. Tôi chỉ muốn về nhà." },
+      { speaker: "David", text: "Tôi có thể dò tọa độ gốc của cậu, nhưng cú rơi đã làm nhiễu hồ sơ. Giúp tôi ổn định các nhánh lịch sử đang lệch; đủ dữ liệu, tôi sẽ mở đường đưa cậu về." },
     ],
     choices: [
       { id: "accept-assignment", label: "Được, tôi sẽ giúp" },
@@ -17,21 +20,21 @@ export const TVA_EMPLOYEE_DIALOGUES = {
     ],
   },
   refusal: {
-    speaker: "Nhân viên TVA",
+    speaker: "David",
     lines: [
       { speaker: "Nhà du hành", text: "Không. Tôi không biết anh là ai, cũng không định làm việc không công cho một văn phòng kỳ quặc." },
-      { speaker: "Nhân viên TVA", text: "Tùy cậu. Nhưng nếu không hợp tác, tôi sẽ không nhập tọa độ và cũng không chỉ cách về nhà." },
+      { speaker: "David", text: "Tùy cậu. Nhưng nếu không hợp tác, tôi sẽ không nhập tọa độ và cũng không chỉ cách về nhà." },
       { speaker: "Nhà du hành", text: "Nơi này không có cửa sổ, cũng chẳng có lối ra... Anh đang nói tôi không còn lựa chọn nào khác à?" },
-      { speaker: "Nhân viên TVA", text: "Trên giấy tờ thì cậu luôn có lựa chọn. Trên thực tế thì không." },
+      { speaker: "David", text: "Trên giấy tờ thì cậu luôn có lựa chọn. Trên thực tế thì không." },
     ],
     choices: [
       { id: "forced-accept-assignment", label: "Được rồi, tôi đồng ý" },
     ],
   },
   dispatchPrompt: {
-    speaker: "Nhân viên TVA",
+    speaker: "David",
     lines: [
-      { speaker: "Nhân viên TVA", text: "Tốt. Hồ sơ đầu tiên đã nằm trên bàn. Cậu muốn xuất phát ngay chưa?" },
+      { speaker: "David", text: "Tốt. Hồ sơ đầu tiên đã nằm trên bàn. Cậu muốn xuất phát ngay chưa?" },
     ],
     choices: [
       { id: "dispatch-ready", label: "Tôi sẵn sàng" },
@@ -39,10 +42,10 @@ export const TVA_EMPLOYEE_DIALOGUES = {
     ],
   },
   portalActive: {
-    speaker: "Nhân viên TVA",
+    speaker: "David",
     storyId: null,
     lines: [
-      { speaker: "Nhân viên TVA", text: "Tọa độ vẫn ổn định. Cổng ở ngay bên cạnh; bước qua khi cậu sẵn sàng." },
+      { speaker: "David", text: "Tọa độ vẫn ổn định. Cổng ở ngay bên cạnh; bước qua khi cậu sẵn sàng." },
     ],
   },
 };
@@ -583,7 +586,7 @@ export const BAD_ENDING_RECOVERY = {
   complaintDuration: 3200,
   resetDuration: 600,
   corruptionAfterReset: 45,
-  speaker: "Nhân viên TVA",
+  speaker: "David",
   lines: [
     "Lại một nhánh thời gian hỏng nữa... Tôi còn chưa uống xong cà phê.",
     "Đứng dậy. Tôi đưa cậu về điểm kiểm soát gần nhất. Lần này đừng làm đầy thanh Tha hóa nữa.",

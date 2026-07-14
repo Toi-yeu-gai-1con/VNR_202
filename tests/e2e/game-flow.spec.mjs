@@ -68,8 +68,14 @@ test("the employee forces the TVA briefing choice and opens the first dispatch p
   await openDebugSession(page);
   await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("hub", { x: 480, y: 260, direction: "up" }));
   await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("tva-clerk-placeholder"));
-  await expect(page.locator("#dialogue-speaker")).toHaveText("Nhân viên TVA");
-  for (let line = 0; line < 7; line += 1) {
+  await expect(page.locator("#dialogue-speaker")).toHaveText("David");
+  await expect(page.locator("#dialogue-box")).toHaveAttribute("data-speaker", "david");
+  await expect(page.locator("#dialogue-text")).toContainText("intake list");
+  await page.locator("#dialogue-next-button").click();
+  await expect(page.locator("#dialogue-speaker")).toHaveText("Nhà du hành");
+  await expect(page.locator("#dialogue-box")).toHaveAttribute("data-speaker", "traveler");
+  await expect(page.locator("#dialogue-text")).toContainText("Đây là đâu");
+  for (let line = 0; line < 9; line += 1) {
     await page.locator("#dialogue-next-button").click();
   }
   await expect(page.locator("#dialogue-choice-list")).toBeVisible();
@@ -102,7 +108,7 @@ test("reported relics unlock each later TVA coordinate in campaign order", async
   await openDebugSession(page);
   await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("hub", { x: 480, y: 260, direction: "up" }));
   await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("tva-clerk-placeholder"));
-  for (let line = 0; line < 7; line += 1) await page.locator("#dialogue-next-button").click();
+  for (let line = 0; line < 10; line += 1) await page.locator("#dialogue-next-button").click();
   await page.locator('[data-dialogue-choice="accept-assignment"]').click();
   await page.locator('[data-dialogue-choice="dispatch-later"]').click();
 

@@ -2607,7 +2607,7 @@ function getTvaEmployeeDialogue() {
       ...TVA_EMPLOYEE_DIALOGUES.portalActive,
       lines: [
         {
-          speaker: "Nhân viên TVA",
+          speaker: "David",
           text: `Tọa độ ${activeRoute.coordinate} vẫn ổn định. Cổng tới ${activeRoute.label} ở ngay bên cạnh; bước qua khi cậu sẵn sàng.`,
         },
       ],
@@ -2635,7 +2635,7 @@ function createTvaDispatchPrompt(route) {
     context: { routeLevelId: route.levelId },
     lines: [
       {
-        speaker: "Nhân viên TVA",
+        speaker: "David",
         text: `Hồ sơ tiếp theo dẫn tới ${route.label}. Cậu muốn xuất phát ngay chưa?`,
       },
     ],
@@ -2647,24 +2647,24 @@ function createTvaRelicReportDialogue(relicIds, nextRoute) {
   const joinedLabels = relicLabels.join(relicLabels.length > 1 ? " và " : "");
   const lines = [
     { speaker: "Nhà du hành", text: "Tôi đã hoàn thành hồ sơ và mang tín vật trở về." },
-    { speaker: "Nhân viên TVA", text: "Đưa tôi xem. Máy kiểm định này cũ hơn cả phòng ban của tôi, nhưng nó chưa từng đọc sai một chữ ký thời gian." },
-    { speaker: "Nhân viên TVA", text: `${joinedLabels}. Tần số lịch sử khớp hoàn toàn; hồ sơ này được xác nhận.` },
+    { speaker: "David", text: "Đưa tôi xem. Máy kiểm định này cũ hơn cả phòng ban của tôi, nhưng nó chưa từng đọc sai một chữ ký thời gian." },
+    { speaker: "David", text: `${joinedLabels}. Tần số lịch sử khớp hoàn toàn; hồ sơ này được xác nhận.` },
   ];
 
   if (nextRoute) {
     lines.push({
-      speaker: "Nhân viên TVA",
+      speaker: "David",
       text: `Tuyến kế tiếp là ${nextRoute.label}. Cậu muốn tôi nhập tọa độ ngay chứ?`,
     });
   } else {
     lines.push(
-      { speaker: "Nhân viên TVA", text: "Đủ năm tín vật. Các nhánh lịch sử đã ổn định và hồ sơ trở về của cậu cuối cùng cũng có thể được xử lý." },
+      { speaker: "David", text: "Đủ năm tín vật. Các nhánh lịch sử đã ổn định và hồ sơ trở về của cậu cuối cùng cũng có thể được xử lý." },
       { speaker: "Nhà du hành", text: "Vậy lần này anh thật sự có thể đưa tôi về nhà chứ?" }
     );
   }
 
   return {
-    speaker: "Nhân viên TVA",
+    speaker: "David",
     storyId: null,
     lines,
     choices: nextRoute
@@ -2682,10 +2682,10 @@ function createTvaRelicReportDialogue(relicIds, nextRoute) {
 
 function createTvaCompletionDialogue() {
   return {
-    speaker: "Nhân viên TVA",
+    speaker: "David",
     storyId: null,
     lines: [
-      { speaker: "Nhân viên TVA", text: "Năm tín vật đã được đóng dấu. Khi cậu sẵn sàng, tôi sẽ hoàn tất hồ sơ trở về dòng thời gian của cậu." },
+      { speaker: "David", text: "Năm tín vật đã được đóng dấu. Khi cậu sẵn sàng, tôi sẽ hoàn tất hồ sơ trở về dòng thời gian của cậu." },
     ],
     choices: [
       { id: "finish-history", label: "Tôi sẵn sàng về nhà" },
@@ -2710,6 +2710,11 @@ function renderDialogue() {
   const choices = state.activeDialogueIndex === lastLineIndex ? dialogue.choices ?? [] : [];
   const hasChoices = choices.length > 0;
 
+  dialogueBox.dataset.speaker = currentSpeaker === "David"
+    ? "david"
+    : currentSpeaker === "Nhà du hành"
+      ? "traveler"
+      : "other";
   dialogueSpeaker.textContent = currentSpeaker;
   dialogueProgress.textContent = `${state.activeDialogueIndex + 1} / ${dialogue.lines.length}`;
   dialogueText.textContent = currentLine;
@@ -2886,7 +2891,7 @@ function resolveTvaDialogueChoice(choiceId, item, dialogue) {
 
   if (choiceId === "dispatch-later") {
     finishDialogue();
-    showStoryToast("Người nhân viên giữ hồ sơ trên bàn và chờ bạn quay lại xác nhận xuất phát.");
+    showStoryToast("David giữ hồ sơ trên bàn và chờ bạn quay lại xác nhận xuất phát.");
     saveGameProgress();
     return;
   }
@@ -2914,12 +2919,12 @@ function resolveTvaDialogueChoice(choiceId, item, dialogue) {
   saveGameProgress();
   updateQuestChip();
   setActiveDialogue(item, {
-    speaker: "Nhân viên TVA",
+    speaker: "David",
     storyId: null,
     closeLabel: "Đến cổng",
     lines: [
-      { speaker: "Nhân viên TVA", text: `Đang nhập tọa độ không-thời gian: ${route.coordinate}...` },
-      { speaker: "Nhân viên TVA", text: `Đồng bộ hoàn tất. Cổng tới ${route.label} đã mở; đừng chạm vào mép sáng nếu không muốn để lại một phần cơ thể ở thập niên khác.` },
+      { speaker: "David", text: `Đang nhập tọa độ không-thời gian: ${route.coordinate}...` },
+      { speaker: "David", text: `Đồng bộ hoàn tất. Cổng tới ${route.label} đã mở; đừng chạm vào mép sáng nếu không muốn để lại một phần cơ thể ở thập niên khác.` },
     ],
   });
 }
@@ -5022,10 +5027,10 @@ function getHubNavigationTarget() {
   const label = !state.quests.tvaBriefingAccepted
     ? "Đi theo hành lang tới người nhân viên"
     : pendingRelics.length > 0
-      ? "Mang tín vật cho nhân viên TVA"
+      ? "Mang tín vật cho David"
       : getNextTvaRoute()
-        ? "Hỏi nhân viên về tọa độ tiếp theo"
-        : "Hoàn tất hồ sơ với nhân viên TVA";
+        ? "Hỏi David về tọa độ tiếp theo"
+        : "Hoàn tất hồ sơ với David";
 
   return createInteractableNavigationTarget(
     getLevelInteractable("tva-clerk-placeholder"),

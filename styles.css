@@ -559,7 +559,20 @@ button {
 }
 
 .dialogue-speaker {
-  font-size: clamp(1.02rem, 1.6vw, 1.22rem);
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 6px 10px;
+  border: 2px solid #704635;
+  border-radius: 2px;
+  background: #4a2e27;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 242, 203, 0.12),
+    0 3px 0 rgba(49, 27, 21, 0.34);
+  color: #ffe4a3;
+  font-family: "Press Start 2P", "VT323", monospace;
+  font-size: 0.78rem;
+  line-height: 1.35;
 }
 
 .dialogue-progress {
@@ -610,8 +623,23 @@ button {
     inset 0 -4px 0 rgba(8, 7, 5, 0.48);
 }
 
-.dialogue-box[data-context="tva"] .dialogue-speaker {
-  color: #e3b96b;
+.dialogue-box[data-context="tva"] .dialogue-speaker,
+.dialogue-box[data-speaker="david"] .dialogue-speaker {
+  border-color: #ffe4a3;
+  background: #d7a84f;
+  color: #21190f;
+  text-shadow: 0 1px 0 rgba(255, 243, 194, 0.46);
+}
+
+.dialogue-box[data-speaker="traveler"] .dialogue-speaker {
+  border-color: #9bc8e7;
+  background: #29475e;
+  color: #ecf8ff;
+  text-shadow: 0 1px 0 #101820;
+}
+
+.dialogue-box[data-context="tva"][data-speaker="traveler"] {
+  border-left-color: #78b6df;
 }
 
 .dialogue-box[data-context="tva"] .dialogue-progress {

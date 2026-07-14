@@ -7,7 +7,7 @@ function createHubLevel() {
     label: "Văn phòng TVA",
     canvasLabel: "Văn phòng TVA: Hành lang hồ sơ vô tận",
     pauseTitle: "Văn phòng TVA",
-    cameraZoom: 0.82,
+    cameraZoom: 0.7,
     spawn: { x: 480, y: 570, direction: "up" },
     bounds: { minX: 220, maxX: 740, minY: 72, maxY: 606 },
     aboutSlide: {
@@ -46,10 +46,10 @@ function createHubLevel() {
     interactables: [
       {
         id: "tva-clerk-placeholder",
-        name: "Nhân viên TVA",
-        x: 450,
-        y: 220,
-        approachFromY: 104,
+        name: "David",
+        x: 384,
+        y: 260,
+        approachFromY: 188,
         width: 24,
         height: 40,
         kind: "npc",
