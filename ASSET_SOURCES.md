@@ -51,6 +51,15 @@ This project uses a small subset of free game assets:
   - Created for this project with the built-in image generation workflow, then background-keyed to transparent PNG.
   - Used for the restored rural cooperative scene in `assets/recovery/doi-moi-irrigation-station.png`.
 
+## Original Cục Lưu Trữ Niên Tuyến (CLTNT) time-archive art pack
+
+- Generated for this project with the built-in image generation workflow; no Marvel/TVA artwork, logos, or traced character likenesses were used.
+- Source prompts and processing notes are recorded in `docs/asset-prompts/time-archive-pack.md`.
+- Character strips were generated from one approved M-90 seed, background-keyed, normalized with nearest-neighbor sampling to 62px content inside the existing 96x96 NPC frame contract, and packed with the current bottom-center anchor.
+- Used for `assets/time-archive/characters/agent-m90/` (down, left, up, downleft, upleft; right is mirrored by the existing NPC renderer).
+- The Chronicle Door, archive tools, and Reset Charge were background-keyed and normalized into fixed-size PNG strips. The reset-wave VFX used luminance-to-alpha conversion from a black source so additive blending preserves the colored glow.
+- The brutalist office plate is an original lossless WEBP: `assets/time-archive/environment/chronicle-office.webp`.
+
 ## Music
 
 - Unexplored Expansion by Bo Jingles and TAD: https://opengameart.org/content/unexplored-expansion
