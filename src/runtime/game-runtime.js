@@ -3845,8 +3845,10 @@ function updateEndingCinematicUiState() {
 }
 
 function showEndOverlay() {
+  const endingId = state.endingId === "good" ? "good" : "bad";
+  const endingAssetsReady = assetManager.loadGroup("ending");
   const ending = ENDING_DEFINITIONS[state.endingId] ?? ENDING_DEFINITIONS.bad;
-  resetSound(musicSounds[state.endingId === "good" ? "goodEnding" : "badEnding"]);
+  resetSound(musicSounds[endingId === "good" ? "goodEnding" : "badEnding"]);
 
   state.mode = "ending";
   state.endingCinematic = createEndingCinematicState(state.endingId ?? "bad");
@@ -3870,6 +3872,11 @@ function showEndOverlay() {
   endOverlay.classList.remove("hidden");
   endOverlay.setAttribute("aria-hidden", "false");
   syncAmbienceAudio();
+  void endingAssetsReady.then(() => {
+    if (state.mode === "ending" && state.endingId === endingId) {
+      syncAmbienceAudio();
+    }
+  });
   syncEndingArtCinematicCanvas();
   syncEndingSceneOverlayCanvas();
   updateEndingCinematicUiState();
@@ -4309,7 +4316,8 @@ function renderBadEndingRecoveryScene(context, width, height, scene) {
   context.restore();
 
   if (frame.phase === "reset") {
-    drawM90ResetSequence(context, actorX, actorY, actorScale, frame.phaseProgress, actorOpacity);
+    const resetScale = clamp((height * 0.4) / M90_RESET_ANIMATION.drawHeight, 2.4, 7.5);
+    drawM90ResetSequence(context, actorX, actorY, resetScale, frame.phaseProgress, actorOpacity);
   } else {
     drawNpcSpriteActorToContext(
       context,
@@ -4342,17 +4350,17 @@ function drawM90ResetSequence(context, x, y, scale, phaseProgress, opacity) {
   }
 
   if (canDrawSprite(effectSprites.m90ResetActivate)) {
-    const drawWidth = Math.round(TVA_EMPLOYEE_SPRITE.drawWidth * scale);
-    const drawHeight = Math.round(TVA_EMPLOYEE_SPRITE.drawHeight * scale);
+    const drawWidth = Math.round(M90_RESET_ANIMATION.drawWidth * scale);
+    const drawHeight = Math.round(M90_RESET_ANIMATION.drawHeight * scale);
     context.save();
     context.globalAlpha = opacity;
     context.imageSmoothingEnabled = false;
     context.drawImage(
       effectSprites.m90ResetActivate,
-      frameIndex * M90_RESET_ANIMATION.frameWidth + TVA_EMPLOYEE_SPRITE.cropX,
-      TVA_EMPLOYEE_SPRITE.cropY,
-      TVA_EMPLOYEE_SPRITE.cropWidth,
-      TVA_EMPLOYEE_SPRITE.cropHeight,
+      frameIndex * M90_RESET_ANIMATION.frameWidth + M90_RESET_ANIMATION.cropX,
+      M90_RESET_ANIMATION.cropY,
+      M90_RESET_ANIMATION.cropWidth,
+      M90_RESET_ANIMATION.cropHeight,
       Math.round(x - drawWidth / 2),
       Math.round(y - drawHeight),
       drawWidth,
@@ -4447,7 +4455,6 @@ function useStrikeSkill(isCharged = false) {
   const strikeDamage = isCharged ? 4 : state.comboStep === 3 ? 2 : 1;
   const strikeAnimation = isCharged ? "attack2" : state.comboStep % 2 === 0 ? "attack2" : "attack1";
   startPlayerAnimation(strikeAnimation, { direction: player.direction });
-  playUiSound(isCharged || strikeAnimation === "attack2" ? uiSounds.attack2 : uiSounds.attack1);
   state.activeSkillEffect = {
     type: isCharged ? "chargedStrike" : "strike",
     direction: player.direction,
@@ -5166,10 +5173,11 @@ function handleLevelTransitions() {
   refreshBlockedExits();
 
   for (const exit of currentLevel().exits) {
-    const target = getExitTarget(exit);
-    if (!target) {
+    if (!isExitAvailable(exit)) {
       continue;
     }
+
+    const target = getExitTarget(exit);
 
     if (state.blockedExitIds.has(exit.id)) {
       continue;
@@ -5541,6 +5549,14 @@ function getExitTarget(exit) {
 }
 
 function isExitAvailable(exit) {
+  if (typeof exit?.availableWhen === "function" && !exit.availableWhen()) {
+    return false;
+  }
+
+  if (typeof exit?.availableWhen === "boolean" && !exit.availableWhen) {
+    return false;
+  }
+
   return Boolean(getExitTarget(exit));
 }
 
@@ -6265,7 +6281,7 @@ function drawLevelExitPortals(exits) {
 }
 
 function shouldDrawExitPortal(exit) {
-  if (!exit.portal) {
+  if (!exit.portal || !isExitAvailable(exit)) {
     return false;
   }
 
