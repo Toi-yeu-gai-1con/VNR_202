@@ -247,7 +247,7 @@ test("Zone 1 combat uses the dedicated attack animation", async ({ page }, testI
   await page.screenshot({ path: testInfo.outputPath("zone1-raider-attack.png"), fullPage: true });
 });
 
-test("player combat emits audible swing and incoming-hit cues", async ({ page }, testInfo) => {
+test("player combat emits the authored attack and incoming-hit cues", async ({ page }, testInfo) => {
   await page.addInitScript(() => {
     window.__playedAudioSources = [];
     const originalPlay = HTMLMediaElement.prototype.play;
@@ -260,11 +260,14 @@ test("player combat emits audible swing and incoming-hit cues", async ({ page },
   await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("village"));
 
   await page.keyboard.press("j");
-  await expect.poll(() => page.evaluate(() => window.__playedAudioSources.some((source) => source.includes("strike-swing")))).toBe(true);
+  await expect.poll(() => page.evaluate(() => window.__playedAudioSources.some((source) => source.includes("player-attack1") || source.includes("player-attack2")))).toBe(true);
+  await page.waitForTimeout(450);
+  await page.keyboard.press("j");
+  await expect.poll(() => page.evaluate(() => window.__playedAudioSources.some((source) => source.includes("player-attack2")))).toBe(true);
   const strikeSources = await page.evaluate(() => window.__playedAudioSources.filter(
-    (source) => source.includes("strike-swing") || source.includes("player-attack")
+    (source) => source.includes("player-attack1") || source.includes("player-attack2")
   ));
-  expect(strikeSources).toHaveLength(1);
+  expect(strikeSources).toHaveLength(2);
 
   await page.evaluate(() => window.__CROSSROADS_DEBUG__.damagePlayer(1, "Playwright"));
   await expect.poll(() => page.evaluate(() => window.__playedAudioSources.some((source) => source.includes("player-hurt")))).toBe(true);

@@ -1844,6 +1844,10 @@ function loadUiSounds() {
 
 function loadCombatSfx() {
   return {
+    // Reuse the authored attack clips from the UI sound manifest so the two
+    // player attack animations keep their distinct sword-swing signatures.
+    attack1: uiSounds.attack1,
+    attack2: uiSounds.attack2,
     strikeSwing: loadSound(COMBAT_SFX.strikeSwing, 0.52),
     batonHit: loadSound(COMBAT_SFX.batonHit, 0.36),
     rifleShot: loadSound(COMBAT_SFX.rifleShot, 0.34),
@@ -6034,7 +6038,8 @@ function renderBadEndingRecoveryScene(context, width, height, scene) {
   context.fillRect(0, 0, width, height);
 
   const walkProgress = frame.phase === "walk" ? easeInOutCubic(frame.phaseProgress) : 1;
-  const actorX = -width * 0.1 + width * 0.52 * walkProgress;
+  const recoveryCenterX = width * 0.5;
+  const actorX = -width * 0.1 + recoveryCenterX * 1.2 * walkProgress;
   const actorY = height * 0.78;
   const actorScale = clamp((height * 0.4) / TVA_EMPLOYEE_SPRITE.drawHeight, 2.4, 7.5);
   const actorOpacity = frame.phase === "reset"
@@ -6110,7 +6115,12 @@ function drawM90ResetSequence(context, x, y, scale, phaseProgress, opacity) {
     M90_RESET_ANIMATION.effectFrameCount - 1,
     Math.floor(waveElapsed / M90_RESET_ANIMATION.effectFrameDuration)
   );
-  const waveSize = Math.round(Math.min(context.canvas.width, context.canvas.height) * 0.52);
+  const waveDuration = M90_RESET_ANIMATION.effectFrameCount * M90_RESET_ANIMATION.effectFrameDuration;
+  const waveProgress = clamp(waveElapsed / waveDuration, 0, 1);
+  const easedWaveProgress = easeOutQuad(waveProgress);
+  const canvasDiagonal = Math.hypot(context.canvas.width, context.canvas.height);
+  const waveSize = Math.round(canvasDiagonal * (0.28 + easedWaveProgress * 1.18));
+  const waveOriginY = y - scale * M90_RESET_ANIMATION.drawHeight * 0.62;
   context.save();
   context.globalCompositeOperation = "screen";
   context.globalAlpha = opacity * 0.9;
@@ -6122,11 +6132,32 @@ function drawM90ResetSequence(context, x, y, scale, phaseProgress, opacity) {
     M90_RESET_ANIMATION.effectFrameWidth,
     M90_RESET_ANIMATION.effectFrameHeight,
     Math.round(x - waveSize / 2),
-    Math.round(y - waveSize * 0.72),
+    Math.round(waveOriginY - waveSize / 2),
     waveSize,
     waveSize
   );
   context.restore();
+
+  const flashAlpha = Math.sin(waveProgress * Math.PI) * 0.22;
+  if (flashAlpha > 0) {
+    const glowRadius = canvasDiagonal * (0.16 + easedWaveProgress * 0.72);
+    const glow = context.createRadialGradient(
+      x,
+      waveOriginY,
+      0,
+      x,
+      waveOriginY,
+      glowRadius
+    );
+    glow.addColorStop(0, `rgba(255, 243, 186, ${flashAlpha})`);
+    glow.addColorStop(0.42, `rgba(186, 226, 255, ${flashAlpha * 0.58})`);
+    glow.addColorStop(1, "rgba(92, 153, 255, 0)");
+    context.save();
+    context.globalCompositeOperation = "screen";
+    context.fillStyle = glow;
+    context.fillRect(0, 0, context.canvas.width, context.canvas.height);
+    context.restore();
+  }
 }
 
 function drawEndingSceneFigures(context, width, height, figures) {
@@ -6198,7 +6229,10 @@ function useStrikeSkill(isCharged = false) {
     startedAt: state.lastTimestamp,
     endsAt: state.lastTimestamp + (isCharged ? PLAYER_ATTACK_ANIMATION_MS + 120 : PLAYER_ATTACK_ANIMATION_MS),
   };
-  playCombatSfx("strikeSwing", { volume: isCharged ? 0.62 : 0.48, playbackRate: isCharged ? 0.82 : 0.96 + state.comboStep * 0.035 });
+  playCombatSfx(strikeAnimation, {
+    volume: isCharged ? 0.62 : 0.48,
+    playbackRate: isCharged ? 0.82 : 0.96 + state.comboStep * 0.035,
+  });
 
   let hitMonster = false;
 
