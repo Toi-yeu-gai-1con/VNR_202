@@ -36,6 +36,14 @@ assert.equal(
   "David's Zone 1 debrief has a specific reaction for a repaired compromise.",
 );
 
+for (const zoneId of ["zone2", "zone3", "zone4"]) {
+  assert.equal(
+    Object.values(NARRATIVE_TVA_REACTION_DEFINITIONS[zoneId]).every((reaction) => typeof reaction === "string" && reaction.length > 20),
+    true,
+    `David has a data-owned debrief reaction for every completed ${zoneId} route.`,
+  );
+}
+
 const zone2Verdict = NARRATIVE_CHOICE_DEFINITIONS.zone2.find((choice) => choice.id === "emblem-verdict");
 assert.equal(
   zone2Verdict.options.some((option) => option.branchFlags?.["zone2.badConfirmed"]),

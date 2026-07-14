@@ -2996,6 +2996,18 @@ function createTvaRelicReportDialogue(relicIds, nextRoute) {
     lines.push({ speaker: "David", text: getZone1TvaReaction() });
   }
 
+  if (relicIds.includes("unified-emblem")) {
+    lines.push({ speaker: "David", text: getZone2TvaReaction() });
+  }
+
+  if (relicIds.includes("vietminh-thread") || relicIds.includes("healed-map")) {
+    lines.push({ speaker: "David", text: getZone3TvaReaction() });
+  }
+
+  if (relicIds.includes("doi-moi-gear")) {
+    lines.push({ speaker: "David", text: getZone4TvaReaction() });
+  }
+
   if (nextRoute) {
     lines.push({
       speaker: "David",
@@ -3209,6 +3221,55 @@ function getZone1TvaReaction() {
   }
 
   return reactions.protectedRoute;
+}
+
+function getZone2TvaReaction() {
+  const reactions = NARRATIVE_TVA_REACTION_DEFINITIONS.zone2;
+  const flags = state.narrative.branchFlags;
+
+  if (flags["zone2.stokedDivision"] && flags["zone2.repairedDivision"]) {
+    return reactions.repaired;
+  }
+
+  if (flags["zone2.stokedDivision"]) {
+    return reactions.divided;
+  }
+
+  return reactions.unified;
+}
+
+function getZone3TvaReaction() {
+  const reactions = NARRATIVE_TVA_REACTION_DEFINITIONS.zone3;
+  const flags = state.narrative.branchFlags;
+  const repaired = flags["zone3a.repairedRally"] || flags["zone3b.repairedSeparation"];
+  const compromised = flags["zone3a.fragmentedRally"] || flags["zone3b.normalizedSeparation"];
+
+  if (compromised && repaired) {
+    return reactions.repaired;
+  }
+
+  if (compromised) {
+    return reactions.divided;
+  }
+
+  return reactions.prepared;
+}
+
+function getZone4TvaReaction() {
+  const reactions = NARRATIVE_TVA_REACTION_DEFINITIONS.zone4;
+  const flags = state.narrative.branchFlags;
+  const repaired = flags["zone4.repairedPrivilege"];
+  const compromised = flags["zone4.protectedPrivilege"] || flags["zone4.frozeProduction"];
+
+  if (compromised && repaired) {
+    return reactions.repaired;
+  }
+
+  if (compromised) {
+    return reactions.stalled;
+  }
+
+  return reactions.renewal;
 }
 
 function applyNarrativeChoice(chapterId, decisionId, optionId) {

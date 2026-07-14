@@ -18,6 +18,20 @@ async function snapshot(page) {
   return page.evaluate(() => window.__CROSSROADS_DEBUG__.getSnapshot());
 }
 
+async function advanceDialogueToChoice(page, choiceId) {
+  const choice = page.locator(`[data-dialogue-choice="${choiceId}"]`);
+
+  for (let step = 0; step < 12; step += 1) {
+    if (await choice.isVisible()) {
+      return choice;
+    }
+    await page.locator("#dialogue-next-button").click();
+  }
+
+  await expect(choice).toBeVisible();
+  return choice;
+}
+
 test("F3 reveals debug geometry only in an explicit debug session", async ({ page }, testInfo) => {
   await page.goto("/");
   await expect(page.locator("#start-screen")).toBeVisible();
@@ -300,11 +314,8 @@ test("reported relics unlock each later TVA coordinate in campaign order", async
     await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("hub", { x: 480, y: 260, direction: "up" }));
     await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("tva-clerk-placeholder"));
 
-    const lineCount = index === routes.length - 1 || index === 0 ? 5 : 4;
-    for (let line = 1; line < lineCount; line += 1) await page.locator("#dialogue-next-button").click();
-
     if (index < nextRoutes.length) {
-      await page.locator('[data-dialogue-choice="dispatch-ready"]').click();
+      await (await advanceDialogueToChoice(page, "dispatch-ready")).click();
       await expect.poll(() => snapshot(page).then((state) => state.quests.tvaPortalTarget)).toBe(nextRoutes[index]);
       await page.locator("#dialogue-next-button").click();
       await page.locator("#dialogue-next-button").click();
@@ -315,7 +326,7 @@ test("reported relics unlock each later TVA coordinate in campaign order", async
       continue;
     }
 
-    await page.locator('[data-dialogue-choice="finish-history"]').click();
+    await (await advanceDialogueToChoice(page, "finish-history")).click();
     await expect(page.locator("#end-overlay")).toBeVisible();
     await expect.poll(() => snapshot(page).then((state) => state.endingId)).toBe("good");
     await expect.poll(

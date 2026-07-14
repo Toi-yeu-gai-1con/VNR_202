@@ -74,6 +74,21 @@ export const NARRATIVE_TVA_REACTION_DEFINITIONS = Object.freeze({
     compromisedAndRepaired: "Máy ghi nhận một lần lệch khỏi đường truyền, rồi một hành động sửa chữa rõ ràng. Lịch sử không xóa sai lầm, nhưng con người có thể chịu trách nhiệm và quay lại với cộng đồng.",
     compromised: "Có một vết lệch trong hồ sơ Khu 1. Cậu đã giữ La Bàn Đỏ, nhưng hãy nhớ: lợi ích riêng luôn làm con đường chung dễ chao đảo hơn.",
   }),
+  zone2: Object.freeze({
+    unified: "Cậu đã giữ các nguồn tư liệu cùng hướng về một nền tảng chung. Điều quan trọng không phải là xóa khác biệt, mà là không để khác biệt trở thành nghi kỵ.",
+    repaired: "Máy ghi nhận một vết nứt đã được cậu quay lại hàn gắn. Một tổ chức bền vững cần khả năng sửa sai công khai, không chỉ một lời tuyên bố đúng.",
+    divided: "Hồ sơ Khu 2 còn dấu vết nghi kỵ. Cậu đã mang được Biểu trưng Thống nhất về, nhưng hãy nhớ sức mạnh chung luôn phải được nuôi bằng đối thoại.",
+  }),
+  zone3: Object.freeze({
+    prepared: "Cậu đã nối sự chuẩn bị, đoàn kết và thời cơ thay vì coi chúng là ba việc tách rời. Hồ sơ này cho thấy sức mạnh của một cuộc tập hợp có tổ chức.",
+    repaired: "Có những liên hệ đã suýt đứt trong hai chương của Khu 3, rồi được cậu chọn hàn gắn. Lịch sử không giản lược thành một khoảnh khắc, mà được giữ bằng nhiều mối nối.",
+    divided: "Máy đọc thấy những vết rạn ở Khu 3: lực lượng có thể bị phân tán, và một giới tuyến tạm thời có thể bị hiểu sai. Hãy mang bài học ấy sang những lựa chọn tiếp theo.",
+  }),
+  zone4: Object.freeze({
+    renewal: "Cậu đã đặt người sản xuất, trách nhiệm và khả năng tự sửa mình vào cùng một hồ sơ. Đổi mới không phải một cái tên, mà là công việc tháo gỡ những nút thắt thật.",
+    repaired: "Cậu đã nhìn nhận phần đặc quyền từng gây bế tắc và chọn sửa lại. Máy thời gian đánh giá đây là một chuyển động đáng tin hơn mọi lời hứa suông.",
+    stalled: "Hồ sơ Khu 4 vẫn giữ vết của đặc quyền và sự trì trệ. Bánh răng đã về đây, nhưng bài học của nó là một guồng máy chỉ quay khi người dân được đặt ở trung tâm.",
+  }),
 });
 
 export const NARRATIVE_CHOICE_DEFINITIONS = Object.freeze({
