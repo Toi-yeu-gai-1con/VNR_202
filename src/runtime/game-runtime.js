@@ -8,7 +8,7 @@ import { createDebugOverlay } from "../debug/debug-overlay.js";
 import { createAudioSystem } from "../systems/audio-system.js";
 import { createLevelDefinitions } from "../systems/level-definitions.js";
 import { createSaveSystem } from "../systems/save-system.js";
-import { INTERACTION_DIALOGUES, RELIC_DEFINITIONS, RELIC_STORY_SLIDES, ENDING_DEFINITIONS, ENDING_OVERLAY_SCENES, ENDING_CINEMATIC_DEFINITIONS, OPENING_DIALOGUE } from "../data/story-content.js";
+import { INTERACTION_DIALOGUES, TVA_EMPLOYEE_DIALOGUES, RELIC_DEFINITIONS, RELIC_STORY_SLIDES, ENDING_DEFINITIONS, ENDING_OVERLAY_SCENES, ENDING_CINEMATIC_DEFINITIONS, BAD_ENDING_RECOVERY, OPENING_DIALOGUE } from "../data/story-content.js";
 import { createMiniMapRenderer } from "../rendering/minimap-renderer.js";
 import { createCoordinateSystem } from "../rendering/coordinate-system.js";
 import { LEVEL_ASSET_GROUPS, getAssetGroupForSource, isCriticalAsset } from "../data/asset-manifest.js";
@@ -17,7 +17,7 @@ import { MONSTER_ART_DEFINITIONS, MONSTER_ART_KEY_BY_ID, getMonsterStripSource, 
 import { GAMEPLAY_BALANCE, getDifficultySettings } from "../data/gameplay-balance.js";
 import { AUDIO_TRACKS, COMBAT_SFX, getAudioSourceCandidates, resolveAudioSource } from "../data/media-sources.js";
 import { BUILD_VERSION, withAssetVersion } from "../data/build-info.js";
-import { PLAYER_FOOTPRINT, PLAYER_SPRITE, NPC_SPRITE, ENVIRONMENT_SPRITES, TILECRAFT_TERRAIN, PIXEL_CRAWLER_TERRAIN, VILLAGE_SKYLINE_Y, VILLAGE_PROP_SPRITES, PIXEL_CRAWLER_BUILDING_SPRITES, HUB_PORTAL_SPRITE, SWORD_SLASH_SPRITE, PIXEL_CRAWLER_TREE_SPRITE, KENNEY_ROGUELIKE_TILE, KENNEY_ROGUELIKE_SPRITES, PIXEL_CRAWLER_VEGETATION_SPRITES, PIXEL_CRAWLER_TOOL_CLUSTER_SPRITES, CAINOS_PROP_SPRITES, LIMEZU_INTERIOR_SPRITES, HOUSE_INTERIOR_A_SPRITES, MONSTER_SPRITE_CONFIG } from "../data/render-config.js";
+import { PLAYER_FOOTPRINT, PLAYER_SPRITE, PLAYER_ANIMATIONS, NPC_SPRITE, TVA_EMPLOYEE_SPRITE, M90_RESET_ANIMATION, ENVIRONMENT_SPRITES, TILECRAFT_TERRAIN, PIXEL_CRAWLER_TERRAIN, VILLAGE_SKYLINE_Y, VILLAGE_PROP_SPRITES, PIXEL_CRAWLER_BUILDING_SPRITES, HUB_PORTAL_SPRITE, SWORD_SLASH_SPRITE, PIXEL_CRAWLER_TREE_SPRITE, KENNEY_ROGUELIKE_TILE, KENNEY_ROGUELIKE_SPRITES, PIXEL_CRAWLER_VEGETATION_SPRITES, PIXEL_CRAWLER_TOOL_CLUSTER_SPRITES, CAINOS_PROP_SPRITES, LIMEZU_INTERIOR_SPRITES, HOUSE_INTERIOR_A_SPRITES, MONSTER_SPRITE_CONFIG } from "../data/render-config.js";
 
 const canvas = document.getElementById("game-canvas");
 const ctx = canvas.getContext("2d");
@@ -57,6 +57,8 @@ const dialogueBox = document.getElementById("dialogue-box");
 const dialogueSpeaker = document.getElementById("dialogue-speaker");
 const dialogueProgress = document.getElementById("dialogue-progress");
 const dialogueText = document.getElementById("dialogue-text");
+const dialogueChoiceList = document.getElementById("dialogue-choice-list");
+const dialogueHint = document.getElementById("dialogue-hint");
 const dialogueNextButton = document.getElementById("dialogue-next-button");
 const openingIntro = document.getElementById("opening-intro");
 const openingCard = openingIntro.querySelector(".intro-card");
@@ -119,6 +121,9 @@ const endArtImage = document.getElementById("end-art-image");
 const endArtCinematicCtx = endArtCinematic?.getContext("2d") ?? null;
 const endArtOverlay = document.getElementById("end-art-overlay");
 const endArtOverlayCtx = endArtOverlay?.getContext("2d") ?? null;
+const badEndingRecoveryDialogue = document.getElementById("bad-ending-recovery-dialogue");
+const badEndingRecoverySpeaker = document.getElementById("bad-ending-recovery-speaker");
+const badEndingRecoveryText = document.getElementById("bad-ending-recovery-text");
 const assetLoadingOverlay = document.getElementById("asset-loading-overlay");
 const assetLoadingTitle = document.getElementById("asset-loading-title");
 const assetLoadingCopy = document.getElementById("asset-loading-copy");
@@ -194,25 +199,53 @@ const REQUIRED_RELIC_IDS = [
   "healed-map",
   "doi-moi-gear",
 ];
+const TVA_DISPATCH_ROUTES = [
+  {
+    levelId: "village",
+    label: "Mê cung sương mù và Bến cảng",
+    coordinate: "VN-1930-A / NHÁNH 01",
+    relicIds: ["red-compass"],
+  },
+  {
+    levelId: "archive",
+    label: "Ngôi nhà ba gian",
+    coordinate: "VN-1930-B / NHÁNH 02",
+    relicIds: ["unified-emblem"],
+  },
+  {
+    levelId: "crossroads",
+    label: "Quảng trường và Vĩ tuyến 17",
+    coordinate: "VN-1945-1975 / NHÁNH 03",
+    relicIds: ["vietminh-thread", "healed-map"],
+  },
+  {
+    levelId: "spring",
+    label: "Thung lũng Đổi Mới",
+    coordinate: "VN-1986 / NHÁNH 04",
+    relicIds: ["doi-moi-gear"],
+  },
+];
+const TVA_ACTOR_SCALE = 1.85;
+const TVA_ACTOR_SCALE_COMPACT = 1.5;
 function configureOpeningCopy() {
   buildVersionLabel.textContent = `Phiên bản ${BUILD_VERSION}`;
-  startQuestion.textContent = "THE CROSSROADS: NHÀ DU HÀNH THỜI GIAN";
+  startQuestion.textContent = "HỒ SƠ THẤT LẠC NGOÀI DÒNG THỜI GIAN";
   startCopy.textContent =
-    "Hãy trở thành một người vô danh du hành về các nhánh thời gian khác nhau, chứng kiến câu chuyện của các thời đại đó để mở ra tương lai thật sự, hoặc vi phạm vào sai lầm và rơi vào cái kết tệ nhất.";
+    "Một cú rơi ngoài dự kiến đưa bạn vào văn phòng hành chính vô tận, nơi mọi biến động lịch sử đều bị biến thành hồ sơ và những ca tăng giờ không có điểm kết thúc.";
   startControls.textContent = "WASD di chuyển • E tương tác • J tấn công • K phản đòn • B mở sách";
 
   const objectiveLabels = [
-    "Bước qua 4 nhánh thời gian",
-    "Thu thập đủ 5 tín vật",
-    "Tránh sai lầm để không rơi vào Bad Ending",
+    "Tìm hiểu văn phòng kỳ lạ",
+    "Đi theo hành lang hồ sơ",
+    "Nói chuyện với người nhân viên đang OT",
   ];
 
   startObjectiveItems.forEach((item, index) => {
     item.textContent = objectiveLabels[index] ?? "";
   });
 
-  openingKicker.textContent = "THE CROSSROADS";
-  openingHint.textContent = "E / Phím cách để tiếp tục";
+  openingKicker.textContent = "SỰ CỐ DỊCH CHUYỂN";
+  openingHint.textContent = "Tiếp tục câu chuyện";
 }
 
 const keys = new Set();
@@ -234,6 +267,7 @@ let audioLoadWarningShown = false;
 let debugOverlay = null;
 let smoothedFps = 0;
 let lastDebugTextUpdateAt = 0;
+let pendingRespawnResolve = null;
 
 const state = {
   mode: "start",
@@ -272,9 +306,12 @@ const state = {
   enemyProjectiles: [],
   invulnerableUntil: 0,
   activeSkillEffect: null,
+  activePlayerAnimation: null,
+  pendingRespawn: null,
   endingId: null,
   endingSummary: "",
   endingCinematic: null,
+  badEndingRecovery: null,
   tutorialStep: 0,
   tutorialSeen: false,
   completedZones: new Set(),
@@ -719,6 +756,14 @@ aboutButton.addEventListener("click", withUiClickSound(() => {
 }));
 closeSlideButton.addEventListener("click", closeSlide);
 dialogueNextButton.addEventListener("click", withUiClickSound(advanceDialogue));
+dialogueChoiceList.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-dialogue-choice]");
+
+  if (button) {
+    playUiSound(uiSounds.pixelClick);
+    resolveDialogueChoice(button.dataset.dialogueChoice);
+  }
+});
 openingNextButton.addEventListener("click", withUiClickSound(advanceOpeningIntro));
 storyPrevButton.addEventListener("click", withUiClickSound(() => showStoryBookEntry(-1)));
 storyNextButton.addEventListener("click", withUiClickSound(() => showStoryBookEntry(1)));
@@ -874,9 +919,23 @@ window.addEventListener("keydown", (event) => {
     return;
   }
 
-  if (state.mode === "dialogue" && (key === "enter" || key === "e" || key === "space")) {
-    playUiSound(uiSounds.pixelClick);
-    advanceDialogue();
+  if (state.mode === "dialogue") {
+    const choices = getPendingDialogueChoices();
+
+    if (choices.length > 0) {
+      const choiceIndex = key === "1" ? 0 : key === "2" ? 1 : -1;
+
+      if (choiceIndex >= 0 && choices[choiceIndex]) {
+        playUiSound(uiSounds.pixelClick);
+        resolveDialogueChoice(choices[choiceIndex].id);
+      }
+      return;
+    }
+
+    if (key === "enter" || key === "e" || key === "space") {
+      playUiSound(uiSounds.pixelClick);
+      advanceDialogue();
+    }
     return;
   }
 
@@ -904,7 +963,7 @@ window.addEventListener("keydown", (event) => {
     return;
   }
 
-  if (state.mode === "playing" && key === "shift") {
+  if (state.mode === "playing" && key === "l") {
     useDodge();
     return;
   }
@@ -939,7 +998,7 @@ window.addEventListener("keyup", (event) => {
 void bootGame();
 
 async function bootGame() {
-  showAssetLoading("Đang chuẩn bị trung tâm", "Đang tải nhân vật, âm thanh và Cánh Cửa Lịch Sử.");
+  showAssetLoading("Đang chuẩn bị văn phòng", "Đang tải hành lang hồ sơ và các thiết bị điều phối dòng thời gian.");
   const core = await assetManager.loadGroup("core");
   const hub = await assetManager.loadGroup("hub");
 
@@ -981,11 +1040,18 @@ function loadPlayerSprites() {
   return {
     run: loadDirectionalSprites("run"),
     idle: loadDirectionalSprites("idle"),
+    attack1: loadDirectionalSprites("attack1"),
+    attack2: loadDirectionalSprites("attack2"),
+    dash: loadDirectionalSprites("dash"),
+    heal: loadDirectionalSprites("heal"),
+    hurt: loadDirectionalSprites("hurt"),
+    death: loadDirectionalSprites("death"),
   };
 }
 
 function loadVillageNpcSprites() {
   return {
+    tvaEmployee: loadTvaEmployeeSpriteSet(),
     npc01: loadNpcSpriteSet("npc01"),
     npc02: loadNpcSpriteSet("npc02"),
     npc03: loadNpcSpriteSet("npc03"),
@@ -1009,6 +1075,7 @@ function loadEnvironmentSprites() {
       revolutionSquare: loadSprite("assets/environment/generated-worlds/revolution-square-hero.webp"),
       factoryValley: loadSprite("assets/environment/generated-worlds/factory-valley-hero.webp"),
       historyHub: loadSprite("assets/environment/generated-worlds/history-hub-hero.webp"),
+      tvaOffice: loadSprite("assets/time-archive/environment/chronicle-office.webp"),
     },
     generatedObjects: {
       finalHistoryGate: loadSprite("assets/environment/generated-objects/final-history-gate.png"),
@@ -1140,6 +1207,18 @@ function loadMonsterSprites() {
       east: loadZone1DirectionalSprites("assets/monsters/zone1-signalman/signalman", "east"),
       west: loadZone1DirectionalSprites("assets/monsters/zone1-signalman/signalman", "east"),
     },
+    frenchColonialSoldier: {
+      east: {
+        idle: loadSprite("assets/enemies/french-colonial-soldier/idle-right.png"),
+        run: loadSprite("assets/enemies/french-colonial-soldier/walk-right.png"),
+        attack: loadSprite("assets/enemies/french-colonial-soldier/attack-right.png"),
+      },
+      west: {
+        idle: loadSprite("assets/enemies/french-colonial-soldier/idle-left.png"),
+        run: loadSprite("assets/enemies/french-colonial-soldier/walk-left.png"),
+        attack: loadSprite("assets/enemies/french-colonial-soldier/attack-left.png"),
+      },
+    },
     rifleman: {
       south: {
         idle: loadSprite("assets/monsters/military-soldier/soldier-idle.png"),
@@ -1223,6 +1302,8 @@ function loadZone1DirectionalSprites(prefix, direction = "south") {
 
 function loadEffectSprites() {
   return {
+    m90ResetActivate: loadSprite("assets/time-archive/characters/agent-m90/actions/reset-activate/reset-activate.png"),
+    m90ResetWave: loadSprite("assets/time-archive/effects/reset-wave-sheet.png"),
     rainDrops: [
       loadSprite("assets/effects/rain_drops-01.png"),
       loadSprite("assets/effects/rain_drops-02.png"),
@@ -1293,6 +1374,17 @@ function loadDirectionalSprites(prefix) {
 function loadNpcSpriteSet(id) {
   const basePath = `assets/npcs/village-vol1/${id}`;
 
+  return {
+    down: loadSprite(`${basePath}/down.png`),
+    downleft: loadSprite(`${basePath}/downleft.png`),
+    left: loadSprite(`${basePath}/left.png`),
+    up: loadSprite(`${basePath}/up.png`),
+    upleft: loadSprite(`${basePath}/upleft.png`),
+  };
+}
+
+function loadTvaEmployeeSpriteSet() {
+  const basePath = "assets/time-archive/characters/agent-m90";
   return {
     down: loadSprite(`${basePath}/down.png`),
     downleft: loadSprite(`${basePath}/downleft.png`),
@@ -1388,11 +1480,18 @@ function getNpcFrame(actor) {
   return getNpcFrameAt(actor, state.lastTimestamp);
 }
 
+function getNpcSpriteConfig(actor) {
+  return actor.spriteKey === "tvaEmployee" ? TVA_EMPLOYEE_SPRITE : NPC_SPRITE;
+}
+
 function getNpcFrameAt(actor, timestamp = state.lastTimestamp) {
+  const spriteConfig = getNpcSpriteConfig(actor);
   const animation = actor.animation === "walk" ? "walk" : "idle";
-  const frameCount = animation === "walk" ? NPC_SPRITE.walkFrames : NPC_SPRITE.idleFrames;
+  const frameCount = animation === "walk"
+    ? actor.walkFrameCount ?? spriteConfig.walkFrames
+    : actor.idleFrameCount ?? spriteConfig.idleFrames;
   const duration =
-    animation === "walk" ? NPC_SPRITE.walkFrameDuration : NPC_SPRITE.idleFrameDuration;
+    animation === "walk" ? spriteConfig.walkFrameDuration : spriteConfig.idleFrameDuration;
   const frameOffset = actor.frameOffset ?? 0;
   const frameTime = timestamp + frameOffset * duration * 4;
 
@@ -1415,6 +1514,7 @@ function drawNpcSpriteActorToContext(context, actor, timestamp = state.lastTimes
 
   const direction = resolveNpcDirection(actor.direction);
   const sheet = spriteSet[direction.key];
+  const spriteConfig = getNpcSpriteConfig(actor);
 
   if (!canDrawSprite(sheet)) {
     return false;
@@ -1422,21 +1522,25 @@ function drawNpcSpriteActorToContext(context, actor, timestamp = state.lastTimes
 
   const frame = getNpcFrameAt(actor, timestamp);
   const scale = actor.scale ?? 1;
-  const sourceY = frame.animation === "walk" ? NPC_SPRITE.frameHeight : 0;
-  const sourceX = frame.index * NPC_SPRITE.frameWidth + NPC_SPRITE.cropX;
-  const drawWidth = Math.max(1, Math.round(NPC_SPRITE.drawWidth * scale));
-  const drawHeight = Math.max(1, Math.round(NPC_SPRITE.drawHeight * scale));
+  const sourceY = frame.animation === "walk" ? spriteConfig.frameHeight : 0;
+  const sourceX = frame.index * spriteConfig.frameWidth + spriteConfig.cropX;
+  const drawWidth = Math.max(1, Math.round(spriteConfig.drawWidth * scale));
+  const drawHeight = Math.max(1, Math.round(spriteConfig.drawHeight * scale));
 
   context.save();
+  context.imageSmoothingEnabled = spriteConfig.smoothing ?? false;
+  if (spriteConfig.smoothing) {
+    context.imageSmoothingQuality = "high";
+  }
   context.globalAlpha = actor.opacity ?? 1;
   context.translate(Math.round(actor.x), Math.round(actor.y));
   context.scale(direction.flipX ? -1 : 1, 1);
   context.drawImage(
     sheet,
     sourceX,
-    sourceY + NPC_SPRITE.cropY,
-    NPC_SPRITE.cropWidth,
-    NPC_SPRITE.cropHeight,
+    sourceY + spriteConfig.cropY,
+    spriteConfig.cropWidth,
+    spriteConfig.cropHeight,
     Math.round(-drawWidth / 2),
     -drawHeight + 8,
     drawWidth,
@@ -1826,17 +1930,85 @@ function drawArchiveFloor(room, beams) {
   ctx.fillRect(floor.x, floor.y, floor.width, 14);
 }
 
-function getPlayerSpriteSheet() {
-  const animationSet = player.isMoving ? playerSprites.run : playerSprites.idle;
-  return animationSet[player.direction] ?? animationSet.down;
-}
-
-function getPlayerFrameIndex() {
-  if (player.isMoving) {
-    return Math.floor(player.walkTime) % PLAYER_SPRITE.frameCount;
+function getPlayerAnimationDuration(animationName) {
+  const animation = PLAYER_ANIMATIONS[animationName] ?? PLAYER_ANIMATIONS.idle;
+  if (animation.frameDurations) {
+    return animation.frameDurations.reduce((total, duration) => total + duration, 0);
   }
 
-  return Math.floor(state.lastTimestamp / PLAYER_SPRITE.idleFrameDuration) % PLAYER_SPRITE.frameCount;
+  return animation.frameCount * animation.frameDuration;
+}
+
+function startPlayerAnimation(animationName, options = {}) {
+  const animation = PLAYER_ANIMATIONS[animationName];
+  if (!animation) {
+    return false;
+  }
+
+  if (state.activePlayerAnimation?.name === "death" && animationName !== "death") {
+    return false;
+  }
+
+  const startedAt = options.startedAt ?? state.lastTimestamp;
+  state.activePlayerAnimation = {
+    name: animationName,
+    direction: options.direction ?? player.direction,
+    startedAt,
+    endsAt: startedAt + getPlayerAnimationDuration(animationName),
+  };
+  return true;
+}
+
+function getPlayerAnimationFrame() {
+  const active = state.activePlayerAnimation;
+  const animationName = active?.name ?? (player.isMoving ? "run" : "idle");
+  const animation = PLAYER_ANIMATIONS[animationName] ?? PLAYER_ANIMATIONS.idle;
+  const direction = active?.direction ?? player.direction;
+
+  if (!active) {
+    const frameIndex = player.isMoving
+      ? Math.floor(player.walkTime) % animation.frameCount
+      : Math.floor(state.lastTimestamp / animation.frameDuration) % animation.frameCount;
+    return { animationName, animation, direction, frameIndex };
+  }
+
+  let elapsed = Math.max(0, state.lastTimestamp - active.startedAt);
+  if (animation.frameDurations) {
+    let frameIndex = animation.frameCount - 1;
+    let cursor = 0;
+    for (let index = 0; index < animation.frameDurations.length; index += 1) {
+      cursor += animation.frameDurations[index];
+      if (elapsed < cursor) {
+        frameIndex = index;
+        break;
+      }
+    }
+    return { animationName, animation, direction, frameIndex };
+  }
+
+  return {
+    animationName,
+    animation,
+    direction,
+    frameIndex: Math.min(animation.frameCount - 1, Math.floor(elapsed / animation.frameDuration)),
+  };
+}
+
+function getActivePlayerAnimationName() {
+  return getPlayerAnimationFrame().animationName;
+}
+
+function updatePlayerAnimation() {
+  const active = state.activePlayerAnimation;
+  if (!active || state.lastTimestamp < active.endsAt) {
+    return;
+  }
+
+  const completedName = active.name;
+  state.activePlayerAnimation = null;
+  if (completedName === "death" && state.pendingRespawn) {
+    completePlayerRespawn();
+  }
 }
 
 function createStoryRegistry(levelMap) {
@@ -1901,9 +2073,12 @@ function initializeLevelRuntime() {
       monster.lastContactAt = 0;
       monster.attackStartedAt = 0;
       monster.attackEndsAt = 0;
+      monster.attackImpactAt = 0;
       monster.telegraphStartsAt = 0;
       monster.telegraphEndsAt = 0;
-      monster.attackDirection = "down";
+      monster.attackDirection = monster.facing ?? "down";
+      monster.moveDirection = monster.facing ?? "down";
+      monster.horizontalFacing = monster.facing === "left" ? "left" : "right";
       monster.animationState = "idle";
       monster.facingDirection = "down";
       monster.hurtEndsAt = 0;
@@ -1972,13 +2147,16 @@ function resetLevelMonstersForRespawn(levelId) {
     monster.lastContactAt = 0;
     monster.attackStartedAt = 0;
     monster.attackEndsAt = 0;
+    monster.attackImpactAt = 0;
     monster.telegraphStartsAt = 0;
     monster.telegraphEndsAt = 0;
     monster.slowedUntil = 0;
     monster.weakenedUntil = 0;
     monster.stunnedUntil = 0;
     monster.bossPhase = 0;
-    monster.attackDirection = "down";
+    monster.attackDirection = monster.facing ?? "down";
+    monster.moveDirection = monster.facing ?? "down";
+    monster.horizontalFacing = monster.facing === "left" ? "left" : "right";
     monster.animationState = "idle";
     monster.facingDirection = "down";
     monster.hurtEndsAt = 0;
@@ -2013,9 +2191,13 @@ function resetGameplayProgress() {
   state.enemyProjectiles = [];
   state.invulnerableUntil = 0;
   state.activeSkillEffect = null;
+  state.activePlayerAnimation = null;
+  state.pendingRespawn = null;
+  pendingRespawnResolve = null;
   state.endingId = null;
   state.endingSummary = "";
   state.endingCinematic = null;
+  state.badEndingRecovery = null;
   state.completedZones.clear();
   state.zoneSummaryLevelId = null;
   state.cameraShakeUntil = 0;
@@ -2062,7 +2244,7 @@ function updateCombatStatus() {
   }
   const charged = state.strikeChargeStartedAt ? " • Đang tích lực" : "";
   const parrying = state.lastTimestamp < state.parryEndsAt ? " • ĐỠ ĐÒN!" : "";
-  combatStatus.textContent = `Thể lực ${Math.round(state.stamina)}/${STAMINA_MAX} • Shift ${dodgeReady ? "sẵn sàng" : "hồi"} • J ${strikeReady ? "sẵn sàng" : "hồi"} • K ${parryReady ? "phản đòn" : "hồi"}${charged}${parrying}`;
+  combatStatus.textContent = `Thể lực ${Math.round(state.stamina)}/${STAMINA_MAX} • L ${dodgeReady ? "sẵn sàng" : "hồi"} • J ${strikeReady ? "sẵn sàng" : "hồi"} • K ${parryReady ? "phản đòn" : "hồi"}${charged}${parrying}`;
 }
 
 function currentLevel() {
@@ -2082,6 +2264,12 @@ function createDebugSnapshot() {
     currentLevelId: state.currentLevelId,
     respawnLevelId: state.respawnLevelId,
     endingId: state.endingId,
+    badEndingRecovery: state.badEndingRecovery
+      ? {
+          phase: state.badEndingRecovery.phase,
+          elapsed: Math.max(0, state.lastTimestamp - state.badEndingRecovery.startedAt),
+        }
+      : null,
     health: state.health,
     saDoa: state.saDoa,
     inventory: Array.from(state.inventory),
@@ -2091,6 +2279,7 @@ function createDebugSnapshot() {
       screenX: playerScreen.x,
       screenY: playerScreen.y,
       direction: player.direction,
+      animation: getActivePlayerAnimationName(),
     },
     camera: { ...camera },
     questSummary: getZoneProgressText(state.currentLevelId),
@@ -2106,9 +2295,13 @@ function createDebugSnapshot() {
       comboFollowUpAt: monster.comboFollowUpAt ?? 0,
     })),
     quests: {
+      tvaBriefingAccepted: state.quests.tvaBriefingAccepted,
+      tvaPortalTarget: state.quests.tvaPortalTarget,
+      tvaReportedRelics: Array.from(state.quests.tvaReportedRelics),
       zone1Started: state.quests.zone1Started,
       zone1Delivered: Array.from(state.quests.zone1Delivered),
       zone1RewardClaimed: state.quests.zone1RewardClaimed,
+      zone1SoldierDecision: state.quests.zone1SoldierDecision,
       zone2Fragments: Array.from(state.quests.zone2Fragments),
       zone2TowerActivated: state.quests.zone2TowerActivated,
       zone2RewardClaimed: state.quests.zone2RewardClaimed,
@@ -2148,7 +2341,7 @@ function getDebugGeometry() {
   return {
     playerFootprint: getPlayerFootprint(player.x, player.y),
     colliders: getActiveColliders(),
-    exits: currentLevel().exits.map((exit) => exit.kind === "rect"
+    exits: currentLevel().exits.filter(isExitAvailable).map((exit) => exit.kind === "rect"
       ? { x: exit.x, y: exit.y, width: exit.width, height: exit.height }
       : { x: exit.triggerX - 2, y: exit.minY, width: 4, height: exit.maxY - exit.minY }),
     interactables: currentLevel().interactables
@@ -2201,11 +2394,12 @@ function installDebugTools() {
     },
     async triggerExit(exitId) {
       const exit = currentLevel().exits.find((entry) => entry.id === exitId);
-      if (!exit?.target) {
+      const target = getExitTarget(exit);
+      if (!target) {
         return { transitioned: false, reason: "missing-exit", ...createDebugSnapshot() };
       }
 
-      const group = await assetManager.loadGroup(getAssetGroupForLevel(exit.target));
+      const group = await assetManager.loadGroup(getAssetGroupForLevel(target));
       if (!group.ready) {
         return { transitioned: false, reason: "assets-unavailable", ...createDebugSnapshot() };
       }
@@ -2230,6 +2424,28 @@ function installDebugTools() {
       updateProgressHud();
       return createDebugSnapshot();
     },
+    completeTvaRoute(levelId) {
+      const route = getTvaRoute(levelId);
+      if (!route) {
+        return { completed: false, ...createDebugSnapshot() };
+      }
+
+      for (const relicId of route.relicIds) {
+        state.inventory.add(relicId);
+      }
+      state.completedZones.add(levelId);
+      state.quests.tvaPortalTarget = null;
+      if (levelId === "village") state.quests.zone1RewardClaimed = true;
+      if (levelId === "archive") state.quests.zone2RewardClaimed = true;
+      if (levelId === "crossroads") {
+        state.quests.zone3ThreadClaimed = true;
+        state.quests.zone3MapClaimed = true;
+      }
+      if (levelId === "spring") state.quests.zone4GearClaimed = true;
+      updateProgressHud();
+      saveGameProgress();
+      return { completed: true, ...createDebugSnapshot() };
+    },
     interactById(interactableId) {
       const item = currentLevel().interactables.find((entry) => entry.id === interactableId);
 
@@ -2245,8 +2461,32 @@ function installDebugTools() {
 
       return createDebugSnapshot();
     },
-    damagePlayer(amount = PLAYER_MAX_HEALTH, sourceName = "debug") {
-      damagePlayer(amount, sourceName);
+    async damagePlayer(amount = PLAYER_MAX_HEALTH, sourceName = "debug") {
+      await damagePlayer(amount, sourceName);
+      return createDebugSnapshot();
+    },
+    triggerBadEnding(summary = "Nhánh thời gian thử nghiệm đã sụp đổ.") {
+      triggerBadEnding(summary);
+      return createDebugSnapshot();
+    },
+    completeEndingCinematic() {
+      if (!state.endingCinematic) {
+        return createDebugSnapshot();
+      }
+
+      state.endingCinematic.hasStarted = true;
+      state.endingCinematic.completed = true;
+      state.endingCinematic.startedAt = state.lastTimestamp - state.endingCinematic.duration;
+      beginBadEndingRecovery();
+      updateEndingCinematicUiState();
+      return createDebugSnapshot();
+    },
+    setBadEndingRecoveryElapsed(elapsed) {
+      beginBadEndingRecovery();
+      if (state.badEndingRecovery) {
+        state.badEndingRecovery.startedAt = state.lastTimestamp - Math.max(0, Number(elapsed) || 0);
+        updateBadEndingRecovery();
+      }
       return createDebugSnapshot();
     },
     damageMonster(monsterId, amount = 1) {
@@ -2270,6 +2510,10 @@ function installDebugTools() {
     },
     strike(charged = false) {
       useStrikeSkill(charged);
+      return createDebugSnapshot();
+    },
+    playPlayerAnimation(animationName) {
+      startPlayerAnimation(animationName);
       return createDebugSnapshot();
     },
   };
@@ -2360,6 +2604,7 @@ function frame({ now: timestamp, deltaSeconds }) {
   }
 
   if (state.mode === "playing" && timestamp >= state.hitStopUntil) {
+    updatePlayerAnimation();
     updatePlayer(deltaSeconds);
     updateMonsters(deltaSeconds);
     updateEnemyProjectiles(deltaSeconds);
@@ -2375,6 +2620,7 @@ function frame({ now: timestamp, deltaSeconds }) {
   updateProgressHud();
   render();
   renderEndingArtCinematic();
+  updateBadEndingRecovery();
   renderEndingSceneOverlay();
   if (debugOverlay?.isVisible()) {
     const updateText = timestamp - lastDebugTextUpdateAt >= 250;
@@ -2522,11 +2768,16 @@ function scheduleRelicBookOpen(storyId) {
 function hideDialogue() {
   dialogueBox.classList.add("hidden");
   dialogueBox.setAttribute("aria-hidden", "true");
+  delete dialogueBox.dataset.context;
+  dialogueChoiceList.replaceChildren();
+  dialogueChoiceList.classList.add("hidden");
+  dialogueNextButton.classList.remove("hidden");
 }
 
 function hideOpeningIntro() {
   openingIntro.classList.add("hidden");
   openingIntro.setAttribute("aria-hidden", "true");
+  delete openingIntro.dataset.stage;
 }
 
 function renderOpeningIntro() {
@@ -2542,8 +2793,9 @@ function renderOpeningIntro() {
   openingSpeaker.textContent = entry.speaker;
   openingProgress.textContent = `${state.openingStep + 1} / ${OPENING_DIALOGUE.length}`;
   openingText.textContent = entry.text;
+  openingIntro.dataset.stage = entry.stage ?? "orient";
   openingNextButton.textContent = state.openingStep === OPENING_DIALOGUE.length - 1
-    ? "Bắt đầu"
+    ? "Đi vào văn phòng"
     : "Tiếp tục";
   openingIntro.classList.remove("hidden");
   openingIntro.setAttribute("aria-hidden", "false");
@@ -2557,6 +2809,10 @@ function getLegacyInteractionDialogue(item) {
 }
 
 function getInteractionDialogue(item) {
+  if (item.interactionType === "tvaBriefing") {
+    return getTvaEmployeeDialogue();
+  }
+
   const scriptedDialogue = INTERACTION_DIALOGUES[item.id];
 
   if (scriptedDialogue) {
@@ -2578,6 +2834,104 @@ function getInteractionDialogue(item) {
   };
 }
 
+function getTvaEmployeeDialogue() {
+  if (!state.quests.tvaBriefingAccepted) {
+    return TVA_EMPLOYEE_DIALOGUES.introduction;
+  }
+
+  const activeRoute = getTvaRoute(state.quests.tvaPortalTarget);
+  if (activeRoute) {
+    return {
+      ...TVA_EMPLOYEE_DIALOGUES.portalActive,
+      lines: [
+        {
+          speaker: "David",
+          text: `Tọa độ ${activeRoute.coordinate} vẫn ổn định. Cổng tới ${activeRoute.label} ở ngay bên cạnh; bước qua khi cậu sẵn sàng.`,
+        },
+      ],
+    };
+  }
+
+  const pendingRelicIds = getPendingTvaRelicIds();
+  const nextRoute = getNextTvaRoute();
+
+  if (pendingRelicIds.length > 0) {
+    return createTvaRelicReportDialogue(pendingRelicIds, nextRoute);
+  }
+
+  if (nextRoute) {
+    return createTvaDispatchPrompt(nextRoute);
+  }
+
+  return createTvaCompletionDialogue();
+}
+
+function createTvaDispatchPrompt(route) {
+  return {
+    ...TVA_EMPLOYEE_DIALOGUES.dispatchPrompt,
+    storyId: null,
+    context: { routeLevelId: route.levelId },
+    lines: [
+      {
+        speaker: "David",
+        text: `Hồ sơ tiếp theo dẫn tới ${route.label}. Cậu muốn xuất phát ngay chưa?`,
+      },
+    ],
+  };
+}
+
+function createTvaRelicReportDialogue(relicIds, nextRoute) {
+  const relicLabels = relicIds.map((relicId) => RELIC_DEFINITIONS[relicId]?.label ?? relicId);
+  const joinedLabels = relicLabels.join(relicLabels.length > 1 ? " và " : "");
+  const lines = [
+    { speaker: "Nhà du hành", text: "Tôi đã hoàn thành hồ sơ và mang tín vật trở về." },
+    { speaker: "David", text: "Đưa tôi xem. Máy kiểm định này cũ hơn cả phòng ban của tôi, nhưng nó chưa từng đọc sai một chữ ký thời gian." },
+    { speaker: "David", text: `${joinedLabels}. Tần số lịch sử khớp hoàn toàn; hồ sơ này được xác nhận.` },
+  ];
+
+  if (nextRoute) {
+    lines.push({
+      speaker: "David",
+      text: `Tuyến kế tiếp là ${nextRoute.label}. Cậu muốn tôi nhập tọa độ ngay chứ?`,
+    });
+  } else {
+    lines.push(
+      { speaker: "David", text: "Đủ năm tín vật. Các nhánh lịch sử đã ổn định và hồ sơ trở về của cậu cuối cùng cũng có thể được xử lý." },
+      { speaker: "Nhà du hành", text: "Vậy lần này anh thật sự có thể đưa tôi về nhà chứ?" }
+    );
+  }
+
+  return {
+    speaker: "David",
+    storyId: null,
+    lines,
+    choices: nextRoute
+      ? TVA_EMPLOYEE_DIALOGUES.dispatchPrompt.choices
+      : [
+          { id: "finish-history", label: "Hoàn tất hồ sơ trở về" },
+          { id: "dispatch-later", label: "Để tôi xem lại tín vật" },
+        ],
+    context: {
+      pendingRelicIds: relicIds,
+      routeLevelId: nextRoute?.levelId ?? null,
+    },
+  };
+}
+
+function createTvaCompletionDialogue() {
+  return {
+    speaker: "David",
+    storyId: null,
+    lines: [
+      { speaker: "David", text: "Năm tín vật đã được đóng dấu. Khi cậu sẵn sàng, tôi sẽ hoàn tất hồ sơ trở về dòng thời gian của cậu." },
+    ],
+    choices: [
+      { id: "finish-history", label: "Tôi sẵn sàng về nhà" },
+      { id: "dispatch-later", label: "Tôi cần thêm thời gian" },
+    ],
+  };
+}
+
 function renderDialogue() {
   const dialogue = state.activeDialogue;
 
@@ -2586,18 +2940,59 @@ function renderDialogue() {
     return;
   }
 
-  const currentLine = dialogue.lines[state.activeDialogueIndex];
+  const currentEntry = dialogue.lines[state.activeDialogueIndex];
+  const currentLine = typeof currentEntry === "string" ? currentEntry : currentEntry.text;
+  const currentSpeaker = typeof currentEntry === "string" ? dialogue.speaker : currentEntry.speaker ?? dialogue.speaker;
   const lastLineIndex = dialogue.lines.length - 1;
   const storySeen = state.unlockedStoryIds.has(dialogue.storyId);
+  const choices = state.activeDialogueIndex === lastLineIndex ? dialogue.choices ?? [] : [];
+  const hasChoices = choices.length > 0;
 
-  dialogueSpeaker.textContent = dialogue.speaker;
+  dialogueBox.dataset.speaker = currentSpeaker === "David"
+    ? "david"
+    : currentSpeaker === "Nhà du hành"
+      ? "traveler"
+      : "other";
+  dialogueSpeaker.textContent = currentSpeaker;
   dialogueProgress.textContent = `${state.activeDialogueIndex + 1} / ${dialogue.lines.length}`;
   dialogueText.textContent = currentLine;
   dialogueNextButton.textContent = state.activeDialogueIndex === lastLineIndex
-    ? (storySeen ? "Đóng" : "Mở khóa chuyện")
+    ? (dialogue.closeLabel ?? (dialogue.storyId ? (storySeen ? "Đóng" : "Mở khóa chuyện") : "Đóng"))
     : "Tiếp tục";
+  dialogueHint.textContent = dialogueBox.dataset.context === "tva"
+    ? (hasChoices ? "Chọn phương án xử lý" : "Tiếp tục biên bản")
+    : hasChoices
+      ? "Chọn một câu trả lời • Phím 1 / 2"
+      : "E / Phím cách để tiếp tục";
+  dialogueNextButton.classList.toggle("hidden", hasChoices);
+  dialogueChoiceList.replaceChildren(...choices.map(createDialogueChoiceButton));
+  dialogueChoiceList.classList.toggle("hidden", !hasChoices);
   dialogueBox.classList.remove("hidden");
   dialogueBox.setAttribute("aria-hidden", "false");
+}
+
+function createDialogueChoiceButton(choice, index) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "pixel-button dialogue-choice-button";
+  button.dataset.dialogueChoice = choice.id;
+  button.textContent = `${index + 1}. ${choice.label}`;
+
+  if (choice.tone === "danger") {
+    button.classList.add("is-danger");
+  }
+
+  return button;
+}
+
+function getPendingDialogueChoices() {
+  const dialogue = state.activeDialogue;
+
+  if (!dialogue || state.activeDialogueIndex !== dialogue.lines.length - 1) {
+    return [];
+  }
+
+  return dialogue.choices ?? [];
 }
 
 function unlockStory(storyId, options = {}) {
@@ -2621,16 +3016,26 @@ function startDialogue(item) {
   const dialogue = getInteractionDialogue(item);
 
   state.mode = "dialogue";
-  state.activeDialogue = {
-    storyId: item.id,
-    speaker: dialogue.speaker,
-    lines: dialogue.lines.filter(Boolean),
-  };
-  state.activeDialogueIndex = 0;
+  setActiveDialogue(item, dialogue);
   interactionPrompt.classList.add("hidden");
   hideStoryToast();
-  renderDialogue();
   updateStoryBookButton();
+}
+
+function setActiveDialogue(item, dialogue) {
+  const hasExplicitStoryId = Object.prototype.hasOwnProperty.call(dialogue, "storyId");
+  state.activeDialogue = {
+    storyId: hasExplicitStoryId ? dialogue.storyId : dialogue.choices?.length ? null : item.id,
+    interactionId: item.id,
+    speaker: dialogue.speaker,
+    lines: dialogue.lines.filter(Boolean),
+    choices: dialogue.choices ?? [],
+    context: dialogue.context ?? null,
+    closeLabel: dialogue.closeLabel,
+  };
+  state.activeDialogueIndex = 0;
+  dialogueBox.dataset.context = item.interactionType === "tvaBriefing" ? "tva" : "default";
+  renderDialogue();
 }
 
 function finishDialogue() {
@@ -2661,7 +3066,111 @@ function advanceDialogue() {
     return;
   }
 
+  if (getPendingDialogueChoices().length > 0) {
+    return;
+  }
+
   finishDialogue();
+}
+
+function resolveDialogueChoice(choiceId) {
+  const dialogue = state.activeDialogue;
+  const choice = getPendingDialogueChoices().find((entry) => entry.id === choiceId);
+  const item = currentLevel().interactables.find((entry) => entry.id === dialogue?.interactionId);
+  const supportedInteraction = ["colonialRecruitment", "tvaBriefing"].includes(item?.interactionType);
+
+  if (!dialogue || !choice || !item || !supportedInteraction) {
+    return;
+  }
+
+  if (item.interactionType === "tvaBriefing") {
+    resolveTvaDialogueChoice(choice.id, item, dialogue);
+    return;
+  }
+
+  state.activeDialogue = null;
+  state.activeDialogueIndex = 0;
+  hideDialogue();
+  state.mode = "playing";
+  item.used = true;
+
+  if (choice.id === "refuse") {
+    state.quests.zone1SoldierDecision = "refused";
+    updateInteractionPrompt();
+    showStoryToast("Bạn từ chối làm tay sai và giữ lại các tờ Le Paria để tiếp tục truyền cho công nhân.");
+    saveGameProgress();
+    return;
+  }
+
+  state.quests.zone1SoldierDecision = "accepted";
+  state.saDoa = SA_DOA_MAX;
+  updateProgressHud();
+  saveGameProgress();
+  triggerBadEnding("Bạn nhận lời làm tay sai, đốt những tờ Le Paria và chặn tiếng nói phản kháng trước khi chúng đến tay người lao động.");
+}
+
+function resolveTvaDialogueChoice(choiceId, item, dialogue) {
+  if (choiceId === "refuse-assignment") {
+    setActiveDialogue(item, TVA_EMPLOYEE_DIALOGUES.refusal);
+    return;
+  }
+
+  if (["accept-assignment", "forced-accept-assignment"].includes(choiceId)) {
+    state.quests.tvaBriefingAccepted = true;
+    item.used = false;
+    saveGameProgress();
+    const route = getNextTvaRoute();
+    setActiveDialogue(item, route ? createTvaDispatchPrompt(route) : createTvaCompletionDialogue());
+    updateQuestChip();
+    return;
+  }
+
+  markTvaRelicsReported(dialogue.context?.pendingRelicIds ?? []);
+
+  if (choiceId === "dispatch-later") {
+    finishDialogue();
+    showStoryToast("David giữ hồ sơ trên bàn và chờ bạn quay lại xác nhận xuất phát.");
+    saveGameProgress();
+    return;
+  }
+
+  if (choiceId === "finish-history") {
+    finishDialogue();
+    saveGameProgress();
+    attemptEndingInteraction();
+    return;
+  }
+
+  if (choiceId !== "dispatch-ready") {
+    return;
+  }
+
+  const route = getTvaRoute(dialogue.context?.routeLevelId) ?? getNextTvaRoute();
+  if (!route) {
+    finishDialogue();
+    attemptEndingInteraction();
+    return;
+  }
+
+  state.quests.tvaPortalTarget = route.levelId;
+  void assetManager.preloadGroup(getAssetGroupForLevel(route.levelId));
+  saveGameProgress();
+  updateQuestChip();
+  setActiveDialogue(item, {
+    speaker: "David",
+    storyId: null,
+    closeLabel: "Đến cổng",
+    lines: [
+      { speaker: "David", text: `Đang nhập tọa độ không-thời gian: ${route.coordinate}...` },
+      { speaker: "David", text: `Đồng bộ hoàn tất. Cổng tới ${route.label} đã mở; đừng chạm vào mép sáng nếu không muốn để lại một phần cơ thể ở thập niên khác.` },
+    ],
+  });
+}
+
+function markTvaRelicsReported(relicIds) {
+  for (const relicId of relicIds) {
+    state.quests.tvaReportedRelics.add(relicId);
+  }
 }
 
 function cancelDialogue() {
@@ -2727,7 +3236,7 @@ function legacyStartGame() {
   resetStoryProgress();
   loadLevel("hub");
   showTutorial();
-  showStoryToast("Mục tiêu mới: đi qua 4 khu vực, tìm đủ 5 vật phẩm và giữ thanh Tha hóa ở mức an toàn.");
+  showStoryToast("Bạn không biết đây là đâu. Hãy đi dọc hành lang và tìm người đang nói ở phía trước.");
 }
 
 function legacyReturnToStartScreen() {
@@ -2779,7 +3288,7 @@ function beginGameSession() {
   resetStoryProgress();
   loadLevel("hub");
   showTutorial();
-  showStoryToast("Mục tiêu mới: đi qua 4 khu vực, tìm đủ 5 vật phẩm và giữ thanh Tha hóa ở mức an toàn.");
+  showStoryToast("Bạn không biết đây là đâu. Hãy đi dọc hành lang và tìm người đang nói ở phía trước.");
 }
 
 function startGame() {
@@ -2863,7 +3372,7 @@ function restartGame() {
   slideModal.setAttribute("aria-hidden", "true");
   resetStoryProgress();
   loadLevel("hub");
-  showStoryToast("Hành trình khởi động lại. Hãy giữ vững chính khí, tránh Tha hóa và tìm đủ 5 vật phẩm.");
+  showStoryToast("Bạn lại tỉnh dậy ở điểm rơi. Hãy đi dọc hành lang và tìm người nhân viên.");
 }
 
 function getAssetGroupForLevel(levelId) {
@@ -2873,7 +3382,7 @@ function getAssetGroupForLevel(levelId) {
 function getAssetGroupLabel(groupId) {
   return {
     core: "nhân vật và hiệu ứng cốt lõi",
-    hub: "Cánh Cửa Lịch Sử",
+    hub: "Văn phòng TVA",
     zone1: "Khu 1: Đêm mưa thuộc địa",
     zone2: "Khu 2: Kho lưu trữ",
     zone3: "Khu 3: Quảng trường",
@@ -2973,10 +3482,16 @@ function loadLevel(levelId, spawnOverride, options = {}) {
     return false;
   }
 
+  const previousLevelId = state.currentLevelId;
+  if (previousLevelId === "hub" && state.quests.tvaPortalTarget === levelId) {
+    state.quests.tvaPortalTarget = null;
+  }
+
   state.currentLevelId = levelId;
   state.activeInteractionId = null;
   state.pendingEnding = false;
   state.enemyProjectiles = [];
+  state.activePlayerAnimation = null;
 
   const level = currentLevel();
   const spawn = cloneSpawnPoint(spawnOverride ?? level.spawn) ?? level.spawn;
@@ -2993,9 +3508,10 @@ function loadLevel(levelId, spawnOverride, options = {}) {
   player.direction = spawn.direction ?? "down";
   player.walkTime = 0;
   player.isMoving = false;
+  camera.zoom = level.cameraZoom ?? 1;
   state.blockedExitIds = new Set(
     level.exits
-      .filter((exit) => exit.target && isPointInsideExit(player.x, player.y, exit))
+      .filter((exit) => isExitAvailable(exit) && isPointInsideExit(player.x, player.y, exit))
       .map((exit) => exit.id)
   );
 
@@ -3115,7 +3631,7 @@ function closeSlide() {
 }
 
 function handleReturnFromEnding() {
-  if (!isEndingCinematicComplete()) {
+  if (!isEndingCinematicComplete() || state.endingId === "bad") {
     return;
   }
 
@@ -3138,6 +3654,173 @@ function isEndingCinematicComplete() {
   return !state.endingCinematic || state.endingCinematic.completed;
 }
 
+function getBadEndingRecoveryTimeline() {
+  const blackoutAt = BAD_ENDING_RECOVERY.lingerDuration;
+  const walkAt = blackoutAt + BAD_ENDING_RECOVERY.blackoutDuration;
+  const complaintAt = walkAt + BAD_ENDING_RECOVERY.walkDuration;
+  const resetAt = complaintAt + BAD_ENDING_RECOVERY.complaintDuration;
+
+  return {
+    blackoutAt,
+    walkAt,
+    complaintAt,
+    resetAt,
+    completeAt: resetAt + BAD_ENDING_RECOVERY.resetDuration,
+  };
+}
+
+function getBadEndingRecoveryFrame(recovery = state.badEndingRecovery) {
+  const timeline = getBadEndingRecoveryTimeline();
+  const elapsed = Math.max(0, state.lastTimestamp - recovery.startedAt);
+  let phase = "linger";
+  let phaseProgress = clamp(elapsed / BAD_ENDING_RECOVERY.lingerDuration, 0, 1);
+
+  if (elapsed >= timeline.resetAt) {
+    phase = "reset";
+    phaseProgress = clamp(
+      (elapsed - timeline.resetAt) / BAD_ENDING_RECOVERY.resetDuration,
+      0,
+      1
+    );
+  } else if (elapsed >= timeline.complaintAt) {
+    phase = "complaint";
+    phaseProgress = clamp(
+      (elapsed - timeline.complaintAt) / BAD_ENDING_RECOVERY.complaintDuration,
+      0,
+      1
+    );
+  } else if (elapsed >= timeline.walkAt) {
+    phase = "walk";
+    phaseProgress = clamp(
+      (elapsed - timeline.walkAt) / BAD_ENDING_RECOVERY.walkDuration,
+      0,
+      1
+    );
+  } else if (elapsed >= timeline.blackoutAt) {
+    phase = "blackout";
+    phaseProgress = clamp(
+      (elapsed - timeline.blackoutAt) / BAD_ENDING_RECOVERY.blackoutDuration,
+      0,
+      1
+    );
+  }
+
+  const lineIndex = Math.min(
+    BAD_ENDING_RECOVERY.lines.length - 1,
+    Math.floor(
+      (phase === "complaint" ? phaseProgress : phase === "reset" ? 1 : 0) *
+        BAD_ENDING_RECOVERY.lines.length
+    )
+  );
+
+  return {
+    elapsed,
+    phase,
+    phaseProgress,
+    lineIndex,
+    complete: elapsed >= timeline.completeAt,
+  };
+}
+
+function syncBadEndingRecoveryUi(frame = null) {
+  if (!state.badEndingRecovery || !frame) {
+    delete endOverlay.dataset.recoveryPhase;
+    badEndingRecoveryDialogue?.classList.add("hidden");
+    badEndingRecoveryDialogue?.setAttribute("aria-hidden", "true");
+    if (badEndingRecoveryText) {
+      badEndingRecoveryText.textContent = "";
+    }
+    return;
+  }
+
+  endOverlay.dataset.recoveryPhase = frame.phase;
+  const showDialogue = frame.phase === "complaint" || frame.phase === "reset";
+  badEndingRecoveryDialogue?.classList.toggle("hidden", !showDialogue);
+  badEndingRecoveryDialogue?.setAttribute("aria-hidden", showDialogue ? "false" : "true");
+
+  if (badEndingRecoverySpeaker) {
+    badEndingRecoverySpeaker.textContent = BAD_ENDING_RECOVERY.speaker;
+  }
+  if (badEndingRecoveryText) {
+    badEndingRecoveryText.textContent = BAD_ENDING_RECOVERY.lines[frame.lineIndex] ?? "";
+  }
+}
+
+function beginBadEndingRecovery() {
+  if (
+    state.mode !== "ending" ||
+    state.endingId !== "bad" ||
+    !isEndingCinematicComplete() ||
+    state.badEndingRecovery
+  ) {
+    return;
+  }
+
+  state.badEndingRecovery = {
+    startedAt: state.lastTimestamp,
+    phase: "linger",
+  };
+  syncBadEndingRecoveryUi(getBadEndingRecoveryFrame());
+  updateEndingCinematicUiState();
+}
+
+function updateBadEndingRecovery() {
+  if (state.mode !== "ending" || state.endingId !== "bad" || !isEndingCinematicComplete()) {
+    return;
+  }
+
+  beginBadEndingRecovery();
+  if (!state.badEndingRecovery) {
+    return;
+  }
+
+  const frame = getBadEndingRecoveryFrame();
+  state.badEndingRecovery.phase = frame.phase;
+  syncBadEndingRecoveryUi(frame);
+
+  if (frame.complete) {
+    restoreBadEndingCheckpoint();
+  }
+}
+
+function restoreBadEndingCheckpoint() {
+  const checkpointLevelId = levels[state.respawnLevelId] ? state.respawnLevelId : "hub";
+  const checkpointSpawn = cloneSpawnPoint(
+    state.respawnSpawn ?? levels[checkpointLevelId]?.spawn ?? levels.hub.spawn
+  );
+
+  state.health = PLAYER_MAX_HEALTH;
+  state.stamina = STAMINA_MAX;
+  state.saDoa = Math.min(BAD_ENDING_RECOVERY.corruptionAfterReset, SA_DOA_BAD_ENDING - 1);
+  state.skillCooldowns.strikeReadyAt = 0;
+  state.skillCooldowns.parryReadyAt = 0;
+  state.skillReadySoundArmed.strike = false;
+  state.skillReadySoundArmed.parry = false;
+  state.dodgeReadyAt = 0;
+  state.dodgeEndsAt = 0;
+  state.parryEndsAt = 0;
+  state.strikeChargeStartedAt = 0;
+  state.comboStep = 0;
+  state.comboExpiresAt = 0;
+  state.weakenedUntil = 0;
+  state.enemyProjectiles = [];
+  state.activeSkillEffect = null;
+  state.invulnerableUntil = state.lastTimestamp + RESPAWN_INVULNERABILITY_MS;
+  state.highCorruptionWarningShown = false;
+  clearPressedKeys();
+  resetLevelMonstersForRespawn(checkpointLevelId);
+  hideEndOverlay();
+  state.endingId = null;
+  state.endingSummary = "";
+  state.mode = "playing";
+  returnStartButton.disabled = false;
+  loadLevel(checkpointLevelId, checkpointSpawn, {
+    updateRespawnCheckpoint: false,
+    announcePresentation: false,
+  });
+  showStoryToast("TVA đã đưa bạn trở lại điểm kiểm soát gần nhất.");
+}
+
 function updateEndingCinematicUiState() {
   if (state.mode !== "ending") {
     returnStartButton.disabled = false;
@@ -3147,7 +3830,7 @@ function updateEndingCinematicUiState() {
 
   const cinematicState = isEndingCinematicComplete() ? "complete" : "running";
   endOverlay.dataset.cinematic = cinematicState;
-  returnStartButton.disabled = cinematicState === "running";
+  returnStartButton.disabled = cinematicState === "running" || state.endingId === "bad";
 }
 
 function showEndOverlay() {
@@ -3156,6 +3839,8 @@ function showEndOverlay() {
 
   state.mode = "ending";
   state.endingCinematic = createEndingCinematicState(state.endingId ?? "bad");
+  state.badEndingRecovery = null;
+  syncBadEndingRecoveryUi();
   hideDialogue();
   hideStoryToast();
   hideCorruptionWarning();
@@ -3189,6 +3874,8 @@ function hideEndOverlay() {
     endArtImage.alt = "";
   }
   state.endingCinematic = null;
+  state.badEndingRecovery = null;
+  syncBadEndingRecoveryUi();
   clearEndingArtCinematic();
   clearEndingSceneOverlay();
   updateEndingCinematicUiState();
@@ -3438,6 +4125,7 @@ function renderEndingArtCinematic() {
 
   if (frame.complete && !cinematicState.completed) {
     cinematicState.completed = true;
+    beginBadEndingRecovery();
     updateEndingCinematicUiState();
   }
 }
@@ -3472,6 +4160,8 @@ function renderEndingSceneOverlay() {
 
   if (state.endingId === "good") {
     renderGoodEndingSceneOverlay(context, width, height, scene);
+  } else if (state.badEndingRecovery) {
+    renderBadEndingRecoveryScene(context, width, height, scene);
   } else {
     renderBadEndingSceneOverlay(context, width, height, scene);
   }
@@ -3571,6 +4261,122 @@ function renderBadEndingSceneOverlay(context, width, height, scene) {
   drawEndingSceneFigures(context, width, height, scene.figures);
 }
 
+function renderBadEndingRecoveryScene(context, width, height, scene) {
+  const frame = getBadEndingRecoveryFrame();
+
+  if (frame.phase === "linger") {
+    renderBadEndingSceneOverlay(context, width, height, scene);
+    return;
+  }
+
+  if (frame.phase === "blackout") {
+    renderBadEndingSceneOverlay(context, width, height, scene);
+    context.save();
+    context.fillStyle = `rgba(2, 2, 3, ${easeInOutCubic(frame.phaseProgress)})`;
+    context.fillRect(0, 0, width, height);
+    context.restore();
+    return;
+  }
+
+  context.save();
+  context.fillStyle = "#020203";
+  context.fillRect(0, 0, width, height);
+
+  const walkProgress = frame.phase === "walk" ? easeInOutCubic(frame.phaseProgress) : 1;
+  const actorX = -width * 0.1 + width * 0.52 * walkProgress;
+  const actorY = height * 0.78;
+  const actorScale = clamp((height * 0.4) / TVA_EMPLOYEE_SPRITE.drawHeight, 2.4, 7.5);
+  const actorOpacity = frame.phase === "reset"
+    ? 1 - easeInOutCubic(clamp((frame.phaseProgress - 0.9) / 0.1, 0, 1))
+    : 1;
+
+  context.globalAlpha = actorOpacity * 0.24;
+  context.fillStyle = "#5b4730";
+  context.beginPath();
+  context.ellipse(actorX, actorY + 7, 13 * actorScale, 2.4 * actorScale, 0, 0, Math.PI * 2);
+  context.fill();
+  context.restore();
+
+  if (frame.phase === "reset") {
+    drawM90ResetSequence(context, actorX, actorY, actorScale, frame.phaseProgress, actorOpacity);
+  } else {
+    drawNpcSpriteActorToContext(
+      context,
+      {
+        spriteKey: "tvaEmployee",
+        x: actorX,
+        y: actorY,
+        direction: frame.phase === "walk" ? "right" : "downleft",
+        animation: frame.phase === "walk" ? "walk" : "idle",
+        idleFrameCount: 2,
+        scale: actorScale,
+        opacity: actorOpacity,
+      },
+      state.lastTimestamp
+    );
+  }
+}
+
+function drawM90ResetSequence(context, x, y, scale, phaseProgress, opacity) {
+  const elapsed = phaseProgress * BAD_ENDING_RECOVERY.resetDuration;
+  const actionDuration = M90_RESET_ANIMATION.frameDurations.reduce((total, duration) => total + duration, 0);
+  let frameIndex = M90_RESET_ANIMATION.frameDurations.length - 1;
+  let cursor = 0;
+  for (let index = 0; index < M90_RESET_ANIMATION.frameDurations.length; index += 1) {
+    cursor += M90_RESET_ANIMATION.frameDurations[index];
+    if (elapsed < cursor) {
+      frameIndex = index;
+      break;
+    }
+  }
+
+  if (canDrawSprite(effectSprites.m90ResetActivate)) {
+    const drawWidth = Math.round(TVA_EMPLOYEE_SPRITE.drawWidth * scale);
+    const drawHeight = Math.round(TVA_EMPLOYEE_SPRITE.drawHeight * scale);
+    context.save();
+    context.globalAlpha = opacity;
+    context.imageSmoothingEnabled = false;
+    context.drawImage(
+      effectSprites.m90ResetActivate,
+      frameIndex * M90_RESET_ANIMATION.frameWidth + TVA_EMPLOYEE_SPRITE.cropX,
+      TVA_EMPLOYEE_SPRITE.cropY,
+      TVA_EMPLOYEE_SPRITE.cropWidth,
+      TVA_EMPLOYEE_SPRITE.cropHeight,
+      Math.round(x - drawWidth / 2),
+      Math.round(y - drawHeight),
+      drawWidth,
+      drawHeight
+    );
+    context.restore();
+  }
+
+  const waveElapsed = elapsed - actionDuration;
+  if (waveElapsed < 0 || !canDrawSprite(effectSprites.m90ResetWave)) {
+    return;
+  }
+  const waveFrame = Math.min(
+    M90_RESET_ANIMATION.effectFrameCount - 1,
+    Math.floor(waveElapsed / M90_RESET_ANIMATION.effectFrameDuration)
+  );
+  const waveSize = Math.round(Math.min(context.canvas.width, context.canvas.height) * 0.52);
+  context.save();
+  context.globalCompositeOperation = "screen";
+  context.globalAlpha = opacity * 0.9;
+  context.imageSmoothingEnabled = false;
+  context.drawImage(
+    effectSprites.m90ResetWave,
+    waveFrame * M90_RESET_ANIMATION.effectFrameWidth,
+    0,
+    M90_RESET_ANIMATION.effectFrameWidth,
+    M90_RESET_ANIMATION.effectFrameHeight,
+    Math.round(x - waveSize / 2),
+    Math.round(y - waveSize * 0.72),
+    waveSize,
+    waveSize
+  );
+  context.restore();
+}
+
 function drawEndingSceneFigures(context, width, height, figures) {
   const timestamp = state.lastTimestamp;
   const sortedFigures = [...figures].sort((left, right) => left.y - right.y);
@@ -3628,6 +4434,8 @@ function useStrikeSkill(isCharged = false) {
   state.comboStep = state.lastTimestamp <= state.comboExpiresAt ? (state.comboStep % 3) + 1 : 1;
   state.comboExpiresAt = state.lastTimestamp + 700;
   const strikeDamage = isCharged ? 4 : state.comboStep === 3 ? 2 : 1;
+  const strikeAnimation = isCharged ? "attack2" : state.comboStep % 2 === 0 ? "attack2" : "attack1";
+  startPlayerAnimation(strikeAnimation, { direction: player.direction });
   state.activeSkillEffect = {
     type: isCharged ? "chargedStrike" : "strike",
     direction: player.direction,
@@ -3690,6 +4498,7 @@ function useDodge() {
   resolveLevelCollisions("x", player.x - original.x);
   resolveLevelCollisions("y", player.y - original.y);
   state.activeSkillEffect = { type: "dodge", x: original.x, y: original.y, direction: player.direction, startedAt: state.lastTimestamp, endsAt: state.dodgeEndsAt };
+  startPlayerAnimation("dash", { direction: player.direction });
 }
 
 function useParrySkill() {
@@ -3773,7 +4582,16 @@ function updateMonsters(deltaSeconds) {
     const combatProfile = monster.combatProfile;
     const isCommanded = state.lastTimestamp < (monster.commandBuffUntil ?? 0);
     let targetX = monster.homeX + Math.cos(state.lastTimestamp * 0.001 + monster.phase) * (monster.patrolRadius ?? 18);
-    let targetY = monster.homeY + Math.sin(state.lastTimestamp * 0.0012 + monster.phase) * (monster.patrolRadius ?? 18);
+    let targetY = monster.patrolAxis === "horizontal"
+      ? monster.homeY
+      : monster.homeY + Math.sin(state.lastTimestamp * 0.0012 + monster.phase) * (monster.patrolRadius ?? 18);
+
+    if (monster.attackImpactAt && state.lastTimestamp >= monster.attackImpactAt) {
+      if (state.lastTimestamp < (monster.attackEndsAt ?? 0) && monster.archetype === "ranged") {
+        spawnEnemyProjectile(monster);
+      }
+      monster.attackImpactAt = 0;
+    }
 
     if (distance < (monster.aggroRadius ?? 120)) {
       if (monster.archetype === "ranged" && distance < 104) {
@@ -3796,6 +4614,10 @@ function updateMonsters(deltaSeconds) {
       const slowMultiplier = state.lastTimestamp < (monster.slowedUntil ?? 0) ? 0.58 : 1;
       const commandSpeed = isCommanded ? combatProfile?.commandPulse?.speedMultiplier ?? 1 : 1;
       const step = Math.min(moveLength, MONSTER_SPEED * settings.enemySpeed * (monster.phaseSpeedMultiplier ?? 1) * commandSpeed * slowMultiplier * deltaSeconds);
+      monster.moveDirection = getDirectionFromVector(moveX, moveY);
+      if (Math.abs(moveX) > 0.2) {
+        monster.horizontalFacing = moveX < 0 ? "left" : "right";
+      }
       monster.x += (moveX / moveLength) * step;
       monster.y += (moveY / moveLength) * step;
     }
@@ -3826,6 +4648,9 @@ function updateMonsters(deltaSeconds) {
       monster.telegraphStartsAt = state.lastTimestamp;
       monster.telegraphEndsAt = state.lastTimestamp + (comboFollowUpReady ? 180 : selectedAttack?.telegraphMs ?? (monster.isBoss ? 520 : 340));
       monster.attackDirection = getDirectionFromVector(player.x - monster.x, player.y - monster.y);
+      if (Math.abs(player.x - monster.x) > 0.2) {
+        monster.horizontalFacing = player.x < monster.x ? "left" : "right";
+      }
       monster.animationState = "telegraph";
     }
 
@@ -3834,14 +4659,19 @@ function updateMonsters(deltaSeconds) {
       monster.attackStartedAt = state.lastTimestamp;
       const selectedAttack = monster.attackVariant === "slam" ? combatProfile?.slam : combatProfile?.sweep;
       const attackSpeed = state.lastTimestamp < (monster.commandBuffUntil ?? 0) ? combatProfile?.commandPulse?.attackDurationMultiplier ?? 1 : 1;
-      monster.attackEndsAt = state.lastTimestamp + Math.round((selectedAttack?.attackMs ?? MONSTER_ATTACK_ANIMATION_MS) * attackSpeed);
+      const attackDuration = monster.attackAnimationMs ?? selectedAttack?.attackMs ?? MONSTER_ATTACK_ANIMATION_MS;
+      monster.attackEndsAt = state.lastTimestamp + Math.round(attackDuration * attackSpeed);
       monster.telegraphStartsAt = 0;
       monster.telegraphEndsAt = 0;
       monster.animationState = "attack";
 
       if (monster.archetype === "ranged") {
         playCombatSfx("rifleShot", { volume: 0.64, playbackRate: 0.96 + Math.random() * 0.08 });
-        spawnEnemyProjectile(monster);
+        if ((monster.attackImpactDelayMs ?? 0) > 0) {
+          monster.attackImpactAt = state.lastTimestamp + monster.attackImpactDelayMs;
+        } else {
+          spawnEnemyProjectile(monster);
+        }
       } else if (monster.archetype === "support") {
         playCombatSfx("lanternPulse", { volume: 0.54, playbackRate: 0.96 + Math.random() * 0.08 });
         applySupportPulse(monster);
@@ -3879,12 +4709,17 @@ function triggerCaptainCommandPulse(monster) {
 }
 
 function spawnEnemyProjectile(monster) {
-  const dx = player.x - monster.x;
-  const dy = player.y - monster.y;
+  const config = MONSTER_SPRITE_CONFIG[getMonsterArtKey(monster)];
+  const spriteDirection = getMonsterSpriteDirection(monster, config);
+  const projectileOffset = config?.projectileOffsets?.[spriteDirection];
+  const originX = monster.x + (projectileOffset?.x ?? 0);
+  const originY = monster.y + (projectileOffset?.y ?? -4);
+  const dx = player.x - originX;
+  const dy = player.y - originY;
   const length = Math.max(1, Math.hypot(dx, dy));
   state.enemyProjectiles.push({
-    x: monster.x,
-    y: monster.y - 4,
+    x: originX,
+    y: originY,
     velocityX: (dx / length) * PROJECTILE_SPEED,
     velocityY: (dy / length) * PROJECTILE_SPEED,
     expiresAt: state.lastTimestamp + 1800,
@@ -3955,7 +4790,11 @@ function updateWorldDrops() {
     }
     if (Math.hypot(player.x - drop.x, player.y - drop.y) < 20) {
       if (drop.type === "health") {
+        const previousHealth = state.health;
         state.health = Math.min(PLAYER_MAX_HEALTH, state.health + GAMEPLAY_BALANCE.drops.healthAmount);
+        if (state.health > previousHealth) {
+          startPlayerAnimation("heal", { direction: player.direction });
+        }
       } else {
         state.stamina = Math.min(STAMINA_MAX, state.stamina + GAMEPLAY_BALANCE.drops.staminaAmount);
       }
@@ -4044,11 +4883,11 @@ function damageMonster(monster, amount, effects = {}) {
 
 function damagePlayer(amount, sourceName = "bóng tối", sourceMonster = null) {
   if (resolveParry(sourceName, sourceMonster)) {
-    return;
+    return Promise.resolve();
   }
 
   if (state.lastTimestamp < state.invulnerableUntil) {
-    return;
+    return Promise.resolve();
   }
 
   state.invulnerableUntil = state.lastTimestamp + 820;
@@ -4060,17 +4899,20 @@ function damagePlayer(amount, sourceName = "bóng tối", sourceMonster = null) 
   playCombatSfx("playerHurt", { volume: 0.68, playbackRate: 0.96 + Math.random() * 0.08 });
 
   if (state.health > 0) {
+    startPlayerAnimation("hurt", { direction: player.direction });
     showStoryToast(`${sourceName} gây ${amount} sát thương.`);
-    return;
+    return Promise.resolve();
   }
 
-  state.health = PLAYER_MAX_HEALTH;
   state.activeSkillEffect = null;
-  state.invulnerableUntil = state.lastTimestamp + RESPAWN_INVULNERABILITY_MS;
 
   const respawnLevelId = state.respawnLevelId ?? state.currentLevelId;
   const respawnLevel = levels[respawnLevelId] ?? currentLevel();
   const respawnSpawn = cloneSpawnPoint(state.respawnSpawn ?? respawnLevel.spawn);
+  state.pendingRespawn = { levelId: respawnLevelId, spawn: respawnSpawn };
+  state.invulnerableUntil = state.lastTimestamp + getPlayerAnimationDuration("death") + RESPAWN_INVULNERABILITY_MS;
+  clearPressedKeys();
+  startPlayerAnimation("death", { direction: player.direction });
 
   adjustSaDoa(
     DEATH_SA_DOA_PENALTY,
@@ -4078,14 +4920,41 @@ function damagePlayer(amount, sourceName = "bóng tối", sourceMonster = null) 
   );
 
   if (state.mode === "ending") {
+    state.health = PLAYER_MAX_HEALTH;
+    state.pendingRespawn = null;
+    state.activePlayerAnimation = null;
+    return Promise.resolve();
+  }
+
+  return new Promise((resolve) => {
+    pendingRespawnResolve = resolve;
+  });
+}
+
+function completePlayerRespawn() {
+  const pendingRespawn = state.pendingRespawn;
+  if (!pendingRespawn) {
     return;
   }
 
-  resetLevelMonstersForRespawn(respawnLevelId);
-  loadLevel(respawnLevelId, respawnSpawn, { updateRespawnCheckpoint: false });
+  state.health = PLAYER_MAX_HEALTH;
+  state.pendingRespawn = null;
+  state.invulnerableUntil = state.lastTimestamp + RESPAWN_INVULNERABILITY_MS;
+  resetLevelMonstersForRespawn(pendingRespawn.levelId);
+  loadLevel(pendingRespawn.levelId, pendingRespawn.spawn, { updateRespawnCheckpoint: false });
+  const resolve = pendingRespawnResolve;
+  pendingRespawnResolve = null;
+  resolve?.();
 }
 
 function updatePlayer(deltaSeconds) {
+  if (state.pendingRespawn) {
+    player.isMoving = false;
+    player.walkTime = 0;
+    updateCamera();
+    return;
+  }
+
   if (state.lastTimestamp >= state.dodgeEndsAt) {
     state.stamina = Math.min(STAMINA_MAX, state.stamina + STAMINA_REGEN_PER_SECOND * deltaSeconds);
   }
@@ -4237,7 +5106,8 @@ function handleLevelTransitions() {
   refreshBlockedExits();
 
   for (const exit of currentLevel().exits) {
-    if (!exit.target) {
+    const target = getExitTarget(exit);
+    if (!target) {
       continue;
     }
 
@@ -4246,7 +5116,7 @@ function handleLevelTransitions() {
     }
 
     if (isExitTriggered(exit)) {
-      loadLevel(exit.target, exit.spawn);
+      loadLevel(target, exit.spawn);
       return true;
     }
   }
@@ -4296,15 +5166,19 @@ function updateContextualControls(context) {
 
   const hints = {
     interact: "E tương tác • J tấn công • K phản đòn • B sách",
-    combat: "J tấn công/tích lực • Shift né • K phản đòn",
+    combat: "J tấn công/tích lực • L lướt • K phản đòn",
     exit: "Theo lối ra • E khi có điểm tương tác",
-    move: "WASD di chuyển • Shift né • J tấn công • K phản đòn • B sách",
+    move: "WASD di chuyển • L lướt • J tấn công • K phản đòn • B sách",
   };
   actionHint.textContent = hints[context] ?? hints.move;
 }
 
 function getActiveExitHint() {
   for (const exit of currentLevel().exits) {
+    if (!isExitAvailable(exit)) {
+      continue;
+    }
+
     if (state.blockedExitIds.has(exit.id)) {
       continue;
     }
@@ -4332,6 +5206,13 @@ function updateQuestChip() {
 
 function getZoneProgressText(levelId) {
   switch (levelId) {
+    case "hub": {
+      if (!state.quests.tvaBriefingAccepted) return "Chưa rõ nơi chốn";
+      if (state.quests.tvaPortalTarget) return "Cổng đã mở";
+      if (getPendingTvaRelicIds().length > 0) return "Có tín vật mới";
+      if (!getNextTvaRoute()) return `Tín vật ${state.inventory.size}/${RELIC_TARGET_COUNT}`;
+      return "Chờ điều phối";
+    }
     case "village": return `Công nhân ${state.quests.zone1Delivered.size}/3`;
     case "archive": return `Mảnh ghép ${state.quests.zone2Fragments.size}/3`;
     case "crossroads": return `Lực lượng ${state.quests.zone3Recruits.size}/4`;
@@ -4472,7 +5353,7 @@ function getLevelExit(id) {
 }
 
 function createInteractableNavigationTarget(item, label, color = "#f3d777") {
-  if (!item || item.collected || item.used) {
+  if (!item || item.collected || (item.used && item.interactionType !== "tvaBriefing")) {
     return null;
   }
 
@@ -4504,7 +5385,7 @@ function createMonsterNavigationTarget(monster, label, color = "#e96558") {
 }
 
 function createExitNavigationTarget(exit, label, color = "#f3d777") {
-  if (!exit || state.blockedExitIds.has(exit.id)) {
+  if (!exit || !isExitAvailable(exit) || state.blockedExitIds.has(exit.id)) {
     return null;
   }
 
@@ -4540,51 +5421,67 @@ function pickNearestNavigationTarget(targets) {
   return nearest;
 }
 
-function getNextHubExitId() {
-  if (!state.quests.zone1RewardClaimed) {
-    return "to-fog-port";
-  }
-
-  if (!state.quests.zone2RewardClaimed) {
-    return "to-three-room-house";
-  }
-
-  if (!state.quests.zone3ThreadClaimed || !state.quests.zone3MapClaimed) {
-    return "to-red-square";
-  }
-
-  if (!state.quests.zone4GearClaimed) {
-    return "to-doi-moi-valley";
-  }
-
-  return null;
-}
-
 function getHubNavigationTarget() {
-  const hasAllRelics = REQUIRED_RELIC_IDS.every((itemId) => state.inventory.has(itemId));
-
-  if (hasAllRelics) {
-    return createInteractableNavigationTarget(
-      getLevelInteractable("final-history-gate"),
-      "Dat 5 tin vat len Canh Cua Lich Su",
-      "#f3d777"
+  if (state.quests.tvaPortalTarget) {
+    const route = getTvaRoute(state.quests.tvaPortalTarget);
+    return createExitNavigationTarget(
+      getLevelExit("tva-dispatch-portal"),
+      `Bước qua cổng tới ${route?.label ?? "tọa độ đã chọn"}`,
+      "#9fe3ba"
     );
   }
 
-  const nextExitId = getNextHubExitId();
+  const pendingRelics = getPendingTvaRelicIds();
+  const label = !state.quests.tvaBriefingAccepted
+    ? "Đi theo hành lang tới người nhân viên"
+    : pendingRelics.length > 0
+      ? "Mang tín vật cho David"
+      : getNextTvaRoute()
+        ? "Hỏi David về tọa độ tiếp theo"
+        : "Hoàn tất hồ sơ với David";
 
-  switch (nextExitId) {
-    case "to-fog-port":
-      return createExitNavigationTarget(getLevelExit(nextExitId), "Tiến vào Khu vực 1", "#d7ebff");
-    case "to-three-room-house":
-      return createExitNavigationTarget(getLevelExit(nextExitId), "Tiến vào Khu vực 2", "#f4d9af");
-    case "to-red-square":
-      return createExitNavigationTarget(getLevelExit(nextExitId), "Tiến vào Khu vực 3", "#f3dc7f");
-    case "to-doi-moi-valley":
-      return createExitNavigationTarget(getLevelExit(nextExitId), "Tiến vào Khu vực 4", "#d7efab");
-    default:
-      return null;
+  return createInteractableNavigationTarget(
+    getLevelInteractable("tva-clerk-placeholder"),
+    label,
+    "#e6c36d"
+  );
+}
+
+function getTvaRoute(levelId) {
+  return TVA_DISPATCH_ROUTES.find((route) => route.levelId === levelId) ?? null;
+}
+
+function isTvaRouteComplete(route) {
+  return Boolean(route) && (
+    state.completedZones.has(route.levelId) ||
+    route.relicIds.every((relicId) => state.inventory.has(relicId))
+  );
+}
+
+function getNextTvaRoute() {
+  return TVA_DISPATCH_ROUTES.find((route) => !isTvaRouteComplete(route)) ?? null;
+}
+
+function getPendingTvaRelicIds() {
+  return REQUIRED_RELIC_IDS.filter(
+    (relicId) => state.inventory.has(relicId) && !state.quests.tvaReportedRelics.has(relicId)
+  );
+}
+
+function getExitTarget(exit) {
+  if (!exit) {
+    return null;
   }
+
+  if (typeof exit.targetFromState === "function") {
+    return exit.targetFromState() ?? null;
+  }
+
+  return exit.target ?? null;
+}
+
+function isExitAvailable(exit) {
+  return Boolean(getExitTarget(exit));
 }
 
 function getVillageNavigationTarget() {
@@ -4957,6 +5854,12 @@ function isInteractableAvailable(item) {
       return state.quests.zone1Delivered.size === 3 && !state.quests.zone1RewardClaimed;
     case "offerBribe":
       return !item.used && !item.purified;
+    case "tvaBriefing":
+      return true;
+    case "colonialRecruitment":
+      return state.quests.zone1Started &&
+        state.quests.zone1Delivered.size < 3 &&
+        state.quests.zone1SoldierDecision === null;
     case "collectFragment":
       return !state.quests.zone2Fragments.has(item.fragmentId);
     case "activateArchiveLens":
@@ -5041,6 +5944,12 @@ function handleSystemInteraction(item) {
     case "offerBribe":
       item.used = true;
       adjustSaDoa(34, "Bạn nhận vinh hoa làm tay sai cho mẫu quốc. Tha hóa tăng mạnh.");
+      return;
+    case "tvaBriefing":
+      startDialogue(item);
+      return;
+    case "colonialRecruitment":
+      startDialogue(item);
       return;
     case "collectFragment":
       state.quests.zone2Fragments.add(item.fragmentId);
@@ -5472,55 +6381,40 @@ function drawPixelExitArrow(centerX, centerY, direction, cellSize, color) {
 }
 
 function drawHubWorld(decorations) {
-  ctx.fillStyle = "#0d1423";
+  ctx.fillStyle = "#26231e";
   ctx.fillRect(0, 0, WORLD.width, WORLD.height);
-  const hasHubHero = drawCoverImage(environmentSprites.generatedWorlds?.historyHub, 0, 0, WORLD.width, WORLD.height, {
-    alpha: 0.92,
-    filter: "saturate(0.82) brightness(0.7) contrast(1.03)",
-    overlayColor: "rgba(9, 14, 24, 0.18)",
+  const hasOfficeBackground = drawCoverImage(environmentSprites.generatedWorlds?.tvaOffice, 0, 0, WORLD.width, WORLD.height, {
+    alpha: 1,
+    filter: "saturate(0.9) brightness(0.88) contrast(1.05)",
+    overlayColor: "rgba(23, 18, 12, 0.04)",
   });
 
-  if (!hasHubHero) {
-    ctx.fillStyle = "#18263a";
-    ctx.fillRect(0, 160, WORLD.width, WORLD.height - 160);
-    drawPixelCrawlerTerrainFill(PIXEL_CRAWLER_TERRAIN.stone, 0, 160, WORLD.width, WORLD.height - 160, {
-      seed: 5,
-      scale: 2.25,
-      alpha: 0.18,
-    });
-    ctx.fillStyle = "rgba(13, 20, 35, 0.66)";
-    ctx.fillRect(0, 160, WORLD.width, WORLD.height - 160);
-
-    for (const star of decorations.stars) {
-      ctx.fillStyle = "#e8f0ff";
-      ctx.fillRect(star.x, star.y, star.size, star.size);
-    }
-
-    ctx.fillStyle = "#314765";
-    ctx.fillRect(decorations.plaza.x, decorations.plaza.y, decorations.plaza.width, decorations.plaza.height);
-    drawPixelCrawlerTerrainFill(
-      PIXEL_CRAWLER_TERRAIN.brick,
-      decorations.plaza.x + 18,
-      decorations.plaza.y + 18,
-      decorations.plaza.width - 36,
-      decorations.plaza.height - 36,
-      { seed: 6, scale: 2.25, alpha: 0.24 }
-    );
-    ctx.fillStyle = "rgba(54, 76, 105, 0.64)";
-    ctx.fillRect(decorations.plaza.x + 18, decorations.plaza.y + 18, decorations.plaza.width - 36, decorations.plaza.height - 36);
-    ctx.fillStyle = "#506685";
-    ctx.fillRect(454, 300, 52, 196);
-    ctx.fillRect(246, 300, 468, 40);
-    ctx.fillStyle = "#6b82a2";
-    ctx.fillRect(464, 312, 32, 184);
-    ctx.fillRect(264, 310, 432, 20);
-
-    drawHistoryGateSprite(decorations.gate);
-    drawCainosOutdoorProps(decorations.cainosProps);
+  if (!hasOfficeBackground) {
+    ctx.fillStyle = "#3c3932";
+    ctx.fillRect(0, 0, WORLD.width, WORLD.height);
+    ctx.fillStyle = "#7c6b4b";
+    ctx.fillRect(250, 0, 460, WORLD.height);
+    ctx.fillStyle = "#292720";
+    ctx.fillRect(0, 0, 250, WORLD.height);
+    ctx.fillRect(710, 0, 250, WORLD.height);
   }
 
-  for (const portal of decorations.portals) {
-    drawHubPortal(portal);
+  const arrivalMark = decorations.arrivalMark;
+  if (arrivalMark) {
+    ctx.save();
+    ctx.globalAlpha = state.quests.tvaBriefingAccepted ? 0.16 : 0.34;
+    ctx.strokeStyle = "#9c895f";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.ellipse(arrivalMark.x, arrivalMark.y, arrivalMark.radiusX, arrivalMark.radiusY, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  for (const signal of decorations.crtSignals ?? []) {
+    const pulse = 0.55 + (Math.sin(state.lastTimestamp * 0.005 + signal.phase) + 1) * 0.18;
+    ctx.fillStyle = `rgba(151, 190, 91, ${pulse})`;
+    ctx.fillRect(signal.x - 2, signal.y - 1, 4, 3);
   }
 }
 
@@ -7610,10 +8504,50 @@ function shouldDrawInteractable(item) {
   return !item.collected;
 }
 
+function getTvaEmployeeDisplay(npc) {
+  if (npc.id !== "tva-clerk-placeholder") {
+    return npc;
+  }
+
+  const scale = getTvaActorScale();
+
+  if (state.quests.tvaBriefingAccepted) {
+    return { ...npc, scale };
+  }
+
+  const approachProgress = clamp((380 - player.y) / 100, 0, 1);
+  const startY = npc.approachFromY ?? npc.y;
+
+  return {
+    ...npc,
+    y: startY + (npc.y - startY) * approachProgress,
+    direction: "down",
+    animation: approachProgress > 0 && approachProgress < 1 ? "walk" : "idle",
+    frameOffset: 0.42,
+    scale,
+  };
+}
+
+function getTvaActorScale() {
+  return window.innerWidth <= 820 ? TVA_ACTOR_SCALE_COMPACT : TVA_ACTOR_SCALE;
+}
+
 function drawNpc(npc) {
-  const recoveredNpc = getZoneRecoveryNpcDisplay(getZoneNpcDisplay(npc));
+  const recoveredNpc = getZoneRecoveryNpcDisplay(getZoneNpcDisplay(getTvaEmployeeDisplay(npc)));
+  const monsterSpriteConfig = MONSTER_SPRITE_CONFIG[recoveredNpc.artKey];
+  const shadowWidth = monsterSpriteConfig?.shadowWidth ?? 14;
   ctx.fillStyle = "rgba(11, 13, 16, 0.35)";
-  ctx.fillRect(recoveredNpc.x - 7, recoveredNpc.y + 8, 14, 4);
+  ctx.fillRect(recoveredNpc.x - shadowWidth / 2, recoveredNpc.y + 8, shadowWidth, 4);
+
+  if (monsterSpriteConfig && drawMonsterSprite({
+    ...recoveredNpc,
+    animationState: "idle",
+    moveDirection: recoveredNpc.direction,
+    horizontalFacing: recoveredNpc.direction,
+    phase: 0,
+  }, false)) {
+    return;
+  }
 
   if (drawNpcSpriteActor(recoveredNpc)) {
     return;
@@ -8056,7 +8990,7 @@ function drawMonster(monster) {
     ctx.fillRect(monsterX + 6, monsterY - 4, 4, 8);
   }
 
-  if (isAttacking) {
+  if (isAttacking && monster.archetype !== "ranged") {
     const progress = getTimedProgress(monster.attackStartedAt, monster.attackEndsAt);
     drawAttackSlash(monster.x, monster.y, monster.attackDirection, progress, {
       scale: 0.72,
@@ -8153,7 +9087,7 @@ function drawMonsterSprite(monster, hitFlash) {
   const isHeavyAttack = isAttacking && monster.attackVariant === "slam" && config?.animations?.heavyAttack;
   const animationKey = isDying ? "death" : isHurt ? "hurt" : isHeavyAttack ? "heavyAttack" : isAttacking ? "attack" : monster.animationState === "run" ? "run" : "idle";
   const animation = config?.animations?.[animationKey] ?? config?.animations?.idle;
-  const direction = getMonsterSpriteDirection(monster);
+  const direction = getMonsterSpriteDirection(monster, config);
   const sprite = config?.directional
     ? config.directionalAnimation
       ? spriteSet?.[direction]?.[animationKey]
@@ -8177,9 +9111,12 @@ function drawMonsterSprite(monster, hitFlash) {
     ? Math.min(animation.frameCount - 1, Math.floor(animationTime / animation.frameDuration))
     : Math.floor(animationTime / animation.frameDuration) % animation.frameCount;
   const attackProgress = isAttacking ? getTimedProgress(monster.attackStartedAt, monster.attackEndsAt) : 0;
-  const attackOffset = getAttackLungeOffset(monster.attackDirection, attackProgress, ATTACK_LUNGE_DISTANCE);
-  const drawX = Math.round(monster.x + config.drawOffsetX + attackOffset.x);
-  const drawY = Math.round(monster.y + config.drawOffsetY + attackOffset.y);
+  const attackOffset = monster.archetype === "ranged"
+    ? { x: 0, y: 0 }
+    : getAttackLungeOffset(monster.attackDirection, attackProgress, ATTACK_LUNGE_DISTANCE);
+  const directionalOffset = config.directionalOffsets?.[direction];
+  const drawX = Math.round(monster.x + (directionalOffset?.x ?? config.drawOffsetX) + attackOffset.x);
+  const drawY = Math.round(monster.y + (directionalOffset?.y ?? config.drawOffsetY) + attackOffset.y);
 
   const flipX = Boolean(config.flipForFacing && direction === "west");
   ctx.save();
@@ -8212,6 +9149,9 @@ function drawMonsterSprite(monster, hitFlash) {
 }
 
 function getMonsterArtKey(monster) {
+  if (monster.artKey && MONSTER_SPRITE_CONFIG[monster.artKey]) {
+    return monster.artKey;
+  }
   const dedicatedArtKey = MONSTER_ART_KEY_BY_ID[monster.id];
   if (dedicatedArtKey) {
     return dedicatedArtKey;
@@ -8243,8 +9183,18 @@ function getMonsterArtKey(monster) {
   return monster.variant;
 }
 
-function getMonsterSpriteDirection(monster) {
-  const direction = monster.attackDirection ?? monster.facingDirection ?? getDirectionFromVector(player.x - monster.x, player.y - monster.y);
+function getMonsterSpriteDirection(monster, config = null) {
+  const isEngaged = Boolean(monster.telegraphEndsAt) || state.lastTimestamp < (monster.attackEndsAt ?? 0);
+  const direction = isEngaged
+    ? monster.attackDirection
+    : monster.moveDirection ?? monster.facingDirection ?? monster.attackDirection ?? getDirectionFromVector(player.x - monster.x, player.y - monster.y);
+
+  if (config?.horizontalOnly) {
+    const horizontalDirection = direction === "left" || direction === "right"
+      ? direction
+      : monster.horizontalFacing ?? "right";
+    return horizontalDirection === "left" ? "west" : "east";
+  }
   return { down: "south", up: "north", left: "west", right: "east" }[direction] ?? "south";
 }
 
@@ -8285,9 +9235,10 @@ function getMonsterPalette(variant, hitFlash) {
 }
 
 function drawMonsterHealthBar(monster) {
-  const width = monster.isBoss ? 34 : 18;
+  const spriteConfig = MONSTER_SPRITE_CONFIG[getMonsterArtKey(monster)];
+  const width = monster.isBoss ? 34 : spriteConfig?.healthBarWidth ?? 18;
   const ratio = monster.health / (monster.runtimeMaxHealth ?? monster.maxHealth);
-  const y = monster.y - (monster.isBoss ? 26 : 18);
+  const y = monster.y + (monster.isBoss ? -26 : spriteConfig?.healthBarOffsetY ?? -18);
   const height = monster.isBoss ? 5 : 4;
 
   ctx.fillStyle = "rgba(18, 20, 23, 0.84)";
@@ -8516,7 +9467,7 @@ function drawInteractionMarker(item) {
 }
 
 function getPlayerAttackProgress() {
-  if (state.activeSkillEffect?.type !== "strike") {
+  if (state.activeSkillEffect?.type !== "strike" && state.activeSkillEffect?.type !== "chargedStrike") {
     return 0;
   }
 
@@ -8526,9 +9477,11 @@ function getPlayerAttackProgress() {
 function drawPlayer() {
   ctx.save();
   const playerScreen = coordinateSystem.worldToScreen(player, { includeRenderOffset: true });
+  const actorScale = state.currentLevelId === "hub" ? getTvaActorScale() : 1;
   const isInvulnerable = state.lastTimestamp < state.invulnerableUntil;
   ctx.globalAlpha = isInvulnerable && Math.floor(state.lastTimestamp / 80) % 2 === 0 ? 0.48 : 1;
   ctx.translate(Math.round(playerScreen.x), Math.round(playerScreen.y));
+  ctx.scale(actorScale * camera.zoom, actorScale * camera.zoom);
 
   ctx.fillStyle = "rgba(10, 12, 16, 0.32)";
   ctx.fillRect(-7, 9, 14, 4);
@@ -8536,28 +9489,30 @@ function drawPlayer() {
   const attackProgress = getPlayerAttackProgress();
 
   if (attackProgress > 0) {
-    const attackOffset = getAttackLungeOffset(player.direction, attackProgress);
+    const attackDirection = state.activePlayerAnimation?.direction ?? player.direction;
+    const attackOffset = getAttackLungeOffset(attackDirection, attackProgress);
     const squash = Math.sin(attackProgress * Math.PI);
     ctx.translate(Math.round(attackOffset.x), Math.round(attackOffset.y));
     ctx.scale(1 + squash * 0.04, 1 - squash * 0.03);
   }
 
-  const sheet = getPlayerSpriteSheet();
+  const animationFrame = getPlayerAnimationFrame();
+  const sheet = playerSprites[animationFrame.animationName]?.[animationFrame.direction]
+    ?? playerSprites[animationFrame.animationName]?.down;
 
-  if (sheet.complete && sheet.naturalWidth > 0) {
-    const frameIndex = getPlayerFrameIndex();
-    const sourceX = frameIndex * PLAYER_SPRITE.frameWidth + PLAYER_SPRITE.cropX;
+  if (sheet?.complete && sheet.naturalWidth > 0) {
+    const sourceX = animationFrame.frameIndex * PLAYER_SPRITE.frameWidth;
 
     ctx.drawImage(
       sheet,
       sourceX,
-      PLAYER_SPRITE.cropY,
-      PLAYER_SPRITE.cropWidth,
-      PLAYER_SPRITE.cropHeight,
-      PLAYER_SPRITE.drawOffsetX,
-      PLAYER_SPRITE.drawOffsetY,
-      PLAYER_SPRITE.drawWidth,
-      PLAYER_SPRITE.drawHeight
+      0,
+      PLAYER_SPRITE.frameWidth,
+      PLAYER_SPRITE.frameHeight,
+      PLAYER_SPRITE.drawCanvasOffsetX,
+      PLAYER_SPRITE.drawCanvasOffsetY,
+      PLAYER_SPRITE.frameWidth,
+      PLAYER_SPRITE.frameHeight
     );
     ctx.restore();
     return;
@@ -8716,36 +9671,24 @@ function drawSwordSlashSprite(progress, scale, alpha) {
 }
 
 function drawSkillEffect() {
-  if (!state.activeSkillEffect) {
+  const effect = state.activeSkillEffect;
+  if (!effect || (effect.type !== "parry" && effect.type !== "parryHit")) {
     return;
   }
 
   ctx.save();
   applyCameraTransform();
 
-  if (state.activeSkillEffect.type === "strike" || state.activeSkillEffect.type === "chargedStrike") {
-    const { x, y, direction } = state.activeSkillEffect;
-    const progress = getTimedProgress(state.activeSkillEffect.startedAt, state.activeSkillEffect.endsAt);
-    drawAttackSlash(x, y, direction, progress, { scale: state.activeSkillEffect.type === "chargedStrike" ? 1.28 : 0.84, spriteStyle: "sword" });
-  } else if (state.activeSkillEffect.type === "dodge") {
-    const progress = getTimedProgress(state.activeSkillEffect.startedAt, state.activeSkillEffect.endsAt);
-    ctx.strokeStyle = "rgba(183, 229, 255, 0.82)";
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.arc(state.activeSkillEffect.x, state.activeSkillEffect.y, 14 + progress * 20, 0, Math.PI * 2);
-    ctx.stroke();
-  } else if (state.activeSkillEffect.type === "parry" || state.activeSkillEffect.type === "parryHit") {
-    const progress = getTimedProgress(state.activeSkillEffect.startedAt, state.activeSkillEffect.endsAt);
-    const success = state.activeSkillEffect.type === "parryHit";
-    const radius = success ? 18 + progress * 32 : 18 + Math.sin(state.lastTimestamp * 0.05) * 3;
-    ctx.beginPath();
-    ctx.arc(state.activeSkillEffect.x, state.activeSkillEffect.y, radius, 0, Math.PI * 2);
-    ctx.fillStyle = success ? "rgba(255, 211, 102, 0.24)" : "rgba(146, 208, 255, 0.18)";
-    ctx.fill();
-    ctx.strokeStyle = success ? "rgba(255, 240, 179, 0.92)" : "rgba(194, 235, 255, 0.9)";
-    ctx.lineWidth = 3;
-    ctx.stroke();
-  }
+  const progress = getTimedProgress(effect.startedAt, effect.endsAt);
+  const success = effect.type === "parryHit";
+  const radius = success ? 18 + progress * 32 : 18 + Math.sin(state.lastTimestamp * 0.05) * 3;
+  ctx.beginPath();
+  ctx.arc(effect.x, effect.y, radius, 0, Math.PI * 2);
+  ctx.fillStyle = success ? "rgba(255, 211, 102, 0.24)" : "rgba(146, 208, 255, 0.18)";
+  ctx.fill();
+  ctx.strokeStyle = success ? "rgba(255, 240, 179, 0.92)" : "rgba(194, 235, 255, 0.9)";
+  ctx.lineWidth = 3;
+  ctx.stroke();
 
   ctx.restore();
 }
@@ -9003,35 +9946,30 @@ function drawZoneAtmosphere(profile) {
 }
 
 function drawHubAtmosphere(decorations) {
-  const gateCenterX = decorations.gate.x + decorations.gate.width / 2;
-  const gateCenterY = decorations.gate.y + decorations.gate.height / 2;
-
-  drawWorldAura(
-    gateCenterX,
-    gateCenterY - 12,
-    144,
-    "rgba(217, 236, 255, 0.22)",
-    "rgba(104, 154, 214, 0.14)",
-    "rgba(14, 24, 37, 0)",
-    1
-  );
-
-  for (let index = 0; index < decorations.portals.length; index += 1) {
-    const portal = decorations.portals[index];
-    const pulse = 0.6 + (Math.sin(state.lastTimestamp * 0.004 + index) + 1) * 0.14;
-    drawWorldWarmGlow(portal.x, portal.y - 8, 38, 0.1 + pulse * 0.12);
-  }
-
   ctx.save();
+  const fluorescentFlicker = 0.018 + (Math.sin(state.lastTimestamp * 0.012) + 1) * 0.007;
+  ctx.fillStyle = `rgba(244, 218, 159, ${fluorescentFlicker})`;
+  ctx.fillRect(0, 0, VIEWPORT.width, VIEWPORT.height);
   ctx.globalCompositeOperation = "screen";
 
-  for (let index = 0; index < 18; index += 1) {
-    const angle = state.lastTimestamp * 0.0012 + index * 0.35;
-    const radius = 48 + (index % 3) * 16;
-    const x = gateCenterX + Math.cos(angle) * radius - camera.x;
-    const y = gateCenterY - 8 + Math.sin(angle * 1.6) * (22 + (index % 4) * 5) - camera.y;
-    ctx.fillStyle = `rgba(234, 244, 255, ${0.12 + (index % 4) * 0.04})`;
-    ctx.fillRect(Math.round(x), Math.round(y), 2 + (index % 2), 2 + (index % 2));
+  for (const paper of decorations.paperMotes ?? []) {
+    const travel = state.lastTimestamp * paper.speed * 0.01;
+    const worldX = paper.x + Math.sin(travel + paper.phase) * paper.sway;
+    const worldY = paper.y + ((travel + paper.phase * 24) % 42) - 21;
+    const point = coordinateSystem.worldToScreen({ x: worldX, y: worldY });
+    const alpha = 0.1 + (Math.sin(travel * 0.7 + paper.phase) + 1) * 0.035;
+    ctx.fillStyle = `rgba(238, 222, 184, ${alpha})`;
+    ctx.fillRect(Math.round(point.x), Math.round(point.y), paper.size + 1, paper.size);
+  }
+
+  if (!state.quests.tvaBriefingAccepted && decorations.arrivalMark) {
+    const arrival = coordinateSystem.worldToScreen(decorations.arrivalMark);
+    const pulse = 0.1 + (Math.sin(state.lastTimestamp * 0.0038) + 1) * 0.025;
+    ctx.strokeStyle = `rgba(230, 183, 91, ${pulse})`;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.ellipse(arrival.x, arrival.y, 38, 11, 0, 0, Math.PI * 2);
+    ctx.stroke();
   }
 
   ctx.restore();
@@ -9383,9 +10321,9 @@ function drawVignette() {
   const gradient = ctx.createLinearGradient(0, 0, 0, VIEWPORT.height);
 
   if (state.currentLevelId === "hub") {
-    gradient.addColorStop(0, "rgba(207, 226, 255, 0.04)");
-    gradient.addColorStop(1, "rgba(3, 8, 16, 0.3)");
-    ctx.strokeStyle = "rgba(162, 197, 255, 0.1)";
+    gradient.addColorStop(0, "rgba(244, 217, 162, 0.03)");
+    gradient.addColorStop(1, "rgba(18, 13, 9, 0.28)");
+    ctx.strokeStyle = "rgba(222, 183, 112, 0.09)";
   } else if (state.currentLevelId === "village") {
     gradient.addColorStop(0, "rgba(241, 248, 255, 0.04)");
     gradient.addColorStop(1, "rgba(0, 0, 0, 0.34)");

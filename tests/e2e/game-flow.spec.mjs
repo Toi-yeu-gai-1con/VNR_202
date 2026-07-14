@@ -188,16 +188,80 @@ test("held movement stops on blur and paused scenes ignore movement", async ({ p
   expect((await snapshot(page)).player.x).toBeCloseTo(paused.player.x, 4);
 });
 
-test("each hub gate transitions through the real exit and sets a checkpoint", async ({ page }) => {
+test("the employee forces the TVA briefing choice and opens the first dispatch portal", async ({ page }, testInfo) => {
   await openDebugSession(page);
-
-  for (const exitId of ["to-fog-port", "to-three-room-house", "to-red-square", "to-doi-moi-valley"]) {
-    const result = await page.evaluate((id) => window.__CROSSROADS_DEBUG__.triggerExit(id), exitId);
-    expect(result.transitioned, `Expected ${exitId} to transition from the hub.`).toBe(true);
-    expect(result.currentLevelId).not.toBe("hub");
-    expect(result.respawnLevelId).toBe(result.currentLevelId);
-    await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("hub"));
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("hub", { x: 480, y: 260, direction: "up" }));
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("tva-clerk-placeholder"));
+  await expect(page.locator("#dialogue-speaker")).toHaveText("David");
+  await expect(page.locator("#dialogue-box")).toHaveAttribute("data-speaker", "david");
+  await expect(page.locator("#dialogue-text")).toContainText("intake list");
+  await page.locator("#dialogue-next-button").click();
+  await expect(page.locator("#dialogue-speaker")).toHaveText("Nhà du hành");
+  await expect(page.locator("#dialogue-box")).toHaveAttribute("data-speaker", "traveler");
+  await expect(page.locator("#dialogue-text")).toContainText("Đây là đâu");
+  for (let line = 0; line < 9; line += 1) {
+    await page.locator("#dialogue-next-button").click();
   }
+  await expect(page.locator("#dialogue-choice-list")).toBeVisible();
+  await expect(page.locator(".dialogue-choice-button")).toHaveCount(2);
+  await page.screenshot({ path: testInfo.outputPath("tva-office-briefing.png"), fullPage: true });
+
+  await page.locator('[data-dialogue-choice="refuse-assignment"]').click();
+  await expect(page.locator("#dialogue-speaker")).toHaveText("Nhà du hành");
+  for (let line = 0; line < 3; line += 1) {
+    await page.locator("#dialogue-next-button").click();
+  }
+  await page.locator('[data-dialogue-choice="forced-accept-assignment"]').click();
+  await expect.poll(() => snapshot(page).then((state) => state.quests.tvaBriefingAccepted)).toBe(true);
+
+  await page.locator('[data-dialogue-choice="dispatch-ready"]').click();
+  await expect.poll(() => snapshot(page).then((state) => state.quests.tvaPortalTarget)).toBe("village");
+  await expect(page.locator("#dialogue-text")).toContainText("tọa độ không-thời gian");
+  await page.screenshot({ path: testInfo.outputPath("tva-dispatch-portal.png"), fullPage: true });
+  await page.locator("#dialogue-next-button").click();
+  await page.locator("#dialogue-next-button").click();
+  await expect.poll(() => snapshot(page).then((state) => state.mode)).toBe("playing");
+
+  const result = await page.evaluate(() => window.__CROSSROADS_DEBUG__.triggerExit("tva-dispatch-portal"));
+  expect(result.transitioned).toBe(true);
+  expect(result.currentLevelId).toBe("village");
+  expect(result.quests.tvaPortalTarget).toBe(null);
+});
+
+test("reported relics unlock each later TVA coordinate in campaign order", async ({ page }) => {
+  await openDebugSession(page);
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("hub", { x: 480, y: 260, direction: "up" }));
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("tva-clerk-placeholder"));
+  for (let line = 0; line < 10; line += 1) await page.locator("#dialogue-next-button").click();
+  await page.locator('[data-dialogue-choice="accept-assignment"]').click();
+  await page.locator('[data-dialogue-choice="dispatch-later"]').click();
+
+  const routes = ["village", "archive", "crossroads", "spring"];
+  const nextRoutes = ["archive", "crossroads", "spring"];
+
+  for (let index = 0; index < routes.length; index += 1) {
+    await page.evaluate((levelId) => window.__CROSSROADS_DEBUG__.completeTvaRoute(levelId), routes[index]);
+    await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("hub", { x: 480, y: 260, direction: "up" }));
+    await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("tva-clerk-placeholder"));
+
+    const lineCount = index === routes.length - 1 ? 5 : 4;
+    for (let line = 1; line < lineCount; line += 1) await page.locator("#dialogue-next-button").click();
+
+    if (index < nextRoutes.length) {
+      await page.locator('[data-dialogue-choice="dispatch-ready"]').click();
+      await expect.poll(() => snapshot(page).then((state) => state.quests.tvaPortalTarget)).toBe(nextRoutes[index]);
+      await page.locator("#dialogue-next-button").click();
+      await page.locator("#dialogue-next-button").click();
+      await page.evaluate(() => window.__CROSSROADS_DEBUG__.triggerExit("tva-dispatch-portal"));
+      continue;
+    }
+
+    await page.locator('[data-dialogue-choice="finish-history"]').click();
+    await expect(page.locator("#end-overlay")).toBeVisible();
+    await expect.poll(() => snapshot(page).then((state) => state.endingId)).toBe("good");
+  }
+
+  await expect.poll(() => snapshot(page).then((state) => state.quests.tvaReportedRelics.length)).toBe(5);
 });
 
 test("checkpoint survives lethal damage and persisted progress survives reload", async ({ page }) => {
@@ -215,6 +279,67 @@ test("checkpoint survives lethal damage and persisted progress survives reload",
   await page.locator("#continue-button").click();
   await expect.poll(() => page.evaluate(() => window.__CROSSROADS_DEBUG__.getSnapshot().mode)).toBe("playing");
   expect((await snapshot(page)).currentLevelId).toBe("village");
+});
+
+test("a bad ending is interrupted by the TVA employee and restores the checkpoint", async ({ page }, testInfo) => {
+  await openDebugSession(page);
+  await page.evaluate(() =>
+    window.__CROSSROADS_DEBUG__.loadLevel("village", { x: 312, y: 268, direction: "left" })
+  );
+  const checkpoint = await snapshot(page);
+
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.triggerBadEnding());
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.completeEndingCinematic());
+  await expect.poll(() => snapshot(page).then((state) => state.badEndingRecovery?.phase)).toBe("linger");
+
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.setBadEndingRecoveryElapsed(4700));
+  await expect(page.locator("#bad-ending-recovery-dialogue")).toBeVisible();
+  await expect(page.locator("#bad-ending-recovery-text")).not.toBeEmpty();
+  await expect.poll(() => snapshot(page).then((state) => state.badEndingRecovery?.phase)).toBe("complaint");
+  await page.screenshot({ path: testInfo.outputPath("bad-ending-tva-recovery.png"), fullPage: true });
+
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.setBadEndingRecoveryElapsed(9000));
+  await expect.poll(() => snapshot(page).then((state) => state.badEndingRecovery?.phase)).toBe("reset");
+  await page.screenshot({ path: testInfo.outputPath("bad-ending-m90-reset.png"), fullPage: true });
+
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.setBadEndingRecoveryElapsed(11000));
+  await expect.poll(() => snapshot(page).then((state) => state.mode)).toBe("playing");
+  const restored = await snapshot(page);
+  expect(restored.currentLevelId).toBe(checkpoint.respawnLevelId);
+  expect(restored.player.x).toBeCloseTo(checkpoint.player.x, 1);
+  expect(restored.player.y).toBeCloseTo(checkpoint.player.y, 1);
+  expect(restored.endingId).toBe(null);
+  expect(restored.saDoa).toBeLessThan(60);
+});
+
+test("Zone 1 soldier offers a persistent choice and betrayal triggers the bad ending", async ({ page }, testInfo) => {
+  await openDebugSession(page);
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("village", { x: 832, y: 244, direction: "up" }));
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("le-paria-stack"));
+  await page.waitForTimeout(250);
+  await page.screenshot({ path: testInfo.outputPath("colonial-recruiter-scale.png"), fullPage: true });
+
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("colonial-recruiter"));
+  await expect(page.locator("#dialogue-speaker")).toHaveText("Lính tuần tra Pháp");
+  await page.locator("#dialogue-next-button").click();
+  await page.locator("#dialogue-next-button").click();
+  await expect(page.locator("#dialogue-choice-list")).toBeVisible();
+  await expect(page.locator(".dialogue-choice-button")).toHaveCount(2);
+  await page.screenshot({ path: testInfo.outputPath("colonial-recruiter-dialogue.png"), fullPage: true });
+
+  await page.locator('[data-dialogue-choice="refuse"]').click();
+  await expect.poll(() => snapshot(page).then((state) => state.quests.zone1SoldierDecision)).toBe("refused");
+  await expect.poll(() => snapshot(page).then((state) => state.mode)).toBe("playing");
+
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.beginSession());
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("village", { x: 832, y: 244, direction: "up" }));
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("le-paria-stack"));
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("colonial-recruiter"));
+  await page.locator("#dialogue-next-button").click();
+  await page.locator("#dialogue-next-button").click();
+  await page.locator('[data-dialogue-choice="accept"]').click();
+  await expect(page.locator("#end-overlay")).toBeVisible();
+  await expect.poll(() => snapshot(page).then((state) => state.endingId)).toBe("bad");
 });
 
 for (const endingId of ["good", "bad"]) {

@@ -4,6 +4,8 @@ export const PLAYER_FOOTPRINT = { width: 8, height: 6, offsetY: 7 };
 export const PLAYER_SPRITE = {
   frameWidth: 96,
   frameHeight: 80,
+  drawCanvasOffsetX: -49,
+  drawCanvasOffsetY: -48,
   cropX: 34,
   cropY: 24,
   cropWidth: 30,
@@ -15,6 +17,20 @@ export const PLAYER_SPRITE = {
   frameCount: 8,
   idleFrameDuration: 180,
 };
+export const PLAYER_ANIMATIONS = Object.freeze({
+  idle: Object.freeze({ frameCount: 8, frameDuration: 180, loop: true }),
+  run: Object.freeze({ frameCount: 8, frameDuration: 95, loop: true }),
+  attack1: Object.freeze({ frameCount: 8, frameDuration: 50, loop: false }),
+  attack2: Object.freeze({ frameCount: 8, frameDuration: 50, loop: false }),
+  heal: Object.freeze({ frameCount: 12, frameDuration: 90, loop: false }),
+  hurt: Object.freeze({ frameCount: 4, frameDuration: 90, loop: false }),
+  dash: Object.freeze({ frameCount: 7, frameDuration: 70, loop: false }),
+  death: Object.freeze({
+    frameCount: 7,
+    frameDurations: Object.freeze([90, 90, 90, 90, 90, 90, 600]),
+    loop: false,
+  }),
+});
 export const NPC_SPRITE = {
   frameWidth: 96,
   frameHeight: 96,
@@ -29,6 +45,30 @@ export const NPC_SPRITE = {
   idleFrameDuration: 240,
   walkFrameDuration: 150,
 };
+export const TVA_EMPLOYEE_SPRITE = {
+  frameWidth: 96,
+  frameHeight: 96,
+  cropX: 30,
+  cropY: 18,
+  cropWidth: 36,
+  cropHeight: 62,
+  drawWidth: 24,
+  drawHeight: 40,
+  idleFrames: 4,
+  walkFrames: 8,
+  idleFrameDuration: 240,
+  walkFrameDuration: 150,
+  smoothing: false,
+};
+export const M90_RESET_ANIMATION = Object.freeze({
+  frameWidth: 96,
+  frameHeight: 96,
+  frameDurations: Object.freeze([220, 120, 140, 180, 130, 220, 120, 300]),
+  effectFrameWidth: 128,
+  effectFrameHeight: 128,
+  effectFrameCount: 8,
+  effectFrameDuration: 90,
+});
 export const ENVIRONMENT_SPRITES = {
   deadBranches: [
     { x: 0, y: 0, width: 28, height: 44 },
@@ -289,6 +329,31 @@ export const MONSTER_SPRITE_CONFIG = {
       attack: { frameWidth: 64, frameHeight: 64, frameCount: 4, frameDuration: 65 },
       hurt: { frameWidth: 64, frameHeight: 64, frameCount: 3, frameDuration: 60 },
       death: { frameWidth: 64, frameHeight: 64, frameCount: 6, frameDuration: 90 },
+    },
+  },
+  frenchColonialSoldier: {
+    directional: true,
+    directionalAnimation: true,
+    horizontalOnly: true,
+    drawWidth: 55,
+    drawHeight: 46,
+    drawOffsetX: -12,
+    drawOffsetY: -44,
+    directionalOffsets: {
+      east: { x: -12, y: -44 },
+      west: { x: -43, y: -44 },
+    },
+    projectileOffsets: {
+      east: { x: 36, y: -31 },
+      west: { x: -36, y: -31 },
+    },
+    healthBarOffsetY: -48,
+    healthBarWidth: 24,
+    shadowWidth: 20,
+    animations: {
+      idle: { frameWidth: 96, frameHeight: 80, frameCount: 8, frameDuration: 160 },
+      run: { frameWidth: 96, frameHeight: 80, frameCount: 8, frameDuration: 110 },
+      attack: { frameWidth: 96, frameHeight: 80, frameCount: 8, frameDuration: 100 },
     },
   },
   rifleman: {

@@ -30,7 +30,7 @@ const TRANSITIONS = Object.freeze({
   [SCENES.MODAL]: new Set([SCENES.PLAYING, SCENES.PAUSED, SCENES.ENDING]),
   [SCENES.TUTORIAL]: new Set([SCENES.PLAYING]),
   [SCENES.SUMMARY]: new Set([SCENES.PLAYING]),
-  [SCENES.ENDING]: new Set([SCENES.START]),
+  [SCENES.ENDING]: new Set([SCENES.START, SCENES.PLAYING]),
 });
 
 export function createSceneController(initialScene = SCENES.START) {

@@ -1,0 +1,31 @@
+{
+  "name": "french-colonial-soldier",
+  "format": "horizontal-strip",
+  "frameWidth": 96,
+  "frameHeight": 80,
+  "framesPerAnimation": 8,
+  "transparent": true,
+  "pivot": {
+    "right": { "x": 22, "y": 76 },
+    "left": { "x": 74, "y": 76 }
+  },
+  "animations": {
+    "idle-right": { "file": "idle-right.png", "frameDurationMs": 160, "loop": true },
+    "idle-left": { "file": "idle-left.png", "frameDurationMs": 160, "loop": true },
+    "walk-right": { "file": "walk-right.png", "frameDurationMs": 110, "loop": true },
+    "walk-left": { "file": "walk-left.png", "frameDurationMs": 110, "loop": true },
+    "attack-right": { "file": "attack-right.png", "frameDurationMs": 100, "loop": false },
+    "attack-left": { "file": "attack-left.png", "frameDurationMs": 100, "loop": false }
+  },
+  "atlas": {
+    "file": "french-colonial-soldier-atlas.png",
+    "rows": [
+      "idle-right",
+      "idle-left",
+      "walk-right",
+      "walk-left",
+      "attack-right",
+      "attack-left"
+    ]
+  }
+}

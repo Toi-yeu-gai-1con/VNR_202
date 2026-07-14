@@ -24,6 +24,8 @@ function sound() {
 
 const hub = sound();
 const zone = sound();
+const badEnding = sound();
+const goodEnding = sound();
 const rain = sound();
 const click = sound();
 const baton = sound();
@@ -33,7 +35,7 @@ const audio = createAudioSystem({
   uiSounds: { click },
   sfxSounds: { baton },
   ambienceSounds: { rain },
-  musicSounds: { hub, portMaze: zone },
+  musicSounds: { hub, portMaze: zone, badEnding, goodEnding },
   getZoneProfile: () => ({ ambience: ["rain"], music: "portMaze" }),
   getCurrentLevel: () => ({ monsters: [] }),
   getPlayer: () => ({ x: 0, y: 0 }),
@@ -72,5 +74,19 @@ assert.equal(rain.currentTime, 14.5, "Resuming does not rewind ambience.");
 audio.playSfx("baton", { volume: 0.6, playbackRate: 1.08 });
 assert.equal(baton.playCalls, 1, "Combat SFX plays through the isolated audio system.");
 assert.equal(baton.volume, 0.6, "Combat SFX applies its local volume without touching music.");
+
+state.mode = "ending";
+state.endingId = "good";
+audio.syncAmbienceAudio();
+goodEnding.currentTime = 28.5;
+badEnding.currentTime = 16.25;
+
+state.mode = "playing";
+state.currentLevelId = "hub";
+audio.syncAmbienceAudio();
+assert.equal(hub.paused, false, "Returning to the TVA office restores only its hub music.");
+assert.equal(goodEnding.paused, true, "Good ending music cannot remain mixed into the TVA office.");
+assert.equal(goodEnding.currentTime, 0, "Good ending music is cleared after leaving the ending scene.");
+assert.equal(badEnding.currentTime, 0, "Inactive ending music is also cleared outside ending scenes.");
 
 console.log("PASS: audio state, zone mixing, and mute behavior are isolated in one system.");

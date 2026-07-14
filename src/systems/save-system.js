@@ -11,9 +11,13 @@ export function createSaveSystem({
   function serializeQuestState() {
     const quests = getState().quests;
     return {
+      tvaBriefingAccepted: quests.tvaBriefingAccepted,
+      tvaPortalTarget: quests.tvaPortalTarget,
+      tvaReportedRelics: [...quests.tvaReportedRelics],
       zone1Started: quests.zone1Started,
       zone1Delivered: [...quests.zone1Delivered],
       zone1RewardClaimed: quests.zone1RewardClaimed,
+      zone1SoldierDecision: quests.zone1SoldierDecision,
       zone2Fragments: [...quests.zone2Fragments],
       zone2TowerActivated: quests.zone2TowerActivated,
       zone2RewardClaimed: quests.zone2RewardClaimed,
@@ -30,9 +34,13 @@ export function createSaveSystem({
 
   function restoreQuestState(savedQuests = {}) {
     getState().quests = {
+      tvaBriefingAccepted: Boolean(savedQuests.tvaBriefingAccepted),
+      tvaPortalTarget: savedQuests.tvaPortalTarget ?? null,
+      tvaReportedRelics: new Set(savedQuests.tvaReportedRelics ?? []),
       zone1Started: Boolean(savedQuests.zone1Started),
       zone1Delivered: new Set(savedQuests.zone1Delivered ?? []),
       zone1RewardClaimed: Boolean(savedQuests.zone1RewardClaimed),
+      zone1SoldierDecision: savedQuests.zone1SoldierDecision ?? null,
       zone2Fragments: new Set(savedQuests.zone2Fragments ?? []),
       zone2TowerActivated: Boolean(savedQuests.zone2TowerActivated),
       zone2RewardClaimed: Boolean(savedQuests.zone2RewardClaimed),

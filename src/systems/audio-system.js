@@ -127,6 +127,15 @@ export function createAudioSystem({
     }
   }
 
+  function resetInactiveSounds(activeSounds, soundsToReset) {
+    const activeSet = new Set(activeSounds.filter(Boolean));
+    for (const sound of soundsToReset.filter(Boolean)) {
+      if (!activeSet.has(sound)) {
+        resetSound(sound);
+      }
+    }
+  }
+
   function resetSoundGroup(soundGroup) {
     for (const sound of Object.values(soundGroup)) {
       resetSound(sound);
@@ -188,6 +197,7 @@ export function createAudioSystem({
 
     syncLoopingSoundGroup(ambienceSounds, activeAmbience);
     syncLoopingSoundGroup(musicSounds, activeMusic);
+    resetInactiveSounds(activeMusic, [musicSounds.badEnding, musicSounds.goodEnding]);
   }
 
   function setMuted(muted) {

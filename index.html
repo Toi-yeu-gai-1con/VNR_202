@@ -56,7 +56,7 @@
               </div>
             </div>
             <div class="action-footer">
-              <p id="action-hint" class="action-hint">E tương tác | J tấn công | K phản đòn | B sách</p>
+              <p id="action-hint" class="action-hint">E tương tác | J tấn công | L lướt | K phản đòn | B sách</p>
               <p id="combat-status" class="combat-status">Thể lực 100 • J sẵn sàng • K phản đòn</p>
               <div id="interaction-prompt" class="hud-chip prompt hidden">Nhấn E để quan sát</div>
             </div>
@@ -72,8 +72,9 @@
             <p id="dialogue-progress" class="dialogue-progress">1 / 1</p>
           </div>
           <p id="dialogue-text" class="dialogue-text">Ngôi làng cất kín câu chuyện của nó trong màn mưa.</p>
+          <div id="dialogue-choice-list" class="dialogue-choice-list hidden" aria-label="Lựa chọn hội thoại"></div>
           <div class="dialogue-footer">
-            <p class="dialogue-hint">E / Phím cách để tiếp tục</p>
+            <p id="dialogue-hint" class="dialogue-hint">E / Phím cách để tiếp tục</p>
             <button id="dialogue-next-button" class="pixel-button dialogue-next-button" type="button">Tiếp tục</button>
           </div>
         </section>
@@ -93,7 +94,7 @@
             <p>Thu thập đủ 5 vật phẩm để mở Cánh Cửa Lịch Sử</p>
             <p>Giữ thanh Tha hóa ở mức thấp để tránh Bad Ending</p>
           </div>
-          <p class="start-controls">WASD / Mũi tên di chuyển | E / Phím cách tương tác | J tấn công | K phản đòn | B mở sách</p>
+          <p class="start-controls">WASD / Mũi tên di chuyển | E / Phím cách tương tác | J tấn công | L lướt | K phản đòn | B mở sách</p>
           <p id="build-version" class="build-version" aria-label="Phiên bản game"></p>
           <div id="difficulty-controls" class="difficulty-controls" role="group" aria-label="Độ khó">
             <button class="pixel-button difficulty-button" type="button" data-difficulty="story">Cốt truyện</button>
@@ -116,17 +117,25 @@
       </section>
 
       <section id="opening-intro" class="overlay intro-overlay hidden" aria-hidden="true" role="dialog" aria-modal="true">
+        <div class="opening-office-scene" aria-hidden="true">
+          <span class="opening-paper opening-paper-one"></span>
+          <span class="opening-paper opening-paper-two"></span>
+          <span class="opening-paper opening-paper-three"></span>
+          <span class="opening-paper opening-paper-four"></span>
+          <span class="opening-impact-ring"></span>
+          <span class="opening-player-figure"></span>
+        </div>
         <div class="intro-card">
-          <p class="intro-kicker">THE CROSSROADS</p>
+          <p class="intro-kicker">SỰ CỐ DỊCH CHUYỂN</p>
           <div class="intro-header">
             <p id="opening-speaker" class="intro-speaker">Nhà du hành thời gian</p>
-            <p id="opening-progress" class="intro-progress">1 / 4</p>
+            <p id="opening-progress" class="intro-progress">1 / 3</p>
           </div>
           <p id="opening-text" class="intro-text">
-            Hãy trở thành một người vô danh du hành về các nhánh thời gian khác nhau.
+            Một khe nứt thời gian bất ngờ mở ra dưới chân bạn.
           </p>
           <div class="intro-footer">
-            <p class="intro-hint">E / Phím cách để tiếp tục</p>
+            <p class="intro-hint">Tiếp tục câu chuyện</p>
             <button id="opening-next-button" class="pixel-button intro-next-button" type="button">Tiếp tục</button>
           </div>
         </div>
@@ -183,6 +192,10 @@
             <canvas id="end-art-cinematic" class="end-art-cinematic" aria-hidden="true"></canvas>
             <img id="end-art-image" class="end-art-image" alt="">
             <canvas id="end-art-overlay" class="end-art-overlay" aria-hidden="true"></canvas>
+            <div id="bad-ending-recovery-dialogue" class="bad-ending-recovery-dialogue hidden" aria-hidden="true" aria-live="assertive">
+              <p id="bad-ending-recovery-speaker" class="bad-ending-recovery-speaker">David</p>
+              <p id="bad-ending-recovery-text" class="bad-ending-recovery-text"></p>
+            </div>
           </div>
           <p id="end-copy" class="end-copy">
             Bạn đã đi qua 5 ngã rẽ để thấy rằng nếu không có Đảng Cộng sản Việt Nam, dân tộc có thể chìm trong bế tắc, chia cắt và khủng hoảng. Chính đường lối đúng đắn đã mở ra con đường độc lập, thống nhất và đổi mới.
@@ -200,7 +213,7 @@
           <h2 id="tutorial-title">Sẵn sàng cho ngã rẽ đầu tiên?</h2>
           <p id="tutorial-copy" class="tutorial-copy">Di chuyển bằng WASD hoặc phím mũi tên. Đi theo mũi tên vàng để đến mục tiêu.</p>
           <div class="tutorial-steps" aria-hidden="true">
-            <span>WASD Di chuyển</span><span>J Tấn công</span><span>K Phản đòn</span>
+            <span>WASD Di chuyển</span><span>J Tấn công</span><span>L Lướt</span><span>K Phản đòn</span>
           </div>
           <button id="tutorial-next-button" class="pixel-button" type="button">Bắt đầu</button>
         </div>

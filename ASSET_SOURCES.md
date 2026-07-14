@@ -2,6 +2,11 @@
 
 This project uses a small subset of free game assets:
 
+- Adventurer 2D Top-Down by Mattz Art: https://xzany.itch.io/top-down-adventurer-character
+  - License/terms: included in `assets/FREE_Adventurer 2D Pixel Art/License.txt`; free/commercial project use and modification are allowed, with no standalone asset redistribution.
+  - Used for the player idle/run/attack1/attack2 sheets and the player action strips in `assets/player/`.
+  - Attack sheets are copied from the supplied free pack. Dash, heal, hurt, and death strips are normalized from the user-provided preview GIFs (`fall.gif`, `ZQXPQf.gif`, and `TwpTcu.gif`) using the fixed 96x80 canvas and nearest-neighbour pixel sampling.
+
 - Kenney UI Pack RPG Expansion: https://kenney.nl/assets/ui-pack-rpg-expansion
   - License: Creative Commons CC0
   - Used for menu panels, dialog panels, buttons, and close icon assets.
@@ -56,6 +61,16 @@ This project uses a small subset of free game assets:
 - Original Đổi Mới irrigation station
   - Created for this project with the built-in image generation workflow, then background-keyed to transparent PNG.
   - Used for the restored rural cooperative scene in `assets/recovery/doi-moi-irrigation-station.png`.
+
+## Original Cục Lưu Trữ Niên Tuyến (CLTNT) time-archive art pack
+
+- Generated for this project with the built-in image generation workflow; no Marvel/TVA artwork, logos, or traced character likenesses were used.
+- Source prompts and processing notes are recorded in `docs/asset-prompts/time-archive-pack.md`.
+- Character strips were generated from one approved M-90 seed, background-keyed, normalized with nearest-neighbor sampling to 62px content inside the existing 96x96 NPC frame contract, and packed with the current bottom-center anchor.
+- Used for `assets/time-archive/characters/agent-m90/` (down, left, up, downleft, upleft; right is mirrored by the existing NPC renderer).
+- The Chronicle Door, archive tools, and Reset Charge were background-keyed and normalized into fixed-size PNG strips. The reset-wave VFX used luminance-to-alpha conversion from a black source so additive blending preserves the colored glow.
+- The brutalist office plate is an original lossless WEBP: `assets/time-archive/environment/chronicle-office.webp`.
+- M-90's non-looping `reset_activate` action was authored from the approved seed with Aseprite MCP, exported as `reset-activate.aseprite` / `reset-activate.png`, and tagged with per-frame durations plus reset event metadata.
 
 ## Music
 

@@ -103,7 +103,7 @@ export function createMiniMapRenderer({
       const point = getInteractionPoint(item);
       const color = item.interactionType === "pickup"
         ? "#eec96d"
-        : ["offerBribe", "splitChoice", "fillCorruption", "ideologyTrap"].includes(item.interactionType)
+        : ["offerBribe", "colonialRecruitment", "splitChoice", "fillCorruption", "ideologyTrap"].includes(item.interactionType)
           ? "#e96b67"
           : "#a7c7f3";
       drawPoint(point.x, point.y, color, 2);
