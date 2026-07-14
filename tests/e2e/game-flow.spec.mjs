@@ -298,7 +298,7 @@ test("a bad ending is interrupted by the TVA employee and restores the checkpoin
   await expect.poll(() => snapshot(page).then((state) => state.badEndingRecovery?.phase)).toBe("complaint");
   await page.screenshot({ path: testInfo.outputPath("bad-ending-tva-recovery.png"), fullPage: true });
 
-  await page.evaluate(() => window.__CROSSROADS_DEBUG__.setBadEndingRecoveryElapsed(9000));
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.setBadEndingRecoveryElapsed(9400));
   await expect.poll(() => snapshot(page).then((state) => state.badEndingRecovery?.phase)).toBe("reset");
   await page.screenshot({ path: testInfo.outputPath("bad-ending-m90-reset.png"), fullPage: true });
 
