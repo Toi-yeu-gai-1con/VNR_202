@@ -15,6 +15,7 @@ export function createSaveSystem({
     return {
       tvaBriefingAccepted: quests.tvaBriefingAccepted,
       tvaPortalTarget: quests.tvaPortalTarget,
+      tvaTrackedChapterId: quests.tvaTrackedChapterId ?? null,
       tvaReportedRelics: [...quests.tvaReportedRelics],
       zone1Started: quests.zone1Started,
       zone1Delivered: [...quests.zone1Delivered],
@@ -38,6 +39,9 @@ export function createSaveSystem({
     getState().quests = {
       tvaBriefingAccepted: Boolean(savedQuests.tvaBriefingAccepted),
       tvaPortalTarget: savedQuests.tvaPortalTarget ?? null,
+      tvaTrackedChapterId: typeof savedQuests.tvaTrackedChapterId === "string"
+        ? savedQuests.tvaTrackedChapterId
+        : null,
       tvaReportedRelics: new Set(savedQuests.tvaReportedRelics ?? []),
       zone1Started: Boolean(savedQuests.zone1Started),
       zone1Delivered: new Set(savedQuests.zone1Delivered ?? []),

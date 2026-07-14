@@ -13,6 +13,7 @@ import { createLevelDefinitions } from "../systems/level-definitions.js";
 import { createSaveSystem } from "../systems/save-system.js";
 import { createEndingCollection } from "../systems/ending-collection.js";
 import { createGameSettingsStore, DEFAULT_GAME_SETTINGS } from "../systems/game-settings.js";
+import { buildTvaCaseboard, createTvaCaseboardDialogue } from "../data/tva-caseboard.js";
 import { INTERACTION_DIALOGUES, TVA_EMPLOYEE_DIALOGUES, RELIC_DEFINITIONS, RELIC_STORY_SLIDES, ENDING_DEFINITIONS, ENDING_OVERLAY_SCENES, ENDING_CINEMATIC_DEFINITIONS, BAD_ENDING_RECOVERY, OPENING_DIALOGUE } from "../data/story-content.js";
 import { createMiniMapRenderer } from "../rendering/minimap-renderer.js";
 import { createCoordinateSystem } from "../rendering/coordinate-system.js";
@@ -2497,6 +2498,7 @@ function createDebugSnapshot() {
     quests: {
       tvaBriefingAccepted: state.quests.tvaBriefingAccepted,
       tvaPortalTarget: state.quests.tvaPortalTarget,
+      tvaTrackedChapterId: state.quests.tvaTrackedChapterId,
       tvaReportedRelics: Array.from(state.quests.tvaReportedRelics),
       zone1Started: state.quests.zone1Started,
       zone1Delivered: Array.from(state.quests.zone1Delivered),
@@ -3028,6 +3030,13 @@ function getLegacyInteractionDialogue(item) {
 function getInteractionDialogue(item) {
   if (item.interactionType === "tvaBriefing") {
     return getTvaEmployeeDialogue();
+  }
+
+  if (item.interactionType === "tvaCaseboard") {
+    return createTvaCaseboardDialogue(
+      buildTvaCaseboard({ quests: state.quests }),
+      state.quests.tvaTrackedChapterId
+    );
   }
 
   const scriptedDialogue = INTERACTION_DIALOGUES[item.dialogueKey ?? item.id];
@@ -3634,7 +3643,7 @@ function resolveDialogueChoice(choiceId) {
   const dialogue = state.activeDialogue;
   const choice = getPendingDialogueChoices().find((entry) => entry.id === choiceId);
   const item = currentLevel().interactables.find((entry) => entry.id === dialogue?.interactionId);
-  const supportedInteraction = ["colonialRecruitment", "tvaBriefing", "startPapers", "compassVerdict", "splitChoice", "emblemVerdict", "rallyChoice", "augustVerdict", "temporaryLineChoice", "borderVerdict", "productionChoice", "stalledMechanismChoice", "doiMoiVerdict"].includes(item?.interactionType);
+  const supportedInteraction = ["colonialRecruitment", "tvaBriefing", "tvaCaseboard", "startPapers", "compassVerdict", "splitChoice", "emblemVerdict", "rallyChoice", "augustVerdict", "temporaryLineChoice", "borderVerdict", "productionChoice", "stalledMechanismChoice", "doiMoiVerdict"].includes(item?.interactionType);
 
   if (!dialogue || !choice || !item || !supportedInteraction) {
     return;
@@ -3642,6 +3651,23 @@ function resolveDialogueChoice(choiceId) {
 
   if (item.interactionType === "tvaBriefing") {
     resolveTvaDialogueChoice(choice.id, item, dialogue);
+    return;
+  }
+
+  if (item.interactionType === "tvaCaseboard") {
+    const chapterId = choice.id.startsWith("track:") ? choice.id.slice("track:".length) : null;
+    const caseboard = buildTvaCaseboard({ quests: state.quests });
+    const entry = caseboard.entries.find((candidate) => candidate.id === chapterId && candidate.trackable);
+
+    if (!entry) {
+      return;
+    }
+
+    state.quests.tvaTrackedChapterId = entry.id;
+    closeDialogueForChoice();
+    updateQuestChip();
+    showStoryToast(`Đang theo dõi hồ sơ: ${entry.title}.`);
+    saveGameProgress();
     return;
   }
 
@@ -5877,9 +5903,12 @@ function updateQuestChip() {
   const objective = getNavigationObjective();
 
   const progress = getZoneProgressText(state.currentLevelId);
+  const trackedEntry = buildTvaCaseboard({ quests: state.quests }).entries
+    .find((entry) => entry.id === state.quests.tvaTrackedChapterId);
+  const trackedLabel = trackedEntry ? ` • Hồ sơ: ${trackedEntry.title}` : "";
   questChip.textContent = objective
-    ? `${progress} • ${objective.label} - ${formatNavigationDistance(objective.distance)}`
-    : `${progress} • Tự do thám hiểm`;
+    ? `${progress}${trackedLabel} • ${objective.label} - ${formatNavigationDistance(objective.distance)}`
+    : `${progress}${trackedLabel} • Tự do thám hiểm`;
 }
 
 function getZoneProgressText(levelId) {
@@ -6541,6 +6570,7 @@ function isInteractableAvailable(item) {
     case "offerBribe":
       return !item.used && !item.purified;
     case "tvaBriefing":
+    case "tvaCaseboard":
       return true;
     case "colonialRecruitment":
       return state.quests.zone1Started &&
@@ -6639,6 +6669,9 @@ function handleSystemInteraction(item) {
       adjustSaDoa(34, "Bạn nhận vinh hoa làm tay sai cho mẫu quốc. Tha hóa tăng mạnh.");
       return;
     case "tvaBriefing":
+      startDialogue(item);
+      return;
+    case "tvaCaseboard":
       startDialogue(item);
       return;
     case "colonialRecruitment":
@@ -9358,6 +9391,11 @@ function drawNpc(npc) {
 }
 
 function drawObject(item) {
+  if (item.variant === "tva-caseboard") {
+    drawTvaCaseboard(item);
+    return;
+  }
+
   if (item.variant === "final-history-gate") {
     drawFinalHistoryGate(item);
     return;
@@ -9441,6 +9479,30 @@ function drawObject(item) {
   if (item.variant === "grand-tree") {
     drawGrandTree(item);
   }
+}
+
+function drawTvaCaseboard(item) {
+  const chalkboard = LIMEZU_INTERIOR_SPRITES.chalkboard;
+  const source = environmentSprites.limezu?.interiors;
+  const drawWidth = 72;
+  const drawHeight = 72;
+  const drawX = Math.round(item.x - drawWidth / 2);
+  const drawY = Math.round(item.y - drawHeight + 4);
+
+  if (!drawSpriteRect(source, chalkboard, drawX, drawY, drawWidth, drawHeight, {
+    filter: "brightness(0.9) saturate(0.82) contrast(1.08)",
+  })) {
+    return;
+  }
+
+  const pulse = 0.36 + (Math.sin(state.lastTimestamp * 0.004) + 1) * 0.16;
+  ctx.save();
+  ctx.globalCompositeOperation = "screen";
+  ctx.fillStyle = `rgba(228, 205, 126, ${pulse})`;
+  ctx.fillRect(drawX + 21, drawY + 22, 3, 3);
+  ctx.fillRect(drawX + 45, drawY + 31, 3, 3);
+  ctx.fillRect(drawX + 32, drawY + 42, 3, 3);
+  ctx.restore();
 }
 
 function drawArchiveLensConsole(item) {

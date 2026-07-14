@@ -298,6 +298,27 @@ test("the employee forces the TVA briefing choice and opens the first dispatch p
   expect(openReturn.currentLevelId).toBe("hub");
 });
 
+test("the TVA caseboard reveals only the authorized file and tracks it", async ({ page }, testInfo) => {
+  await openDebugSession(page);
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("hub", { x: 480, y: 260, direction: "up" }));
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("tva-clerk-placeholder"));
+  for (let line = 0; line < 10; line += 1) await page.locator("#dialogue-next-button").click();
+  await page.locator('[data-dialogue-choice="accept-assignment"]').click();
+  await page.locator('[data-dialogue-choice="dispatch-later"]').click();
+  await expect.poll(() => snapshot(page).then((state) => state.mode)).toBe("playing");
+
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("tva-caseboard"));
+  await expect(page.locator("#dialogue-speaker")).toHaveText("Bảng hồ sơ TVA");
+  await expect(page.locator("#dialogue-text")).toContainText("Khu 1");
+  await expect(page.locator("#dialogue-text")).not.toContainText("Khu 2");
+  await expect(page.locator('[data-dialogue-choice="track:zone1"]')).toBeVisible();
+  await page.screenshot({ path: testInfo.outputPath("tva-caseboard-zone1.png"), fullPage: true });
+
+  await page.locator('[data-dialogue-choice="track:zone1"]').click();
+  await expect.poll(() => snapshot(page).then((state) => state.quests.tvaTrackedChapterId)).toBe("zone1");
+  await expect(page.locator("#quest-chip")).toContainText("Hồ sơ: Báo Người cùng khổ");
+});
+
 test("reported relics unlock each later TVA coordinate in campaign order", async ({ page }) => {
   await openDebugSession(page);
   await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("hub", { x: 480, y: 260, direction: "up" }));

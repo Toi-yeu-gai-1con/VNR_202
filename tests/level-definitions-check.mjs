@@ -25,6 +25,10 @@ assert.equal(tvaClerk?.interactionType, "tvaBriefing", "The long office aisle en
 assert.equal(tvaClerk?.kind, "npc", "The TVA employee remains an interactive NPC.");
 assert.equal(tvaClerk?.spriteKey, "tvaEmployee", "The TVA employee role routes through the M-90 directional sprite set.");
 assert.equal(tvaClerk?.idleFrameCount, 2, "The TVA employee idles without looping the coffee-drinking frame.");
+const tvaCaseboard = levels.hub.interactables.find((item) => item.id === "tva-caseboard");
+assert.equal(tvaCaseboard?.interactionType, "tvaCaseboard", "The TVA hub offers an interactive caseboard for known mission files.");
+assert.equal(tvaCaseboard?.variant, "tva-caseboard", "The caseboard routes through its dedicated office prop renderer.");
+assert.ok(tvaCaseboard?.interactionRadius >= 42, "The caseboard is comfortably usable without colliding with the office furniture.");
 assert.ok(
   Math.hypot(tvaClerk.x - tvaPortal.x, tvaClerk.y - tvaPortal.y) >= 96,
   "The TVA employee stands clear of the dispatch portal."

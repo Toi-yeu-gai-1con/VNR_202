@@ -2,6 +2,7 @@ export function createQuestState() {
   return {
     tvaBriefingAccepted: false,
     tvaPortalTarget: null,
+    tvaTrackedChapterId: null,
     tvaReportedRelics: new Set(),
     zone1Started: false,
     zone1Delivered: new Set(),
