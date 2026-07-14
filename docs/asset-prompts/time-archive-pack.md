@@ -22,9 +22,15 @@ M-90 was generated as 11 normalized source frames (4 idle + 7 walk), then the fi
 - `assets/time-archive/environment/chronicle-door-sheet.png` — 6-frame rectangular amber/green Chronicle Door activation.
 - `assets/time-archive/props/archive-tools-sheet.png` — closed/active Chronicle Pad and inactive/armed Branch Reset Charge.
 - `assets/time-archive/effects/reset-wave-sheet.png` — 8-frame violet/amber prune pulse and blue reconstruction pulse.
+- `assets/time-archive/characters/agent-m90/actions/reset-activate/reset-activate.aseprite` — Aseprite-authored, non-looping 8-frame action: draw, arm, place, and trigger the Branch Reset Charge.
+- `assets/time-archive/characters/agent-m90/actions/reset-activate/reset-activate.events.json` — timing, anchor, event beats, and the follow-up reset-wave cue.
 
 ## Generation and cleanup
 
 The built-in image generator was used with the existing VNR202 player/NPC art as style references. Character and object strips were requested as one horizontal strip per action/direction so silhouette, palette, and equipment stay consistent across frames. The generated magenta backgrounds were removed with the installed chroma-key helper. Frames were normalized with nearest-neighbor resampling; portal and VFX frames use a center anchor, while characters and floor props use bottom-center. The reset-wave strip was generated on black and converted from luminance to alpha to preserve its colored glow for additive blending.
 
 The raw generated source strips remain under `assets/time-archive/sources/` for auditability. `scripts/prepare-time-archive-assets.py` and `scripts/normalize_centered_strip.py` reproduce the packing and center-anchor normalization.
+
+## Reset action timing
+
+The M-90 action uses variable timing rather than a uniform walk cadence: slow hold on the tired idle, faster reach/draw, a longer collar-twist emphasis, a held placement beat, then a trigger hold. The action is intentionally non-looping. At `reset_wave_start`, play `reset-wave-sheet.png`; apply the checkpoint restore at effect frame 7 when the blue reconstruction ring contracts.

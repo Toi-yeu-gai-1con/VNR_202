@@ -59,6 +59,7 @@ This project uses a small subset of free game assets:
 - Used for `assets/time-archive/characters/agent-m90/` (down, left, up, downleft, upleft; right is mirrored by the existing NPC renderer).
 - The Chronicle Door, archive tools, and Reset Charge were background-keyed and normalized into fixed-size PNG strips. The reset-wave VFX used luminance-to-alpha conversion from a black source so additive blending preserves the colored glow.
 - The brutalist office plate is an original lossless WEBP: `assets/time-archive/environment/chronicle-office.webp`.
+- M-90's non-looping `reset_activate` action was authored from the approved seed with Aseprite MCP, exported as `reset-activate.aseprite` / `reset-activate.png`, and tagged with per-frame durations plus reset event metadata.
 
 ## Music
 

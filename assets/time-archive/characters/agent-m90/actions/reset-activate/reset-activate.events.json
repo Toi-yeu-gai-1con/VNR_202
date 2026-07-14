@@ -1,0 +1,31 @@
+{
+  "animation": "reset_activate",
+  "loop": false,
+  "frameWidth": 96,
+  "frameHeight": 96,
+  "drawWidth": 62,
+  "drawHeight": 62,
+  "anchor": { "x": 0.5, "y": 1 },
+  "bodyContract": {
+    "npcCrop": { "x": 30, "y": 18, "width": 36, "height": 62 },
+    "renderedCharacter": { "width": 24, "height": 40 }
+  },
+  "frames": [
+    { "frame": 1, "durationMs": 220, "beat": "weary_idle" },
+    { "frame": 2, "durationMs": 120, "beat": "secure_coffee_and_reach" },
+    { "frame": 3, "durationMs": 140, "beat": "draw_reset_charge", "event": "reset_charge_drawn" },
+    { "frame": 4, "durationMs": 180, "beat": "twist_lock", "event": "reset_charge_armed" },
+    { "frame": 5, "durationMs": 130, "beat": "lower_to_ground" },
+    { "frame": 6, "durationMs": 220, "beat": "place_charge", "event": "reset_charge_grounded" },
+    { "frame": 7, "durationMs": 120, "beat": "raise_chronicle_pad", "event": "chronicle_pad_ready" },
+    { "frame": 8, "durationMs": 300, "beat": "trigger_and_hold", "event": "reset_wave_start" }
+  ],
+  "followUp": {
+    "effectSheet": "assets/time-archive/effects/reset-wave-sheet.png",
+    "effectFrames": 8,
+    "effectFrameDurationMs": 90,
+    "restoreCheckpointAfterEffectFrame": 7,
+    "reconstructionCue": "violet_prune_then_blue_rebuild",
+    "optionalJuice": ["brief_hit_stop_80ms", "crt_glitch_120ms", "screen_shake_3px"]
+  }
+}
