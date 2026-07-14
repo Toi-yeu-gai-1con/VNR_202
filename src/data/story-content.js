@@ -51,6 +51,18 @@ export const TVA_EMPLOYEE_DIALOGUES = {
 };
 
 export const INTERACTION_DIALOGUES = {
+  "le-paria-stack": {
+    speaker: "Người liên lạc",
+    lines: [
+      "Những tờ Le Paria cần đến tay người lao động, nhưng bến cảng đang bị giám sát. Cậu sẽ tổ chức việc truyền báo thế nào?",
+    ],
+    choices: [
+      { id: "protect", label: "Đi cùng công nhân, bảo vệ đường truyền" },
+      { id: "evidence", label: "Dùng lời kể và tư liệu để thuyết phục" },
+      { id: "cargo-route", label: "Giấu báo trong tuyến hàng hóa của bến cảng" },
+      { id: "abandon", label: "Giữ báo lại để tránh rủi ro", tone: "danger" },
+    ],
+  },
   "tva-clerk-placeholder": TVA_EMPLOYEE_DIALOGUES.introduction,
   "old-peasant": {
     speaker: "Người nông dân",
@@ -80,12 +92,24 @@ export const INTERACTION_DIALOGUES = {
     speaker: "Lính tuần tra Pháp",
     lines: [
       "Ta biết cậu đang giữ những tờ Le Paria. Đừng phí công mang chúng đến tay đám phu bến cảng.",
-      "Theo ta làm tay sai, cậu sẽ có tiền bạc và được yên thân. Chỉ cần đốt số báo còn lại, hoặc giữ chúng mãi không cho ai đọc.",
-      "Chọn đi: phục vụ cho ta, hay tiếp tục truyền những lời phản kháng ấy?",
+      "Theo ta, cậu sẽ có tiền bạc và được yên thân. Chỉ cần để những tờ báo ấy nằm im, không đến tay người lao động.",
+      "Đây là lời dụ dỗ nguy hiểm, nhưng chưa phải điểm không thể quay lại: cậu còn có thể sửa sai bằng hành động tiếp theo.",
     ],
     choices: [
       { id: "refuse", label: "Từ chối, tiếp tục truyền báo" },
-      { id: "accept", label: "Nhận lời và đốt báo", tone: "danger" },
+      { id: "stall", label: "Kéo dài cuộc nói chuyện để quan sát tuần tra" },
+      { id: "accept", label: "Nhận tiền, hứa sẽ giữ báo lại", tone: "danger" },
+    ],
+  },
+  "red-compass-reward": {
+    speaker: "Chiếc La Bàn Đỏ",
+    lines: [
+      "Con đường chung chỉ bền khi người đi không đổi nó lấy lợi ích riêng. Hãy quyết định cách cậu khép lại chuyến đi này.",
+    ],
+    choices: [
+      { id: "protect-common-path", label: "Trao báo và giữ con đường chung" },
+      { id: "repair-harm", label: "Thừa nhận sai lầm, sửa chữa với người lao động" },
+      { id: "confirm-personal-gain", label: "Giữ lợi ích riêng dù con đường bị lệch", tone: "danger" },
     ],
   },
   "guiding-compass": {
@@ -360,6 +384,13 @@ export const ENDING_DEFINITIONS = {
     artSrc: "assets/environment/generated-worlds/bad-ending-hero.webp",
     artAlt: "Khung cảnh kết thúc xấu với xã hội đen tối hiện đại, trụ Tha hóa, chia rẽ và lệ thuộc.",
   },
+  "zone1-lost-compass": {
+    title: "NHÁNH GIẢ ĐỊNH: CON TÀU KHÔNG LA BÀN",
+    copy:
+      "Khi những lời thức tỉnh bị đổi lấy lợi ích riêng, phong trào phản kháng vẫn tồn tại nhưng khó tìm được một đường hướng chung. Đây là nhánh giả định: đất nước không ngừng đấu tranh, song con đường cứu nước bị kéo dài trong bế tắc.",
+    artSrc: "assets/environment/generated-worlds/zone1-lost-compass-ending.png",
+    artAlt: "Nhánh giả định về phong trào bị mất phương hướng, với người lao động tản mác trước một cổng thời gian tối.",
+  },
 };
 
 export const ENDING_OVERLAY_SCENES = {
@@ -554,6 +585,18 @@ export const ENDING_OVERLAY_SCENES = {
       },
     ],
   },
+  "zone1-lost-compass": {
+    figures: [
+      { kind: "npc", x: 0.2, y: 0.91, spriteKey: "npc05", direction: "right", scale: 0.78, animation: "walk", bobAmplitude: 1.4, swayAmplitude: 2.2, swaySpeed: 0.0028, frameOffset: 0.18, opacity: 0.9 },
+      { kind: "npc", x: 0.34, y: 0.88, spriteKey: "npc02", direction: "up", scale: 0.84, animation: "walk", bobAmplitude: 1.2, swayAmplitude: 1.6, swaySpeed: 0.0024, frameOffset: 0.48, opacity: 0.88 },
+      { kind: "player", x: 0.5, y: 0.84, direction: "up", scale: 0.92, bobAmplitude: 0.72, swayAmplitude: 0.45, swaySpeed: 0.0013, frameOffset: 0.54, opacity: 0.78 },
+      { kind: "npc", x: 0.67, y: 0.9, spriteKey: "npc03", direction: "left", scale: 0.78, animation: "walk", bobAmplitude: 1.5, swayAmplitude: 2.1, swaySpeed: 0.0029, frameOffset: 0.82, opacity: 0.88 },
+    ],
+    motes: [
+      { x: 0.42, y: 0.63, size: 8, speed: 0.0013, drift: 5, alpha: 0.1 },
+      { x: 0.58, y: 0.58, size: 11, speed: 0.0016, drift: 4, alpha: 0.12 },
+    ],
+  },
 };
 
 export const ENDING_CINEMATIC_DEFINITIONS = {
@@ -574,6 +617,15 @@ export const ENDING_CINEMATIC_DEFINITIONS = {
       { at: 0.24, x: 0.22, y: 0.2, zoom: 2.42 },
       { at: 0.52, x: 0.8, y: 0.22, zoom: 2.2 },
       { at: 0.8, x: 0.82, y: 0.8, zoom: 1.98 },
+      { at: 1, x: 0.5, y: 0.5, zoom: 1 },
+    ],
+  },
+  "zone1-lost-compass": {
+    duration: 9000,
+    keyframes: [
+      { at: 0, x: 0.28, y: 0.72, zoom: 2.4 },
+      { at: 0.32, x: 0.68, y: 0.3, zoom: 2.22 },
+      { at: 0.66, x: 0.46, y: 0.56, zoom: 1.7 },
       { at: 1, x: 0.5, y: 0.5, zoom: 1 },
     ],
   },

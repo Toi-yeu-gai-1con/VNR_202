@@ -1,6 +1,7 @@
 import { createQuestState } from "../data/quests.js";
-import { createNarrativeState } from "../systems/narrative-state.js";
+import { createNarrativeState, recordNarrativeChoice } from "../systems/narrative-state.js";
 import { resolveEnding } from "../systems/ending-resolver.js";
+import { NARRATIVE_CHOICE_DEFINITIONS, NARRATIVE_ENDING_DEFINITIONS } from "../data/narrative-definitions.js";
 import { ZONE_PROFILES } from "../data/zone-profiles.js";
 import { createAssetManager } from "../core/asset-manager.js";
 import { createPageLifecycleController } from "../core/page-lifecycle.js";
@@ -2541,6 +2542,21 @@ function installDebugTools() {
       useParrySkill();
       return createDebugSnapshot();
     },
+    parryIncomingProjectile(monsterId) {
+      const monster = currentLevel().monsters.find((entry) => entry.id === monsterId);
+      if (!monster || monster.defeated) {
+        return false;
+      }
+
+      spawnEnemyProjectile(monster);
+      const projectile = state.enemyProjectiles.at(-1);
+      const distance = Math.hypot(player.x - projectile.x, player.y - projectile.y) || 1;
+      const targetDistance = 12;
+      projectile.x = player.x - ((player.x - projectile.x) / distance) * targetDistance;
+      projectile.y = player.y - ((player.y - projectile.y) / distance) * targetDistance;
+      useParrySkill();
+      return createDebugSnapshot();
+    },
     strike(charged = false) {
       useStrikeSkill(charged);
       return createDebugSnapshot();
@@ -3106,11 +3122,119 @@ function advanceDialogue() {
   finishDialogue();
 }
 
+function getNarrativeChoiceOption(chapterId, decisionId, optionId) {
+  const decision = NARRATIVE_CHOICE_DEFINITIONS[chapterId]?.find((entry) => entry.id === decisionId);
+  const option = decision?.options.find((entry) => entry.id === optionId);
+
+  if (!decision || !option) {
+    return null;
+  }
+
+  return { decision, option };
+}
+
+function applyNarrativeChoice(chapterId, decisionId, optionId) {
+  const resolved = getNarrativeChoiceOption(chapterId, decisionId, optionId);
+
+  if (!resolved) {
+    return null;
+  }
+
+  const { decision, option } = resolved;
+  recordNarrativeChoice(state.narrative, {
+    ...option,
+    id: `${chapterId}.${decision.id}`,
+    chapterId,
+  });
+
+  if (option.corruption) {
+    adjustSaDoa(option.corruption);
+  } else {
+    saveGameProgress();
+  }
+
+  return option;
+}
+
+function closeDialogueForChoice() {
+  state.activeDialogue = null;
+  state.activeDialogueIndex = 0;
+  hideDialogue();
+  state.mode = "playing";
+}
+
+function resolveZone1PaperPlanChoice(choiceId, item) {
+  const option = applyNarrativeChoice("zone1", "dock-workers", choiceId);
+
+  if (!option) {
+    return;
+  }
+
+  state.quests.zone1Started = true;
+  item.used = true;
+  item.collected = true;
+  closeDialogueForChoice();
+  updateQuestChip();
+  updateInteractionPrompt();
+  showStoryToast(
+    choiceId === "abandon"
+      ? "Bạn giữ báo lại vì an toàn cá nhân. Vẫn còn thời gian để sửa sai và đưa tiếng nói ấy đến người lao động."
+      : "Bạn đã chọn một cách đưa báo phù hợp. Hãy đem Le Paria tới ba người lao động ở bến cảng."
+  );
+  saveGameProgress();
+}
+
+function resolveZone1RecruiterChoice(choiceId, item) {
+  const option = applyNarrativeChoice("zone1", "recruiter-offer", choiceId);
+
+  if (!option) {
+    return;
+  }
+
+  state.quests.zone1SoldierDecision = choiceId === "refuse" ? "refused" : choiceId;
+  item.used = true;
+  closeDialogueForChoice();
+  updateInteractionPrompt();
+
+  const messages = {
+    refuse: "Bạn từ chối lời dụ dỗ. Người lao động biết rằng các tờ báo vẫn sẽ đến tay họ.",
+    accept: "Bạn nhận khoản tiền nhưng chưa giao nộp báo. Đây là một vết lệch nguy hiểm, không phải điểm kết thúc: hãy sửa sai bằng hành động kế tiếp.",
+    stall: "Bạn kéo dài cuộc nói chuyện để quan sát lộ trình tuần tra, rồi giữ báo an toàn cho công nhân.",
+  };
+  showStoryToast(messages[choiceId] ?? "Lựa chọn của bạn đã được ghi lại.");
+  saveGameProgress();
+}
+
+function resolveZone1CompassVerdictChoice(choiceId, item) {
+  const option = applyNarrativeChoice("zone1", "compass-verdict", choiceId);
+
+  if (!option) {
+    return;
+  }
+
+  closeDialogueForChoice();
+  item.collected = true;
+  state.quests.zone1RewardClaimed = true;
+  const candidate = resolveEnding({ narrative: state.narrative, inventory: state.inventory, saDoa: state.saDoa });
+
+  if (candidate.id === "zone1-lost-compass") {
+    triggerNarrativeEnding(candidate, "Bạn đã xác nhận lợi ích cá nhân sau một chuỗi thỏa hiệp, để con đường chung bị đánh mất.");
+    return;
+  }
+
+  collectRelic("red-compass", getReturnGuidanceForLevel("village"));
+  showStoryToast(
+    choiceId === "repair-harm"
+      ? "Bạn thừa nhận phần sai và chọn sửa chữa. La Bàn Đỏ đã ổn định trở lại."
+      : "La Bàn Đỏ đã chỉ về con đường chung. Hãy trở về TVA để báo cáo với David."
+  );
+}
+
 function resolveDialogueChoice(choiceId) {
   const dialogue = state.activeDialogue;
   const choice = getPendingDialogueChoices().find((entry) => entry.id === choiceId);
   const item = currentLevel().interactables.find((entry) => entry.id === dialogue?.interactionId);
-  const supportedInteraction = ["colonialRecruitment", "tvaBriefing"].includes(item?.interactionType);
+  const supportedInteraction = ["colonialRecruitment", "tvaBriefing", "startPapers", "compassVerdict"].includes(item?.interactionType);
 
   if (!dialogue || !choice || !item || !supportedInteraction) {
     return;
@@ -3121,25 +3245,17 @@ function resolveDialogueChoice(choiceId) {
     return;
   }
 
-  state.activeDialogue = null;
-  state.activeDialogueIndex = 0;
-  hideDialogue();
-  state.mode = "playing";
-  item.used = true;
-
-  if (choice.id === "refuse") {
-    state.quests.zone1SoldierDecision = "refused";
-    updateInteractionPrompt();
-    showStoryToast("Bạn từ chối làm tay sai và giữ lại các tờ Le Paria để tiếp tục truyền cho công nhân.");
-    saveGameProgress();
+  if (item.interactionType === "startPapers") {
+    resolveZone1PaperPlanChoice(choice.id, item);
     return;
   }
 
-  state.quests.zone1SoldierDecision = "accepted";
-  state.saDoa = SA_DOA_MAX;
-  updateProgressHud();
-  saveGameProgress();
-  triggerBadEnding("Bạn nhận lời làm tay sai, đốt những tờ Le Paria và chặn tiếng nói phản kháng trước khi chúng đến tay người lao động.");
+  if (item.interactionType === "colonialRecruitment") {
+    resolveZone1RecruiterChoice(choice.id, item);
+    return;
+  }
+
+  resolveZone1CompassVerdictChoice(choice.id, item);
 }
 
 function resolveTvaDialogueChoice(choiceId, item, dialogue) {
@@ -3664,7 +3780,7 @@ function closeSlide() {
 }
 
 function handleReturnFromEnding() {
-  if (!isEndingCinematicComplete() || state.endingId === "bad") {
+  if (!isEndingCinematicComplete() || isBadEndingId(state.endingId)) {
     return;
   }
 
@@ -3782,7 +3898,7 @@ function syncBadEndingRecoveryUi(frame = null) {
 function beginBadEndingRecovery() {
   if (
     state.mode !== "ending" ||
-    state.endingId !== "bad" ||
+    !isBadEndingId(state.endingId) ||
     !isEndingCinematicComplete() ||
     state.badEndingRecovery
   ) {
@@ -3798,7 +3914,7 @@ function beginBadEndingRecovery() {
 }
 
 function updateBadEndingRecovery() {
-  if (state.mode !== "ending" || state.endingId !== "bad" || !isEndingCinematicComplete()) {
+  if (state.mode !== "ending" || !isBadEndingId(state.endingId) || !isEndingCinematicComplete()) {
     return;
   }
 
@@ -3863,14 +3979,15 @@ function updateEndingCinematicUiState() {
 
   const cinematicState = isEndingCinematicComplete() ? "complete" : "running";
   endOverlay.dataset.cinematic = cinematicState;
-  returnStartButton.disabled = cinematicState === "running" || state.endingId === "bad";
+  returnStartButton.disabled = cinematicState === "running" || isBadEndingId(state.endingId);
 }
 
 function showEndOverlay() {
-  const endingId = state.endingId === "good" ? "good" : "bad";
+  const endingId = state.endingId ?? "bad";
+  const musicEndingId = endingId === "good" ? "good" : "bad";
   const endingAssetsReady = assetManager.loadGroup("ending");
   const ending = ENDING_DEFINITIONS[state.endingId] ?? ENDING_DEFINITIONS.bad;
-  resetSound(musicSounds[endingId === "good" ? "goodEnding" : "badEnding"]);
+  resetSound(musicSounds[musicEndingId === "good" ? "goodEnding" : "badEnding"]);
 
   state.mode = "ending";
   state.endingCinematic = createEndingCinematicState(state.endingId ?? "bad");
@@ -6013,10 +6130,7 @@ function getNearestMonster(maxDistance = Infinity) {
 function handleSystemInteraction(item) {
   switch (item.interactionType) {
     case "startPapers":
-      state.quests.zone1Started = true;
-      item.used = true;
-      item.collected = true;
-      showStoryToast("Bạn nhận các tờ Le Paria. Hãy đem chúng tới ba người lao động ở bến cảng.");
+      startDialogue(item);
       return;
     case "deliverPaper":
       if (!state.quests.zone1Started) {
@@ -6035,9 +6149,8 @@ function handleSystemInteraction(item) {
         showStoryToast("Người liên lạc chỉ trao vật phẩm khi báo đã tới đủ tay người lao động.");
         return;
       }
-      state.quests.zone1RewardClaimed = true;
-      item.collected = true;
-      collectRelic("red-compass", getReturnGuidanceForLevel("village"));
+      item.interactionType = "compassVerdict";
+      startDialogue(item);
       return;
     case "offerBribe":
       item.used = true;
@@ -6202,6 +6315,25 @@ function triggerBadEnding(summary) {
   state.endingId = "bad";
   state.endingSummary = summary;
   updateProgressHud();
+  showEndOverlay();
+}
+
+function isBadEndingId(endingId) {
+  return endingId === "bad" || NARRATIVE_ENDING_DEFINITIONS[endingId]?.kind === "bad";
+}
+
+function triggerNarrativeEnding(candidate, summary) {
+  const ending = NARRATIVE_ENDING_DEFINITIONS[candidate?.id];
+
+  if (!ending || ending.kind !== "bad") {
+    triggerBadEnding(summary);
+    return;
+  }
+
+  state.narrative.endingsUnlocked.add(candidate.id);
+  state.endingId = candidate.id;
+  state.endingSummary = summary;
+  saveGameProgress();
   showEndOverlay();
 }
 

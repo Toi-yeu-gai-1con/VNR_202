@@ -100,7 +100,7 @@ export const NARRATIVE_CHOICE_DEFINITIONS = Object.freeze({
       options: Object.freeze([
         { id: "protect-common-path", branchFlags: { "zone1.compassRestored": true }, themeScores: { direction: 1 } },
         { id: "repair-harm", branchFlags: { "zone1.repairAccepted": true }, endingRisks: { zone1: -1 }, themeScores: { direction: 1 } },
-        { id: "confirm-personal-gain", branchFlags: { "zone1.badConfirmed": true }, endingRisks: { zone1: 1 }, corruption: 10 },
+        { id: "confirm-personal-gain", branchFlags: { "zone1.badConfirmed": true }, endingRisks: { zone1: 2 }, corruption: 10 },
       ]),
     },
   ]),

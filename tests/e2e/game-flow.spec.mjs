@@ -98,11 +98,14 @@ test("parry reflects a live projectile back into its ranged attacker", async ({ 
   await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("archive"));
   await expect.poll(() => page.evaluate(() => window.__CROSSROADS_DEBUG__.getSnapshot().currentLevelId)).toBe("archive");
   await expect.poll(() => page.evaluate(() => window.__CROSSROADS_DEBUG__.getSnapshot().mode)).toBe("playing");
+  // AI attack scheduling and retreat are covered elsewhere. This atomic debug
+  // fixture invokes the production spawn + parry functions, then positions the
+  // live projectile one frame from the player for collision/reflection coverage.
   await page.evaluate(() => window.__CROSSROADS_DEBUG__.setPlayerPosition(650, 352));
   const initialHealth = await page.evaluate(() => window.__CROSSROADS_DEBUG__.getSnapshot().monsters.find((monster) => monster.id === "archive-marksman")?.health);
 
-  await expect.poll(() => page.evaluate(() => window.__CROSSROADS_DEBUG__.getSnapshot().combat.projectileCount), { timeout: 6000 }).toBeGreaterThan(0);
-  await page.evaluate(() => window.__CROSSROADS_DEBUG__.parry());
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.parryIncomingProjectile("archive-marksman"));
+  await expect.poll(() => page.evaluate(() => window.__CROSSROADS_DEBUG__.getSnapshot().combat.projectileCount)).toBeGreaterThan(0);
   await expect.poll(() => page.evaluate(() => window.__CROSSROADS_DEBUG__.getSnapshot().combat.parryEndsAt)).toBe(0);
   await page.screenshot({ path: testInfo.outputPath("projectile-parry-reflect.png"), fullPage: true });
   await expect.poll(() => page.evaluate(() => window.__CROSSROADS_DEBUG__.getSnapshot().monsters.find((monster) => monster.id === "archive-marksman")?.health)).toBeLessThan(initialHealth);
@@ -359,10 +362,11 @@ test("a bad ending is interrupted by the TVA employee and restores the checkpoin
   expect(restored.saDoa).toBe(0);
 });
 
-test("Zone 1 soldier offers a persistent choice and betrayal triggers the bad ending", async ({ page }, testInfo) => {
+test("Zone 1 choices record a recoverable risk and only trigger its bad ending after explicit confirmation", async ({ page }, testInfo) => {
   await openDebugSession(page);
   await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("village", { x: 832, y: 244, direction: "up" }));
   await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("le-paria-stack"));
+  await page.locator('[data-dialogue-choice="cargo-route"]').click();
   await page.waitForTimeout(250);
   await page.screenshot({ path: testInfo.outputPath("colonial-recruiter-scale.png"), fullPage: true });
 
@@ -371,7 +375,7 @@ test("Zone 1 soldier offers a persistent choice and betrayal triggers the bad en
   await page.locator("#dialogue-next-button").click();
   await page.locator("#dialogue-next-button").click();
   await expect(page.locator("#dialogue-choice-list")).toBeVisible();
-  await expect(page.locator(".dialogue-choice-button")).toHaveCount(2);
+  await expect(page.locator(".dialogue-choice-button")).toHaveCount(3);
   await page.screenshot({ path: testInfo.outputPath("colonial-recruiter-dialogue.png"), fullPage: true });
 
   await page.locator('[data-dialogue-choice="refuse"]').click();
@@ -381,12 +385,27 @@ test("Zone 1 soldier offers a persistent choice and betrayal triggers the bad en
   await page.evaluate(() => window.__CROSSROADS_DEBUG__.beginSession());
   await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("village", { x: 832, y: 244, direction: "up" }));
   await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("le-paria-stack"));
+  await page.locator('[data-dialogue-choice="cargo-route"]').click();
   await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("colonial-recruiter"));
   await page.locator("#dialogue-next-button").click();
   await page.locator("#dialogue-next-button").click();
   await page.locator('[data-dialogue-choice="accept"]').click();
+  await expect(page.locator("#end-overlay")).toBeHidden();
+  await expect.poll(() => snapshot(page).then((state) => state.narrative.endingRisks.zone1)).toBe(1);
+  await expect.poll(() => snapshot(page).then((state) => state.endingId)).toBeNull();
+
+  for (const workerId of ["worker-harbor-1", "worker-harbor-2", "worker-harbor-3"]) {
+    await page.evaluate((interactableId) => window.__CROSSROADS_DEBUG__.interactById(interactableId), workerId);
+  }
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("red-compass-reward"));
+  await expect(page.locator("#dialogue-choice-list")).toBeVisible();
+  await page.locator('[data-dialogue-choice="confirm-personal-gain"]').click();
   await expect(page.locator("#end-overlay")).toBeVisible();
-  await expect.poll(() => snapshot(page).then((state) => state.endingId)).toBe("bad");
+  await expect(page.locator("#end-title")).toContainText("CON TÀU KHÔNG LA BÀN");
+  await expect.poll(() => snapshot(page).then((state) => state.endingId)).toBe("zone1-lost-compass");
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.completeEndingCinematic());
+  await expect(page.locator("#end-overlay")).toHaveAttribute("data-cinematic", "complete");
+  await page.screenshot({ path: testInfo.outputPath("zone1-lost-compass-ending.png"), fullPage: true });
 });
 
 for (const endingId of ["good", "bad"]) {

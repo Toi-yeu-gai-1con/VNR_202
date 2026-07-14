@@ -70,6 +70,13 @@ This project uses a small subset of free game assets:
   - Created for this project with the built-in image generation workflow, then background-keyed to transparent PNG.
   - Used for the restored rural cooperative scene in `assets/recovery/doi-moi-irrigation-station.png`.
 
+## Original Khu 1 ending art
+
+- `assets/environment/generated-worlds/zone1-lost-compass-ending.png`
+  - Original project art generated with the built-in image-generation workflow on 2026-07-15.
+  - Prompted as a rain-swept Vietnamese colonial-era port circa the 1920s, with period-appropriate workers, wooden piers, boats, Le Paria bundles and a fractured time-rift portal.
+  - Used only by the hypothetical Khu 1 ending “Con tàu không la bàn”; no third-party character, logo, or stock asset was imported.
+
 ## Original Cục Lưu Trữ Niên Tuyến (CLTNT) time-archive art pack
 
 - Generated for this project with the built-in image generation workflow; no Marvel/TVA artwork, logos, or traced character likenesses were used.
