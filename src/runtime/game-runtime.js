@@ -14,6 +14,7 @@ import { createSaveSystem } from "../systems/save-system.js";
 import { createEndingCollection } from "../systems/ending-collection.js";
 import { createGameSettingsStore, DEFAULT_GAME_SETTINGS } from "../systems/game-settings.js";
 import { buildTvaCaseboard, createTvaCaseboardDialogue } from "../data/tva-caseboard.js";
+import { getTvaHubPresentation } from "../data/tva-hub-presentation.js";
 import { INTERACTION_DIALOGUES, TVA_EMPLOYEE_DIALOGUES, RELIC_DEFINITIONS, RELIC_STORY_SLIDES, ENDING_DEFINITIONS, ENDING_OVERLAY_SCENES, ENDING_CINEMATIC_DEFINITIONS, BAD_ENDING_RECOVERY, OPENING_DIALOGUE } from "../data/story-content.js";
 import { createMiniMapRenderer } from "../rendering/minimap-renderer.js";
 import { createCoordinateSystem } from "../rendering/coordinate-system.js";
@@ -7008,6 +7009,10 @@ function drawWorld() {
     drawZoneProgressScene(profile);
   }
 
+  if (state.currentLevelId === "hub") {
+    drawTvaHubRelics();
+  }
+
   drawLevelExitPortals(currentLevel().exits);
 
   ctx.restore();
@@ -9478,6 +9483,55 @@ function drawObject(item) {
 
   if (item.variant === "grand-tree") {
     drawGrandTree(item);
+  }
+}
+
+function drawTvaHubRelics() {
+  const presentation = getTvaHubPresentation({ inventory: state.inventory, corruption: state.saDoa });
+  const relicSprite = environmentSprites.generatedObjects?.storyRelic;
+
+  if (!canDrawSprite(relicSprite) || presentation.relics.length === 0) {
+    return;
+  }
+
+  const portal = currentLevel().exits.find((exit) => exit.id === "tva-dispatch-portal")?.portal;
+  if (!portal) {
+    return;
+  }
+
+  if (!portal.visibleWhen?.()) {
+    drawHubPortalSprite({
+      x: portal.x,
+      y: portal.y,
+      drawSize: 62,
+      auraWidth: 18,
+      auraHeight: 20,
+      innerGlowAlpha: 0.08,
+      spriteAlpha: 0.26,
+      color: presentation.stability === "corrupted" ? "#b36f91" : "#b9d1c8",
+      glow: presentation.stability === "corrupted" ? "#a65b77" : "#d4b56a",
+    });
+  }
+
+  for (const relic of presentation.relics) {
+    const bob = Math.sin(state.lastTimestamp * 0.004 + relic.phase) * 3;
+    const pulse = 0.15 + (Math.sin(state.lastTimestamp * 0.006 + relic.phase) + 1) * 0.07;
+    const x = portal.x + relic.x;
+    const y = portal.y + relic.y + bob;
+
+    drawWorldWarmGlow(x, y - 8, 18, pulse + presentation.portalIntensity * 0.08);
+    drawLooseSprite(relicSprite, x, y, 32, 32, {
+      filter: `drop-shadow(0 0 3px ${relic.color}) saturate(1.08) brightness(1.08)`,
+      alpha: 0.94,
+    });
+  }
+
+  if (presentation.stability === "corrupted") {
+    ctx.save();
+    ctx.globalAlpha = Math.min(0.2, presentation.corruption / 500);
+    ctx.fillStyle = "#a25278";
+    ctx.fillRect(portal.x - 80, portal.y - 78, 160, 134);
+    ctx.restore();
   }
 }
 

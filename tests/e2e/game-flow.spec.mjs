@@ -319,6 +319,15 @@ test("the TVA caseboard reveals only the authorized file and tracks it", async (
   await expect(page.locator("#quest-chip")).toContainText("Hồ sơ: Báo Người cùng khổ");
 });
 
+test("collected relics visibly converge around the TVA dispatch portal", async ({ page }, testInfo) => {
+  await openDebugSession(page);
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.completeTvaRoute("crossroads"));
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("hub", { x: 480, y: 260, direction: "up" }));
+  await expect.poll(() => snapshot(page).then((state) => state.inventory.length)).toBe(2);
+  await page.waitForTimeout(220);
+  await page.screenshot({ path: testInfo.outputPath("tva-relic-convergence.png"), fullPage: true });
+});
+
 test("reported relics unlock each later TVA coordinate in campaign order", async ({ page }) => {
   await openDebugSession(page);
   await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("hub", { x: 480, y: 260, direction: "up" }));
