@@ -28,5 +28,5 @@ export const COMBAT_ROSTER = {
   ],
 };
 
-export const COMBAT_DENSITY = { village: 1, archive: 2, crossroads: 3, spring: 3 };
+export const COMBAT_DENSITY = { village: 2, archive: 2, crossroads: 3, spring: 3 };
 

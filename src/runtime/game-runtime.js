@@ -1082,6 +1082,26 @@ function loadEnvironmentSprites() {
 
 function loadMonsterSprites() {
   return {
+    zone1Captain: {
+      idle: loadSprite("assets/monsters/zone1-enforcer-captain/enforcer-captain-walk.png"),
+      run: loadSprite("assets/monsters/zone1-enforcer-captain/enforcer-captain-walk.png"),
+      attack: loadSprite("assets/monsters/zone1-enforcer-captain/enforcer-captain-attack.png"),
+    },
+    zone1Raider: {
+      idle: loadSprite("assets/monsters/zone1-night-raider/night-raider-walk.png"),
+      run: loadSprite("assets/monsters/zone1-night-raider/night-raider-walk.png"),
+      attack: loadSprite("assets/monsters/zone1-night-raider/night-raider-attack.png"),
+    },
+    zone1Rifleman: {
+      idle: loadSprite("assets/monsters/zone1-colonial-soldier/colonial-patrol-walk.png"),
+      run: loadSprite("assets/monsters/zone1-colonial-soldier/colonial-patrol-walk.png"),
+      attack: loadSprite("assets/monsters/zone1-colonial-soldier/colonial-patrol-attack.png"),
+    },
+    zone1Signalman: {
+      idle: loadSprite("assets/monsters/zone1-signalman/signalman-walk.png"),
+      run: loadSprite("assets/monsters/zone1-signalman/signalman-walk.png"),
+      attack: loadSprite("assets/monsters/zone1-signalman/signalman-attack.png"),
+    },
     rifleman: {
       south: {
         idle: loadSprite("assets/monsters/military-soldier/soldier-idle.png"),
@@ -3637,6 +3657,7 @@ function updateMonsters(deltaSeconds) {
     monster.animationState = isAttacking ? "attack" : moveLength > 1 ? "run" : "idle";
 
     if (!isAttacking && !isStunned && moveLength > 1) {
+      monster.facingDirection = getDirectionFromVector(moveX, moveY);
       const slowMultiplier = state.lastTimestamp < (monster.slowedUntil ?? 0) ? 0.58 : 1;
       const step = Math.min(moveLength, MONSTER_SPEED * settings.enemySpeed * (monster.phaseSpeedMultiplier ?? 1) * slowMultiplier * deltaSeconds);
       monster.x += (moveX / moveLength) * step;
@@ -7919,7 +7940,7 @@ function drawMonsterSprite(monster, hitFlash) {
   const config = MONSTER_SPRITE_CONFIG[artKey];
   const spriteSet = monsterSprites[artKey];
   const isAttacking = state.lastTimestamp < (monster.attackEndsAt ?? 0);
-  const animationKey = monster.animationState === "run" || isAttacking ? "run" : "idle";
+  const animationKey = isAttacking ? "attack" : monster.animationState === "run" ? "run" : "idle";
   const animation = config?.animations?.[animationKey] ?? config?.animations?.idle;
   const direction = getMonsterSpriteDirection(monster);
   const sprite = config?.directional
@@ -7932,24 +7953,35 @@ function drawMonsterSprite(monster, hitFlash) {
     return false;
   }
 
-  const frameIndex =
-    Math.floor((state.lastTimestamp + (monster.phase ?? 0) * 1000) / animation.frameDuration) % animation.frameCount;
+  const animationTime = isAttacking
+    ? Math.max(0, state.lastTimestamp - (monster.attackStartedAt ?? state.lastTimestamp))
+    : state.lastTimestamp + (monster.phase ?? 0) * 1000;
+  const frameIndex = isAttacking
+    ? Math.min(animation.frameCount - 1, Math.floor(animationTime / animation.frameDuration))
+    : Math.floor(animationTime / animation.frameDuration) % animation.frameCount;
   const attackProgress = isAttacking ? getTimedProgress(monster.attackStartedAt, monster.attackEndsAt) : 0;
   const attackOffset = getAttackLungeOffset(monster.attackDirection, attackProgress, ATTACK_LUNGE_DISTANCE);
   const drawX = Math.round(monster.x + config.drawOffsetX + attackOffset.x);
   const drawY = Math.round(monster.y + config.drawOffsetY + attackOffset.y);
 
+  const flipX = Boolean(config.flipForFacing && direction === "west");
+  ctx.save();
+  if (flipX) {
+    ctx.translate(drawX + config.drawWidth, drawY);
+    ctx.scale(-1, 1);
+  }
   ctx.drawImage(
     sprite,
     frameIndex * animation.frameWidth,
     0,
     animation.frameWidth,
     animation.frameHeight,
-    drawX,
-    drawY,
+    flipX ? 0 : drawX,
+    flipX ? 0 : drawY,
     config.drawWidth,
     config.drawHeight
   );
+  ctx.restore();
 
   if (hitFlash) {
     ctx.save();
@@ -7963,6 +7995,18 @@ function drawMonsterSprite(monster, hitFlash) {
 }
 
 function getMonsterArtKey(monster) {
+  if (state.currentLevelId === "village" && monster.isBoss) {
+    return "zone1Captain";
+  }
+  if (state.currentLevelId === "village" && monster.archetype === "melee") {
+    return "zone1Raider";
+  }
+  if (state.currentLevelId === "village" && monster.archetype === "ranged") {
+    return "zone1Rifleman";
+  }
+  if (state.currentLevelId === "village" && monster.archetype === "support") {
+    return "zone1Signalman";
+  }
   if (monster.isBoss) {
     return "pixellabWarden";
   }
@@ -7979,7 +8023,7 @@ function getMonsterArtKey(monster) {
 }
 
 function getMonsterSpriteDirection(monster) {
-  const direction = monster.attackDirection ?? getDirectionFromVector(player.x - monster.x, player.y - monster.y);
+  const direction = monster.attackDirection ?? monster.facingDirection ?? getDirectionFromVector(player.x - monster.x, player.y - monster.y);
   return { down: "south", up: "north", left: "west", right: "east" }[direction] ?? "south";
 }
 

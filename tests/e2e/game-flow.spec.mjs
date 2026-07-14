@@ -1,8 +1,11 @@
 import { expect, test } from "@playwright/test";
 
-async function openDebugSession(page) {
+async function openDebugSession(page, difficulty = null) {
   await page.goto("/?debugTools=1");
   await page.waitForFunction(() => Boolean(window.__CROSSROADS_DEBUG__));
+  if (difficulty) {
+    await page.locator(`[data-difficulty="${difficulty}"]`).click();
+  }
   await page.evaluate(() => window.__CROSSROADS_DEBUG__.beginSession());
   await expect(page.locator("#tutorial-overlay")).toBeVisible();
   for (let step = 0; step < 3; step += 1) {
@@ -42,6 +45,28 @@ test("debug overlay remains legible at a wide desktop viewport", async ({ page }
   expect(overlayBox?.width).toBeLessThan(480);
   expect(overlayBox?.height).toBeLessThan(180);
   await page.screenshot({ path: testInfo.outputPath("debug-overlay-wide.png"), fullPage: true });
+});
+
+test("Zone 1 animated enemy roster renders in the village", async ({ page }, testInfo) => {
+  await openDebugSession(page, "challenge");
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("village"));
+  await expect.poll(() => page.evaluate(() => window.__CROSSROADS_DEBUG__.getSnapshot().currentLevelId)).toBe("village");
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.setPlayerPosition(690, 380));
+  await page.waitForTimeout(260);
+  await page.screenshot({ path: testInfo.outputPath("zone1-animated-frontline.png"), fullPage: true });
+
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("village"));
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.setPlayerPosition(720, 250));
+  await page.waitForTimeout(260);
+  await page.screenshot({ path: testInfo.outputPath("zone1-animated-backline.png"), fullPage: true });
+});
+
+test("Zone 1 combat uses the dedicated attack animation", async ({ page }, testInfo) => {
+  await openDebugSession(page);
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("village"));
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.setPlayerPosition(660, 426));
+  await page.waitForTimeout(410);
+  await page.screenshot({ path: testInfo.outputPath("zone1-raider-attack.png"), fullPage: true });
 });
 
 test("held movement stops on blur and paused scenes ignore movement", async ({ page }) => {

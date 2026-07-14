@@ -41,6 +41,10 @@ This project uses a small subset of free game assets:
 - Military Character Pack by DravnirCreates: https://dravnircreates.itch.io/military-character-pack
   - License: CC BY 4.0; character art by DravnirCreates. The game crops and animates the supplied soldier walk sheets for ranged enemies.
   - Used for `assets/monsters/military-soldier/`.
+- Original Zone 1 adversary sprite set
+  - Created for this project with the built-in image-generation workflow, background-keyed, normalized to shared canvases, then assembled and tagged in Aseprite. No third-party character pixels were used.
+  - Editable sources include paired `*-walk.aseprite` and `*-attack.aseprite` files for the patrol, raider, signalman, and captain under `assets/monsters/zone1-*/`.
+  - Each source has four separately posed frames tagged as `walk` or `attack`; exports are 64x64 bottom-center anchored strips. They replace only Zone 1's ranged, melee, support, and boss adversaries respectively.
 - Original zone landmarks
   - Created for this project with the built-in image generation workflow, then background-keyed to transparent PNG.
   - Used for the four persistent zone landmarks in `assets/landmarks/`: storm shelter beacon, archive lens tower, faction standard, and restoration engine.

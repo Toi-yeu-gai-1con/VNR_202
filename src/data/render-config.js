@@ -220,6 +220,58 @@ export const HOUSE_INTERIOR_A_SPRITES = {
   doorPanel: { x: 160, y: 192, width: 32, height: 32, shadowWidth: 18, shadowHeight: 5, shadowOffsetY: 28 },
 };
 export const MONSTER_SPRITE_CONFIG = {
+  zone1Captain: {
+    flipForFacing: true,
+    drawWidth: 60,
+    drawHeight: 60,
+    drawOffsetX: -30,
+    drawOffsetY: -50,
+    shadowWidth: 32,
+    animations: {
+      idle: { frameWidth: 64, frameHeight: 64, frameCount: 4, frameDuration: 420 },
+      run: { frameWidth: 64, frameHeight: 64, frameCount: 4, frameDuration: 110 },
+      attack: { frameWidth: 64, frameHeight: 64, frameCount: 4, frameDuration: 65 },
+    },
+  },
+  zone1Raider: {
+    flipForFacing: true,
+    drawWidth: 48,
+    drawHeight: 48,
+    drawOffsetX: -24,
+    drawOffsetY: -38,
+    shadowWidth: 24,
+    animations: {
+      idle: { frameWidth: 64, frameHeight: 64, frameCount: 4, frameDuration: 420 },
+      run: { frameWidth: 64, frameHeight: 64, frameCount: 4, frameDuration: 110 },
+      attack: { frameWidth: 64, frameHeight: 64, frameCount: 4, frameDuration: 65 },
+    },
+  },
+  zone1Rifleman: {
+    flipForFacing: true,
+    drawWidth: 48,
+    drawHeight: 48,
+    drawOffsetX: -24,
+    drawOffsetY: -38,
+    shadowWidth: 24,
+    animations: {
+      idle: { frameWidth: 64, frameHeight: 64, frameCount: 4, frameDuration: 420 },
+      run: { frameWidth: 64, frameHeight: 64, frameCount: 4, frameDuration: 110 },
+      attack: { frameWidth: 64, frameHeight: 64, frameCount: 4, frameDuration: 65 },
+    },
+  },
+  zone1Signalman: {
+    flipForFacing: true,
+    drawWidth: 48,
+    drawHeight: 48,
+    drawOffsetX: -24,
+    drawOffsetY: -38,
+    shadowWidth: 24,
+    animations: {
+      idle: { frameWidth: 64, frameHeight: 64, frameCount: 4, frameDuration: 420 },
+      run: { frameWidth: 64, frameHeight: 64, frameCount: 4, frameDuration: 110 },
+      attack: { frameWidth: 64, frameHeight: 64, frameCount: 4, frameDuration: 65 },
+    },
+  },
   rifleman: {
     directional: true,
     directionalAnimation: true,
