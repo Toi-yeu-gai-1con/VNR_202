@@ -22,12 +22,14 @@ export const AUDIO_TRACKS = Object.freeze({
 });
 
 export const COMBAT_SFX = Object.freeze({
+  strikeSwing: "combat-strike-swing",
   batonHit: "combat-baton-hit",
   rifleShot: "combat-rifle-shot",
   lanternPulse: "combat-lantern-pulse",
   captainCommand: "combat-captain-command",
   captainSlam: "combat-captain-slam",
   hurt: "combat-hurt",
+  playerHurt: "combat-player-hurt",
   death: "combat-death",
   parry: "combat-parry",
 });
@@ -42,6 +44,10 @@ export const AUDIO_SOURCE_CANDIDATES = Object.freeze({
   [AUDIO_TRACKS.spring]: optimizedAudio("spring-town-theme"),
   [AUDIO_TRACKS.badEnding]: optimizedAudio("bad-ending"),
   [AUDIO_TRACKS.goodEnding]: optimizedAudio("good-ending"),
+  [COMBAT_SFX.strikeSwing]: freezeSources([
+    { src: "assets/audio/combat/strike-swing.ogg", type: 'audio/ogg; codecs="opus"' },
+    { src: "assets/audio/combat/strike-swing.mp3", type: "audio/mpeg" },
+  ]),
   [COMBAT_SFX.batonHit]: freezeSources([
     { src: "assets/audio/combat/baton-hit.ogg", type: 'audio/ogg; codecs="opus"' },
     { src: "assets/audio/combat/baton-hit.mp3", type: "audio/mpeg" },
@@ -65,6 +71,10 @@ export const AUDIO_SOURCE_CANDIDATES = Object.freeze({
   [COMBAT_SFX.hurt]: freezeSources([
     { src: "assets/audio/combat/hurt.ogg", type: 'audio/ogg; codecs="opus"' },
     { src: "assets/audio/combat/hurt.mp3", type: "audio/mpeg" },
+  ]),
+  [COMBAT_SFX.playerHurt]: freezeSources([
+    { src: "assets/audio/combat/player-hurt.ogg", type: 'audio/ogg; codecs="opus"' },
+    { src: "assets/audio/combat/player-hurt.mp3", type: "audio/mpeg" },
   ]),
   [COMBAT_SFX.death]: freezeSources([
     { src: "assets/audio/combat/death.ogg", type: 'audio/ogg; codecs="opus"' },

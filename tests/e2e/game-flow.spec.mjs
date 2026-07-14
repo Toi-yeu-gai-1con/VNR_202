@@ -69,6 +69,26 @@ test("Zone 1 combat uses the dedicated attack animation", async ({ page }, testI
   await page.screenshot({ path: testInfo.outputPath("zone1-raider-attack.png"), fullPage: true });
 });
 
+test("player combat emits audible swing and incoming-hit cues", async ({ page }, testInfo) => {
+  await page.addInitScript(() => {
+    window.__playedAudioSources = [];
+    const originalPlay = HTMLMediaElement.prototype.play;
+    HTMLMediaElement.prototype.play = function trackedPlay(...args) {
+      window.__playedAudioSources.push(this.currentSrc || this.src);
+      return originalPlay.apply(this, args);
+    };
+  });
+  await openDebugSession(page);
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("village"));
+
+  await page.keyboard.press("j");
+  await expect.poll(() => page.evaluate(() => window.__playedAudioSources.some((source) => source.includes("strike-swing")))).toBe(true);
+
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.damagePlayer(1, "Playwright"));
+  await expect.poll(() => page.evaluate(() => window.__playedAudioSources.some((source) => source.includes("player-hurt")))).toBe(true);
+  await page.screenshot({ path: testInfo.outputPath("combat-audio-cues.png"), fullPage: true });
+});
+
 test("Zone 1 captain exposes its phase-two combat profile", async ({ page }, testInfo) => {
   await openDebugSession(page);
   await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("village"));

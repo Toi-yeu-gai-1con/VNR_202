@@ -1227,12 +1227,14 @@ function loadUiSounds() {
 
 function loadCombatSfx() {
   return {
+    strikeSwing: loadSound(COMBAT_SFX.strikeSwing, 0.52),
     batonHit: loadSound(COMBAT_SFX.batonHit, 0.36),
     rifleShot: loadSound(COMBAT_SFX.rifleShot, 0.34),
     lanternPulse: loadSound(COMBAT_SFX.lanternPulse, 0.26),
     captainCommand: loadSound(COMBAT_SFX.captainCommand, 0.32),
     captainSlam: loadSound(COMBAT_SFX.captainSlam, 0.38),
     hurt: loadSound(COMBAT_SFX.hurt, 0.25),
+    playerHurt: loadSound(COMBAT_SFX.playerHurt, 0.62),
     death: loadSound(COMBAT_SFX.death, 0.3),
     parry: loadSound(COMBAT_SFX.parry, 0.34),
   };
@@ -3611,6 +3613,7 @@ function useStrikeSkill(isCharged = false) {
     startedAt: state.lastTimestamp,
     endsAt: state.lastTimestamp + (isCharged ? PLAYER_ATTACK_ANIMATION_MS + 120 : PLAYER_ATTACK_ANIMATION_MS),
   };
+  playCombatSfx("strikeSwing", { volume: isCharged ? 0.62 : 0.48, playbackRate: isCharged ? 0.82 : 0.96 + state.comboStep * 0.035 });
 
   let hitMonster = false;
 
@@ -3814,16 +3817,16 @@ function updateMonsters(deltaSeconds) {
       monster.animationState = "attack";
 
       if (monster.archetype === "ranged") {
-        playCombatSfx("rifleShot", { volume: 0.32, playbackRate: 0.96 + Math.random() * 0.08 });
+        playCombatSfx("rifleShot", { volume: 0.64, playbackRate: 0.96 + Math.random() * 0.08 });
         spawnEnemyProjectile(monster);
       } else if (monster.archetype === "support") {
-        playCombatSfx("lanternPulse", { volume: 0.25, playbackRate: 0.96 + Math.random() * 0.08 });
+        playCombatSfx("lanternPulse", { volume: 0.54, playbackRate: 0.96 + Math.random() * 0.08 });
         applySupportPulse(monster);
       } else if (monster.attackVariant === "slam" && distance <= (selectedAttack?.radius ?? 70)) {
-        playCombatSfx("captainSlam", { volume: 0.38 });
+        playCombatSfx("captainSlam", { volume: 0.66 });
         damagePlayer(Math.max(1, Math.round((monster.damage ?? 1) * settings.enemyDamage)), monster.name, monster);
       } else if (distance <= MONSTER_TOUCH_RANGE + 10) {
-        playCombatSfx("batonHit", { volume: monster.isBoss ? 0.38 : 0.32, playbackRate: 0.94 + Math.random() * 0.1 });
+        playCombatSfx("batonHit", { volume: monster.isBoss ? 0.68 : 0.6, playbackRate: 0.94 + Math.random() * 0.1 });
         damagePlayer(Math.max(1, Math.round((monster.damage ?? 1) * settings.enemyDamage)), monster.name, monster);
       }
 
@@ -3967,7 +3970,7 @@ function damageMonster(monster, amount, effects = {}) {
   monster.hitFlashUntil = state.lastTimestamp + 110;
   monster.hurtStartedAt = state.lastTimestamp;
   monster.hurtEndsAt = state.lastTimestamp + 180;
-  playCombatSfx("hurt", { volume: monster.isBoss ? 0.3 : 0.22, playbackRate: 0.94 + Math.random() * 0.1 });
+  playCombatSfx("hurt", { volume: monster.isBoss ? 0.7 : 0.62, playbackRate: 0.94 + Math.random() * 0.1 });
   state.cameraShakeUntil = state.lastTimestamp + (monster.isBoss ? 150 : 90);
   state.cameraShakeStrength = monster.isBoss ? 4 : 2;
   state.hitStopUntil = Math.max(state.hitStopUntil, state.lastTimestamp + (monster.isBoss ? 42 : 35));
@@ -4031,6 +4034,7 @@ function damagePlayer(amount, sourceName = "bóng tối", sourceMonster = null) 
   state.cameraShakeStrength = 5;
   state.combatFlashUntil = state.lastTimestamp + 150;
   updateProgressHud();
+  playCombatSfx("playerHurt", { volume: 0.68, playbackRate: 0.96 + Math.random() * 0.08 });
 
   if (state.health > 0) {
     showStoryToast(`${sourceName} gây ${amount} sát thương.`);
