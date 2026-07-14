@@ -11,6 +11,7 @@ import { createDebugOverlay } from "../debug/debug-overlay.js";
 import { createAudioSystem } from "../systems/audio-system.js";
 import { createLevelDefinitions } from "../systems/level-definitions.js";
 import { createSaveSystem } from "../systems/save-system.js";
+import { createEndingCollection } from "../systems/ending-collection.js";
 import { INTERACTION_DIALOGUES, TVA_EMPLOYEE_DIALOGUES, RELIC_DEFINITIONS, RELIC_STORY_SLIDES, ENDING_DEFINITIONS, ENDING_OVERLAY_SCENES, ENDING_CINEMATIC_DEFINITIONS, BAD_ENDING_RECOVERY, OPENING_DIALOGUE } from "../data/story-content.js";
 import { createMiniMapRenderer } from "../rendering/minimap-renderer.js";
 import { createCoordinateSystem } from "../rendering/coordinate-system.js";
@@ -189,6 +190,7 @@ const MONSTER_CONTACT_DAMAGE_COOLDOWN_MS = GAMEPLAY_BALANCE.mob.contactDamageCoo
 const RESPAWN_INVULNERABILITY_MS = GAMEPLAY_BALANCE.mob.respawnInvulnerabilityMs;
 const RELIC_TARGET_COUNT = 5;
 const SAVE_STORAGE_KEY = "crossroads-save-v1";
+const ENDING_COLLECTION_STORAGE_KEY = "crossroads-ending-collection-v1";
 const SAVE_VERSION = 2;
 const PLAYER_ATTACK_ANIMATION_MS = GAMEPLAY_BALANCE.combat.strike.animationMs;
 const MONSTER_ATTACK_ANIMATION_MS = GAMEPLAY_BALANCE.mob.attackAnimationMs;
@@ -395,6 +397,12 @@ const saveSystem = createSaveSystem({
   getPlayer: () => player,
   cloneSpawnPoint,
   clamp,
+});
+
+const endingCollection = createEndingCollection({
+  storage: localStorage,
+  storageKey: ENDING_COLLECTION_STORAGE_KEY,
+  isSupportedEndingId: (endingId) => Boolean(NARRATIVE_ENDING_DEFINITIONS[endingId]),
 });
 
 const audioSystem = createAudioSystem({
@@ -2111,6 +2119,26 @@ function createStoryRegistry(levelMap) {
     };
   }
 
+  for (const [endingId, narrativeEnding] of Object.entries(NARRATIVE_ENDING_DEFINITIONS)) {
+    const ending = ENDING_DEFINITIONS[endingId];
+    if (!ending?.artSrc) {
+      continue;
+    }
+
+    registry[`ending:${endingId}`] = {
+      id: `ending:${endingId}`,
+      kicker: "Hồ sơ kết cục đã chứng kiến",
+      title: narrativeEnding.title,
+      text: ending.copy,
+      caption: narrativeEnding.branchLabel,
+      gallery: [{
+        src: ending.artSrc,
+        alt: ending.artAlt,
+        caption: ending.title,
+      }],
+    };
+  }
+
   return registry;
 }
 
@@ -2750,7 +2778,7 @@ function resetStoryProgress() {
 }
 
 function updateStoryBookButton() {
-  const unlockedCount = state.unlockedStoryIds.size;
+  const unlockedCount = getStoryBookEntryIds().length;
   const shouldShow = unlockedCount > 0 && state.mode === "playing";
 
   storyBookCount.textContent = String(unlockedCount);
@@ -3672,8 +3700,22 @@ function getActiveStorySlide() {
   return storyId ? storyRegistry[storyId] : null;
 }
 
+function getEndingCaseFileIds() {
+  return endingCollection.getEntries()
+    .map((endingId) => `ending:${endingId}`)
+    .filter((storyId) => Boolean(storyRegistry[storyId]));
+}
+
+function getStoryBookEntryIds() {
+  return [...state.unlockedStoryIds, ...getEndingCaseFileIds()];
+}
+
+function recordEndingCollection(endingId) {
+  endingCollection.record(endingId);
+}
+
 function openStoryBook(preferredStoryId = null) {
-  const unlockedStoryIds = Array.from(state.unlockedStoryIds);
+  const unlockedStoryIds = getStoryBookEntryIds();
 
   if (unlockedStoryIds.length === 0 || state.mode !== "playing") {
     return;
@@ -6679,6 +6721,7 @@ function triggerNarrativeEnding(candidate, summary) {
   }
 
   state.narrative.endingsUnlocked.add(candidate.id);
+  recordEndingCollection(candidate.id);
   state.endingId = candidate.id;
   state.endingSummary = summary;
   saveGameProgress();
@@ -6691,6 +6734,7 @@ function showResolvedEnding(candidate, summary) {
   }
 
   state.narrative.endingsUnlocked.add(candidate.id);
+  recordEndingCollection(candidate.id);
   state.endingId = candidate.id;
   state.endingSummary = summary;
   saveGameProgress();

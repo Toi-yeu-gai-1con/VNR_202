@@ -399,6 +399,7 @@ test("a bad ending is interrupted by the TVA employee and restores the checkpoin
 });
 
 test("Zone 1 choices record a recoverable risk and only trigger its bad ending after explicit confirmation", async ({ page }, testInfo) => {
+  test.setTimeout(60_000);
   await openDebugSession(page);
   await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("village", { x: 832, y: 244, direction: "up" }));
   await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("le-paria-stack"));
@@ -442,6 +443,18 @@ test("Zone 1 choices record a recoverable risk and only trigger its bad ending a
   await page.evaluate(() => window.__CROSSROADS_DEBUG__.completeEndingCinematic());
   await expect(page.locator("#end-overlay")).toHaveAttribute("data-cinematic", "complete");
   await page.screenshot({ path: testInfo.outputPath("zone1-lost-compass-ending.png"), fullPage: true });
+
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.beginSession());
+  await expect.poll(() => snapshot(page).then((state) => state.mode)).toBe("playing");
+  await expect(page.locator("#story-book-button")).toBeVisible();
+  await expect(page.locator("#story-book-count")).toHaveText("1");
+  await page.locator("#story-book-button").click();
+  await expect(page.locator("#slide-modal")).toBeVisible();
+  await expect(page.locator("#slide-kicker")).toContainText("Hồ sơ kết cục");
+  await expect(page.locator("#slide-gallery img")).toHaveAttribute("src", /zone1-lost-compass-ending\.png/);
+  await page.screenshot({ path: testInfo.outputPath("ending-case-file-after-new-journey.png"), fullPage: true });
+  await page.locator("#close-slide-button").click();
+  await expect(page.locator("#slide-modal")).toBeHidden();
 });
 
 test("Zone 2 division risk needs a separate emblem confirmation before its ending", async ({ page }, testInfo) => {
