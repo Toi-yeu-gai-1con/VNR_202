@@ -536,6 +536,23 @@ button {
   image-rendering: crisp-edges;
 }
 
+.dialogue-box.has-portrait {
+  padding-right: 144px;
+}
+
+.dialogue-portrait {
+  position: absolute;
+  right: 8px;
+  bottom: 7px;
+  z-index: 1;
+  width: 132px;
+  height: 118px;
+  pointer-events: none;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  filter: drop-shadow(3px 4px 0 rgba(40, 24, 18, 0.34));
+}
+
 .dialogue-header,
 .dialogue-footer {
   display: flex;
@@ -654,6 +671,23 @@ button {
 
 .dialogue-box[data-context="tva"] .dialogue-hint {
   color: #9fb48f;
+}
+
+.dialogue-box[data-context="tva"] .dialogue-portrait {
+  filter: drop-shadow(3px 4px 0 rgba(0, 0, 0, 0.6));
+}
+
+@media (max-width: 680px) {
+  .dialogue-box.has-portrait {
+    padding-right: 100px;
+  }
+
+  .dialogue-portrait {
+    width: 92px;
+    height: 84px;
+    right: 3px;
+    bottom: 6px;
+  }
 }
 
 .dialogue-box[data-context="tva"] .dialogue-choice-button.is-danger {

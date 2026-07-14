@@ -63,6 +63,8 @@ const dialogueText = document.getElementById("dialogue-text");
 const dialogueChoiceList = document.getElementById("dialogue-choice-list");
 const dialogueHint = document.getElementById("dialogue-hint");
 const dialogueNextButton = document.getElementById("dialogue-next-button");
+const dialoguePortrait = document.getElementById("dialogue-portrait");
+const dialoguePortraitCtx = dialoguePortrait?.getContext("2d") ?? null;
 const openingIntro = document.getElementById("opening-intro");
 const openingCard = openingIntro.querySelector(".intro-card");
 const openingSpeaker = document.getElementById("opening-speaker");
@@ -2867,6 +2869,8 @@ function scheduleRelicBookOpen(storyId) {
 function hideDialogue() {
   dialogueBox.classList.add("hidden");
   dialogueBox.setAttribute("aria-hidden", "true");
+  dialogueBox.classList.remove("has-portrait");
+  dialoguePortrait?.classList.add("hidden");
   delete dialogueBox.dataset.context;
   dialogueChoiceList.replaceChildren();
   dialogueChoiceList.classList.add("hidden");
@@ -3056,6 +3060,7 @@ function renderDialogue() {
     : currentSpeaker === "Nhà du hành"
       ? "traveler"
       : "other";
+  dialogueBox.dataset.portraitSpeaker = currentSpeaker;
   dialogueSpeaker.textContent = currentSpeaker;
   dialogueProgress.textContent = `${state.activeDialogueIndex + 1} / ${dialogue.lines.length}`;
   dialogueText.textContent = currentLine;
@@ -6444,6 +6449,57 @@ function render() {
   drawCombatFeedback();
   drawNavigationAssist();
   drawMiniMap();
+  drawDialoguePortrait();
+}
+
+function drawDialoguePortrait() {
+  if (!dialoguePortrait || !dialoguePortraitCtx || state.mode !== "dialogue") {
+    dialoguePortrait?.classList.add("hidden");
+    dialogueBox.classList.remove("has-portrait");
+    return;
+  }
+
+  dialoguePortraitCtx.clearRect(0, 0, dialoguePortrait.width, dialoguePortrait.height);
+  dialoguePortraitCtx.imageSmoothingEnabled = false;
+  const speaker = dialogueBox.dataset.portraitSpeaker;
+  const interactionId = state.activeDialogue?.interactionId;
+  let drawn = false;
+
+  if (speaker === "David") {
+    drawn = drawNpcSpriteActorToContext(dialoguePortraitCtx, {
+      spriteKey: "tvaEmployee",
+      direction: "left",
+      x: 73,
+      y: 118,
+      scale: 2.42,
+      animation: "idle",
+    });
+  } else if (speaker === "Nhà du hành") {
+    drawn = drawPlayerSpriteActorToContext(dialoguePortraitCtx, {
+      direction: "down",
+      x: 73,
+      y: 118,
+      scale: 2.7,
+      animation: "idle",
+    });
+  } else if (!["colonial-recruiter"].includes(interactionId)) {
+    const spriteKey = interactionId === "nguyen-ai-quoc" || interactionId === "le-paria-stack"
+      ? "npc06"
+      : interactionId === "tenant-farmer" || interactionId === "old-peasant"
+        ? "npc02"
+        : "npc01";
+    drawn = drawNpcSpriteActorToContext(dialoguePortraitCtx, {
+      spriteKey,
+      direction: "down",
+      x: 73,
+      y: 118,
+      scale: 2.7,
+      animation: "idle",
+    });
+  }
+
+  dialoguePortrait.classList.toggle("hidden", !drawn);
+  dialogueBox.classList.toggle("has-portrait", drawn);
 }
 
 function drawCombatFeedback() {
