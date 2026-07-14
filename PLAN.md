@@ -1,10 +1,10 @@
 # Kế hoạch nâng cấp hợp nhất dự án — Hạng mục 43–118
 
-> Trạng thái: Bản kế hoạch thiết kế đang chờ đội dự án rà soát và chỉnh sửa. Tài liệu này ghi lại đầy đủ kết quả phân tích và brainstorming ngày 14/07/2026; chưa phải tuyên bố đã duyệt triển khai.
+> Trạng thái: Roadmap đã được hiệu chỉnh ngày 15/07/2026 theo hiện trạng `main` và quyết định dùng David làm Người giữ thời gian/điều phối viên TVA. Tài liệu định hướng các đợt triển khai tiếp theo; không đồng nghĩa toàn bộ hạng mục 43–118 đã hoàn thành hoặc được phép triển khai trong một đợt duy nhất.
 
 ## 1. Mục tiêu
 
-Tích hợp đề xuất mới về hội thoại, visual novel, định vị thời gian, Người giữ thời gian và các nhánh ending vào nhóm 43–58, đồng thời ghi đầy đủ toàn bộ roadmap nâng cấp từ 43 đến 118 để đội dự án có một tài liệu theo dõi thống nhất.
+Tích hợp đề xuất mới về hội thoại, visual novel, định vị thời gian, David trong vai trò Người giữ thời gian/điều phối viên TVA và các nhánh ending vào nhóm 43–58, đồng thời giữ đầy đủ roadmap nâng cấp từ 43 đến 118 để đội dự án có một tài liệu theo dõi thống nhất.
 
 Kết quả cuối cần biến cốt truyện hiện nay từ một chuỗi nhiệm vụ tuyến tính với hai ending chung thành một hệ thống lựa chọn–hậu quả rõ ràng, có chiều sâu lịch sử, nhưng vẫn giữ nhịp chơi của một game hành động–RPG 2D trên trình duyệt.
 
@@ -15,17 +15,22 @@ Tài liệu bao phủ các nhóm kể chuyện–lịch sử, trung tâm thế g
 - Giữ nguyên kiến trúc Canvas 2D và cấu trúc bốn khu hiện tại; không đổi engine.
 - Giữ cấu trúc 5 tín vật trong 4 khu; Khu 3 tiếp tục có hai tín vật và hai chương lịch sử.
 - Giữ nguyên số thứ tự 43–118 để không phá lịch sử theo dõi tiến độ.
-- Người giữ thời gian là nhân vật hư cấu dẫn truyện, không phải nhân vật lịch sử có thật.
+- David là nhân vật hư cấu cố định, đảm nhiệm đồng thời vai trò Người giữ thời gian và điều phối viên TVA; không tạo thêm một nhân vật dẫn truyện thứ hai có chức năng trùng lặp.
+- David không phải nhân vật lịch sử có thật, không được đứng thay nhân vật lịch sử hoặc được trình bày như nguồn kiến thức lịch sử.
 - Phải phân biệt rõ sự kiện lịch sử, phép biểu tượng hóa gameplay và nhánh phản lịch sử giả định.
 - Không dùng một lựa chọn vô tình hoặc một lần tương tác đơn lẻ để kích hoạt ending mà không có cảnh báo và ngữ cảnh.
 - Không dùng ảnh tĩnh, hình khối, lời thoại chung chung hoặc fallback chất lượng thấp thay cho nhân vật, cảnh, vật thể hay hiệu ứng cần chuyển động.
 - Nội dung tiếng Việt phải đúng chính tả, có dấu, mã hóa UTF-8 và phù hợp bối cảnh, văn hóa, thuần phong mỹ tục Việt Nam.
 - Mọi dữ kiện lịch sử hiển thị như kiến thức phải được kiểm chứng và có nguồn; nội dung giả định phải được gắn nhãn rõ.
 
-### Trạng thái tiến độ tại thời điểm lập tài liệu
+### Trạng thái tiến độ sau khi đối chiếu `main` ngày 15/07/2026
 
-- Nhóm 43–104 là roadmap nội dung và trải nghiệm cần tiếp tục kiểm kê từng mục trước khi triển khai; một số tính năng có thể đã có một phần nhưng chưa được coi là hoàn thành theo tiêu chí mới.
-- Nhóm 105–118 đã có nền tảng đáng kể trên `main` qua các đợt refactor, test, debug, tối ưu và cache.
+- Nhóm 43–58 đã có nguyên mẫu opening TVA, David, lựa chọn hội thoại, good/bad ending và cơ chế phục hồi bad ending; chưa có schema lựa chọn–hậu quả tổng quát, neutral ending hoặc sáu bad ending riêng.
+- Nhóm 59–68 đã có portal, khóa đường về khi nhiệm vụ chưa hoàn thành và luồng báo cáo tín vật; trung tâm TVA chưa phản ánh đầy đủ NPC, tín vật, Tha hóa và ending.
+- Nhóm 69–82 đã có mute tổng, pause, minimap và loading/retry; các tùy chỉnh âm lượng, accessibility và điều khiển vẫn còn thiếu.
+- Nhóm 83–94 là nhóm có nền tảng hoàn thiện nhất nhờ các đợt nâng cấp player, quái, sprite hướng, combat effect và cinematic good/bad cơ bản; vẫn thiếu portrait visual novel và cinematic theo tám ending mục tiêu.
+- Nhóm 95–104 hầu như chưa triển khai và chỉ nên bắt đầu sau khi ending resolver cùng save migration ổn định.
+- Nhóm 105–118 đã có nền tảng đáng kể trên `main` qua các đợt refactor, test, debug, tối ưu, asset audit và cache, nhưng chưa được coi là hoàn thành tuyệt đối.
 - Việc nhóm 105–118 có nền tảng không có nghĩa nhóm 43–104 đã hoàn thành.
 - Các mục 106, 107, 112, 113, 115 và 117 cần được mở rộng thêm khi hệ thống lựa chọn–hậu quả 43–58 được triển khai.
 
@@ -33,12 +38,13 @@ Tài liệu bao phủ các nhóm kể chuyện–lịch sử, trung tâm thế g
 
 Game đã có nền móng cần thiết nhưng chưa đủ cho thiết kế mới:
 
-- Màn mở đầu đã tồn tại, nhưng nhân vật “Nhà du hành thời gian” và mục tiêu kể chuyện còn chung chung.
-- Hộp hội thoại đã tồn tại, nhưng hiện chỉ chạy tuyến tính; chưa có portrait, biểu cảm, lựa chọn hoặc nhánh visual novel.
+- Màn mở đầu TVA, Nhà du hành và David đã tồn tại. David hiện là nhân viên điều phối hồ sơ; nội dung cần được mở rộng để thể hiện rõ trách nhiệm Người giữ thời gian mà không biến TVA thành nguồn lịch sử có thật.
+- Hộp hội thoại đã hỗ trợ lựa chọn ở TVA và một phần Khu 1, nhưng chưa có portrait, biểu cảm, lịch sử hội thoại, điều kiện phân nhánh tổng quát hoặc visual novel hoàn chỉnh.
 - Game có 5 tín vật trong 4 khu; Khu 3 chứa hai tín vật và hai giai đoạn lịch sử.
-- Quest chủ yếu lưu biến đúng/sai và các tập hợp vật phẩm; chưa có mô hình lưu lựa chọn, động cơ, quan hệ NPC hoặc hậu quả dài hạn.
+- Quest đã lưu một số quyết định cụ thể như lựa chọn với lính tuần tra Khu 1, nhưng chủ yếu vẫn là biến đúng/sai và các tập hợp vật phẩm; chưa có mô hình lưu chuỗi lựa chọn, động cơ, quan hệ NPC, điểm chủ đề hoặc hậu quả dài hạn.
 - Ending hiện chỉ có `good` và `bad`.
-- Một số tương tác như “chia cắt vĩnh viễn” hoặc “bẫy đa nguyên” có thể kết thúc game ngay. Đây là kiểu kích hoạt đột ngột cần thay thế bằng bộ phân giải lựa chọn–hậu quả.
+- Bad ending đã có cinematic động, nhạc và luồng David đưa người chơi về điểm kiểm soát, nhưng điều kiện ending vẫn cần thay bằng bộ phân giải lựa chọn–hậu quả để không kết thúc vì một lần bấm đơn lẻ.
+- Portal trở về TVA hiện đã khóa khi nhiệm vụ khu chưa hoàn thành; quy tắc này phải được giữ khi hệ thống scene và quest được mở rộng.
 - Khu 4 đang nén Đại hội VI năm 1986 và Khoán 10 năm 1988 thành một thời điểm, nên cần chỉnh lại cách trình bày niên đại.
 
 Các điểm mã nguồn liên quan:
@@ -47,20 +53,21 @@ Các điểm mã nguồn liên quan:
 - `src/data/quests.js`: trạng thái nhiệm vụ hiện tại.
 - `src/runtime/game-runtime.js`: trình phát hội thoại, tương tác nhiệm vụ, Tha hóa và bộ chọn ending hiện tại.
 - `src/systems/save-system.js`: dữ liệu tiến trình cần mở rộng khi lựa chọn phân nhánh được triển khai.
+- `src/core/scene-controller.js`, `src/core/asset-manager.js` và `src/core/page-lifecycle.js`: nền tảng scene, tải asset và vòng đời trình duyệt cần được mở rộng theo feature thay vì thay thế.
 
 ## 4. Phân tích thiết kế
 
-### 4.1. Người giữ thời gian
+### 4.1. David — Người giữ thời gian/điều phối viên TVA
 
-Người giữ thời gian nên đóng vai trò:
+David là nhân vật dẫn truyện cố định của game. Vai trò nhân viên TVA hiện tại được mở rộng thành Người giữ thời gian/điều phối viên phụ trách hồ sơ Việt Nam bị lệch nhánh. David phải:
 
 - Giới thiệu quy tắc du hành qua các nhánh thời gian.
-- Giao nhiệm vụ thu thập 5 tín vật.
+- Giao nhiệm vụ thu thập 5 tín vật và điều phối cổng tới từng khu/chương.
 - Nhắc người chơi rằng họ đang chứng kiến những lát cắt lịch sử đã được biểu tượng hóa.
 - Cảnh báo rằng lựa chọn có thể tạo ra nhánh giả định, nhưng không nói sẵn đáp án đạo đức.
-- Thay đổi lời thoại theo tín vật, Tha hóa và hậu quả người chơi mang về trung tâm.
+- Thay đổi lời thoại theo tín vật, Tha hóa, lựa chọn, ending đã mở và hậu quả người chơi mang về TVA.
 
-Nhân vật này không được đứng thay nhân vật lịch sử, không trực tiếp “sáng tạo” hay “quyết định” lịch sử Việt Nam và không được trình bày như nguồn kiến thức lịch sử.
+David không được đứng thay nhân vật lịch sử, không trực tiếp “sáng tạo” hay “quyết định” lịch sử Việt Nam và không được trình bày như nguồn kiến thức lịch sử. Kiến thức do game cung cấp phải gắn với codex, tư liệu và nguồn kiểm chứng; lời David chỉ dẫn đường, đặt câu hỏi và phản hồi hành trình.
 
 ### 4.2. Ba lớp nội dung
 
@@ -176,10 +183,10 @@ Chọn **Phương án B**: giữ nguyên 43–58 và mở rộng tiêu chí bên
 
 ### 43. Làm lại phần mở đầu và giới thiệu từng khu
 
-- Tạo Người giữ thời gian làm nhân vật dẫn truyện hư cấu.
-- Người giữ thời gian giao nhiệm vụ thu thập 5 tín vật để nối lại dòng lịch sử.
+- Giữ opening TVA và David hiện có, nhưng viết lại vai trò để David được nhận diện rõ là Người giữ thời gian/điều phối viên phụ trách các hồ sơ Việt Nam bị lệch nhánh.
+- Không tạo thêm một nhân vật dẫn truyện thứ hai. David giao nhiệm vụ thu thập 5 tín vật, vận hành cổng và giải thích giới hạn can thiệp vào các nhánh lịch sử.
 - Mở đầu phải có chuyển cảnh, sprite animation, âm thanh và nhịp dựng cinematic; không dùng chuỗi ảnh tĩnh đơn thuần.
-- Cho phép bỏ qua cinematic và xem lại từ sổ tay hoặc trung tâm.
+- Cho phép bỏ qua cinematic và xem lại từ codex hoặc phòng ký ức tại TVA.
 - Khi qua cổng, hiện title card khoảng 5–10 giây gồm:
   - Tên khu/chương.
   - Địa điểm hoặc không gian lịch sử được biểu tượng hóa.
@@ -195,6 +202,7 @@ Chọn **Phương án B**: giữ nguyên 43–58 và mở rộng tiêu chí bên
 
 ### 44. Phát triển hội thoại gameplay và visual novel
 
+- Mở rộng hộp hội thoại và lựa chọn hiện có thay vì xây một hệ thống song song.
 - Hội thoại gameplay thường phải ngắn, rõ và không chặn điều khiển quá lâu.
 - Visual novel chỉ dùng cho:
   - Mở màn.
@@ -203,6 +211,7 @@ Chọn **Phương án B**: giữ nguyên 43–58 và mở rộng tiêu chí bên
   - Lựa chọn lớn.
   - Cảnh trước ending.
 - Hộp visual novel cần có tên người nói, portrait, biểu cảm, tiến độ, hiệu ứng chữ vừa phải và âm thanh tượng trưng.
+- David là portrait dẫn truyện chính; NPC/nhân chứng quan trọng có portrait riêng theo đúng giai đoạn và phong cách pixel của dự án.
 - Hội thoại phải hỗ trợ lựa chọn có điều kiện và thay đổi theo trạng thái nhiệm vụ.
 - Loại bỏ lời thoại fallback chung chung như “nhân vật này còn một câu chuyện chưa kể”. Nếu thiếu nội dung hoặc asset cần thiết, phải chặn phát hành phần đó hoặc bổ sung nội dung hoàn chỉnh.
 - Cho phép tua nhanh, xem lại lịch sử hội thoại và dùng bàn phím/chuột nhất quán.
@@ -257,6 +266,7 @@ Mỗi tín vật mở một trang ký ức gồm:
 
 ### 49. Xây dựng hệ thống lựa chọn có hậu quả
 
+- Thay mô hình các biến quyết định riêng lẻ bằng schema dữ liệu thống nhất gồm `choices`, `branchFlags`, `npcRelations`, `themeScores` và `endingRisks`; tên trường cuối cùng phải được chốt trong đặc tả kỹ thuật trước khi viết migration.
 - Lưu lựa chọn theo khu và chương.
 - Lựa chọn có thể ảnh hưởng:
   - Tha hóa.
@@ -267,7 +277,7 @@ Mỗi tín vật mở một trang ký ức gồm:
   - Ending có thể đạt.
 - Các biến chủ đề như đoàn kết, thời cơ, thống nhất và đổi mới nên được lưu dưới dạng cờ hoặc điểm nội bộ.
 - Không thêm thanh HUD cho mọi biến; chỉ hiển thị điều người chơi cần ra quyết định công bằng.
-- Save/load phải giữ đầy đủ lựa chọn và hậu quả.
+- Save/load phải giữ đầy đủ lựa chọn và hậu quả; save hiện tại phải được nâng version và migrate có kiểm thử thay vì bị xóa hoặc âm thầm gán sai.
 
 ### 50. Cho nhiệm vụ có nhiều cách giải quyết
 
@@ -494,7 +504,7 @@ Ending tập trung vào việc không có khả năng tự đổi mới. Lựa c
 
 - Năm tín vật vẫn được thu thập nhưng ánh sáng chuyển dần thành màu đen.
 - Các NPC đã từng đồng hành lần lượt rời khỏi trung tâm.
-- Cánh Cửa Lịch Sử mở ra nhưng phía sau chỉ là một quảng trường trống và câm lặng.
+- Cổng Dòng Thời gian TVA mở ra nhưng phía sau chỉ là một quảng trường trống và câm lặng.
 - Biểu tượng vẫn tồn tại, nhưng không còn người dân đứng quanh nó.
 
 **Nội dung kết:**
@@ -508,7 +518,7 @@ Thông điệp của ending không chỉ đặt câu hỏi về sự tồn tại
 - Không kích hoạt vì một lần bấm nhầm.
 - Có tín hiệu cảnh báo và điểm xác nhận trước khi khóa nhánh.
 - Lưu chính xác nguyên nhân thất bại để chọn cinematic và lời kết đúng.
-- Cho phép quay lại checkpoint trước điểm quyết định sau khi ending đã được xem.
+- Tận dụng cơ chế David phục hồi nhánh hiện có để cho phép quay lại checkpoint trước điểm quyết định sau khi ending đã được xem; cinematic và trạng thái phục hồi không được reset sai animation hoặc âm nhạc.
 - Ghi ending đã mở vào bộ sưu tập.
 - Không thay thế cinematic bằng ảnh tĩnh, khối màu hoặc văn bản dài trên nền trống.
 
@@ -521,7 +531,7 @@ Neutral ending xảy ra khi:
 - Tha hóa hoặc tổng hậu quả tiêu cực vẫn quá cao để đạt good ending.
 - Người chơi chưa mất hoàn toàn lòng dân đến mức kích hoạt ending bí mật.
 
-Kết thúc cho thấy dòng lịch sử đã được nối lại nhưng tương lai còn nhiều vết nứt. Một số NPC vẫn hiện diện, một số rời đi; tín vật sáng yếu hoặc không đồng bộ; Cánh Cửa Lịch Sử mở nhưng không đạt trạng thái huy hoàng của good ending.
+Kết thúc cho thấy dòng lịch sử đã được nối lại nhưng tương lai còn nhiều vết nứt. Một số NPC vẫn hiện diện, một số rời đi; tín vật sáng yếu hoặc không đồng bộ; Cổng Dòng Thời gian TVA mở nhưng không đạt trạng thái huy hoàng của good ending.
 
 Ngưỡng cụ thể phải được đặt trong cấu hình cân bằng và kiểm thử, không hard-code rải rác trong runtime.
 
@@ -539,14 +549,16 @@ Sau ending, hiển thị một bản tổng kết gồm:
 
 ## Trung tâm thế giới — 59–68
 
+Trong roadmap mới, “trung tâm thế giới” là văn phòng TVA hiện có. Không tạo thêm một hub cạnh tranh với TVA; mọi phòng, cổng, trưng bày tín vật và trạng thái hậu truyện đều được bố trí như các khu chức năng của TVA.
+
 ### 59. Cho trung tâm thay đổi sau mỗi khu hoàn thành
 
 - Mỗi tín vật được thu hồi phải tạo một thay đổi nhìn thấy hoặc nghe thấy được tại trung tâm.
-- Ánh sáng, âm thanh, mật độ NPC, hoạt động môi trường và trạng thái Cánh Cửa Lịch Sử thay đổi theo tiến trình.
+- Ánh sáng, âm thanh, mật độ NPC, hoạt động môi trường và trạng thái Cổng Dòng Thời gian TVA thay đổi theo tiến trình.
 - Trạng thái phải được lưu và khôi phục đúng sau khi tải lại game.
 - Trung tâm không được trở về hình ảnh ban đầu khi người chơi đã hoàn thành một khu.
 
-### 60. Trưng bày 5 tín vật quanh Cánh Cửa Lịch Sử
+### 60. Trưng bày 5 tín vật quanh Cổng Dòng Thời gian TVA
 
 - Có 5 vị trí cố định tương ứng La Bàn Đỏ, Huy hiệu thống nhất, Sợi Chỉ Đỏ Việt Minh, Bản đồ hàn gắn và Bánh răng Đổi Mới.
 - Khu 3 đóng góp hai tín vật và hai vị trí riêng.
@@ -560,6 +572,7 @@ Sau ending, hiển thị một bản tổng kết gồm:
 - NPC có vị trí, chuyển động và hội thoại hậu nhiệm vụ phù hợp.
 - NPC bị bỏ lại, mất niềm tin hoặc thuộc một nhánh thất bại không được xuất hiện như đã cứu.
 - Không dùng sprite tĩnh hoặc khối màu làm đại diện tạm thời.
+- David có lời thoại nhận xét riêng khi một NPC mới xuất hiện, vắng mặt hoặc mất niềm tin; lời thoại không thay thế thay đổi hình ảnh thật trong TVA.
 
 ### 62. Thêm bảng nhiệm vụ theo khu và chương
 
@@ -574,7 +587,7 @@ Sau ending, hiển thị một bản tổng kết gồm:
 - Xem tranh lịch sử, trang ký ức tín vật và cinematic đã mở.
 - Xem lại hội thoại quan trọng và ending đã đạt.
 - Nội dung chưa mở phải có trạng thái khóa rõ nhưng không tiết lộ hình ảnh hoặc văn bản chính.
-- Phòng ký ức dùng asset hoàn chỉnh và animation phù hợp, không phải gallery ảnh tĩnh thô sơ.
+- Phòng ký ức là một khu chức năng của TVA, dùng asset hoàn chỉnh và animation phù hợp, không phải gallery ảnh tĩnh thô sơ.
 
 ### 64. Thêm phòng luyện tập
 
@@ -582,6 +595,7 @@ Sau ending, hiển thị một bản tổng kết gồm:
 - Có mục tiêu luyện tập không ảnh hưởng Tha hóa, máu hoặc tiến trình chính.
 - Hướng dẫn timing bằng tín hiệu hình ảnh và âm thanh rõ ràng.
 - Cho phép reset bài tập ngay và rời phòng an toàn.
+- Phòng luyện tập nằm trong TVA và tái sử dụng combat runtime thật; không tạo một bộ điều khiển chiến đấu thứ hai chỉ dành cho tutorial.
 
 ### 65. Cổng từng khu phản ánh trạng thái
 
@@ -592,22 +606,22 @@ Sau ending, hiển thị một bản tổng kết gồm:
 
 ### 66. Tạo chuỗi animation khi đủ 5 tín vật
 
-- Năm tín vật phản ứng theo thứ tự và hội tụ về Cánh Cửa Lịch Sử.
+- Năm tín vật phản ứng theo thứ tự và hội tụ về Cổng Dòng Thời gian TVA.
 - Ánh sáng, âm nhạc và môi trường trung tâm chuyển lớp dần thay vì đổi đột ngột.
 - Chuỗi animation phản ánh trạng thái bình thường, trung tính hoặc Tha hóa.
 - Cho phép bỏ qua sau lần xem đầu tiên nhưng vẫn cập nhật trạng thái chính xác.
 
-### 67. Cho Cánh Cửa Lịch Sử phản ứng với Tha hóa và lựa chọn
+### 67. Cho Cổng Dòng Thời gian TVA phản ứng với Tha hóa và lựa chọn
 
-- Cửa thay đổi ánh sáng, âm thanh, vết nứt và nhịp chuyển động theo tiến trình.
-- Trạng thái cửa không được tiết lộ chính xác ending trước điểm quyết định.
-- Bộ phân giải ending dùng cùng dữ liệu với hình ảnh cửa để tránh mâu thuẫn.
-- Debug overlay phải giải thích được vì sao cửa đang ở trạng thái hiện tại.
+- Cổng thay đổi ánh sáng, âm thanh, vết nứt và nhịp chuyển động theo tiến trình.
+- Trạng thái cổng không được tiết lộ chính xác ending trước điểm quyết định.
+- Bộ phân giải ending dùng cùng dữ liệu với hình ảnh cổng để tránh mâu thuẫn.
+- Debug overlay phải giải thích được vì sao cổng đang ở trạng thái hiện tại.
 
 ### 68. Tạo trung tâm hậu truyện sau ending
 
 - Sau good, neutral hoặc từng bad ending, trung tâm chuyển sang epilogue tương ứng.
-- NPC, tín vật, âm thanh, ánh sáng và Cánh Cửa Lịch Sử phản ánh ending vừa đạt.
+- NPC, tín vật, âm thanh, ánh sáng và Cổng Dòng Thời gian TVA phản ánh ending vừa đạt.
 - Người chơi có thể xem nội dung đã mở, chọn chơi lại hoặc quay về checkpoint nếu được phép.
 - Không reset âm thầm về trạng thái trước ending.
 
@@ -615,6 +629,7 @@ Sau ending, hiển thị một bản tổng kết gồm:
 
 ### 69. Tách âm lượng nhạc, hiệu ứng và hội thoại
 
+- Giữ nút mute tổng đang hoạt động và mở rộng từ `soundMuted`; không làm mất khả năng tiếp tục nhạc đúng vị trí đã có.
 - Có thanh riêng cho Music, SFX và Dialogue/Voice.
 - Giữ nút tắt/bật âm thanh tổng.
 - Lưu thiết lập giữa các phiên chơi.
@@ -666,6 +681,7 @@ Sau ending, hiển thị một bản tổng kết gồm:
 
 ### 77. Pause game thật sự khi mở UI chặn gameplay
 
+- Mở rộng `scene-controller` và `page-lifecycle` hiện có; không tạo thêm biến pause độc lập cạnh tranh với `state.mode`.
 - Menu, codex, visual novel, màn lựa chọn và modal quan trọng phải dừng simulation phù hợp.
 - Xóa trạng thái phím giữ khi mở/đóng UI để tránh khóa hướng di chuyển.
 - Âm thanh nền giảm hoặc tạm dừng theo loại scene mà không reset vị trí phát.
@@ -686,6 +702,7 @@ Sau ending, hiển thị một bản tổng kết gồm:
 
 ### 80. Cho phép tùy biến minimap
 
+- Giữ renderer minimap và hệ tọa độ hiện tại làm nền; bổ sung cấu hình hiển thị thay vì vẽ một minimap thứ hai trong UI.
 - Có thể ẩn, hiện, thu nhỏ, phóng to và thay đổi độ trong.
 - Lưu thiết lập.
 - Các icon quan trọng vẫn dễ phân biệt ở mọi kích thước hỗ trợ.
@@ -693,6 +710,7 @@ Sau ending, hiển thị một bản tổng kết gồm:
 
 ### 81. Thêm loading screen có nội dung hữu ích
 
+- Mở rộng overlay loading/retry theo asset group hiện có.
 - Hiển thị mẹo chơi theo khu/chương và dữ kiện lịch sử đã kiểm chứng.
 - Không tiết lộ nội dung chưa mở.
 - Loading screen phản ánh tiến trình tải thật và có trạng thái retry khi asset lỗi.
@@ -700,6 +718,7 @@ Sau ending, hiển thị một bản tổng kết gồm:
 
 ### 82. Thông báo khi trình duyệt chặn âm thanh
 
+- Tái sử dụng cơ chế cảnh báo tải audio và resume audio hiện có, nhưng tách rõ lỗi tải file với trường hợp trình duyệt chặn autoplay.
 - Hiển thị hướng dẫn ngắn, dễ hiểu và nút thử bật lại.
 - Không chặn người chơi vào game chỉ vì audio không phát.
 - Khi người chơi tương tác, tiếp tục nhạc đúng vị trí logic thay vì luôn bắt đầu lại.
@@ -708,6 +727,7 @@ Sau ending, hiển thị một bản tổng kết gồm:
 
 ### 83. Bổ sung animation nhân vật đầy đủ
 
+- Giữ toàn bộ bộ sprite player và quái chuyên biệt Khu 1–4 đã tích hợp; hạng mục còn lại tập trung vào NPC, David, trạng thái parry/skill thiếu và các animation mới do cốt truyện yêu cầu.
 - Player và các NPC/địch cần thiết có idle, walk/run, attack, hurt, death, parry và skill phù hợp vai trò.
 - Các frame dùng chung canvas, tỷ lệ, pixel density và bottom-center anchor ổn định.
 - Không dùng ảnh đứng yên giả làm chuyển động.
@@ -715,6 +735,7 @@ Sau ending, hiển thị một bản tổng kết gồm:
 
 ### 84. Khớp hướng tấn công với hướng nhìn
 
+- Bảo toàn routing sprite hướng và projectile/parry reflect hiện có; mọi nhân vật hoặc kỹ năng mới phải đi qua cùng quy ước facing.
 - Hitbox, hiệu ứng, projectile và sprite phải cùng hướng.
 - Chuyển hướng giữa lúc giữ phím không tạo hitbox sai hoặc animation ngược.
 - Có test cho bốn hướng và trường hợp nhấn nhiều phím.
@@ -752,7 +773,7 @@ Sau ending, hiển thị một bản tổng kết gồm:
 
 ### 90. Thêm portrait visual novel
 
-- Tối thiểu gồm Người giữ thời gian và các NPC/nhân chứng quan trọng.
+- Tối thiểu gồm David trong vai Người giữ thời gian/điều phối viên TVA và các NPC/nhân chứng quan trọng.
 - Mỗi nhân vật có silhouette, palette và một số biểu cảm nhất quán.
 - Portrait phải cùng phong cách pixel, bối cảnh và văn hóa của game.
 - Nếu asset chưa đạt chất lượng, không dùng portrait tĩnh chung chung làm bản phát hành.
@@ -777,6 +798,7 @@ Sau ending, hiển thị một bản tổng kết gồm:
 
 ### 94. Làm cinematic ending theo dữ liệu hành trình
 
+- Mở rộng cinematic good/bad và overlay animation hiện có thành hệ thống dữ liệu cho tám ending; không bỏ cơ chế David phục hồi bad ending đã ổn định.
 - Có cinematic cho good, neutral và sáu bad ending.
 - Tái sử dụng cảnh, NPC, tín vật và trạng thái thật từ lượt chơi.
 - Mỗi cinematic có chuyển động nhân vật, môi trường, camera và âm thanh phù hợp.
@@ -858,6 +880,7 @@ Sau ending, hiển thị một bản tổng kết gồm:
 
 ### 105. Tiếp tục tách runtime theo trách nhiệm
 
+- `src/runtime/game-runtime.js` vẫn lớn hơn 10.000 dòng tại lần rà soát này. Chỉ tách các phần story, dialogue, ending, save bridge và UI state khi đợt 2–3 cần chỉnh trực tiếp các phần đó.
 - `game.js` tiếp tục chỉ là entrypoint composition.
 - Phần runtime còn lớn cần dần tách story, dialogue, ending, combat, UI và rendering khi các tính năng tương ứng được triển khai.
 - Không refactor lan rộng nếu không phục vụ task đang làm.
@@ -865,6 +888,7 @@ Sau ending, hiển thị một bản tổng kết gồm:
 
 ### 106. Dữ liệu hóa nội dung
 
+- Dữ liệu mới phải mở rộng các module `src/data/` hiện có và không tạo một kho nội dung song song khó đồng bộ.
 - Quest, NPC, hội thoại, lựa chọn, title card, chronology, nguồn lịch sử và điều kiện ending nằm trong các module dữ liệu phù hợp.
 - Không hard-code nội dung mới rải rác trong `game-runtime.js`.
 - Schema phải hỗ trợ điều kiện, biến thể, hậu quả và migration.
@@ -872,12 +896,14 @@ Sau ending, hiển thị một bản tổng kết gồm:
 
 ### 107. Mở rộng scene system
 
+- Dùng `src/core/scene-controller.js` hiện có làm nguồn chuyển trạng thái thống nhất.
 - Hỗ trợ start, cinematic opening, zone intro, playing, dialogue/visual novel, choice, paused, modal và ending.
 - Chuyển scene phải xác định rõ input, simulation, audio và focus UI nào đang hoạt động.
 - Không dùng gán `state.mode` tùy tiện ngoài controller được thống nhất.
 
 ### 108. Duy trì asset manager theo nhóm
 
+- Giữ asset manager và các nhóm core/hub/khu đang hoạt động; đăng ký thêm portrait, title card và cinematic vào đúng nhóm.
 - Nhóm asset theo core, hub, từng khu, portrait và cinematic.
 - Có trạng thái loading, success, failure và retry.
 - Giới hạn tải đồng thời phù hợp trình duyệt.
@@ -885,6 +911,7 @@ Sau ending, hiển thị một bản tổng kết gồm:
 
 ### 109. Phục hồi asset lỗi mà không dùng fallback xấu
 
+- Giữ màn retry/chặn scene hiện có cho asset bắt buộc và mở rộng cùng quy tắc sang portrait/cinematic.
 - Ảnh hoặc sprite quan trọng lỗi phải giữ người chơi ở màn phục hồi có retry.
 - Audio lỗi không chặn gameplay nhưng phải có hướng dẫn và cơ chế thử lại.
 - Không dựng rectangle, static placeholder hoặc sprite không liên quan để giả vờ asset đã tải.
@@ -892,18 +919,21 @@ Sau ending, hiển thị một bản tổng kết gồm:
 
 ### 110. Preload khu/chương tiếp theo
 
+- `ensureLevelAssets` hiện tải theo khu khi chuyển cảnh; hạng mục này bổ sung preload dự đoán sau khi luồng chapter/title card được chốt, không thay cơ chế tải theo nhóm.
 - Preload theo hướng di chuyển hoặc mục tiêu tiếp theo, không tải toàn bộ game ngay đầu.
 - Bao gồm asset title card, portrait và cinematic sắp dùng.
 - Không làm giật khung hình hoặc tranh băng thông với asset khu hiện tại.
 
 ### 111. Tạm dừng runtime khi tab bị ẩn
 
+- Nền `page-lifecycle` đã xử lý blur/visibility và resume audio; tiếp tục bổ sung regression test khi visual novel, choice và cinematic mới được thêm.
 - Dừng update/render không cần thiết và suspend looping audio.
 - Xóa input giữ khi blur/visibility change.
 - Khi trở lại, không nhảy delta-time, không khóa hướng và không reset nhạc sai.
 
 ### 112. Mở rộng regression tests
 
+- Giữ toàn bộ unit/E2E hiện có làm baseline; mỗi đợt 2–4 phải thêm test trước khi thay behavior.
 - Chuyển khu/chương.
 - Checkpoint và save/load.
 - Lựa chọn và hậu quả.
@@ -915,6 +945,7 @@ Sau ending, hiển thị một bản tổng kết gồm:
 
 ### 113. Mở rộng debug overlay
 
+- Mở rộng `src/debug/debug-overlay.js` hiện có, không tạo overlay debug thứ hai.
 - FPS, vị trí, collider, scene và nhiệm vụ.
 - Branch flags, lựa chọn, Tha hóa và biến chủ đề.
 - Bộ đếm Thời cơ.
@@ -924,30 +955,35 @@ Sau ending, hiển thị một bản tổng kết gồm:
 
 ### 114. Duy trì hệ tọa độ chuẩn
 
+- Giữ `src/rendering/coordinate-system.js` và minimap renderer hiện có làm nguồn chuyển đổi chuẩn.
 - Camera zoom không làm sai collider, minimap hoặc tương tác.
 - Dùng chuyển đổi world/screen nhất quán cho portrait overlay, cinematic, hitbox và debug.
 - Không nhân/chia zoom rải rác trong từng renderer.
 
 ### 115. Tách cân bằng thành cấu hình
 
+- Giữ `GAMEPLAY_BALANCE` bất biến hiện có; bổ sung ngưỡng lựa chọn, ending và Đồng hồ Thời cơ vào cấu hình có schema/test thay vì quay lại hằng số rải rác.
 - Tốc độ, sát thương, boss, Tha hóa, điểm lựa chọn, ngưỡng ending và Đồng hồ Thời cơ nằm trong config.
 - Config là nguồn sự thật duy nhất, không bị runtime mutate.
 - Test xác nhận ngưỡng hợp lệ và không tạo ending bất khả thi.
 
 ### 116. Nén ảnh và âm thanh
 
+- Dùng script audit/optimize hiện có làm baseline và ghi số liệu trước/sau cho asset mới của visual novel/cinematic.
 - Tối ưu sprite sheet, portrait, cinematic art, background và audio mà không phá pixel art hoặc tạo artifact nghe thấy rõ.
 - Giữ source cần thiết theo quy tắc asset của dự án.
 - Audit kích thước trước/sau và thời gian tải trên kết nối chậm.
 
 ### 117. Version hóa save, content và cache
 
+- Save hiện tại mới chấp nhận đúng version và chưa có migration đầy đủ. Đợt 2 phải tạo migration cho schema lựa chọn–hậu quả trước khi dữ liệu mới được ghi vào save thật.
 - Build version gắn vào asset URL hoặc cơ chế cache hiện có.
 - Save có version và migration cho branch flags, ending collection, settings và New Game+.
 - Save cũ không hợp lệ phải được xử lý rõ, không crash hoặc âm thầm gán trạng thái sai.
 
 ### 118. Dọn asset và cập nhật nguồn
 
+- Giữ `ASSET_SOURCES.md`, media-source data và script audit hiện có; cập nhật ledger trong cùng commit với asset mới.
 - Phát hiện asset không dùng và tham chiếu bị thiếu.
 - Chỉ xóa sau khi xác nhận không phải source, license hoặc asset được tải động.
 - Ghi nguồn, tác giả, license, chỉnh sửa và mục đích sử dụng vào `ASSET_SOURCES.md`.
@@ -958,7 +994,7 @@ Sau ending, hiển thị một bản tổng kết gồm:
 
 Các mục 43–58 sẽ cần phối hợp trực tiếp với các nhóm 59–118 khi đội dự án chốt thiết kế:
 
-- Portrait và sprite animation cho Người giữ thời gian, NPC và cinematic.
+- Portrait và sprite animation cho David, NPC và cinematic.
 - Scene cho opening, title card, visual novel, choice và ending.
 - Dữ liệu cấu hình cho hội thoại, lựa chọn, niên đại, nguồn và điều kiện ending.
 - Save migration để lưu branch flags mà không phá save cũ.
@@ -972,7 +1008,7 @@ Những phụ thuộc này đã được ghi thành các mục riêng trong road
 
 Trước khi coi roadmap 43–118 hoàn thành, ngoài tiêu chí riêng của từng mục, tối thiểu phải xác nhận:
 
-- Opening giới thiệu rõ Người giữ thời gian, 5 tín vật và tính chất nhánh thời gian.
+- Opening giới thiệu rõ David trong vai Người giữ thời gian/điều phối viên TVA, 5 tín vật và tính chất nhánh thời gian.
 - Mỗi cổng hiện đúng tên, khoảng thời gian và câu hỏi lịch sử của khu/chương.
 - Nội dung lịch sử và nội dung giả định được phân biệt trực quan.
 - Hội thoại ngắn không cản trở gameplay; visual novel chỉ xuất hiện ở các điểm quan trọng.
@@ -990,32 +1026,85 @@ Trước khi coi roadmap 43–118 hoàn thành, ngoài tiêu chí riêng của t
 
 ## 10. Thứ tự thiết kế và triển khai đề xuất
 
-Roadmap 43–118 chứa nhiều hệ thống độc lập và phụ thuộc chéo, không được triển khai cả khối trong một commit hoặc một đợt duy nhất. Thứ tự hợp lý sau khi đội dự án duyệt nội dung:
+Roadmap 43–118 chứa nhiều hệ thống độc lập và phụ thuộc chéo, không được triển khai cả khối trong một commit hoặc một đợt duy nhất. Bốn đợt dưới đây là thứ tự ưu tiên; mỗi đợt phải có đặc tả riêng, test riêng và cổng duyệt trước khi chuyển tiếp.
 
-1. Chốt narrative bible, mốc thời gian, thuật ngữ và nguồn lịch sử.
-2. Chốt Người giữ thời gian, opening và title card của từng khu/chương.
-3. Thiết kế schema hội thoại, lựa chọn, branch flags và save migration.
-4. Làm vertical slice cho Khu 1 gồm hội thoại, lựa chọn, hậu quả và bad ending 56.1.
-5. Playtest vertical slice để kiểm tra nhịp, mức rõ ràng và cảm giác công bằng.
-6. Mở rộng sang Khu 2.
-7. Tách và triển khai Khu 3A, bao gồm Đồng hồ Thời cơ.
-8. Triển khai Khu 3B với trọng tâm gia đình và sự chia cắt.
-9. Chỉnh Khu 4 theo chuỗi 1986–1988 và thay nhánh kết thúc đột ngột hiện tại.
-10. Hoàn thiện bad ending bí mật, neutral ending và good ending biến thể.
-11. Hoàn thiện phần “Những gì có thể đã khác”, codex và timeline.
-12. Nâng cấp trung tâm thế giới 59–68 dựa trên dữ liệu lựa chọn và ending đã ổn định.
-13. Triển khai UI và accessibility 69–82 theo từng cụm có thể kiểm thử.
-14. Sản xuất và tích hợp animation, portrait, môi trường và cinematic 83–94 theo sprite pipeline chuẩn.
-15. Triển khai replayability 95–104 sau khi ending resolver và save migration đã ổn định.
-16. Mở rộng các nền tảng 105–118 đúng lúc từng feature cần, tránh refactor không phục vụ chức năng.
-17. Chạy toàn bộ automated tests, browser playtest, screenshot regression, asset audit và kiểm tra nguồn.
-18. Chỉ đánh dấu roadmap hoàn thành sau khi kiểm kê từng số 43–118 bằng bằng chứng test và trải nghiệm thực tế.
+### Đợt 1 — Chốt nền kể chuyện và lịch sử
 
-## 11. Các quyết định còn chờ đội dự án chốt
+**Mục tiêu:** Loại bỏ mâu thuẫn giữa PLAN cũ với opening TVA hiện tại và tạo một narrative bible đủ rõ để nội dung không phải viết lại khi vào runtime.
 
-- Ngoại hình, tuổi, giới tính, cách xưng hô và mức độ hiện diện của Người giữ thời gian.
-- Người giữ thời gian có phải một nhân vật cố định hay thay đổi hình thức theo từng thời đại.
-- Bad ending theo khu sẽ kết thúc toàn bộ lượt chơi ngay hay được trình bày như một “nhánh gãy” rồi cho quay lại checkpoint.
+- Chốt David là Người giữ thời gian/điều phối viên TVA cố định; giữ nhận diện và sprite hiện có làm mốc, không tạo người dẫn truyện thứ hai.
+- Chốt vai trò Nhà du hành, động cơ trở về nhà, giới hạn can thiệp của TVA và quan hệ giữa David với năm tín vật.
+- Chốt title card, mốc thời gian, câu hỏi trung tâm và thuật ngữ cho Khu 1, Khu 2, Khu 3A, Khu 3B và Khu 4.
+- Giữ nguyên và dùng phần **Kiểm chứng và hiệu chỉnh lịch sử** của tài liệu này làm baseline; mọi thay đổi câu chữ kiến thức phải được đối chiếu nguồn trước khi duyệt.
+- Tách rõ ba lớp `sự kiện lịch sử`, `biểu tượng gameplay` và `nhánh giả định` cho từng khu/chương.
+- Lập ma trận lựa chọn–hậu quả Khu 1, bao gồm cảnh báo, điểm xác nhận, nguy cơ bad ending 56.1 và khả năng sửa sai hợp lý.
+- Xác nhận quy tắc bad ending là một “nhánh gãy” có cảnh báo, cinematic và phục hồi về checkpoint qua David; đồng thời chốt các quyết định còn mở ảnh hưởng trực tiếp tới vertical slice như mức công khai biến chủ đề, thời lượng opening/visual novel/cinematic và quy trình duyệt nội dung.
+
+**Đầu ra bắt buộc:** narrative bible; bảng chronology/title card; glossary; source ledger lịch sử; ma trận lựa chọn–hậu quả Khu 1; danh sách nội dung và asset cần sản xuất. Đợt này chưa thay behavior runtime ngoài các sửa lỗi dữ kiện hiển nhiên đã được duyệt.
+
+### Đợt 2 — Xây nền dữ liệu lựa chọn, save và ending
+
+**Mục tiêu:** Biến các quyết định rời rạc hiện có thành hệ thống dữ liệu có thể lưu, giải thích và kiểm thử trước khi viết thêm nhánh nội dung.
+
+- Thiết kế schema cho hội thoại có điều kiện, `choices`, `branchFlags`, `npcRelations`, `themeScores`, `endingRisks`, title card, chronology và nguồn lịch sử.
+- Nâng version save và viết migration giữ nguyên save hiện tại; không xóa tiến trình người chơi chỉ vì thêm schema mới.
+- Tạo ending resolver dữ liệu hóa, trả được ending được chọn, điều kiện thỏa, điều kiện bị loại và nguyên nhân dùng cho debug/tổng kết.
+- Mở rộng scene controller cho zone intro, visual novel, choice và ending mà không tạo thêm nguồn `state.mode` cạnh tranh.
+- Đưa ngưỡng lựa chọn, Tha hóa, ending và Đồng hồ Thời cơ vào cấu hình cân bằng bất biến.
+- Mở rộng debug overlay để xem branch flags, quan hệ NPC, điểm chủ đề, ending risk và lời giải thích từ resolver.
+- Viết regression test cho schema, migration, save/load, rollback checkpoint, ending resolver và trường hợp một lựa chọn đơn lẻ không khóa bad ending.
+- Chỉ tách phần story/dialogue/ending khỏi `game-runtime.js` khi việc tách trực tiếp phục vụ các interface trên; không refactor toàn bộ runtime trong đợt này.
+
+**Đầu ra bắt buộc:** module dữ liệu có schema rõ; save migration; ending resolver; scene bridge; debug state; unit test xanh. Chưa tích hợp hàng loạt nội dung Khu 2–4.
+
+### Đợt 3 — Hoàn thiện vertical slice Khu 1
+
+**Mục tiêu:** Chứng minh toàn bộ vòng lặp kể chuyện mới bằng một khu hoàn chỉnh trước khi nhân rộng.
+
+- Hoàn thiện opening TVA/David và title card Khu 1 theo trọng tâm 1922–1929.
+- Viết hội thoại gameplay ngắn, visual novel tại bước ngoặt, portrait/biểu cảm cần thiết và lịch sử hội thoại.
+- Cho nhiệm vụ Khu 1 có nhiều cách xử lý thực sự: truyền báo, bảo vệ/hỗ trợ công nhân, đối thoại hoặc chọn lợi ích cá nhân; mỗi cách có chi phí và hậu quả riêng.
+- Đưa phản ứng hậu quả vào NPC, môi trường, âm thanh, tín vật và lời David khi trở về TVA.
+- Thay kích hoạt bad ending trực tiếp bằng chuỗi nguy cơ và điểm xác nhận cho **56.1 — Con tàu không la bàn**.
+- Giữ cinematic động, nhạc ending và luồng phục hồi David hiện có, nhưng chọn nội dung theo nguyên nhân thất bại đã lưu.
+- Thêm phần “Những gì có thể đã khác” cho Khu 1, liên kết codex, nguồn lịch sử và checkpoint hợp lệ.
+- Sản xuất mọi portrait, sprite, effect hoặc cinematic cần thiết theo pipeline animation chuẩn; không dùng ảnh tĩnh/hình khối/fallback xấu.
+- Test save/load ở từng điểm rẽ, portal khóa/mở, held input, blur, pause/modal, audio resume, bad-ending recovery và reload scene.
+
+**Cổng duyệt:** automated tests xanh; screenshot và browser playtest chứng minh lựa chọn dễ hiểu, hậu quả nhìn/nghe thấy được, bad ending công bằng và không có fallback xấu. Không mở rộng nội dung sang Khu 2 nếu vertical slice chưa đạt cổng này.
+
+### Đợt 4 — Playtest, hiệu chỉnh và mở rộng toàn roadmap
+
+**Mục tiêu:** Dùng vertical slice đã duyệt làm mẫu dữ liệu và chất lượng cho các khu còn lại, rồi hoàn thiện các nhóm trải nghiệm phụ thuộc vào hệ ending.
+
+1. Playtest Khu 1 với người chơi thật hoặc test charter rõ ràng; chỉnh nhịp hội thoại, độ rõ cảnh báo, mức công bằng và độ dài cinematic.
+2. Mở rộng schema/nội dung sang Khu 2 và bad ending 56.2.
+3. Tách Khu 3 thành Chương A 1941–1945 và Chương B 1954–1975; triển khai Đồng hồ Thời cơ, bad ending 56.3 và 56.4 độc lập.
+4. Chỉnh Khu 4 theo chuỗi 1986–1988 và triển khai bad ending 56.5 thay cho kết thúc đột ngột không gắn chặt với chủ đề đổi mới.
+5. Hoàn thiện bad ending bí mật 56.6, neutral ending, good ending biến thể và cinematic theo dữ liệu hành trình.
+6. Hoàn thiện codex, timeline, năm trang ký ức và phần “Những gì có thể đã khác”.
+7. Nâng cấp trung tâm TVA 59–68 dựa trên dữ liệu lựa chọn và ending đã ổn định.
+8. Triển khai UI/accessibility 69–82 theo từng cụm độc lập có test; ưu tiên audio settings, true pause, reduced motion, chữ lớn và minimap settings trước touch controls.
+9. Bổ sung portrait, NPC, môi trường, quest item và cinematic còn thiếu trong 83–94 theo sprite pipeline chuẩn; giữ các bộ player/quái đã đạt chất lượng.
+10. Chỉ triển khai replayability 95–104 sau khi ending resolver, ending collection và save migration đã ổn định.
+11. Mở rộng 105–118 đúng lúc từng feature cần; không dùng roadmap kỹ thuật làm lý do trì hoãn giá trị chơi được.
+12. Chạy toàn bộ automated tests, browser playtest, screenshot regression, asset audit, kiểm tra UTF-8, nguồn lịch sử và license asset sau mỗi cụm.
+
+Chỉ đánh dấu roadmap hoàn thành sau khi kiểm kê từng số 43–118 bằng bằng chứng test, asset và trải nghiệm thực tế.
+
+## 11. Quyết định dự án đã chốt và còn mở
+
+### Quyết định đã chốt
+
+- David là nhân vật cố định, đảm nhiệm vai trò Người giữ thời gian/điều phối viên TVA và là người dẫn truyện chính.
+- Không tạo thêm một Người giữ thời gian thứ hai hoặc thay hình thức nhân vật dẫn truyện theo từng thời đại.
+- Giữ văn phòng TVA hiện có làm trung tâm thế giới; Cổng Dòng Thời gian TVA thay cho khái niệm Cánh Cửa Lịch Sử tách biệt trong bản PLAN cũ.
+- Giữ kiến trúc Canvas 2D, bốn khu, năm tín vật và hai chương độc lập của Khu 3.
+- Sprite/nhận diện David hiện có là baseline; nâng cấp sau này phải giữ khả năng nhận diện và vai trò đã chốt.
+- Bad ending theo khu là một “nhánh gãy”: chỉ khóa sau chuỗi lựa chọn và điểm xác nhận, phát cinematic tương ứng, ghi nhận ending đã mở rồi để David đưa người chơi về checkpoint hợp lệ trước điểm quyết định.
+
+### Quyết định còn mở
+
 - Mức độ công khai của các biến đoàn kết, thời cơ, thống nhất và đổi mới.
 - Thời lượng tối đa cho opening, visual novel quan trọng và mỗi ending cinematic.
 - Phạm vi lồng tiếng hoặc âm thanh giọng tượng trưng.
