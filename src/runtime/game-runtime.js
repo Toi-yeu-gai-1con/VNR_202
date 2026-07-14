@@ -2916,7 +2916,7 @@ function getInteractionDialogue(item) {
     return getTvaEmployeeDialogue();
   }
 
-  const scriptedDialogue = INTERACTION_DIALOGUES[item.id];
+  const scriptedDialogue = INTERACTION_DIALOGUES[item.dialogueKey ?? item.id];
 
   if (scriptedDialogue) {
     return scriptedDialogue;
@@ -3344,11 +3344,85 @@ function resolveZone2EmblemVerdictChoice(choiceId, item) {
   );
 }
 
+function resolveZone3RallyChoice(choiceId, item) {
+  const option = applyNarrativeChoice("zone3a", "rally-strategy", choiceId);
+  if (!option) return;
+
+  item.interactionType = "augustVerdict";
+  item.dialogueKey = "august-verdict";
+  item.prompt = "chốt cách gìn giữ thời cơ Tháng Tám";
+  closeDialogueForChoice();
+  updateInteractionPrompt();
+  showStoryToast(
+    choiceId === "fragment-rally"
+      ? "Sự phân tán đã thành một nguy cơ. Hãy quay lại Sợi Chỉ Đỏ để quyết định có hàn gắn nó hay không."
+      : "Cuộc tập hợp đã có một hướng chuẩn bị rõ ràng. Hãy quay lại Sợi Chỉ Đỏ để chốt hồ sơ."
+  );
+  saveGameProgress();
+}
+
+function resolveZone3AugustVerdictChoice(choiceId, item) {
+  const option = applyNarrativeChoice("zone3a", "august-verdict", choiceId);
+  if (!option) return;
+
+  closeDialogueForChoice();
+  item.collected = true;
+  state.quests.zone3ThreadClaimed = true;
+  const candidate = resolveEnding({ narrative: state.narrative, inventory: state.inventory, saDoa: state.saDoa });
+  if (candidate.id === "zone3a-missed-moment") {
+    triggerNarrativeEnding(candidate, "Bạn đã xác nhận để lực lượng phân tán sau khi bỏ qua công việc chuẩn bị, khiến thời cơ Tháng Tám vụt qua.");
+    return;
+  }
+
+  collectRelic("vietminh-thread", getReturnGuidanceForLevel("crossroads"));
+  showStoryToast(
+    choiceId === "repair-fragment"
+      ? "Bạn đã hàn gắn sự phân tán. Sợi Chỉ Đỏ Việt Minh bền lại trong tay bạn."
+      : "Sợi Chỉ Đỏ Việt Minh đã được ghi nhận. Nửa dưới của khu vực vẫn cần được hàn gắn."
+  );
+}
+
+function resolveZone3TemporaryLineChoice(choiceId, item) {
+  const option = applyNarrativeChoice("zone3b", "temporary-line-choice", choiceId);
+  if (!option) return;
+
+  item.used = true;
+  closeDialogueForChoice();
+  updateInteractionPrompt();
+  showStoryToast(
+    choiceId === "normalize-separation"
+      ? "Bạn đã để sự chia cắt bị xem như điều bình thường. Vẫn còn cơ hội sửa lại khi hàn gắn bản đồ."
+      : "Bạn đã ghi nhận rõ tính tạm thời của giới tuyến và những mối liên hệ cần được giữ gìn."
+  );
+  saveGameProgress();
+}
+
+function resolveZone3BorderVerdictChoice(choiceId, item) {
+  const option = applyNarrativeChoice("zone3b", "border-verdict", choiceId);
+  if (!option) return;
+
+  closeDialogueForChoice();
+  item.collected = true;
+  state.quests.zone3MapClaimed = true;
+  const candidate = resolveEnding({ narrative: state.narrative, inventory: state.inventory, saDoa: state.saDoa });
+  if (candidate.id === "zone3b-divided-border") {
+    triggerNarrativeEnding(candidate, "Bạn đã xác nhận biến giới tuyến tạm thời thành chia cắt lâu dài, làm những liên hệ của người dân hai miền bị đứt gãy.");
+    return;
+  }
+
+  collectRelic("healed-map", getReturnGuidanceForLevel("crossroads"));
+  showStoryToast(
+    choiceId === "repair-separation"
+      ? "Bạn đã sửa lại vết rạn. Bản đồ hàn gắn khôi phục những mối liên hệ bị đứt đoạn."
+      : "Bản đồ hàn gắn đã hoàn chỉnh. Hãy trở về TVA báo cáo với David."
+  );
+}
+
 function resolveDialogueChoice(choiceId) {
   const dialogue = state.activeDialogue;
   const choice = getPendingDialogueChoices().find((entry) => entry.id === choiceId);
   const item = currentLevel().interactables.find((entry) => entry.id === dialogue?.interactionId);
-  const supportedInteraction = ["colonialRecruitment", "tvaBriefing", "startPapers", "compassVerdict", "splitChoice", "emblemVerdict"].includes(item?.interactionType);
+  const supportedInteraction = ["colonialRecruitment", "tvaBriefing", "startPapers", "compassVerdict", "splitChoice", "emblemVerdict", "rallyChoice", "augustVerdict", "temporaryLineChoice", "borderVerdict"].includes(item?.interactionType);
 
   if (!dialogue || !choice || !item || !supportedInteraction) {
     return;
@@ -3376,6 +3450,26 @@ function resolveDialogueChoice(choiceId) {
 
   if (item.interactionType === "emblemVerdict") {
     resolveZone2EmblemVerdictChoice(choice.id, item);
+    return;
+  }
+
+  if (item.interactionType === "rallyChoice") {
+    resolveZone3RallyChoice(choice.id, item);
+    return;
+  }
+
+  if (item.interactionType === "augustVerdict") {
+    resolveZone3AugustVerdictChoice(choice.id, item);
+    return;
+  }
+
+  if (item.interactionType === "temporaryLineChoice") {
+    resolveZone3TemporaryLineChoice(choice.id, item);
+    return;
+  }
+
+  if (item.interactionType === "borderVerdict") {
+    resolveZone3BorderVerdictChoice(choice.id, item);
     return;
   }
 
@@ -6217,10 +6311,17 @@ function isInteractableAvailable(item) {
       return !state.quests.zone3Recruits.has(item.recruitId);
     case "rewardThread":
       return !state.quests.zone3ThreadClaimed;
+    case "rallyChoice":
+    case "augustVerdict":
+      return !state.quests.zone3ThreadClaimed;
     case "rescueHamlet":
       return !state.quests.zone3HamletsFreed.has(item.hamletId);
     case "rewardMap":
       return !state.quests.zone3MapClaimed;
+    case "borderVerdict":
+      return !state.quests.zone3MapClaimed;
+    case "temporaryLineChoice":
+      return !item.used;
     case "permanentDivision":
       return !item.used;
     case "breakBarrier":
@@ -6323,8 +6424,13 @@ function handleSystemInteraction(item) {
         showStoryToast("Quảng trường Đỏ cần đủ nông dân, công nhân, trí thức và tư sản dân tộc.");
         return;
       }
-      state.quests.zone3ThreadClaimed = true;
-      collectRelic("vietminh-thread", getReturnGuidanceForLevel("crossroads"));
+      item.interactionType = "rallyChoice";
+      item.dialogueKey = "vietminh-rally";
+      startDialogue(item);
+      return;
+    case "rallyChoice":
+    case "augustVerdict":
+      startDialogue(item);
       return;
     case "rescueHamlet":
       state.quests.zone3HamletsFreed.add(item.hamletId);
@@ -6342,13 +6448,14 @@ function handleSystemInteraction(item) {
         return;
       }
 
-      state.quests.zone3MapClaimed = true;
-      collectRelic("healed-map", getReturnGuidanceForLevel("crossroads"));
+      item.interactionType = "borderVerdict";
+      item.dialogueKey = "border-verdict";
+      startDialogue(item);
       return;
     }
-    case "permanentDivision":
-      item.used = true;
-      triggerBadEnding("Bạn ký vào hiệp ước chia cắt vĩnh viễn đất nước.");
+    case "borderVerdict":
+    case "temporaryLineChoice":
+      startDialogue(item);
       return;
     case "breakBarrier":
       state.quests.zone4Barriers.add(item.barrierId);

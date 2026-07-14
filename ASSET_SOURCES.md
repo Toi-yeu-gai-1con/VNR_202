@@ -82,6 +82,16 @@ This project uses a small subset of free game assets:
   - Prompted as a Vietnamese colonial-era meeting/archive room circa 1930: rain, a weathered round table, three separate oil lamps, dossiers, and a subtle fractured time-rift.
   - Used only by the hypothetical Khu 2 ending “Ba ngọn lửa lụi tàn”; no third-party character, logo, or stock asset was imported.
 
+- `assets/environment/generated-worlds/zone3a-missed-moment-ending.png`
+  - Original project art generated with the built-in image-generation workflow on 2026-07-15.
+  - Prompted as a rainy 1941–1945 northern Vietnamese communal meeting house, with unlit lanterns, an abandoned planning table, liaison maps, and an unraveling red thread.
+  - Used only by the hypothetical Khu 3A ending “Thời cơ Tháng Tám vụt qua”; no third-party character, logo, or stock asset was imported.
+
+- `assets/environment/generated-worlds/zone3b-divided-border-ending.png`
+  - Original project art generated with the built-in image-generation workflow on 2026-07-15.
+  - Prompted as two Vietnamese riverside homes separated by a broken bridge and river in rain, with a severed red thread across a map; it intentionally avoids presenting the hypothetical branch as historical fact.
+  - Used only by the hypothetical Khu 3B ending “Vĩ tuyến thành biên giới”; no third-party character, logo, or stock asset was imported.
+
 ## Original Cục Lưu Trữ Niên Tuyến (CLTNT) time-archive art pack
 
 - Generated for this project with the built-in image generation workflow; no Marvel/TVA artwork, logos, or traced character likenesses were used.

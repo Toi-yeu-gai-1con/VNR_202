@@ -457,6 +457,50 @@ test("Zone 2 division risk needs a separate emblem confirmation before its endin
   await page.screenshot({ path: testInfo.outputPath("zone2-fading-fires-ending.png"), fullPage: true });
 });
 
+test("Zone 3A fragmentation needs an August confirmation before its ending", async ({ page }, testInfo) => {
+  await openDebugSession(page);
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("crossroads"));
+  await expect.poll(() => snapshot(page).then((state) => state.currentLevelId)).toBe("crossroads");
+
+  for (const recruitId of ["recruit-farmer", "recruit-worker", "recruit-intellectual", "recruit-bourgeois"]) {
+    await page.evaluate((interactableId) => window.__CROSSROADS_DEBUG__.interactById(interactableId), recruitId);
+  }
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("vietminh-cadre"));
+  await page.locator('[data-dialogue-choice="fragment-rally"]').click();
+  await expect.poll(() => snapshot(page).then((state) => state.narrative.endingRisks.zone3a)).toBe(1);
+  await expect(page.locator("#end-overlay")).toBeHidden();
+
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("vietminh-cadre"));
+  await page.locator('[data-dialogue-choice="confirm-delay"]').click();
+  await expect(page.locator("#end-overlay")).toBeVisible();
+  await expect.poll(() => snapshot(page).then((state) => state.endingId)).toBe("zone3a-missed-moment");
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.completeEndingCinematic());
+  await expect(page.locator("#end-overlay")).toHaveAttribute("data-cinematic", "complete");
+  await page.screenshot({ path: testInfo.outputPath("zone3a-missed-moment-ending.png"), fullPage: true });
+});
+
+test("Zone 3B separation needs a border confirmation before its ending", async ({ page }, testInfo) => {
+  await openDebugSession(page);
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("crossroads"));
+  await expect.poll(() => snapshot(page).then((state) => state.currentLevelId)).toBe("crossroads");
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("foreign-advisor"));
+  await page.locator('[data-dialogue-choice="normalize-separation"]').click();
+  await expect.poll(() => snapshot(page).then((state) => state.narrative.endingRisks.zone3b)).toBe(1);
+  await expect(page.locator("#end-overlay")).toBeHidden();
+
+  for (const hamletId of ["hamlet-1", "hamlet-2", "hamlet-3"]) {
+    await page.evaluate((interactableId) => window.__CROSSROADS_DEBUG__.interactById(interactableId), hamletId);
+  }
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.damageMonster("southern-tyrant", 99));
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("resistance-commander"));
+  await page.locator('[data-dialogue-choice="confirm-permanent-division"]').click();
+  await expect(page.locator("#end-overlay")).toBeVisible();
+  await expect.poll(() => snapshot(page).then((state) => state.endingId)).toBe("zone3b-divided-border");
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.completeEndingCinematic());
+  await expect(page.locator("#end-overlay")).toHaveAttribute("data-cinematic", "complete");
+  await page.screenshot({ path: testInfo.outputPath("zone3b-divided-border-ending.png"), fullPage: true });
+});
+
 for (const endingId of ["good", "bad"]) {
   test(`${endingId} ending renders from its explicit debug route`, async ({ page }, testInfo) => {
     await page.goto(`/?debugTools=1&debugEnding=${endingId}`);

@@ -611,8 +611,9 @@ function createRedSquareLevel() {
         spriteKey: "npc01",
         direction: "right",
         animation: "idle",
-        prompt: "ký hiệp ước chia cắt vĩnh viễn",
-        interactionType: "permanentDivision",
+        prompt: "đọc điều khoản về giới tuyến tạm thời",
+        interactionType: "temporaryLineChoice",
+        dialogueKey: "temporary-line-choice",
       },
     ],
     monsters: [

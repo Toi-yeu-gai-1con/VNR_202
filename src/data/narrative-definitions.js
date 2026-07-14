@@ -131,4 +131,40 @@ export const NARRATIVE_CHOICE_DEFINITIONS = Object.freeze({
       ]),
     },
   ]),
+  zone3a: Object.freeze([
+    {
+      id: "rally-strategy",
+      options: Object.freeze([
+        { id: "prepare-network", branchFlags: { "zone3a.preparedNetwork": true }, themeScores: { solidarity: 1, opportunity: 1 } },
+        { id: "coordinate-moment", branchFlags: { "zone3a.coordinatedMoment": true }, themeScores: { solidarity: 1, opportunity: 1 } },
+        { id: "fragment-rally", branchFlags: { "zone3a.fragmentedRally": true }, endingRisks: { zone3a: 1 }, corruption: 8 },
+      ]),
+    },
+    {
+      id: "august-verdict",
+      options: Object.freeze([
+        { id: "protect-moment", branchFlags: { "zone3a.momentProtected": true }, themeScores: { opportunity: 1 } },
+        { id: "repair-fragment", branchFlags: { "zone3a.repairedRally": true }, endingRisks: { zone3a: -1 }, themeScores: { solidarity: 1 }, corruption: 4 },
+        { id: "confirm-delay", branchFlags: { "zone3a.badConfirmed": true }, endingRisks: { zone3a: 2 }, corruption: 10 },
+      ]),
+    },
+  ]),
+  zone3b: Object.freeze([
+    {
+      id: "temporary-line-choice",
+      options: Object.freeze([
+        { id: "preserve-bonds", branchFlags: { "zone3b.preservedBonds": true }, themeScores: { unity: 1 } },
+        { id: "document-temporary-line", branchFlags: { "zone3b.recordedTemporaryLine": true }, themeScores: { unity: 1 } },
+        { id: "normalize-separation", branchFlags: { "zone3b.normalizedSeparation": true }, endingRisks: { zone3b: 1 }, corruption: 8 },
+      ]),
+    },
+    {
+      id: "border-verdict",
+      options: Object.freeze([
+        { id: "restore-unity", branchFlags: { "zone3b.unityRestored": true }, themeScores: { unity: 1 } },
+        { id: "repair-separation", branchFlags: { "zone3b.repairedSeparation": true }, endingRisks: { zone3b: -1 }, themeScores: { unity: 1 }, corruption: 4 },
+        { id: "confirm-permanent-division", branchFlags: { "zone3b.badConfirmed": true }, endingRisks: { zone3b: 2 }, corruption: 10 },
+      ]),
+    },
+  ]),
 });

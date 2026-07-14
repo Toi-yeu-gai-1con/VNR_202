@@ -43,4 +43,12 @@ assert.equal(
   "Zone 2 bad ending also requires an explicit final confirmation.",
 );
 
+for (const [zoneId, confirmationFlag] of [["zone3a", "zone3a.badConfirmed"], ["zone3b", "zone3b.badConfirmed"]]) {
+  assert.equal(
+    NARRATIVE_CHOICE_DEFINITIONS[zoneId].some((choice) => choice.options.some((option) => option.branchFlags?.[confirmationFlag])),
+    true,
+    `${zoneId} keeps its own explicit bad-ending confirmation instead of sharing the other Zone 3 chapter.`,
+  );
+}
+
 console.log("PASS: chronology, choice consequences, ending catalog, and source links are data-owned.");

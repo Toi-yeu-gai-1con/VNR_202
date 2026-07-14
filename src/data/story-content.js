@@ -134,6 +134,50 @@ export const INTERACTION_DIALOGUES = {
       { id: "confirm-factionalism", label: "Giữ chia rẽ để đổi lấy quyền lực riêng", tone: "danger" },
     ],
   },
+  "vietminh-rally": {
+    speaker: "Cán bộ Mặt trận",
+    lines: [
+      "Một mặt trận rộng rãi chỉ có ý nghĩa khi các lực lượng cùng được lắng nghe, tổ chức và chuẩn bị. Cậu sẽ giữ cuộc tập hợp theo hướng nào?",
+    ],
+    choices: [
+      { id: "prepare-network", label: "Củng cố liên lạc, chuẩn bị lực lượng và bảo vệ dân" },
+      { id: "coordinate-moment", label: "Phối hợp các lực lượng để sẵn sàng nắm thời cơ" },
+      { id: "fragment-rally", label: "Chia nhỏ lực lượng để mỗi nhóm tự lo an toàn", tone: "danger" },
+    ],
+  },
+  "august-verdict": {
+    speaker: "Sợi Chỉ Đỏ Việt Minh",
+    lines: [
+      "Những sợi chỉ chỉ thành một tấm vải khi được buộc lại đúng lúc. Cậu sẽ chốt cách gìn giữ thời cơ Tháng Tám?",
+    ],
+    choices: [
+      { id: "protect-moment", label: "Giữ liên lạc và đưa lực lượng cùng hành động" },
+      { id: "repair-fragment", label: "Hàn gắn sự phân tán trước khi thời cơ qua đi" },
+      { id: "confirm-delay", label: "Chấp nhận để lực lượng tan tác và bỏ lỡ thời cơ", tone: "danger" },
+    ],
+  },
+  "temporary-line-choice": {
+    speaker: "Người đưa bản thảo",
+    lines: [
+      "Đường phân giới quân sự tạm thời không phải là biên giới quốc gia. Cậu sẽ đọc bản thảo này với trách nhiệm nào?",
+    ],
+    choices: [
+      { id: "preserve-bonds", label: "Giữ liên lạc giữa đồng bào hai miền" },
+      { id: "document-temporary-line", label: "Ghi rõ tính tạm thời để không đánh tráo ý nghĩa" },
+      { id: "normalize-separation", label: "Xem chia cắt là điều bình thường để đổi lấy yên ổn", tone: "danger" },
+    ],
+  },
+  "border-verdict": {
+    speaker: "Bản đồ hàn gắn",
+    lines: [
+      "Những mảnh bản đồ chỉ khớp lại khi khát vọng thống nhất không bị bỏ quên. Cậu sẽ đóng hồ sơ theo hướng nào?",
+    ],
+    choices: [
+      { id: "restore-unity", label: "Giữ mục tiêu thống nhất và cuộc sống người dân làm trung tâm" },
+      { id: "repair-separation", label: "Sửa lại lựa chọn chia cắt bằng cách nối các mối liên hệ" },
+      { id: "confirm-permanent-division", label: "Chấp nhận biến giới tuyến tạm thời thành chia cắt lâu dài", tone: "danger" },
+    ],
+  },
   "guiding-compass": {
     speaker: "Chiếc la bàn",
     lines: [
@@ -420,6 +464,20 @@ export const ENDING_DEFINITIONS = {
     artSrc: "assets/environment/generated-worlds/zone2-fading-fires-ending.png",
     artAlt: "Nhánh giả định về một cuộc hội họp tan vỡ trong đêm mưa, với ba ngọn đèn dầu tách rời trên bàn tròn.",
   },
+  "zone3a-missed-moment": {
+    title: "NHÁNH GIẢ ĐỊNH: THỜI CƠ THÁNG TÁM VỤT QUA",
+    copy:
+      "Khi sự chuẩn bị bị phân tán và liên lạc bị bỏ mặc, một thời cơ có thể đi qua trước khi các lực lượng kịp cùng hành động. Đây là nhánh giả định: khát vọng độc lập không biến mất, nhưng con đường giành chính quyền bị kéo dài bởi sự rời rạc và chậm trễ.",
+    artSrc: "assets/environment/generated-worlds/zone3a-missed-moment-ending.png",
+    artAlt: "Nhánh giả định về một cuộc chuẩn bị bị bỏ dở trong căn nhà cộng đồng nông thôn giữa cơn mưa, với sợi chỉ đỏ tháo rời trên bản đồ.",
+  },
+  "zone3b-divided-border": {
+    title: "NHÁNH GIẢ ĐỊNH: VĨ TUYẾN THÀNH BIÊN GIỚI",
+    copy:
+      "Khi một giới tuyến quân sự tạm thời bị coi như ranh giới cố định, những mối liên hệ giữa đồng bào hai miền bị đặt trước nguy cơ đứt đoạn. Đây là nhánh giả định: sự chia cắt bị kéo dài trong đời sống thường ngày, thay vì được nhìn nhận là một tình thế cần vượt qua.",
+    artSrc: "assets/environment/generated-worlds/zone3b-divided-border-ending.png",
+    artAlt: "Nhánh giả định về hai mái nhà bên một con sông và cây cầu gãy ở giữa, với sợi chỉ đỏ đứt trên bản đồ.",
+  },
 };
 
 export const ENDING_OVERLAY_SCENES = {
@@ -639,6 +697,33 @@ export const ENDING_OVERLAY_SCENES = {
       { x: 0.72, y: 0.63, size: 8, speed: 0.0013, drift: 5, alpha: 0.11 },
     ],
   },
+  "zone3a-missed-moment": {
+    figures: [
+      { kind: "npc", x: 0.22, y: 0.81, spriteKey: "npc02", direction: "left", scale: 1.06, animation: "walk", bobAmplitude: 1.3, swayAmplitude: 2.1, swaySpeed: 0.0027, frameOffset: 0.18, opacity: 0.84 },
+      { kind: "npc", x: 0.4, y: 0.77, spriteKey: "npc05", direction: "up", scale: 1.12, animation: "walk", bobAmplitude: 1.2, swayAmplitude: 1.7, swaySpeed: 0.0025, frameOffset: 0.53, opacity: 0.86 },
+      { kind: "player", x: 0.58, y: 0.78, direction: "up", scale: 1.18, bobAmplitude: 0.72, swayAmplitude: 0.48, swaySpeed: 0.0014, frameOffset: 0.33, opacity: 0.78 },
+      { kind: "npc", x: 0.76, y: 0.82, spriteKey: "npc03", direction: "right", scale: 1.04, animation: "walk", bobAmplitude: 1.35, swayAmplitude: 2, swaySpeed: 0.0028, frameOffset: 0.79, opacity: 0.84 },
+    ],
+    motes: [
+      { x: 0.3, y: 0.59, size: 7, speed: 0.0012, drift: 4, alpha: 0.1 },
+      { x: 0.52, y: 0.65, size: 10, speed: 0.0015, drift: 5, alpha: 0.12 },
+      { x: 0.68, y: 0.56, size: 8, speed: 0.0013, drift: 4, alpha: 0.1 },
+    ],
+  },
+  "zone3b-divided-border": {
+    figures: [
+      { kind: "npc", x: 0.2, y: 0.79, spriteKey: "npc02", direction: "right", scale: 1.08, animation: "walk", bobAmplitude: 1.3, swayAmplitude: 1.8, swaySpeed: 0.0026, frameOffset: 0.14, opacity: 0.86 },
+      { kind: "npc", x: 0.34, y: 0.82, spriteKey: "npc04", direction: "right", scale: 1.02, animation: "walk", bobAmplitude: 1.35, swayAmplitude: 2, swaySpeed: 0.0028, frameOffset: 0.44, opacity: 0.84 },
+      { kind: "player", x: 0.5, y: 0.8, direction: "up", scale: 1.18, bobAmplitude: 0.7, swayAmplitude: 0.45, swaySpeed: 0.0013, frameOffset: 0.58, opacity: 0.78 },
+      { kind: "npc", x: 0.68, y: 0.82, spriteKey: "npc01", direction: "left", scale: 1.04, animation: "walk", bobAmplitude: 1.35, swayAmplitude: 2, swaySpeed: 0.0027, frameOffset: 0.8, opacity: 0.84 },
+      { kind: "npc", x: 0.82, y: 0.79, spriteKey: "npc05", direction: "left", scale: 1.08, animation: "walk", bobAmplitude: 1.3, swayAmplitude: 1.8, swaySpeed: 0.0026, frameOffset: 0.28, opacity: 0.86 },
+    ],
+    motes: [
+      { x: 0.26, y: 0.62, size: 7, speed: 0.0011, drift: 4, alpha: 0.1 },
+      { x: 0.5, y: 0.55, size: 10, speed: 0.0014, drift: 5, alpha: 0.12 },
+      { x: 0.74, y: 0.61, size: 7, speed: 0.0012, drift: 4, alpha: 0.1 },
+    ],
+  },
 };
 
 export const ENDING_CINEMATIC_DEFINITIONS = {
@@ -677,6 +762,24 @@ export const ENDING_CINEMATIC_DEFINITIONS = {
       { at: 0, x: 0.52, y: 0.63, zoom: 2.34 },
       { at: 0.3, x: 0.3, y: 0.42, zoom: 2.12 },
       { at: 0.66, x: 0.7, y: 0.34, zoom: 1.74 },
+      { at: 1, x: 0.5, y: 0.5, zoom: 1 },
+    ],
+  },
+  "zone3a-missed-moment": {
+    duration: 9000,
+    keyframes: [
+      { at: 0, x: 0.58, y: 0.66, zoom: 2.3 },
+      { at: 0.32, x: 0.32, y: 0.46, zoom: 2.1 },
+      { at: 0.68, x: 0.74, y: 0.36, zoom: 1.72 },
+      { at: 1, x: 0.5, y: 0.5, zoom: 1 },
+    ],
+  },
+  "zone3b-divided-border": {
+    duration: 9000,
+    keyframes: [
+      { at: 0, x: 0.3, y: 0.42, zoom: 2.3 },
+      { at: 0.3, x: 0.7, y: 0.42, zoom: 2.12 },
+      { at: 0.65, x: 0.5, y: 0.74, zoom: 1.72 },
       { at: 1, x: 0.5, y: 0.5, zoom: 1 },
     ],
   },
