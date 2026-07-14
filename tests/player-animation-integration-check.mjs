@@ -12,6 +12,7 @@ const expectedAnimations = {
   run: 8,
   attack1: 8,
   attack2: 8,
+  parry: 8,
   heal: 12,
   hurt: 4,
   dash: 7,
@@ -29,6 +30,7 @@ assert.equal(PLAYER_SPRITE.frameHeight, 80);
 
 assert.match(runtime, /attack1: loadDirectionalSprites\("attack1"\)/);
 assert.match(runtime, /attack2: loadDirectionalSprites\("attack2"\)/);
+assert.match(runtime, /parry: loadDirectionalSprites\("parry"\)/);
 assert.match(runtime, /dash: loadDirectionalSprites\("dash"\)/);
 assert.match(runtime, /heal: loadDirectionalSprites\("heal"\)/);
 assert.match(runtime, /hurt: loadDirectionalSprites\("hurt"\)/);
@@ -37,6 +39,7 @@ assert.match(runtime, /function startPlayerAnimation\(/);
 assert.match(runtime, /function getPlayerAnimationFrame\(/);
 assert.match(runtime, /const strikeAnimation = isCharged \? "attack2"/);
 assert.match(runtime, /startPlayerAnimation\("dash"/);
+assert.match(runtime, /startPlayerAnimation\("parry"/);
 assert.match(runtime, /startPlayerAnimation\("heal"/);
 assert.match(runtime, /startPlayerAnimation\("hurt"/);
 assert.match(runtime, /startPlayerAnimation\("death"/);

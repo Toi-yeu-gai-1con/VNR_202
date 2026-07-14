@@ -20,6 +20,7 @@ export const PLAYER_ANIMATIONS = Object.freeze({
   run: Object.freeze({ frameCount: 8, frameDuration: 95, loop: true }),
   attack1: Object.freeze({ frameCount: 8, frameDuration: 50, loop: false }),
   attack2: Object.freeze({ frameCount: 8, frameDuration: 50, loop: false }),
+  parry: Object.freeze({ frameCount: 8, frameDuration: 70, loop: false }),
   heal: Object.freeze({ frameCount: 12, frameDuration: 90, loop: false }),
   hurt: Object.freeze({ frameCount: 4, frameDuration: 90, loop: false }),
   dash: Object.freeze({ frameCount: 7, frameDuration: 70, loop: false }),
