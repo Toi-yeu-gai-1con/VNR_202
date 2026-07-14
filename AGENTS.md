@@ -80,6 +80,7 @@ Third-party skills run with full agent permissions. Review their provenance and 
 
 ## Implementation and playtest requirements
 
+- For creating or editing dialogue, read `docs/ai-handoff/dialogue-authoring.md` before touching story data.
 - Preserve existing player changes and unrelated work in the working tree.
 - Add or update a regression test before implementing a bug fix or behavior change whenever the repository's test setup supports it.
 - For Canvas-heavy changes, browser screenshots are mandatory; DOM assertions alone are insufficient.
