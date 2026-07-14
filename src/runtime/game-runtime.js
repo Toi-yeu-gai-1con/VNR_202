@@ -13,6 +13,7 @@ import { createMiniMapRenderer } from "../rendering/minimap-renderer.js";
 import { createCoordinateSystem } from "../rendering/coordinate-system.js";
 import { LEVEL_ASSET_GROUPS, getAssetGroupForSource, isCriticalAsset } from "../data/asset-manifest.js";
 import { BOSS_DEFINITIONS, COMBAT_DENSITY, COMBAT_ROSTER } from "../data/combat-config.js";
+import { MONSTER_ART_DEFINITIONS, MONSTER_ART_KEY_BY_ID, getMonsterStripSource, isDedicatedMonsterArtKey } from "../data/monster-art-definitions.js";
 import { GAMEPLAY_BALANCE, getDifficultySettings } from "../data/gameplay-balance.js";
 import { AUDIO_TRACKS, COMBAT_SFX, getAudioSourceCandidates, resolveAudioSource } from "../data/media-sources.js";
 import { BUILD_VERSION, withAssetVersion } from "../data/build-info.js";
@@ -1090,6 +1091,7 @@ function loadEnvironmentSprites() {
 
 function loadMonsterSprites() {
   return {
+    ...loadDedicatedMonsterSprites(),
     zone1Captain: {
       south: {
         idle: loadSprite("assets/monsters/zone1-enforcer-captain/enforcer-captain-south-idle.png"),
@@ -1187,6 +1189,26 @@ function loadMonsterSprites() {
       run: loadSprite("assets/monsters/pixel-crawler/orc-shaman-run.png"),
     },
   };
+}
+
+function loadDedicatedMonsterSprites() {
+  const directions = ["south", "north", "east", "west"];
+  return Object.fromEntries(
+    Object.entries(MONSTER_ART_DEFINITIONS).map(([artKey, definition]) => [
+      artKey,
+      Object.fromEntries(
+        directions.map((direction) => [
+          direction,
+          Object.fromEntries(
+            Object.keys(definition.animations).map((animationState) => [
+              animationState,
+              loadSprite(getMonsterStripSource(artKey, direction, animationState)),
+            ]),
+          ),
+        ]),
+      ),
+    ]),
+  );
 }
 
 function loadZone1DirectionalSprites(prefix, direction = "south") {
@@ -2075,6 +2097,7 @@ function createDebugSnapshot() {
     activeMonsterCount: (currentLevel().monsters ?? []).filter((monster) => isMonsterActive(monster)).length,
     monsters: (currentLevel().monsters ?? []).map((monster) => ({
       id: monster.id,
+      artKey: getMonsterArtKey(monster),
       health: monster.health,
       defeated: monster.defeated,
       bossPhase: monster.bossPhase,
@@ -8009,7 +8032,7 @@ function drawMonster(monster) {
   ctx.fillRect(monster.x - shadowWidth / 2, monster.y + 10, shadowWidth, 4);
 
   const drewSprite = drawMonsterSprite(monster, hitFlash);
-  if (!drewSprite && !artKey.startsWith("zone1")) {
+  if (!drewSprite && !artKey.startsWith("zone1") && !isDedicatedMonsterArtKey(artKey)) {
     const palette = getMonsterPalette(monster.variant, hitFlash);
     const attackProgress = isAttacking ? getTimedProgress(monster.attackStartedAt, monster.attackEndsAt) : 0;
     const attackOffset = getAttackLungeOffset(monster.attackDirection, attackProgress, ATTACK_LUNGE_DISTANCE * 0.8);
@@ -8127,7 +8150,8 @@ function drawMonsterSprite(monster, hitFlash) {
   const isAttacking = state.lastTimestamp < (monster.attackEndsAt ?? 0);
   const isDying = monster.defeated && state.lastTimestamp < (monster.deathEndsAt ?? 0);
   const isHurt = !isDying && state.lastTimestamp < (monster.hurtEndsAt ?? 0);
-  const animationKey = isDying ? "death" : isHurt ? "hurt" : isAttacking ? "attack" : monster.animationState === "run" ? "run" : "idle";
+  const isHeavyAttack = isAttacking && monster.attackVariant === "slam" && config?.animations?.heavyAttack;
+  const animationKey = isDying ? "death" : isHurt ? "hurt" : isHeavyAttack ? "heavyAttack" : isAttacking ? "attack" : monster.animationState === "run" ? "run" : "idle";
   const animation = config?.animations?.[animationKey] ?? config?.animations?.idle;
   const direction = getMonsterSpriteDirection(monster);
   const sprite = config?.directional
@@ -8188,6 +8212,10 @@ function drawMonsterSprite(monster, hitFlash) {
 }
 
 function getMonsterArtKey(monster) {
+  const dedicatedArtKey = MONSTER_ART_KEY_BY_ID[monster.id];
+  if (dedicatedArtKey) {
+    return dedicatedArtKey;
+  }
   if (state.currentLevelId === "village" && monster.isBoss) {
     return "zone1Captain";
   }

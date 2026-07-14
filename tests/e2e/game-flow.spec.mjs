@@ -99,6 +99,75 @@ test("Zone 1 captain exposes its phase-two combat profile", async ({ page }, tes
   await page.screenshot({ path: testInfo.outputPath("zone1-captain-phase-two.png"), fullPage: true });
 });
 
+test("Zone 2 archive preserves the curator's phase-two combat flow", async ({ page }, testInfo) => {
+  await openDebugSession(page, "challenge");
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("archive"));
+  await expect.poll(() => page.evaluate(() => window.__CROSSROADS_DEBUG__.getSnapshot().currentLevelId)).toBe("archive");
+  await expect.poll(() => page.evaluate(() => Object.fromEntries(
+    window.__CROSSROADS_DEBUG__.getSnapshot().monsters.map(({ id, artKey }) => [id, artKey]),
+  ))).toEqual({
+    "archive-raider": "zone2ArchiveSaboteur",
+    "archive-marksman": "zone2CipherMarksman",
+    "archive-chanter": "zone2CorruptedArchivist",
+    "archive-shadow-curator": "zone2ShadowCurator",
+  });
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.setPlayerPosition(520, 286));
+  await page.waitForTimeout(260);
+  await page.screenshot({ path: testInfo.outputPath("zone2-archive-combat-pack.png"), fullPage: true });
+
+  await page.evaluate(() => {
+    const curator = window.__CROSSROADS_DEBUG__.getSnapshot().monsters.find((monster) => monster.id === "archive-shadow-curator");
+    window.__CROSSROADS_DEBUG__.damageMonster("archive-shadow-curator", Math.ceil(curator.health / 2));
+  });
+  await expect.poll(() => page.evaluate(() => window.__CROSSROADS_DEBUG__.getSnapshot().monsters.find((monster) => monster.id === "archive-shadow-curator")?.bossPhase)).toBe(2);
+  await page.waitForTimeout(760);
+  await page.screenshot({ path: testInfo.outputPath("zone2-curator-heavy-attack.png"), fullPage: true });
+});
+
+test("Zone 3 crossroads preserves its phase-aware boss flow", async ({ page }, testInfo) => {
+  await openDebugSession(page, "challenge");
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("crossroads"));
+  await expect.poll(() => page.evaluate(() => window.__CROSSROADS_DEBUG__.getSnapshot().currentLevelId)).toBe("crossroads");
+  await expect.poll(() => page.evaluate(() => Object.fromEntries(
+    window.__CROSSROADS_DEBUG__.getSnapshot().monsters.map(({ id, artKey }) => [id, artKey]),
+  ))).toEqual({
+    "crossroads-raider": "zone3BridgeRaider",
+    "crossroads-marksman": "zone3FactionSkirmisher",
+    "crossroads-chanter": "zone3WhisperPropagandist",
+    "southern-tyrant": "zone3SouthernTyrant",
+  });
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.setPlayerPosition(590, 450));
+  await page.waitForTimeout(300);
+  await page.screenshot({ path: testInfo.outputPath("zone3-crossroads-combat-pack.png"), fullPage: true });
+  await page.evaluate(() => {
+    const tyrant = window.__CROSSROADS_DEBUG__.getSnapshot().monsters.find((monster) => monster.id === "southern-tyrant");
+    window.__CROSSROADS_DEBUG__.damageMonster("southern-tyrant", Math.ceil(tyrant.health / 2));
+  });
+  await expect.poll(() => page.evaluate(() => window.__CROSSROADS_DEBUG__.getSnapshot().monsters.find((monster) => monster.id === "southern-tyrant")?.bossPhase)).toBe(2);
+});
+
+test("Zone 4 spring preserves its phase-aware boss flow", async ({ page }, testInfo) => {
+  await openDebugSession(page, "challenge");
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("spring"));
+  await expect.poll(() => page.evaluate(() => window.__CROSSROADS_DEBUG__.getSnapshot().currentLevelId)).toBe("spring");
+  await expect.poll(() => page.evaluate(() => Object.fromEntries(
+    window.__CROSSROADS_DEBUG__.getSnapshot().monsters.map(({ id, artKey }) => [id, artKey]),
+  ))).toEqual({
+    "spring-raider": "zone4CropSaboteur",
+    "spring-marksman": "zone4BureauMarksman",
+    "spring-chanter": "zone4RationChanter",
+    "spring-bureaucracy-beast": "zone4BureaucracyBeast",
+  });
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.setPlayerPosition(500, 330));
+  await page.waitForTimeout(300);
+  await page.screenshot({ path: testInfo.outputPath("zone4-spring-combat-pack.png"), fullPage: true });
+  await page.evaluate(() => {
+    const beast = window.__CROSSROADS_DEBUG__.getSnapshot().monsters.find((monster) => monster.id === "spring-bureaucracy-beast");
+    window.__CROSSROADS_DEBUG__.damageMonster("spring-bureaucracy-beast", Math.ceil(beast.health / 2));
+  });
+  await expect.poll(() => page.evaluate(() => window.__CROSSROADS_DEBUG__.getSnapshot().monsters.find((monster) => monster.id === "spring-bureaucracy-beast")?.bossPhase)).toBe(2);
+});
+
 test("held movement stops on blur and paused scenes ignore movement", async ({ page }) => {
   await openDebugSession(page);
   const start = await snapshot(page);

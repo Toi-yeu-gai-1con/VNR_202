@@ -19,15 +19,27 @@ export function getAssetGroupForSource(src) {
     return "zone1";
   }
 
+  if (/assets\/monsters\/zone2-/i.test(src)) {
+    return "zone2";
+  }
+
+  if (/assets\/monsters\/zone3-/i.test(src)) {
+    return "zone3";
+  }
+
+  if (/assets\/monsters\/zone4-/i.test(src)) {
+    return "zone4";
+  }
+
   if (/archive-cave|environment\/archive|archive-interior|archive-lens|paper-bundle|fragment-table|compass-pedestal/i.test(src)) {
     return "zone2";
   }
 
-  if (/crossroads-ancient|revolution-square|faction-standard|strategic-hamlet|bureaucracy-wall/i.test(src)) {
+  if (/crossroads-ancient|revolution-square|faction-standard|strategic-hamlet/i.test(src)) {
     return "zone3";
   }
 
-  if (/spring-town|factory-valley|restoration-engine|doi-moi|ration-market/i.test(src)) {
+  if (/spring-town|factory-valley|restoration-engine|doi-moi|ration-market|bureaucracy-wall/i.test(src)) {
     return "zone4";
   }
 

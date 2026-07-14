@@ -1,3 +1,5 @@
+import { MONSTER_ART_DEFINITIONS } from "./monster-art-definitions.js";
+
 export const PLAYER_FOOTPRINT = { width: 8, height: 6, offsetY: 7 };
 export const PLAYER_SPRITE = {
   frameWidth: 96,
@@ -220,6 +222,7 @@ export const HOUSE_INTERIOR_A_SPRITES = {
   doorPanel: { x: 160, y: 192, width: 32, height: 32, shadowWidth: 18, shadowHeight: 5, shadowOffsetY: 28 },
 };
 export const MONSTER_SPRITE_CONFIG = {
+  ...MONSTER_ART_DEFINITIONS,
   zone1Captain: {
     directional: true,
     directionalAnimation: true,

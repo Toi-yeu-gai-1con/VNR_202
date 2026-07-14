@@ -27,7 +27,7 @@ assert.match(game, /hitStopUntil/, "Combat hits use a short simulation freeze fo
 assert.match(game, /combatImpacts\.push/, "Combat hits create a rendered impact effect instead of only changing HP.");
 assert.match(game, /comboFollowUpAt/, "Captain phase two keeps an explicit two-hit combo state.");
 assert.match(game, /assets\/monsters\/zone1-enforcer-captain\/enforcer-captain-south-attack\.png/, "Zone 1 should load its dedicated captain attack strip.");
-assert.match(game, /const animationKey = isDying \? "death" : isHurt \? "hurt" : isAttacking \? "attack"/, "Monster sprite state prioritizes death, hurt, and attack animation over locomotion.");
+assert.match(game, /const animationKey = isDying \? "death" : isHurt \? "hurt" : isHeavyAttack \? "heavyAttack" : isAttacking \? "attack"/, "Monster sprite state prioritizes death, hurt, heavy boss attacks, and regular attacks over locomotion.");
 assert.match(game, /monster\.facingDirection = getDirectionFromVector\(moveX, moveY\)/, "Moving enemies should retain a movement-facing direction.");
 assert.match(game, /const flipX = Boolean\(config\.flipForFacing && direction === "west"\)/, "Zone 1 sprites should mirror when facing west.");
 assert.match(game, /state\.currentLevelId === "village" && monster\.archetype === "ranged"[\s\S]{0,100}"zone1Rifleman"/, "The Zone 1 marksman should select the period-appropriate patrol art.");
