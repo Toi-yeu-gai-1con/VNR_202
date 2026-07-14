@@ -77,6 +77,11 @@ This project uses a small subset of free game assets:
   - Prompted as a rain-swept Vietnamese colonial-era port circa the 1920s, with period-appropriate workers, wooden piers, boats, Le Paria bundles and a fractured time-rift portal.
   - Used only by the hypothetical Khu 1 ending “Con tàu không la bàn”; no third-party character, logo, or stock asset was imported.
 
+- `assets/environment/generated-worlds/zone2-fading-fires-ending.png`
+  - Original project art generated with the built-in image-generation workflow on 2026-07-15.
+  - Prompted as a Vietnamese colonial-era meeting/archive room circa 1930: rain, a weathered round table, three separate oil lamps, dossiers, and a subtle fractured time-rift.
+  - Used only by the hypothetical Khu 2 ending “Ba ngọn lửa lụi tàn”; no third-party character, logo, or stock asset was imported.
+
 ## Original Cục Lưu Trữ Niên Tuyến (CLTNT) time-archive art pack
 
 - Generated for this project with the built-in image generation workflow; no Marvel/TVA artwork, logos, or traced character likenesses were used.

@@ -113,4 +113,22 @@ export const NARRATIVE_CHOICE_DEFINITIONS = Object.freeze({
       ]),
     },
   ]),
+  zone2: Object.freeze([
+    {
+      id: "archive-unity-choice",
+      options: Object.freeze([
+        { id: "listen", branchFlags: { "zone2.heardAllGroups": true }, themeScores: { unity: 1 } },
+        { id: "evidence", branchFlags: { "zone2.usedSharedEvidence": true }, themeScores: { unity: 1 } },
+        { id: "divide", branchFlags: { "zone2.stokedDivision": true }, endingRisks: { zone2: 1 }, corruption: 8 },
+      ]),
+    },
+    {
+      id: "emblem-verdict",
+      options: Object.freeze([
+        { id: "unify", branchFlags: { "zone2.emblemStabilized": true }, themeScores: { unity: 1 } },
+        { id: "repair-division", branchFlags: { "zone2.repairedDivision": true }, endingRisks: { zone2: -1 }, themeScores: { unity: 1 }, corruption: 4 },
+        { id: "confirm-factionalism", branchFlags: { "zone2.badConfirmed": true }, endingRisks: { zone2: 2 }, corruption: 10 },
+      ]),
+    },
+  ]),
 });

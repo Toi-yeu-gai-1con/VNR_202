@@ -1762,6 +1762,10 @@ button {
   opacity: 0;
 }
 
+.end-overlay[data-cinematic="complete"] .end-art-overlay {
+  display: block;
+}
+
 .end-overlay[data-cinematic="complete"] .end-actions {
   opacity: 1;
   transform: translateY(0);

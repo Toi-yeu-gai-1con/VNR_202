@@ -3308,11 +3308,47 @@ function resolveZone1CompassVerdictChoice(choiceId, item) {
   );
 }
 
+function resolveZone2UnityChoice(choiceId, item) {
+  const option = applyNarrativeChoice("zone2", "archive-unity-choice", choiceId);
+  if (!option) return;
+
+  item.used = true;
+  closeDialogueForChoice();
+  updateInteractionPrompt();
+  showStoryToast(
+    choiceId === "divide"
+      ? "Bạn đã để nghi kỵ lan rộng. Đây là nguy cơ có thể sửa trước khi hồ sơ được chốt."
+      : "Bạn đã giữ các nhóm ở trong cùng một cuộc đối thoại."
+  );
+  saveGameProgress();
+}
+
+function resolveZone2EmblemVerdictChoice(choiceId, item) {
+  const option = applyNarrativeChoice("zone2", "emblem-verdict", choiceId);
+  if (!option) return;
+
+  closeDialogueForChoice();
+  item.collected = true;
+  state.quests.zone2RewardClaimed = true;
+  const candidate = resolveEnding({ narrative: state.narrative, inventory: state.inventory, saDoa: state.saDoa });
+  if (candidate.id === "zone2-fading-fires") {
+    triggerNarrativeEnding(candidate, "Bạn đã xác nhận sự chia rẽ sau khi để nghi kỵ lan rộng, khiến các ngọn lửa cùng mục tiêu dần lụi tàn.");
+    return;
+  }
+
+  collectRelic("unified-emblem", getReturnGuidanceForLevel("archive"));
+  showStoryToast(
+    choiceId === "repair-division"
+      ? "Bạn đã sửa lại vết nứt. Huy hiệu Thống nhất ổn định trở lại."
+      : "Huy hiệu Thống nhất đã được xác nhận. Hãy trở về TVA báo cáo với David."
+  );
+}
+
 function resolveDialogueChoice(choiceId) {
   const dialogue = state.activeDialogue;
   const choice = getPendingDialogueChoices().find((entry) => entry.id === choiceId);
   const item = currentLevel().interactables.find((entry) => entry.id === dialogue?.interactionId);
-  const supportedInteraction = ["colonialRecruitment", "tvaBriefing", "startPapers", "compassVerdict"].includes(item?.interactionType);
+  const supportedInteraction = ["colonialRecruitment", "tvaBriefing", "startPapers", "compassVerdict", "splitChoice", "emblemVerdict"].includes(item?.interactionType);
 
   if (!dialogue || !choice || !item || !supportedInteraction) {
     return;
@@ -3330,6 +3366,16 @@ function resolveDialogueChoice(choiceId) {
 
   if (item.interactionType === "colonialRecruitment") {
     resolveZone1RecruiterChoice(choice.id, item);
+    return;
+  }
+
+  if (item.interactionType === "splitChoice") {
+    resolveZone2UnityChoice(choice.id, item);
+    return;
+  }
+
+  if (item.interactionType === "emblemVerdict") {
+    resolveZone2EmblemVerdictChoice(choice.id, item);
     return;
   }
 
@@ -6163,6 +6209,8 @@ function isInteractableAvailable(item) {
       return state.quests.zone2Fragments.size === 3 && !state.quests.zone2TowerActivated;
     case "rewardEmblem":
       return state.quests.zone2TowerActivated && !state.quests.zone2RewardClaimed;
+    case "emblemVerdict":
+      return state.quests.zone2TowerActivated && !state.quests.zone2RewardClaimed;
     case "splitChoice":
       return !item.used && !item.purified;
     case "recruit":
@@ -6259,13 +6307,11 @@ function handleSystemInteraction(item) {
         showStoryToast("Ba nguồn tư liệu cần được kích hoạt tại Tháp lưu trữ trước.");
         return;
       }
-      state.quests.zone2RewardClaimed = true;
-      item.collected = true;
-      collectRelic("unified-emblem", getReturnGuidanceForLevel("archive"));
+      item.interactionType = "emblemVerdict";
+      startDialogue(item);
       return;
     case "splitChoice":
-      item.used = true;
-      adjustSaDoa(28, "Bạn dùng chia rẽ nội bộ để áp đặt quyền lực, trái với tinh thần hợp nhất.");
+      startDialogue(item);
       return;
     case "recruit":
       state.quests.zone3Recruits.add(item.recruitId);

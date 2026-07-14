@@ -433,6 +433,30 @@ test("Zone 1 choices record a recoverable risk and only trigger its bad ending a
   await page.screenshot({ path: testInfo.outputPath("zone1-lost-compass-ending.png"), fullPage: true });
 });
 
+test("Zone 2 division risk needs a separate emblem confirmation before its ending", async ({ page }, testInfo) => {
+  await openDebugSession(page);
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("archive"));
+  await expect.poll(() => snapshot(page).then((state) => state.currentLevelId)).toBe("archive");
+  await expect.poll(() => snapshot(page).then((state) => state.mode)).toBe("playing");
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("split-blade"));
+  await expect(page.locator("#dialogue-choice-list")).toBeVisible();
+  await page.locator('[data-dialogue-choice="divide"]').click();
+  await expect.poll(() => snapshot(page).then((state) => state.narrative.endingRisks.zone2)).toBe(1);
+  await expect(page.locator("#end-overlay")).toBeHidden();
+
+  for (const delegateId of ["delegate-east", "delegate-west", "delegate-north"]) {
+    await page.evaluate((interactableId) => window.__CROSSROADS_DEBUG__.interactById(interactableId), delegateId);
+  }
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("archive-lens-console"));
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("unity-round-table"));
+  await page.locator('[data-dialogue-choice="confirm-factionalism"]').click();
+  await expect(page.locator("#end-overlay")).toBeVisible();
+  await expect.poll(() => snapshot(page).then((state) => state.endingId)).toBe("zone2-fading-fires");
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.completeEndingCinematic());
+  await expect(page.locator("#end-overlay")).toHaveAttribute("data-cinematic", "complete");
+  await page.screenshot({ path: testInfo.outputPath("zone2-fading-fires-ending.png"), fullPage: true });
+});
+
 for (const endingId of ["good", "bad"]) {
   test(`${endingId} ending renders from its explicit debug route`, async ({ page }, testInfo) => {
     await page.goto(`/?debugTools=1&debugEnding=${endingId}`);

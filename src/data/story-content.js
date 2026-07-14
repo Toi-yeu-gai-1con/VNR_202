@@ -112,6 +112,28 @@ export const INTERACTION_DIALOGUES = {
       { id: "confirm-personal-gain", label: "Giữ lợi ích riêng dù con đường bị lệch", tone: "danger" },
     ],
   },
+  "split-blade": {
+    speaker: "Vết nứt trong kho lưu trữ",
+    lines: [
+      "Những khác biệt giữa các tổ chức đang bị đẩy thành nghi kỵ. Cậu sẽ dùng chúng để chia rẽ hay tìm một nền tảng chung?",
+    ],
+    choices: [
+      { id: "listen", label: "Lắng nghe mục tiêu chung của cả ba nhóm" },
+      { id: "evidence", label: "Đối chiếu tài liệu và giữ kênh liên lạc" },
+      { id: "divide", label: "Kích động nghi kỵ để giành phần hơn", tone: "danger" },
+    ],
+  },
+  "unity-round-table": {
+    speaker: "Huy hiệu Thống nhất",
+    lines: [
+      "Ba nguồn tư liệu chỉ phát sáng khi cùng hướng về một tổ chức thống nhất. Cậu sẽ chốt hồ sơ theo con đường nào?",
+    ],
+    choices: [
+      { id: "unify", label: "Xác nhận nền tảng chung và thống nhất tổ chức" },
+      { id: "repair-division", label: "Sửa lại sự chia rẽ bằng chứng cứ chung" },
+      { id: "confirm-factionalism", label: "Giữ chia rẽ để đổi lấy quyền lực riêng", tone: "danger" },
+    ],
+  },
   "guiding-compass": {
     speaker: "Chiếc la bàn",
     lines: [
@@ -391,6 +413,13 @@ export const ENDING_DEFINITIONS = {
     artSrc: "assets/environment/generated-worlds/zone1-lost-compass-ending.png",
     artAlt: "Nhánh giả định về phong trào bị mất phương hướng, với người lao động tản mác trước một cổng thời gian tối.",
   },
+  "zone2-fading-fires": {
+    title: "NHÁNH GIẢ ĐỊNH: BA NGỌN LỬA LỤI TÀN",
+    copy:
+      "Khi nghi kỵ được nuôi lớn thay vì được hóa giải, những tổ chức cùng hướng về độc lập không tìm được tiếng nói chung. Đây là nhánh giả định: khát vọng giải phóng vẫn còn, nhưng sức mạnh liên kết bị phân tán, khiến con đường thành lập một tổ chức thống nhất bị chậm lại.",
+    artSrc: "assets/environment/generated-worlds/zone2-fading-fires-ending.png",
+    artAlt: "Nhánh giả định về một cuộc hội họp tan vỡ trong đêm mưa, với ba ngọn đèn dầu tách rời trên bàn tròn.",
+  },
 };
 
 export const ENDING_OVERLAY_SCENES = {
@@ -597,6 +626,19 @@ export const ENDING_OVERLAY_SCENES = {
       { x: 0.58, y: 0.58, size: 11, speed: 0.0016, drift: 4, alpha: 0.12 },
     ],
   },
+  "zone2-fading-fires": {
+    figures: [
+      { kind: "npc", x: 0.2, y: 0.81, spriteKey: "npc01", direction: "left", scale: 1.1, animation: "walk", bobAmplitude: 1.45, swayAmplitude: 2.1, swaySpeed: 0.0028, frameOffset: 0.14, opacity: 0.86 },
+      { kind: "npc", x: 0.35, y: 0.78, spriteKey: "npc04", direction: "up", scale: 1.14, animation: "walk", bobAmplitude: 1.25, swayAmplitude: 1.7, swaySpeed: 0.0025, frameOffset: 0.44, opacity: 0.88 },
+      { kind: "player", x: 0.5, y: 0.76, direction: "up", scale: 1.2, bobAmplitude: 0.74, swayAmplitude: 0.46, swaySpeed: 0.0013, frameOffset: 0.55, opacity: 0.78 },
+      { kind: "npc", x: 0.66, y: 0.79, spriteKey: "npc03", direction: "right", scale: 1.12, animation: "walk", bobAmplitude: 1.4, swayAmplitude: 2, swaySpeed: 0.0028, frameOffset: 0.76, opacity: 0.86 },
+    ],
+    motes: [
+      { x: 0.29, y: 0.67, size: 7, speed: 0.0011, drift: 4, alpha: 0.1 },
+      { x: 0.51, y: 0.55, size: 11, speed: 0.0014, drift: 5, alpha: 0.13 },
+      { x: 0.72, y: 0.63, size: 8, speed: 0.0013, drift: 5, alpha: 0.11 },
+    ],
+  },
 };
 
 export const ENDING_CINEMATIC_DEFINITIONS = {
@@ -626,6 +668,15 @@ export const ENDING_CINEMATIC_DEFINITIONS = {
       { at: 0, x: 0.28, y: 0.72, zoom: 2.4 },
       { at: 0.32, x: 0.68, y: 0.3, zoom: 2.22 },
       { at: 0.66, x: 0.46, y: 0.56, zoom: 1.7 },
+      { at: 1, x: 0.5, y: 0.5, zoom: 1 },
+    ],
+  },
+  "zone2-fading-fires": {
+    duration: 9000,
+    keyframes: [
+      { at: 0, x: 0.52, y: 0.63, zoom: 2.34 },
+      { at: 0.3, x: 0.3, y: 0.42, zoom: 2.12 },
+      { at: 0.66, x: 0.7, y: 0.34, zoom: 1.74 },
       { at: 1, x: 0.5, y: 0.5, zoom: 1 },
     ],
   },

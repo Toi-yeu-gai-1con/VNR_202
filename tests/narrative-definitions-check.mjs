@@ -36,4 +36,11 @@ assert.equal(
   "David's Zone 1 debrief has a specific reaction for a repaired compromise.",
 );
 
+const zone2Verdict = NARRATIVE_CHOICE_DEFINITIONS.zone2.find((choice) => choice.id === "emblem-verdict");
+assert.equal(
+  zone2Verdict.options.some((option) => option.branchFlags?.["zone2.badConfirmed"]),
+  true,
+  "Zone 2 bad ending also requires an explicit final confirmation.",
+);
+
 console.log("PASS: chronology, choice consequences, ending catalog, and source links are data-owned.");
