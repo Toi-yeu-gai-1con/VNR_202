@@ -14,14 +14,14 @@ async function openDebugSession(page) {
 test("player action strips render the requested attack, dash, heal, hurt, and death states", async ({ page }, testInfo) => {
   await openDebugSession(page);
 
-  const actions = ["attack1", "dash", "heal", "hurt", "death"];
+  const actions = ["attack1", "parry", "dash", "heal", "hurt", "death"];
   for (const action of actions) {
     await page.evaluate((animation) => window.__CROSSROADS_DEBUG__.playPlayerAnimation(animation), action);
     await expect.poll(() => page.evaluate(() => window.__CROSSROADS_DEBUG__.getSnapshot().player.animation)).toBe(action);
     await page.screenshot({ path: testInfo.outputPath(`player-${action}.png`), fullPage: true });
   }
 
-  await page.waitForTimeout(1250);
+  await page.waitForTimeout(2100);
   await expect.poll(() => page.evaluate(() => window.__CROSSROADS_DEBUG__.getSnapshot().player.animation)).toBe("idle");
 });
 
@@ -33,10 +33,20 @@ test("keyboard combat verbs select the directional action strips", async ({ page
   await expect.poll(() => page.evaluate(() => window.__CROSSROADS_DEBUG__.getSnapshot().player.animation)).toBe("attack1");
 
   await page.waitForTimeout(450);
+  await page.keyboard.down("j");
+  await page.waitForTimeout(400);
+  await page.keyboard.up("j");
+  await expect.poll(() => page.evaluate(() => window.__CROSSROADS_DEBUG__.getSnapshot().player.animation)).toBe("attack2");
+
+  await page.waitForTimeout(450);
   await page.evaluate(() => window.__CROSSROADS_DEBUG__.strike());
   await expect.poll(() => page.evaluate(() => window.__CROSSROADS_DEBUG__.getSnapshot().player.animation)).toBe("attack2");
 
   await page.waitForTimeout(450);
   await page.keyboard.press("l");
   await expect.poll(() => page.evaluate(() => window.__CROSSROADS_DEBUG__.getSnapshot().player.animation)).toBe("dash");
+
+  await page.waitForTimeout(450);
+  await page.keyboard.press("k");
+  await expect.poll(() => page.evaluate(() => window.__CROSSROADS_DEBUG__.getSnapshot().player.animation)).toBe("parry");
 });

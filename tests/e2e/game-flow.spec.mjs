@@ -89,6 +89,21 @@ test("player combat emits audible swing and incoming-hit cues", async ({ page },
   await page.screenshot({ path: testInfo.outputPath("combat-audio-cues.png"), fullPage: true });
 });
 
+test("parry reflects a live projectile back into its ranged attacker", async ({ page }, testInfo) => {
+  await openDebugSession(page, "challenge");
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("archive"));
+  await expect.poll(() => page.evaluate(() => window.__CROSSROADS_DEBUG__.getSnapshot().currentLevelId)).toBe("archive");
+  await expect.poll(() => page.evaluate(() => window.__CROSSROADS_DEBUG__.getSnapshot().mode)).toBe("playing");
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.setPlayerPosition(650, 352));
+  const initialHealth = await page.evaluate(() => window.__CROSSROADS_DEBUG__.getSnapshot().monsters.find((monster) => monster.id === "archive-marksman")?.health);
+
+  await expect.poll(() => page.evaluate(() => window.__CROSSROADS_DEBUG__.getSnapshot().combat.projectileCount), { timeout: 6000 }).toBeGreaterThan(0);
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.parry());
+  await expect.poll(() => page.evaluate(() => window.__CROSSROADS_DEBUG__.getSnapshot().combat.parryEndsAt)).toBe(0);
+  await page.screenshot({ path: testInfo.outputPath("projectile-parry-reflect.png"), fullPage: true });
+  await expect.poll(() => page.evaluate(() => window.__CROSSROADS_DEBUG__.getSnapshot().monsters.find((monster) => monster.id === "archive-marksman")?.health)).toBeLessThan(initialHealth);
+});
+
 test("Zone 1 captain exposes its phase-two combat profile", async ({ page }, testInfo) => {
   await openDebugSession(page);
   await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("village"));

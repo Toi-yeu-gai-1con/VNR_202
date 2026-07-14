@@ -155,6 +155,7 @@ const INTERACTION_RADIUS = GAMEPLAY_BALANCE.player.interactionRadius;
 const STORY_UNLOCK_TOAST_MS = 2800;
 const RELIC_BOOK_OPEN_DELAY_MS = 900;
 const PLAYER_MAX_HEALTH = GAMEPLAY_BALANCE.player.maxHealth;
+const DEATH_RESPAWN_DELAY_MS = GAMEPLAY_BALANCE.player.deathRespawnDelayMs;
 const SA_DOA_MAX = GAMEPLAY_BALANCE.corruption.max;
 const SA_DOA_BAD_ENDING = GAMEPLAY_BALANCE.corruption.badEndingThreshold;
 const CORRUPTION_GLITCH_THRESHOLD = GAMEPLAY_BALANCE.corruption.glitchThreshold;
@@ -1042,6 +1043,7 @@ function loadPlayerSprites() {
     idle: loadDirectionalSprites("idle"),
     attack1: loadDirectionalSprites("attack1"),
     attack2: loadDirectionalSprites("attack2"),
+    parry: loadDirectionalSprites("parry"),
     dash: loadDirectionalSprites("dash"),
     heal: loadDirectionalSprites("heal"),
     hurt: loadDirectionalSprites("hurt"),
@@ -1325,6 +1327,13 @@ function loadUiSounds() {
   return {
     bookPageFlip: loadSound("assets/audio/book-page-flip.mp3", 0.42),
     pixelClick: loadSound("assets/audio/ui-pixel-click.mp3", 0.34),
+    attack1: loadSound("assets/audio/sfx/player-attack1.mp3", 0.34),
+    attack2: loadSound("assets/audio/sfx/player-attack2.mp3", 0.32),
+    parry: loadSound("assets/audio/sfx/player-parry.mp3", 0.38),
+    dash: loadSound("assets/audio/sfx/player-dash.wav", 0.22),
+    heal: loadSound("assets/audio/sfx/player-heal.wav", 0.24),
+    hurt: loadSound("assets/audio/sfx/player-hurt.wav", 0.2),
+    death: loadSound("assets/audio/sfx/player-death.wav", 0.28),
   };
 }
 
@@ -2000,13 +2009,15 @@ function getActivePlayerAnimationName() {
 
 function updatePlayerAnimation() {
   const active = state.activePlayerAnimation;
-  if (!active || state.lastTimestamp < active.endsAt) {
-    return;
+  if (active && state.lastTimestamp >= active.endsAt) {
+    const completedName = active.name;
+    state.activePlayerAnimation = null;
+    if (completedName === "death" && state.pendingRespawn) {
+      state.pendingRespawn.respawnAt ??= state.lastTimestamp + DEATH_RESPAWN_DELAY_MS;
+    }
   }
 
-  const completedName = active.name;
-  state.activePlayerAnimation = null;
-  if (completedName === "death" && state.pendingRespawn) {
+  if (!state.activePlayerAnimation && state.pendingRespawn?.respawnAt && state.lastTimestamp >= state.pendingRespawn.respawnAt) {
     completePlayerRespawn();
   }
 }
@@ -4436,6 +4447,7 @@ function useStrikeSkill(isCharged = false) {
   const strikeDamage = isCharged ? 4 : state.comboStep === 3 ? 2 : 1;
   const strikeAnimation = isCharged ? "attack2" : state.comboStep % 2 === 0 ? "attack2" : "attack1";
   startPlayerAnimation(strikeAnimation, { direction: player.direction });
+  playUiSound(isCharged || strikeAnimation === "attack2" ? uiSounds.attack2 : uiSounds.attack1);
   state.activeSkillEffect = {
     type: isCharged ? "chargedStrike" : "strike",
     direction: player.direction,
@@ -4499,6 +4511,7 @@ function useDodge() {
   resolveLevelCollisions("y", player.y - original.y);
   state.activeSkillEffect = { type: "dodge", x: original.x, y: original.y, direction: player.direction, startedAt: state.lastTimestamp, endsAt: state.dodgeEndsAt };
   startPlayerAnimation("dash", { direction: player.direction });
+  playUiSound(uiSounds.dash);
 }
 
 function useParrySkill() {
@@ -4509,6 +4522,7 @@ function useParrySkill() {
   state.skillCooldowns.parryReadyAt = state.lastTimestamp + PARRY_COOLDOWN_MS;
   state.skillReadySoundArmed.parry = true;
   state.parryEndsAt = state.lastTimestamp + PARRY_WINDOW_MS;
+  startPlayerAnimation("parry", { direction: player.direction });
   state.activeSkillEffect = {
     type: "parry",
     x: player.x,
@@ -4518,7 +4532,7 @@ function useParrySkill() {
   };
 }
 
-function resolveParry(sourceName, sourceMonster = null) {
+function resolveParry(sourceName, sourceMonster = null, options = {}) {
   if (state.lastTimestamp >= state.parryEndsAt) {
     return false;
   }
@@ -4533,9 +4547,9 @@ function resolveParry(sourceName, sourceMonster = null) {
     startedAt: state.lastTimestamp,
     endsAt: state.lastTimestamp + 260,
   };
-  playCombatSfx("parry", { volume: 0.34, playbackRate: 1.04 });
+  playUiSound(uiSounds.parry);
 
-  if (sourceMonster && !sourceMonster.defeated) {
+  if (sourceMonster && !sourceMonster.defeated && !options.projectile) {
     damageMonster(sourceMonster, sourceMonster.isBoss ? 2 : 3, { knockback: true, stun: true });
   }
 
@@ -4755,11 +4769,50 @@ function updateEnemyProjectiles(deltaSeconds) {
       continue;
     }
 
+    if (projectile.reflected) {
+      const target = projectile.sourceMonster;
+      if (!target || target.defeated) {
+        state.enemyProjectiles.splice(index, 1);
+        continue;
+      }
+
+      if (Math.hypot(target.x - projectile.x, target.y - projectile.y) < 18) {
+        damageMonster(target, projectile.damage, { knockback: true, stun: true });
+        state.enemyProjectiles.splice(index, 1);
+      }
+      continue;
+    }
+
     if (Math.hypot(player.x - projectile.x, player.y - projectile.y) < 14) {
+      if (resolveParry(projectile.sourceName, projectile.sourceMonster, { projectile })) {
+        reflectEnemyProjectile(projectile);
+        continue;
+      }
+
       damagePlayer(projectile.damage, projectile.sourceName, projectile.sourceMonster);
       state.enemyProjectiles.splice(index, 1);
     }
   }
+}
+
+function reflectEnemyProjectile(projectile) {
+  const target = projectile.sourceMonster;
+  if (!target || target.defeated) {
+    projectile.expiresAt = state.lastTimestamp;
+    return;
+  }
+
+  const dx = target.x - projectile.x;
+  const dy = target.y - projectile.y;
+  const length = Math.max(1, Math.hypot(dx, dy));
+  const reflectedSpeed = PROJECTILE_SPEED * 1.2;
+  projectile.velocityX = (dx / length) * reflectedSpeed;
+  projectile.velocityY = (dy / length) * reflectedSpeed;
+  projectile.reflected = true;
+  projectile.expiresAt = state.lastTimestamp + 1200;
+  projectile.damage = Math.max(projectile.damage, Math.round(projectile.damage * 1.5));
+  state.invulnerableUntil = Math.max(state.invulnerableUntil, state.lastTimestamp + 140);
+  showStoryToast(`Phản đòn ${projectile.sourceName}!`);
 }
 
 function isWorldPointInBounds(x, y) {
@@ -4794,6 +4847,7 @@ function updateWorldDrops() {
         state.health = Math.min(PLAYER_MAX_HEALTH, state.health + GAMEPLAY_BALANCE.drops.healthAmount);
         if (state.health > previousHealth) {
           startPlayerAnimation("heal", { direction: player.direction });
+          playUiSound(uiSounds.heal);
         }
       } else {
         state.stamina = Math.min(STAMINA_MAX, state.stamina + GAMEPLAY_BALANCE.drops.staminaAmount);
@@ -4900,6 +4954,7 @@ function damagePlayer(amount, sourceName = "bóng tối", sourceMonster = null) 
 
   if (state.health > 0) {
     startPlayerAnimation("hurt", { direction: player.direction });
+    playUiSound(uiSounds.hurt);
     showStoryToast(`${sourceName} gây ${amount} sát thương.`);
     return Promise.resolve();
   }
@@ -4909,10 +4964,15 @@ function damagePlayer(amount, sourceName = "bóng tối", sourceMonster = null) 
   const respawnLevelId = state.respawnLevelId ?? state.currentLevelId;
   const respawnLevel = levels[respawnLevelId] ?? currentLevel();
   const respawnSpawn = cloneSpawnPoint(state.respawnSpawn ?? respawnLevel.spawn);
-  state.pendingRespawn = { levelId: respawnLevelId, spawn: respawnSpawn };
-  state.invulnerableUntil = state.lastTimestamp + getPlayerAnimationDuration("death") + RESPAWN_INVULNERABILITY_MS;
+  state.pendingRespawn = {
+    levelId: respawnLevelId,
+    spawn: respawnSpawn,
+    respawnAt: state.lastTimestamp + getPlayerAnimationDuration("death") + DEATH_RESPAWN_DELAY_MS,
+  };
+  state.invulnerableUntil = state.pendingRespawn.respawnAt + RESPAWN_INVULNERABILITY_MS;
   clearPressedKeys();
   startPlayerAnimation("death", { direction: player.direction });
+  playUiSound(uiSounds.death);
 
   adjustSaDoa(
     DEATH_SA_DOA_PENALTY,
@@ -8481,9 +8541,9 @@ function drawBreakableSprite(breakable, index) {
 
 function drawEnemyProjectiles() {
   for (const projectile of state.enemyProjectiles) {
-    ctx.fillStyle = "#d9e9ff";
+    ctx.fillStyle = projectile.reflected ? "#ffe39a" : "#d9e9ff";
     ctx.fillRect(projectile.x - 3, projectile.y - 3, 6, 6);
-    ctx.fillStyle = "#6b85d5";
+    ctx.fillStyle = projectile.reflected ? "#e58d42" : "#6b85d5";
     ctx.fillRect(projectile.x - 1, projectile.y - 5, 2, 10);
   }
 }
@@ -9670,28 +9730,7 @@ function drawSwordSlashSprite(progress, scale, alpha) {
   return true;
 }
 
-function drawSkillEffect() {
-  const effect = state.activeSkillEffect;
-  if (!effect || (effect.type !== "parry" && effect.type !== "parryHit")) {
-    return;
-  }
-
-  ctx.save();
-  applyCameraTransform();
-
-  const progress = getTimedProgress(effect.startedAt, effect.endsAt);
-  const success = effect.type === "parryHit";
-  const radius = success ? 18 + progress * 32 : 18 + Math.sin(state.lastTimestamp * 0.05) * 3;
-  ctx.beginPath();
-  ctx.arc(effect.x, effect.y, radius, 0, Math.PI * 2);
-  ctx.fillStyle = success ? "rgba(255, 211, 102, 0.24)" : "rgba(146, 208, 255, 0.18)";
-  ctx.fill();
-  ctx.strokeStyle = success ? "rgba(255, 240, 179, 0.92)" : "rgba(194, 235, 255, 0.9)";
-  ctx.lineWidth = 3;
-  ctx.stroke();
-
-  ctx.restore();
-}
+function drawSkillEffect() {}
 
 function drawAtmosphere() {
   const decorations = currentLevel().decorations ?? {};
