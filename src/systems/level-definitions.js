@@ -83,7 +83,7 @@ function createHubLevel() {
       {
         id: "tva-returnee-zone1", name: "Người công nhân bến cảng", x: 334, y: 392, width: 20, height: 38,
         kind: "npc", spriteKey: "npc01", direction: "right", animation: "idle", hubReturnee: true,
-        prompt: "hỏi thăm người công nhân", visibleWhen: () => Boolean(getState().quests.zone1RewardClaimed),
+        prompt: "hỏi thăm người công nhân", visibleWhen: () => Boolean(getState().quests.zone1RewardClaimed) && !getState().narrative?.branchFlags?.["zone1.lastIssueSurrendered"],
         dialogue: "Tờ báo đã tới tay chúng tôi. Điều giữ được con đường chung là không để ai bị bỏ lại phía sau.",
       },
       {

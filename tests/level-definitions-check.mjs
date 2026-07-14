@@ -36,6 +36,17 @@ const hubReturnees = levels.hub.interactables.filter((item) => item.hubReturnee)
 assert.equal(hubReturnees.length, 5, "Five earned TVA returnees cover the four zones with both Zone 3 chapters represented.");
 assert.ok(hubReturnees.every((item) => item.kind === "npc" && item.spriteKey && item.animation === "idle"), "Returnees use real animated NPC sprite actors.");
 assert.equal(hubReturnees.find((item) => item.id === "tva-returnee-zone1")?.visibleWhen(), true, "Zone 1's returnee appears only after the earned reward flag is present.");
+const failedLevels = createLevelDefinitions({
+  world: { width: 960, height: 640 },
+  viewport: { width: 640, height: 480 },
+  portMazeDoor: { x: 122, y: 154, width: 48, height: 48, portalX: 146, portalY: 178, spawnX: 178, spawnY: 238 },
+  getState: () => ({ quests: { zone1RewardClaimed: true }, narrative: { branchFlags: { "zone1.lastIssueSurrendered": true } } }),
+});
+assert.equal(
+  failedLevels.hub.interactables.find((item) => item.id === "tva-returnee-zone1")?.visibleWhen(),
+  false,
+  "A failed Zone 1 branch never presents the dock worker as if they were safely returned."
+);
 assert.ok(
   Math.hypot(tvaClerk.x - tvaPortal.x, tvaClerk.y - tvaPortal.y) >= 96,
   "The TVA employee stands clear of the dispatch portal."
