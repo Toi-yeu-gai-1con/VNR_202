@@ -1,6 +1,7 @@
 export function createAudioSystem({
   state,
   uiSounds,
+  sfxSounds = {},
   ambienceSounds,
   musicSounds,
   getZoneProfile,
@@ -10,6 +11,7 @@ export function createAudioSystem({
 }) {
   let audioRetryQueued = false;
   let suspended = false;
+  const activeSfx = new Set();
 
   function queueAudioRetry() {
     if (audioRetryQueued || state.soundMuted) {
@@ -40,6 +42,31 @@ export function createAudioSystem({
       sound.currentTime = 0;
       sound.play()?.catch(queueAudioRetry);
     } catch {
+      queueAudioRetry();
+    }
+  }
+
+  function playSfx(key, options = {}) {
+    const source = sfxSounds[key];
+    if (!source || state.soundMuted || suspended) {
+      return;
+    }
+
+    const sound = typeof source.cloneNode === "function" ? source.cloneNode(true) : source;
+    sound.volume = Math.max(0, Math.min(1, options.volume ?? source.volume ?? 1));
+    sound.playbackRate = options.playbackRate ?? 1;
+    sound.muted = state.soundMuted;
+    activeSfx.add(sound);
+
+    const release = () => activeSfx.delete(sound);
+    if (typeof sound.addEventListener === "function") {
+      sound.addEventListener("ended", release, { once: true });
+    }
+    try {
+      sound.currentTime = 0;
+      sound.play()?.catch(queueAudioRetry);
+    } catch {
+      release();
       queueAudioRetry();
     }
   }
@@ -165,7 +192,7 @@ export function createAudioSystem({
 
   function setMuted(muted) {
     state.soundMuted = Boolean(muted);
-    for (const sound of [...Object.values(uiSounds), ...Object.values(ambienceSounds), ...Object.values(musicSounds)]) {
+    for (const sound of [...Object.values(uiSounds), ...Object.values(sfxSounds), ...Object.values(ambienceSounds), ...Object.values(musicSounds), ...activeSfx]) {
       sound.muted = state.soundMuted;
     }
     if (!state.soundMuted) {
@@ -180,6 +207,9 @@ export function createAudioSystem({
 
     suspended = true;
     for (const sound of [...Object.values(ambienceSounds), ...Object.values(musicSounds)]) {
+      pauseLoopingSound(sound);
+    }
+    for (const sound of activeSfx) {
       pauseLoopingSound(sound);
     }
   }
@@ -197,6 +227,7 @@ export function createAudioSystem({
 
   return {
     playUiSound,
+    playSfx,
     withUiClickSound,
     playLoopingSound,
     pauseLoopingSound,

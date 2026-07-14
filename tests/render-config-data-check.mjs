@@ -17,6 +17,7 @@ assert.equal(MONSTER_SPRITE_CONFIG.zone1Raider.animations.run.frameCount, 4, "Zo
 assert.equal(MONSTER_SPRITE_CONFIG.zone1Signalman.animations.run.frameCount, 4, "Zone 1 signalman keeps a full four-frame walk cycle.");
 assert.equal(MONSTER_SPRITE_CONFIG.zone1Captain.animations.run.frameCount, 4, "Zone 1 captain keeps a full four-frame walk cycle.");
 assert.equal(MONSTER_SPRITE_CONFIG.zone1Captain.animations.attack.frameCount, 4, "Zone 1 captain has a four-frame attack sequence.");
+assert.equal(MONSTER_SPRITE_CONFIG.zone1Captain.directionalAnimation, true, "Zone 1 captain uses real directional animation strips.");
 assert.equal(MONSTER_SPRITE_CONFIG.zone1Raider.animations.attack.frameDuration, 65, "Zone 1 raider attack timing stays snappy.");
 assert.equal(MONSTER_SPRITE_CONFIG.zone1Rifleman.animations.attack.frameCount, 4, "Zone 1 rifleman has a four-frame firing sequence.");
 assert.equal(MONSTER_SPRITE_CONFIG.zone1Signalman.animations.attack.frameCount, 4, "Zone 1 signalman has a four-frame signal attack sequence.");

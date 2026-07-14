@@ -14,7 +14,7 @@ import { createCoordinateSystem } from "../rendering/coordinate-system.js";
 import { LEVEL_ASSET_GROUPS, getAssetGroupForSource, isCriticalAsset } from "../data/asset-manifest.js";
 import { BOSS_DEFINITIONS, COMBAT_DENSITY, COMBAT_ROSTER } from "../data/combat-config.js";
 import { GAMEPLAY_BALANCE, getDifficultySettings } from "../data/gameplay-balance.js";
-import { AUDIO_TRACKS, getAudioSourceCandidates, resolveAudioSource } from "../data/media-sources.js";
+import { AUDIO_TRACKS, COMBAT_SFX, getAudioSourceCandidates, resolveAudioSource } from "../data/media-sources.js";
 import { BUILD_VERSION, withAssetVersion } from "../data/build-info.js";
 import { PLAYER_FOOTPRINT, PLAYER_SPRITE, NPC_SPRITE, ENVIRONMENT_SPRITES, TILECRAFT_TERRAIN, PIXEL_CRAWLER_TERRAIN, VILLAGE_SKYLINE_Y, VILLAGE_PROP_SPRITES, PIXEL_CRAWLER_BUILDING_SPRITES, HUB_PORTAL_SPRITE, SWORD_SLASH_SPRITE, PIXEL_CRAWLER_TREE_SPRITE, KENNEY_ROGUELIKE_TILE, KENNEY_ROGUELIKE_SPRITES, PIXEL_CRAWLER_VEGETATION_SPRITES, PIXEL_CRAWLER_TOOL_CLUSTER_SPRITES, CAINOS_PROP_SPRITES, LIMEZU_INTERIOR_SPRITES, HOUSE_INTERIOR_A_SPRITES, MONSTER_SPRITE_CONFIG } from "../data/render-config.js";
 
@@ -222,6 +222,7 @@ const environmentSprites = loadEnvironmentSprites();
 const effectSprites = loadEffectSprites();
 const monsterSprites = loadMonsterSprites();
 const uiSounds = loadUiSounds();
+const combatSfx = loadCombatSfx();
 const ambienceSounds = loadAmbienceSounds();
 const musicSounds = loadMusicSounds();
 let storyToastTimeoutId = 0;
@@ -345,6 +346,7 @@ const saveSystem = createSaveSystem({
 const audioSystem = createAudioSystem({
   state,
   uiSounds,
+  sfxSounds: combatSfx,
   ambienceSounds,
   musicSounds,
   getZoneProfile,
@@ -494,7 +496,11 @@ function ensureBosses() {
     level.monsters ??= [];
     const existingBoss = level.monsters.find((monster) => monster.id === definition.id);
     if (existingBoss) {
-      Object.assign(existingBoss, definition, { isBoss: true, maxHealth: Math.max(existingBoss.maxHealth, 12), damage: Math.max(existingBoss.damage, 2) });
+      Object.assign(existingBoss, definition, {
+        isBoss: true,
+        maxHealth: Math.max(existingBoss.maxHealth, definition.maxHealth ?? 12),
+        damage: Math.max(existingBoss.damage, definition.damage ?? 2),
+      });
       continue;
     }
 
@@ -502,8 +508,8 @@ function ensureBosses() {
       ...definition,
       width: 32,
       height: 32,
-      maxHealth: 12,
-      damage: 2,
+      maxHealth: definition.maxHealth ?? 12,
+      damage: definition.damage ?? 2,
       aggroRadius: 150,
       patrolRadius: 22,
       isBoss: true,
@@ -1083,9 +1089,26 @@ function loadEnvironmentSprites() {
 function loadMonsterSprites() {
   return {
     zone1Captain: {
-      idle: loadSprite("assets/monsters/zone1-enforcer-captain/enforcer-captain-walk.png"),
-      run: loadSprite("assets/monsters/zone1-enforcer-captain/enforcer-captain-walk.png"),
-      attack: loadSprite("assets/monsters/zone1-enforcer-captain/enforcer-captain-attack.png"),
+      south: {
+        idle: loadSprite("assets/monsters/zone1-enforcer-captain/enforcer-captain-south-idle.png"),
+        run: loadSprite("assets/monsters/zone1-enforcer-captain/enforcer-captain-south-walk.png"),
+        attack: loadSprite("assets/monsters/zone1-enforcer-captain/enforcer-captain-south-attack.png"),
+      },
+      north: {
+        idle: loadSprite("assets/monsters/zone1-enforcer-captain/enforcer-captain-north-idle.png"),
+        run: loadSprite("assets/monsters/zone1-enforcer-captain/enforcer-captain-north-walk.png"),
+        attack: loadSprite("assets/monsters/zone1-enforcer-captain/enforcer-captain-north-attack.png"),
+      },
+      east: {
+        idle: loadSprite("assets/monsters/zone1-enforcer-captain/enforcer-captain-east-idle.png"),
+        run: loadSprite("assets/monsters/zone1-enforcer-captain/enforcer-captain-east-walk.png"),
+        attack: loadSprite("assets/monsters/zone1-enforcer-captain/enforcer-captain-east-attack.png"),
+      },
+      west: {
+        idle: loadSprite("assets/monsters/zone1-enforcer-captain/enforcer-captain-east-idle.png"),
+        run: loadSprite("assets/monsters/zone1-enforcer-captain/enforcer-captain-east-walk.png"),
+        attack: loadSprite("assets/monsters/zone1-enforcer-captain/enforcer-captain-east-attack.png"),
+      },
     },
     zone1Raider: {
       idle: loadSprite("assets/monsters/zone1-night-raider/night-raider-walk.png"),
@@ -1179,6 +1202,19 @@ function loadUiSounds() {
   };
 }
 
+function loadCombatSfx() {
+  return {
+    batonHit: loadSound(COMBAT_SFX.batonHit, 0.36),
+    rifleShot: loadSound(COMBAT_SFX.rifleShot, 0.34),
+    lanternPulse: loadSound(COMBAT_SFX.lanternPulse, 0.26),
+    captainCommand: loadSound(COMBAT_SFX.captainCommand, 0.32),
+    captainSlam: loadSound(COMBAT_SFX.captainSlam, 0.38),
+    hurt: loadSound(COMBAT_SFX.hurt, 0.25),
+    death: loadSound(COMBAT_SFX.death, 0.3),
+    parry: loadSound(COMBAT_SFX.parry, 0.34),
+  };
+}
+
 function loadAmbienceSounds() {
   return {
     rain: loadSound(AUDIO_TRACKS.rain, 0.18, { loop: true }),
@@ -1256,6 +1292,10 @@ function loadSound(src, volume = 1, options = {}) {
 
 function playUiSound(sound) {
   audioSystem.playUiSound(sound);
+}
+
+function playCombatSfx(key, options) {
+  audioSystem.playSfx(key, options);
 }
 
 function withUiClickSound(action) {
@@ -1818,6 +1858,13 @@ function initializeLevelRuntime() {
       monster.telegraphEndsAt = 0;
       monster.attackDirection = "down";
       monster.animationState = "idle";
+      monster.facingDirection = "down";
+      monster.hurtEndsAt = 0;
+      monster.deathStartedAt = 0;
+      monster.attackVariant = "sweep";
+      monster.attackCount = 0;
+      monster.commandPulseAt = state.lastTimestamp + (monster.combatProfile?.commandPulse?.intervalMs ?? Infinity);
+      monster.commandBuffUntil = 0;
       monster.slowedUntil = 0;
       monster.weakenedUntil = 0;
       monster.stunnedUntil = 0;
@@ -1882,6 +1929,13 @@ function resetLevelMonstersForRespawn(levelId) {
     monster.bossPhase = 0;
     monster.attackDirection = "down";
     monster.animationState = "idle";
+    monster.facingDirection = "down";
+    monster.hurtEndsAt = 0;
+    monster.deathStartedAt = 0;
+    monster.attackVariant = "sweep";
+    monster.attackCount = 0;
+    monster.commandPulseAt = state.lastTimestamp + (monster.combatProfile?.commandPulse?.intervalMs ?? Infinity);
+    monster.commandBuffUntil = 0;
   }
 }
 
@@ -3594,6 +3648,7 @@ function resolveParry(sourceName, sourceMonster = null) {
     startedAt: state.lastTimestamp,
     endsAt: state.lastTimestamp + 260,
   };
+  playCombatSfx("parry", { volume: 0.34, playbackRate: 1.04 });
 
   if (sourceMonster && !sourceMonster.defeated) {
     damageMonster(sourceMonster, sourceMonster.isBoss ? 2 : 3, { knockback: true, stun: true });
@@ -3637,6 +3692,9 @@ function updateMonsters(deltaSeconds) {
     const distance = Math.hypot(dx, dy);
     const settings = getDifficultySettings(state.difficulty);
     const isStunned = state.lastTimestamp < (monster.stunnedUntil ?? 0);
+    const isHurt = state.lastTimestamp < (monster.hurtEndsAt ?? 0);
+    const combatProfile = monster.combatProfile;
+    const isCommanded = state.lastTimestamp < (monster.commandBuffUntil ?? 0);
     let targetX = monster.homeX + Math.cos(state.lastTimestamp * 0.001 + monster.phase) * (monster.patrolRadius ?? 18);
     let targetY = monster.homeY + Math.sin(state.lastTimestamp * 0.0012 + monster.phase) * (monster.patrolRadius ?? 18);
 
@@ -3654,12 +3712,13 @@ function updateMonsters(deltaSeconds) {
     const moveY = targetY - monster.y;
     const moveLength = Math.hypot(moveX, moveY);
     const isAttacking = state.lastTimestamp < (monster.attackEndsAt ?? 0);
-    monster.animationState = isAttacking ? "attack" : moveLength > 1 ? "run" : "idle";
+    monster.animationState = isAttacking ? "attack" : isHurt || isStunned ? "hurt" : moveLength > 1 ? "run" : "idle";
 
-    if (!isAttacking && !isStunned && moveLength > 1) {
+    if (!isAttacking && !isStunned && !isHurt && moveLength > 1) {
       monster.facingDirection = getDirectionFromVector(moveX, moveY);
       const slowMultiplier = state.lastTimestamp < (monster.slowedUntil ?? 0) ? 0.58 : 1;
-      const step = Math.min(moveLength, MONSTER_SPEED * settings.enemySpeed * (monster.phaseSpeedMultiplier ?? 1) * slowMultiplier * deltaSeconds);
+      const commandSpeed = isCommanded ? combatProfile?.commandPulse?.speedMultiplier ?? 1 : 1;
+      const step = Math.min(moveLength, MONSTER_SPEED * settings.enemySpeed * (monster.phaseSpeedMultiplier ?? 1) * commandSpeed * slowMultiplier * deltaSeconds);
       monster.x += (moveX / moveLength) * step;
       monster.y += (moveY / moveLength) * step;
     }
@@ -3667,12 +3726,20 @@ function updateMonsters(deltaSeconds) {
     monster.x = clamp(monster.x, currentLevel().bounds.minX, currentLevel().bounds.maxX);
     monster.y = clamp(monster.y, currentLevel().bounds.minY, currentLevel().bounds.maxY);
 
-    const telegraphRange = monster.archetype === "ranged" ? 170 : MONSTER_TOUCH_RANGE + (monster.isBoss ? 48 : 30);
+    if (monster.isBoss && combatProfile && distance < (monster.aggroRadius ?? 150) && state.lastTimestamp >= (monster.commandPulseAt ?? Infinity)) {
+      triggerCaptainCommandPulse(monster);
+    }
+
+    const attackProfile = monster.attackVariant === "slam" ? combatProfile?.slam : combatProfile?.sweep;
+    const telegraphRange = monster.archetype === "ranged" ? 170 : attackProfile?.range ?? MONSTER_TOUCH_RANGE + (monster.isBoss ? 48 : 30);
     const canStartAttack = state.lastTimestamp - monster.lastContactAt >= MONSTER_CONTACT_DAMAGE_COOLDOWN_MS;
 
     if (!isStunned && !monster.telegraphEndsAt && distance <= telegraphRange && canStartAttack) {
+      monster.attackCount = (monster.attackCount ?? 0) + 1;
+      monster.attackVariant = monster.isBoss && monster.bossPhase >= 2 && monster.attackCount % (combatProfile?.comboEvery ?? Infinity) === 0 ? "slam" : "sweep";
+      const selectedAttack = monster.attackVariant === "slam" ? combatProfile?.slam : combatProfile?.sweep;
       monster.telegraphStartsAt = state.lastTimestamp;
-      monster.telegraphEndsAt = state.lastTimestamp + (monster.isBoss ? 520 : 340);
+      monster.telegraphEndsAt = state.lastTimestamp + (selectedAttack?.telegraphMs ?? (monster.isBoss ? 520 : 340));
       monster.attackDirection = getDirectionFromVector(player.x - monster.x, player.y - monster.y);
       monster.animationState = "telegraph";
     }
@@ -3680,20 +3747,46 @@ function updateMonsters(deltaSeconds) {
     if (monster.telegraphEndsAt && state.lastTimestamp >= monster.telegraphEndsAt) {
       monster.lastContactAt = state.lastTimestamp;
       monster.attackStartedAt = state.lastTimestamp;
-      monster.attackEndsAt = state.lastTimestamp + MONSTER_ATTACK_ANIMATION_MS;
+      const selectedAttack = monster.attackVariant === "slam" ? combatProfile?.slam : combatProfile?.sweep;
+      const attackSpeed = state.lastTimestamp < (monster.commandBuffUntil ?? 0) ? combatProfile?.commandPulse?.attackDurationMultiplier ?? 1 : 1;
+      monster.attackEndsAt = state.lastTimestamp + Math.round((selectedAttack?.attackMs ?? MONSTER_ATTACK_ANIMATION_MS) * attackSpeed);
       monster.telegraphStartsAt = 0;
       monster.telegraphEndsAt = 0;
       monster.animationState = "attack";
 
       if (monster.archetype === "ranged") {
+        playCombatSfx("rifleShot", { volume: 0.32, playbackRate: 0.96 + Math.random() * 0.08 });
         spawnEnemyProjectile(monster);
       } else if (monster.archetype === "support") {
+        playCombatSfx("lanternPulse", { volume: 0.25, playbackRate: 0.96 + Math.random() * 0.08 });
         applySupportPulse(monster);
+      } else if (monster.attackVariant === "slam" && distance <= (selectedAttack?.radius ?? 70)) {
+        playCombatSfx("captainSlam", { volume: 0.38 });
+        damagePlayer(Math.max(1, Math.round((monster.damage ?? 1) * settings.enemyDamage)), monster.name, monster);
       } else if (distance <= MONSTER_TOUCH_RANGE + 10) {
+        playCombatSfx("batonHit", { volume: monster.isBoss ? 0.38 : 0.32, playbackRate: 0.94 + Math.random() * 0.1 });
         damagePlayer(Math.max(1, Math.round((monster.damage ?? 1) * settings.enemyDamage)), monster.name, monster);
       }
     }
   }
+}
+
+function triggerCaptainCommandPulse(monster) {
+  const pulse = monster.combatProfile?.commandPulse;
+  if (!pulse) {
+    return;
+  }
+
+  monster.commandPulseAt = state.lastTimestamp + pulse.intervalMs;
+  monster.supportPulseUntil = state.lastTimestamp + 380;
+  playCombatSfx("captainCommand", { volume: 0.32 });
+  for (const ally of currentLevel().monsters ?? []) {
+    if (ally === monster || ally.defeated || Math.hypot(ally.x - monster.x, ally.y - monster.y) > pulse.radius) {
+      continue;
+    }
+    ally.commandBuffUntil = state.lastTimestamp + pulse.durationMs;
+  }
+  showStoryToast("Mệnh lệnh áp chế khiến đồng bọn tăng tốc!");
 }
 
 function spawnEnemyProjectile(monster) {
@@ -3808,7 +3901,9 @@ function damageMonster(monster, amount, effects = {}) {
     amount += 1;
   }
   monster.health = Math.max(0, monster.health - amount);
-  monster.hitFlashUntil = state.lastTimestamp + 180;
+  monster.hitFlashUntil = state.lastTimestamp + 110;
+  monster.hurtEndsAt = state.lastTimestamp + 180;
+  playCombatSfx("hurt", { volume: monster.isBoss ? 0.3 : 0.22, playbackRate: 0.94 + Math.random() * 0.1 });
   state.cameraShakeUntil = state.lastTimestamp + (monster.isBoss ? 150 : 90);
   state.cameraShakeStrength = monster.isBoss ? 4 : 2;
 
@@ -3822,7 +3917,8 @@ function damageMonster(monster, amount, effects = {}) {
     monster.y += direction.y * (monster.isBoss ? 12 : 24);
   }
 
-  if (monster.isBoss && !monster.bossPhase && monster.health > 0 && monster.health <= (monster.runtimeMaxHealth ?? monster.maxHealth) / 2) {
+  const phaseTwoThreshold = monster.combatProfile?.phaseTwoThreshold ?? 0.5;
+  if (monster.isBoss && !monster.bossPhase && monster.health > 0 && monster.health <= (monster.runtimeMaxHealth ?? monster.maxHealth) * phaseTwoThreshold) {
     monster.bossPhase = 2;
     monster.damage += 1;
     monster.phaseSpeedMultiplier = 1.25;
@@ -3834,6 +3930,8 @@ function damageMonster(monster, amount, effects = {}) {
   }
 
   monster.defeated = true;
+  monster.deathStartedAt = state.lastTimestamp;
+  playCombatSfx("death", { volume: monster.isBoss ? 0.36 : 0.26, playbackRate: monster.isBoss ? 0.82 : 1 });
   saveGameProgress();
 
   spawnMonsterDrop(monster);
@@ -7815,7 +7913,8 @@ function drawEndingAltar(item) {
 
 function drawMonster(monster) {
   const hitFlash = state.lastTimestamp < monster.hitFlashUntil;
-  const spriteConfig = MONSTER_SPRITE_CONFIG[monster.variant];
+  const artKey = getMonsterArtKey(monster);
+  const spriteConfig = MONSTER_SPRITE_CONFIG[artKey] ?? MONSTER_SPRITE_CONFIG[monster.variant];
   const shadowWidth = spriteConfig?.shadowWidth ?? 20;
   const isAttacking = state.lastTimestamp < (monster.attackEndsAt ?? 0);
 
@@ -7826,7 +7925,8 @@ function drawMonster(monster) {
   ctx.fillStyle = "rgba(12, 14, 18, 0.28)";
   ctx.fillRect(monster.x - shadowWidth / 2, monster.y + 10, shadowWidth, 4);
 
-  if (!drawMonsterSprite(monster, hitFlash)) {
+  const drewSprite = drawMonsterSprite(monster, hitFlash);
+  if (!drewSprite && !artKey.startsWith("zone1")) {
     const palette = getMonsterPalette(monster.variant, hitFlash);
     const attackProgress = isAttacking ? getTimedProgress(monster.attackStartedAt, monster.attackEndsAt) : 0;
     const attackOffset = getAttackLungeOffset(monster.attackDirection, attackProgress, ATTACK_LUNGE_DISTANCE * 0.8);

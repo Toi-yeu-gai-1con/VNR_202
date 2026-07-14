@@ -45,6 +45,7 @@ This project uses a small subset of free game assets:
   - Created for this project with the built-in image-generation workflow, background-keyed, normalized to shared canvases, then assembled and tagged in Aseprite. No third-party character pixels were used.
   - Editable sources include paired `*-walk.aseprite` and `*-attack.aseprite` files for the patrol, raider, signalman, and captain under `assets/monsters/zone1-*/`.
   - Each source has four separately posed frames tagged as `walk` or `attack`; exports are 64x64 bottom-center anchored strips. They replace only Zone 1's ranged, melee, support, and boss adversaries respectively.
+  - Captain directional seed: `assets/monsters/zone1-enforcer-captain/enforcer-captain-directional-source.png`, generated with the built-in image-generation workflow on a magenta chroma key; alpha-cleaned and normalized into south/north/east strips by `scripts/prepare-captain-directional-strips.mjs`. West is deliberately mirrored at runtime from east.
 - Original zone landmarks
   - Created for this project with the built-in image generation workflow, then background-keyed to transparent PNG.
   - Used for the four persistent zone landmarks in `assets/landmarks/`: storm shelter beacon, archive lens tower, faction standard, and restoration engine.
@@ -56,6 +57,13 @@ This project uses a small subset of free game assets:
   - Used for the restored rural cooperative scene in `assets/recovery/doi-moi-irrigation-station.png`.
 
 ## Music
+
+## Combat sound effects
+
+- `assets/audio/combat/*.{ogg,mp3}`
+  - Created for this project with `scripts/generate-combat-sfx.mjs` using deterministic FFmpeg synthesis; no third-party recording or sample is included.
+  - Used for baton impacts, rifle shots, signal lantern pulse, captain command/slam, enemy hurt/death, and parry confirmation.
+  - Dual Opus/MP3 exports retain browser compatibility while allowing modern browsers to prefer the smaller Opus source.
 
 - Unexplored Expansion by Bo Jingles and TAD: https://opengameart.org/content/unexplored-expansion
   - License: CC0.

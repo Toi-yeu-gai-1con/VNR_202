@@ -26,10 +26,12 @@ const hub = sound();
 const zone = sound();
 const rain = sound();
 const click = sound();
+const baton = sound();
 const state = { mode: "playing", currentLevelId: "hub", endingId: null, soundMuted: false };
 const audio = createAudioSystem({
   state,
   uiSounds: { click },
+  sfxSounds: { baton },
   ambienceSounds: { rain },
   musicSounds: { hub, portMaze: zone },
   getZoneProfile: () => ({ ambience: ["rain"], music: "portMaze" }),
@@ -66,5 +68,9 @@ assert.equal(zone.paused, false, "Resuming restores the active zone music track.
 assert.equal(rain.paused, false, "Resuming restores the active zone ambience.");
 assert.equal(zone.currentTime, 37.25, "Resuming does not rewind the music track.");
 assert.equal(rain.currentTime, 14.5, "Resuming does not rewind ambience.");
+
+audio.playSfx("baton", { volume: 0.6, playbackRate: 1.08 });
+assert.equal(baton.playCalls, 1, "Combat SFX plays through the isolated audio system.");
+assert.equal(baton.volume, 0.6, "Combat SFX applies its local volume without touching music.");
 
 console.log("PASS: audio state, zone mixing, and mute behavior are isolated in one system.");

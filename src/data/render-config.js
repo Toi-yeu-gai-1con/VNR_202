@@ -221,6 +221,8 @@ export const HOUSE_INTERIOR_A_SPRITES = {
 };
 export const MONSTER_SPRITE_CONFIG = {
   zone1Captain: {
+    directional: true,
+    directionalAnimation: true,
     flipForFacing: true,
     drawWidth: 60,
     drawHeight: 60,

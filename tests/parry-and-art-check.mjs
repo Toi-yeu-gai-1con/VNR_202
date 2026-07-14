@@ -19,11 +19,13 @@ assert.match(game, /assets\/monsters\/military-soldier\/soldier-walk-down\.png/,
 assert.match(game, /assets\/monsters\/zone1-colonial-soldier\/colonial-patrol-walk\.png/, "Zone 1 should load its dedicated animated patrol strip.");
 assert.match(game, /assets\/monsters\/zone1-night-raider\/night-raider-walk\.png/, "Zone 1 should load its dedicated animated raider strip.");
 assert.match(game, /assets\/monsters\/zone1-signalman\/signalman-walk\.png/, "Zone 1 should load its dedicated animated signalman strip.");
-assert.match(game, /assets\/monsters\/zone1-enforcer-captain\/enforcer-captain-walk\.png/, "Zone 1 should load its dedicated animated captain strip.");
+assert.match(game, /assets\/monsters\/zone1-enforcer-captain\/enforcer-captain-south-walk\.png/, "Zone 1 should load its dedicated south-facing captain walk strip.");
+assert.match(game, /assets\/monsters\/zone1-enforcer-captain\/enforcer-captain-north-walk\.png/, "Zone 1 should load its dedicated north-facing captain walk strip.");
+assert.match(game, /assets\/monsters\/zone1-enforcer-captain\/enforcer-captain-east-walk\.png/, "Zone 1 should load its dedicated east-facing captain walk strip.");
 assert.match(game, /assets\/monsters\/zone1-colonial-soldier\/colonial-patrol-attack\.png/, "Zone 1 should load its dedicated rifleman attack strip.");
 assert.match(game, /assets\/monsters\/zone1-night-raider\/night-raider-attack\.png/, "Zone 1 should load its dedicated raider attack strip.");
 assert.match(game, /assets\/monsters\/zone1-signalman\/signalman-attack\.png/, "Zone 1 should load its dedicated signalman attack strip.");
-assert.match(game, /assets\/monsters\/zone1-enforcer-captain\/enforcer-captain-attack\.png/, "Zone 1 should load its dedicated captain attack strip.");
+assert.match(game, /assets\/monsters\/zone1-enforcer-captain\/enforcer-captain-south-attack\.png/, "Zone 1 should load its dedicated captain attack strip.");
 assert.match(game, /const animationKey = isAttacking \? "attack" : monster\.animationState === "run" \? "run" : "idle"/, "Attacking monsters should use their attack sequence instead of walk frames.");
 assert.match(game, /monster\.facingDirection = getDirectionFromVector\(moveX, moveY\)/, "Moving enemies should retain a movement-facing direction.");
 assert.match(game, /const flipX = Boolean\(config\.flipForFacing && direction === "west"\)/, "Zone 1 sprites should mirror when facing west.");

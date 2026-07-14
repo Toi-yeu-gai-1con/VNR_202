@@ -1,5 +1,20 @@
 export const BOSS_DEFINITIONS = {
-  village: { id: "village-corruption-guard", name: "Kẻ Canh Gác Tha Hóa", variant: "devourer", x: 774, y: 456 },
+  village: {
+    id: "village-corruption-guard",
+    name: "Kẻ Canh Gác Tha Hóa",
+    variant: "devourer",
+    x: 774,
+    y: 456,
+    maxHealth: 18,
+    damage: 2,
+    combatProfile: {
+      phaseTwoThreshold: 0.5,
+      comboEvery: 3,
+      sweep: { telegraphMs: 520, attackMs: 300, range: 66 },
+      slam: { telegraphMs: 650, attackMs: 360, radius: 70 },
+      commandPulse: { intervalMs: 6000, durationMs: 1400, radius: 150, speedMultiplier: 1.15, attackDurationMultiplier: 0.9 },
+    },
+  },
   archive: { id: "archive-shadow-curator", name: "Bóng Ma Lưu Trữ", variant: "wraith", x: 480, y: 286 },
   crossroads: { id: "southern-tyrant", name: "Bộ Máy Áp Bức", variant: "blight", x: 588, y: 476 },
   spring: { id: "spring-bureaucracy-beast", name: "Quái Thú Quan Liêu", variant: "blight", x: 500, y: 306 },
