@@ -18,4 +18,10 @@ assert.deepEqual(full.relics.map((relic) => relic.id), ["red-compass", "unified-
 assert.equal(full.stability, "corrupted", "High corruption remains legible even with all relics.");
 assert.equal(full.portalIntensity, 1, "All five relics fully charge the portal convergence effect.");
 
+const converged = getTvaHubPresentation({
+  inventory: new Set(["red-compass", "unified-emblem", "vietminh-thread", "healed-map", "doi-moi-gear"]),
+  corruption: 18,
+});
+assert.equal(converged.stability, "converged", "Five relics with controlled corruption unlock the convergence state.");
+
 console.log("PASS: TVA hub presentation exposes only collected relics and reflects stabilization/corruption.");

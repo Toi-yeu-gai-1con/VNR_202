@@ -328,6 +328,18 @@ test("collected relics visibly converge around the TVA dispatch portal", async (
   await page.screenshot({ path: testInfo.outputPath("tva-relic-convergence.png"), fullPage: true });
 });
 
+test("five relics activate the TVA convergence state without reopening the portal", async ({ page }, testInfo) => {
+  await openDebugSession(page);
+  for (const levelId of ["village", "archive", "crossroads", "spring"]) {
+    await page.evaluate((id) => window.__CROSSROADS_DEBUG__.completeTvaRoute(id), levelId);
+  }
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("hub", { x: 480, y: 260, direction: "up" }));
+  await expect.poll(() => snapshot(page).then((state) => state.inventory.length)).toBe(5);
+  await page.waitForTimeout(260);
+  await page.screenshot({ path: testInfo.outputPath("tva-five-relic-convergence.png"), fullPage: true });
+  expect((await snapshot(page)).quests.tvaPortalTarget).toBeNull();
+});
+
 test("reported relics unlock each later TVA coordinate in campaign order", async ({ page }) => {
   await openDebugSession(page);
   await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("hub", { x: 480, y: 260, direction: "up" }));

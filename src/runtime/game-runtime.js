@@ -9538,6 +9538,28 @@ function drawTvaHubRelics() {
     });
   }
 
+  if (presentation.stability === "converged") {
+    const cycle = (state.lastTimestamp % 1800) / 1800;
+    ctx.save();
+    ctx.globalCompositeOperation = "screen";
+    ctx.strokeStyle = `rgba(250, 221, 136, ${0.24 * (1 - cycle)})`;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(portal.x, portal.y - 2, 22 + cycle * 42, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.fillStyle = "rgba(255, 239, 174, 0.72)";
+    for (let index = 0; index < 5; index += 1) {
+      const angle = state.lastTimestamp * 0.0018 + index * (Math.PI * 2 / 5);
+      ctx.fillRect(
+        Math.round(portal.x + Math.cos(angle) * 34) - 1,
+        Math.round(portal.y - 4 + Math.sin(angle) * 20) - 1,
+        3,
+        3
+      );
+    }
+    ctx.restore();
+  }
+
   if (presentation.stability === "corrupted") {
     ctx.save();
     ctx.globalAlpha = Math.min(0.2, presentation.corruption / 500);
