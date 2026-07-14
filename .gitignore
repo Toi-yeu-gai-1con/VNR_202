@@ -5,3 +5,5 @@ playwright-report/
 reports/
 dist/
 output/
+.codex-run/
+debug.log

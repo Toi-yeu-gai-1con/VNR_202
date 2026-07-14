@@ -3,6 +3,8 @@ import { LEVEL_ASSET_GROUPS, getAssetGroupForSource, isCriticalAsset } from "../
 
 assert.equal(LEVEL_ASSET_GROUPS.hub, "hub", "The hub has a stable asset group.");
 assert.equal(LEVEL_ASSET_GROUPS.village, "zone1", "Zone 1 has a stable asset group.");
+assert.equal(getAssetGroupForSource("assets/time-archive/environment/chronicle-office.webp"), "hub", "The Chronicle Office backdrop loads with the hub.");
+assert.equal(getAssetGroupForSource("assets/time-archive/characters/agent-m90/down.png"), "hub", "M-90 loads with the hub.");
 assert.equal(getAssetGroupForSource("assets/environment/archive-cave.png"), "zone2", "Archive art is grouped with Zone 2.");
 assert.equal(getAssetGroupForSource("assets/audio/music/good-ending.mp3"), "ending", "Ending music is grouped with the ending scene.");
 assert.equal(getAssetGroupForSource("assets/player/player-sheet.png"), "core", "Player art is available at boot.");

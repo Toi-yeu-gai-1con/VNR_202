@@ -8,7 +8,7 @@ export const BOSS_DEFINITIONS = {
 export const COMBAT_ROSTER = {
   village: [
     { id: "village-raider", name: "Kẻ Cướp Bóng Đêm", archetype: "melee", variant: "devourer", x: 640, y: 426, elite: true },
-    { id: "village-marksman", name: "Xạ Thủ Bóng Mờ", archetype: "ranged", variant: "wraith", x: 812, y: 330 },
+    { id: "village-marksman", name: "Lính tuần tra Pháp", archetype: "ranged", variant: "wraith", artKey: "frenchColonialSoldier", x: 812, y: 330, patrolAxis: "horizontal", attackAnimationMs: 800, attackImpactDelayMs: 300 },
     { id: "village-chanter", name: "Kẻ Tụng Niệm Tha Hóa", archetype: "support", variant: "blight", x: 566, y: 286 },
   ],
   archive: [
