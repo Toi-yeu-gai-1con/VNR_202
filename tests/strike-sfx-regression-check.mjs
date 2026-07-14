@@ -8,6 +8,6 @@ const strike = runtime.slice(
 );
 
 assert.doesNotMatch(strike, /playUiSound\([^)]*attack/, "A normal strike must not layer the legacy attack UI sound over its swing SFX.");
-assert.equal((strike.match(/playCombatSfx\("strikeSwing"/g) ?? []).length, 1, "Each committed strike emits exactly one swing cue.");
+assert.equal((strike.match(/playCombatSfx\(strikeAnimation/g) ?? []).length, 1, "Each committed strike emits exactly one animation-specific sword cue.");
 
 console.log("PASS: normal attacks emit one swing SFX instead of two overlapping cues.");
