@@ -46,6 +46,7 @@ This project uses a small subset of free game assets:
   - Editable sources include paired `*-walk.aseprite` and `*-attack.aseprite` files for the patrol, raider, signalman, and captain under `assets/monsters/zone1-*/`.
   - Each source has four separately posed frames tagged as `walk` or `attack`; exports are 64x64 bottom-center anchored strips. They replace only Zone 1's ranged, melee, support, and boss adversaries respectively.
   - Captain directional seed: `assets/monsters/zone1-enforcer-captain/enforcer-captain-directional-source.png`, generated with the built-in image-generation workflow on a magenta chroma key; alpha-cleaned and normalized into south/north/east strips by `scripts/prepare-captain-directional-strips.mjs`. West is deliberately mirrored at runtime from east.
+  - Raider, patrol rifleman, and signalman directional seeds are stored next to their respective sprite strips as `*-directional-source.png`; each was generated with the same built-in workflow, alpha-cleaned, and normalized by `scripts/prepare-captain-directional-strips.mjs`. Their west-facing animation intentionally mirrors the corresponding east strip at runtime.
 - Original zone landmarks
   - Created for this project with the built-in image generation workflow, then background-keyed to transparent PNG.
   - Used for the four persistent zone landmarks in `assets/landmarks/`: storm shelter beacon, archive lens tower, faction standard, and restoration engine.

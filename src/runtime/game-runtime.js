@@ -280,7 +280,9 @@ const state = {
   zoneSummaryLevelId: null,
   cameraShakeUntil: 0,
   cameraShakeStrength: 0,
+  hitStopUntil: 0,
   combatFlashUntil: 0,
+  combatImpacts: [],
   highCorruptionWarningShown: false,
   respawnLevelId: "hub",
   respawnSpawn: null,
@@ -1093,37 +1095,48 @@ function loadMonsterSprites() {
         idle: loadSprite("assets/monsters/zone1-enforcer-captain/enforcer-captain-south-idle.png"),
         run: loadSprite("assets/monsters/zone1-enforcer-captain/enforcer-captain-south-walk.png"),
         attack: loadSprite("assets/monsters/zone1-enforcer-captain/enforcer-captain-south-attack.png"),
+        hurt: loadSprite("assets/monsters/zone1-enforcer-captain/enforcer-captain-south-hurt.png"),
+        death: loadSprite("assets/monsters/zone1-enforcer-captain/enforcer-captain-south-death.png"),
       },
       north: {
         idle: loadSprite("assets/monsters/zone1-enforcer-captain/enforcer-captain-north-idle.png"),
         run: loadSprite("assets/monsters/zone1-enforcer-captain/enforcer-captain-north-walk.png"),
         attack: loadSprite("assets/monsters/zone1-enforcer-captain/enforcer-captain-north-attack.png"),
+        hurt: loadSprite("assets/monsters/zone1-enforcer-captain/enforcer-captain-north-hurt.png"),
+        death: loadSprite("assets/monsters/zone1-enforcer-captain/enforcer-captain-north-death.png"),
       },
       east: {
         idle: loadSprite("assets/monsters/zone1-enforcer-captain/enforcer-captain-east-idle.png"),
         run: loadSprite("assets/monsters/zone1-enforcer-captain/enforcer-captain-east-walk.png"),
         attack: loadSprite("assets/monsters/zone1-enforcer-captain/enforcer-captain-east-attack.png"),
+        hurt: loadSprite("assets/monsters/zone1-enforcer-captain/enforcer-captain-east-hurt.png"),
+        death: loadSprite("assets/monsters/zone1-enforcer-captain/enforcer-captain-east-death.png"),
       },
       west: {
         idle: loadSprite("assets/monsters/zone1-enforcer-captain/enforcer-captain-east-idle.png"),
         run: loadSprite("assets/monsters/zone1-enforcer-captain/enforcer-captain-east-walk.png"),
         attack: loadSprite("assets/monsters/zone1-enforcer-captain/enforcer-captain-east-attack.png"),
+        hurt: loadSprite("assets/monsters/zone1-enforcer-captain/enforcer-captain-east-hurt.png"),
+        death: loadSprite("assets/monsters/zone1-enforcer-captain/enforcer-captain-east-death.png"),
       },
     },
     zone1Raider: {
-      idle: loadSprite("assets/monsters/zone1-night-raider/night-raider-walk.png"),
-      run: loadSprite("assets/monsters/zone1-night-raider/night-raider-walk.png"),
-      attack: loadSprite("assets/monsters/zone1-night-raider/night-raider-attack.png"),
+      south: loadZone1DirectionalSprites("assets/monsters/zone1-night-raider/night-raider"),
+      north: loadZone1DirectionalSprites("assets/monsters/zone1-night-raider/night-raider", "north"),
+      east: loadZone1DirectionalSprites("assets/monsters/zone1-night-raider/night-raider", "east"),
+      west: loadZone1DirectionalSprites("assets/monsters/zone1-night-raider/night-raider", "east"),
     },
     zone1Rifleman: {
-      idle: loadSprite("assets/monsters/zone1-colonial-soldier/colonial-patrol-walk.png"),
-      run: loadSprite("assets/monsters/zone1-colonial-soldier/colonial-patrol-walk.png"),
-      attack: loadSprite("assets/monsters/zone1-colonial-soldier/colonial-patrol-attack.png"),
+      south: loadZone1DirectionalSprites("assets/monsters/zone1-colonial-soldier/colonial-patrol"),
+      north: loadZone1DirectionalSprites("assets/monsters/zone1-colonial-soldier/colonial-patrol", "north"),
+      east: loadZone1DirectionalSprites("assets/monsters/zone1-colonial-soldier/colonial-patrol", "east"),
+      west: loadZone1DirectionalSprites("assets/monsters/zone1-colonial-soldier/colonial-patrol", "east"),
     },
     zone1Signalman: {
-      idle: loadSprite("assets/monsters/zone1-signalman/signalman-walk.png"),
-      run: loadSprite("assets/monsters/zone1-signalman/signalman-walk.png"),
-      attack: loadSprite("assets/monsters/zone1-signalman/signalman-attack.png"),
+      south: loadZone1DirectionalSprites("assets/monsters/zone1-signalman/signalman"),
+      north: loadZone1DirectionalSprites("assets/monsters/zone1-signalman/signalman", "north"),
+      east: loadZone1DirectionalSprites("assets/monsters/zone1-signalman/signalman", "east"),
+      west: loadZone1DirectionalSprites("assets/monsters/zone1-signalman/signalman", "east"),
     },
     rifleman: {
       south: {
@@ -1173,6 +1186,16 @@ function loadMonsterSprites() {
       idle: loadSprite("assets/monsters/pixel-crawler/orc-shaman-idle.png"),
       run: loadSprite("assets/monsters/pixel-crawler/orc-shaman-run.png"),
     },
+  };
+}
+
+function loadZone1DirectionalSprites(prefix, direction = "south") {
+  return {
+    idle: loadSprite(`${prefix}-${direction}-idle.png`),
+    run: loadSprite(`${prefix}-${direction}-walk.png`),
+    attack: loadSprite(`${prefix}-${direction}-attack.png`),
+    hurt: loadSprite(`${prefix}-${direction}-hurt.png`),
+    death: loadSprite(`${prefix}-${direction}-death.png`),
   };
 }
 
@@ -1860,9 +1883,13 @@ function initializeLevelRuntime() {
       monster.animationState = "idle";
       monster.facingDirection = "down";
       monster.hurtEndsAt = 0;
+      monster.hurtStartedAt = 0;
       monster.deathStartedAt = 0;
+      monster.deathEndsAt = 0;
       monster.attackVariant = "sweep";
       monster.attackCount = 0;
+      monster.comboFollowUpAt = 0;
+      monster.isComboFollowUp = false;
       monster.commandPulseAt = state.lastTimestamp + (monster.combatProfile?.commandPulse?.intervalMs ?? Infinity);
       monster.commandBuffUntil = 0;
       monster.slowedUntil = 0;
@@ -1931,9 +1958,13 @@ function resetLevelMonstersForRespawn(levelId) {
     monster.animationState = "idle";
     monster.facingDirection = "down";
     monster.hurtEndsAt = 0;
+    monster.hurtStartedAt = 0;
     monster.deathStartedAt = 0;
+    monster.deathEndsAt = 0;
     monster.attackVariant = "sweep";
     monster.attackCount = 0;
+    monster.comboFollowUpAt = 0;
+    monster.isComboFollowUp = false;
     monster.commandPulseAt = state.lastTimestamp + (monster.combatProfile?.commandPulse?.intervalMs ?? Infinity);
     monster.commandBuffUntil = 0;
   }
@@ -1965,7 +1996,9 @@ function resetGameplayProgress() {
   state.zoneSummaryLevelId = null;
   state.cameraShakeUntil = 0;
   state.cameraShakeStrength = 0;
+  state.hitStopUntil = 0;
   state.combatFlashUntil = 0;
+  state.combatImpacts = [];
   state.highCorruptionWarningShown = false;
   state.puzzleState.archiveSequence = 0;
   state.puzzleState.archiveSolved = false;
@@ -2038,6 +2071,15 @@ function createDebugSnapshot() {
     camera: { ...camera },
     questSummary: getZoneProgressText(state.currentLevelId),
     activeMonsterCount: (currentLevel().monsters ?? []).filter((monster) => isMonsterActive(monster)).length,
+    monsters: (currentLevel().monsters ?? []).map((monster) => ({
+      id: monster.id,
+      health: monster.health,
+      defeated: monster.defeated,
+      bossPhase: monster.bossPhase,
+      attackCount: monster.attackCount ?? 0,
+      attackVariant: monster.attackVariant,
+      comboFollowUpAt: monster.comboFollowUpAt ?? 0,
+    })),
     quests: {
       zone1Started: state.quests.zone1Started,
       zone1Delivered: Array.from(state.quests.zone1Delivered),
@@ -2182,6 +2224,14 @@ function installDebugTools() {
       damagePlayer(amount, sourceName);
       return createDebugSnapshot();
     },
+    damageMonster(monsterId, amount = 1) {
+      const monster = currentLevel().monsters.find((entry) => entry.id === monsterId);
+      if (!monster || monster.defeated) {
+        return false;
+      }
+      damageMonster(monster, amount, { ignoreWeakness: true });
+      return createDebugSnapshot();
+    },
     saveNow() {
       return saveGameProgress();
     },
@@ -2284,7 +2334,7 @@ function frame({ now: timestamp, deltaSeconds }) {
     smoothedFps = smoothedFps === 0 ? instantFps : smoothedFps * 0.86 + instantFps * 0.14;
   }
 
-  if (state.mode === "playing") {
+  if (state.mode === "playing" && timestamp >= state.hitStopUntil) {
     updatePlayer(deltaSeconds);
     updateMonsters(deltaSeconds);
     updateEnemyProjectiles(deltaSeconds);
@@ -3683,7 +3733,8 @@ function isTargetInRange(target, range) {
 
 function updateMonsters(deltaSeconds) {
   for (const monster of currentLevel().monsters ?? []) {
-    if (monster.defeated || !isMonsterActive(monster)) {
+    const deathStillVisible = monster.defeated && state.lastTimestamp < (monster.deathEndsAt ?? 0);
+    if ((!deathStillVisible && monster.defeated) || (!monster.defeated && !isMonsterActive(monster))) {
       continue;
     }
 
@@ -3732,14 +3783,22 @@ function updateMonsters(deltaSeconds) {
 
     const attackProfile = monster.attackVariant === "slam" ? combatProfile?.slam : combatProfile?.sweep;
     const telegraphRange = monster.archetype === "ranged" ? 170 : attackProfile?.range ?? MONSTER_TOUCH_RANGE + (monster.isBoss ? 48 : 30);
-    const canStartAttack = state.lastTimestamp - monster.lastContactAt >= MONSTER_CONTACT_DAMAGE_COOLDOWN_MS;
+    const comboFollowUpReady = monster.isBoss && monster.bossPhase >= 2 && state.lastTimestamp >= (monster.comboFollowUpAt ?? Infinity);
+    const canStartAttack = comboFollowUpReady || state.lastTimestamp - monster.lastContactAt >= MONSTER_CONTACT_DAMAGE_COOLDOWN_MS;
 
-    if (!isStunned && !monster.telegraphEndsAt && distance <= telegraphRange && canStartAttack) {
-      monster.attackCount = (monster.attackCount ?? 0) + 1;
-      monster.attackVariant = monster.isBoss && monster.bossPhase >= 2 && monster.attackCount % (combatProfile?.comboEvery ?? Infinity) === 0 ? "slam" : "sweep";
+    if (!isAttacking && !isStunned && !monster.telegraphEndsAt && distance <= telegraphRange && canStartAttack) {
+      if (comboFollowUpReady) {
+        monster.comboFollowUpAt = 0;
+        monster.attackVariant = "sweep";
+        monster.isComboFollowUp = true;
+      } else {
+        monster.attackCount = (monster.attackCount ?? 0) + 1;
+        monster.attackVariant = monster.isBoss && monster.bossPhase >= 2 && monster.attackCount % (combatProfile?.comboEvery ?? Infinity) === 0 ? "slam" : "sweep";
+        monster.isComboFollowUp = false;
+      }
       const selectedAttack = monster.attackVariant === "slam" ? combatProfile?.slam : combatProfile?.sweep;
       monster.telegraphStartsAt = state.lastTimestamp;
-      monster.telegraphEndsAt = state.lastTimestamp + (selectedAttack?.telegraphMs ?? (monster.isBoss ? 520 : 340));
+      monster.telegraphEndsAt = state.lastTimestamp + (comboFollowUpReady ? 180 : selectedAttack?.telegraphMs ?? (monster.isBoss ? 520 : 340));
       monster.attackDirection = getDirectionFromVector(player.x - monster.x, player.y - monster.y);
       monster.animationState = "telegraph";
     }
@@ -3766,6 +3825,10 @@ function updateMonsters(deltaSeconds) {
       } else if (distance <= MONSTER_TOUCH_RANGE + 10) {
         playCombatSfx("batonHit", { volume: monster.isBoss ? 0.38 : 0.32, playbackRate: 0.94 + Math.random() * 0.1 });
         damagePlayer(Math.max(1, Math.round((monster.damage ?? 1) * settings.enemyDamage)), monster.name, monster);
+      }
+
+      if (monster.isBoss && monster.bossPhase >= 2 && monster.attackVariant === "sweep" && !monster.isComboFollowUp) {
+        monster.comboFollowUpAt = monster.attackEndsAt + 90;
       }
     }
   }
@@ -3902,10 +3965,13 @@ function damageMonster(monster, amount, effects = {}) {
   }
   monster.health = Math.max(0, monster.health - amount);
   monster.hitFlashUntil = state.lastTimestamp + 110;
+  monster.hurtStartedAt = state.lastTimestamp;
   monster.hurtEndsAt = state.lastTimestamp + 180;
   playCombatSfx("hurt", { volume: monster.isBoss ? 0.3 : 0.22, playbackRate: 0.94 + Math.random() * 0.1 });
   state.cameraShakeUntil = state.lastTimestamp + (monster.isBoss ? 150 : 90);
   state.cameraShakeStrength = monster.isBoss ? 4 : 2;
+  state.hitStopUntil = Math.max(state.hitStopUntil, state.lastTimestamp + (monster.isBoss ? 42 : 35));
+  state.combatImpacts.push({ x: monster.x, y: monster.y - 10, startedAt: state.lastTimestamp, endsAt: state.lastTimestamp + 180 });
 
   if (effects.stun) {
     monster.stunnedUntil = state.lastTimestamp + (monster.isBoss ? 180 : 520);
@@ -3931,6 +3997,8 @@ function damageMonster(monster, amount, effects = {}) {
 
   monster.defeated = true;
   monster.deathStartedAt = state.lastTimestamp;
+  const deathAnimation = MONSTER_SPRITE_CONFIG[getMonsterArtKey(monster)]?.animations?.death;
+  monster.deathEndsAt = state.lastTimestamp + (deathAnimation?.frameCount ?? 6) * (deathAnimation?.frameDuration ?? 90);
   playCombatSfx("death", { volume: monster.isBoss ? 0.36 : 0.26, playbackRate: monster.isBoss ? 0.82 : 1 });
   saveGameProgress();
 
@@ -5136,13 +5204,24 @@ function render() {
 }
 
 function drawCombatFeedback() {
-  if (state.lastTimestamp >= state.combatFlashUntil) {
-    return;
+  if (state.lastTimestamp < state.combatFlashUntil) {
+    const progress = (state.combatFlashUntil - state.lastTimestamp) / 150;
+    ctx.fillStyle = `rgba(221, 73, 73, ${0.16 * clamp(progress, 0, 1)})`;
+    ctx.fillRect(0, 0, VIEWPORT.width, VIEWPORT.height);
   }
 
-  const progress = (state.combatFlashUntil - state.lastTimestamp) / 150;
-  ctx.fillStyle = `rgba(221, 73, 73, ${0.16 * clamp(progress, 0, 1)})`;
-  ctx.fillRect(0, 0, VIEWPORT.width, VIEWPORT.height);
+  state.combatImpacts = state.combatImpacts.filter((impact) => state.lastTimestamp < impact.endsAt);
+  for (const impact of state.combatImpacts) {
+    const progress = clamp((state.lastTimestamp - impact.startedAt) / (impact.endsAt - impact.startedAt), 0, 1);
+    const size = Math.round(8 + progress * 16);
+    const screen = coordinateSystem.worldToScreen(impact);
+    ctx.save();
+    ctx.globalAlpha = 1 - progress;
+    if (canDrawSprite(effectSprites.sparkle)) {
+      ctx.drawImage(effectSprites.sparkle, Math.round(screen.x - size / 2), Math.round(screen.y - size / 2), size, size);
+    }
+    ctx.restore();
+  }
 }
 
 function drawMiniMap() {
@@ -7960,7 +8039,9 @@ function drawMonster(monster) {
     });
   }
 
-  drawMonsterHealthBar(monster);
+  if (!monster.defeated) {
+    drawMonsterHealthBar(monster);
+  }
 }
 
 function drawArchetypeMonster(monster, palette, x, y) {
@@ -8040,7 +8121,9 @@ function drawMonsterSprite(monster, hitFlash) {
   const config = MONSTER_SPRITE_CONFIG[artKey];
   const spriteSet = monsterSprites[artKey];
   const isAttacking = state.lastTimestamp < (monster.attackEndsAt ?? 0);
-  const animationKey = isAttacking ? "attack" : monster.animationState === "run" ? "run" : "idle";
+  const isDying = monster.defeated && state.lastTimestamp < (monster.deathEndsAt ?? 0);
+  const isHurt = !isDying && state.lastTimestamp < (monster.hurtEndsAt ?? 0);
+  const animationKey = isDying ? "death" : isHurt ? "hurt" : isAttacking ? "attack" : monster.animationState === "run" ? "run" : "idle";
   const animation = config?.animations?.[animationKey] ?? config?.animations?.idle;
   const direction = getMonsterSpriteDirection(monster);
   const sprite = config?.directional
@@ -8053,10 +8136,16 @@ function drawMonsterSprite(monster, hitFlash) {
     return false;
   }
 
-  const animationTime = isAttacking
-    ? Math.max(0, state.lastTimestamp - (monster.attackStartedAt ?? state.lastTimestamp))
+  const startedAt = isDying
+    ? monster.deathStartedAt
+    : isHurt
+      ? monster.hurtStartedAt
+      : monster.attackStartedAt;
+  const isOneShot = isAttacking || isHurt || isDying;
+  const animationTime = isOneShot
+    ? Math.max(0, state.lastTimestamp - (startedAt ?? state.lastTimestamp))
     : state.lastTimestamp + (monster.phase ?? 0) * 1000;
-  const frameIndex = isAttacking
+  const frameIndex = isOneShot
     ? Math.min(animation.frameCount - 1, Math.floor(animationTime / animation.frameDuration))
     : Math.floor(animationTime / animation.frameDuration) % animation.frameCount;
   const attackProgress = isAttacking ? getTimedProgress(monster.attackStartedAt, monster.attackEndsAt) : 0;

@@ -69,6 +69,16 @@ test("Zone 1 combat uses the dedicated attack animation", async ({ page }, testI
   await page.screenshot({ path: testInfo.outputPath("zone1-raider-attack.png"), fullPage: true });
 });
 
+test("Zone 1 captain exposes its phase-two combat profile", async ({ page }, testInfo) => {
+  await openDebugSession(page);
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("village"));
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.damageMonster("village-corruption-guard", 9));
+  await expect.poll(() => page.evaluate(() => window.__CROSSROADS_DEBUG__.getSnapshot().monsters.find((monster) => monster.id === "village-corruption-guard")?.bossPhase)).toBe(2);
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.setPlayerPosition(748, 456));
+  await page.waitForTimeout(760);
+  await page.screenshot({ path: testInfo.outputPath("zone1-captain-phase-two.png"), fullPage: true });
+});
+
 test("held movement stops on blur and paused scenes ignore movement", async ({ page }) => {
   await openDebugSession(page);
   const start = await snapshot(page);

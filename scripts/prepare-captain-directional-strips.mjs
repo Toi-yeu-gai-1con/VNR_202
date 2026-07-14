@@ -3,8 +3,9 @@ import sharp from "sharp";
 import { fileURLToPath } from "node:url";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
-const folder = path.join(root, "assets", "monsters", "zone1-enforcer-captain");
-const source = path.join(folder, "enforcer-captain-directional-source-alpha.png");
+const [folderName = "zone1-enforcer-captain", spriteName = "enforcer-captain"] = process.argv.slice(2);
+const folder = path.join(root, "assets", "monsters", folderName);
+const source = path.join(folder, `${spriteName}-directional-source-alpha.png`);
 const sourceImage = sharp(source).ensureAlpha();
 const { width, height } = await sourceImage.metadata();
 const cellWidth = width / 6;
@@ -32,7 +33,7 @@ async function frame(row, column) {
     }
   }
   const cropped = { left: minX, top: minY, width: maxX - minX + 1, height: maxY - minY + 1 };
-  const extracted = await sharp(raw, { raw: { width: bounds.width, height: bounds.height, channels: 4 } }).extract(cropped).resize(56, 56, { fit: "contain", kernel: "nearest" }).png().toBuffer();
+  const extracted = await sharp(raw, { raw: { width: bounds.width, height: bounds.height, channels: 4 } }).extract(cropped).resize(56, 56, { fit: "contain", kernel: "nearest", background: { r: 0, g: 0, b: 0, alpha: 0 } }).png().toBuffer();
   return sharp({ create: { width: 64, height: 64, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } })
     .composite([{ input: extracted, left: 4, top: 4 }])
     .png()
@@ -44,7 +45,7 @@ async function strip(name, cells) {
   await sharp({ create: { width: 64 * frames.length, height: 64, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } })
     .composite(frames.map((input, index) => ({ input, left: index * 64, top: 0 })))
     .png()
-    .toFile(path.join(folder, `enforcer-captain-${name}.png`));
+    .toFile(path.join(folder, `${spriteName}-${name}.png`));
 }
 
 const directions = {
@@ -59,4 +60,4 @@ for (const [direction, actions] of Object.entries(directions)) {
   }
 }
 
-console.log("Prepared captain directional strips from the generated 3x6 source sheet.");
+console.log(`Prepared ${spriteName} directional strips from the generated 3x6 source sheet.`);
