@@ -67,6 +67,15 @@ export const NARRATIVE_ENDING_DEFINITIONS = Object.freeze({
   "secret-corruption": { title: "Có ngọn cờ nhưng mất lòng dân", kind: "bad", branchLabel: "Nhánh giả định" },
 });
 
+export const NARRATIVE_TVA_REACTION_DEFINITIONS = Object.freeze({
+  zone1: Object.freeze({
+    protectedRoute: "Cậu đã giữ cho tiếng nói của người lao động đi tiếp. Hồ sơ ghi nhận một con đường được bảo vệ bằng sự kiên định, không phải bằng những lời hứa dễ dãi.",
+    gatheredEvidence: "Cậu đã chọn quan sát để bảo vệ đường truyền. Thông tin chỉ có ý nghĩa khi cuối cùng vẫn trở về với người cần nó nhất.",
+    compromisedAndRepaired: "Máy ghi nhận một lần lệch khỏi đường truyền, rồi một hành động sửa chữa rõ ràng. Lịch sử không xóa sai lầm, nhưng con người có thể chịu trách nhiệm và quay lại với cộng đồng.",
+    compromised: "Có một vết lệch trong hồ sơ Khu 1. Cậu đã giữ La Bàn Đỏ, nhưng hãy nhớ: lợi ích riêng luôn làm con đường chung dễ chao đảo hơn.",
+  }),
+});
+
 export const NARRATIVE_CHOICE_DEFINITIONS = Object.freeze({
   zone1: Object.freeze([
     {

@@ -1,7 +1,7 @@
 import { createQuestState } from "../data/quests.js";
 import { createNarrativeState, recordNarrativeChoice } from "../systems/narrative-state.js";
 import { resolveEnding } from "../systems/ending-resolver.js";
-import { NARRATIVE_CHOICE_DEFINITIONS, NARRATIVE_ENDING_DEFINITIONS } from "../data/narrative-definitions.js";
+import { NARRATIVE_CHAPTER_DEFINITIONS, NARRATIVE_CHOICE_DEFINITIONS, NARRATIVE_ENDING_DEFINITIONS, NARRATIVE_TVA_REACTION_DEFINITIONS } from "../data/narrative-definitions.js";
 import { ZONE_PROFILES } from "../data/zone-profiles.js";
 import { createAssetManager } from "../core/asset-manager.js";
 import { createPageLifecycleController } from "../core/page-lifecycle.js";
@@ -96,6 +96,12 @@ const zoneSummaryTitle = document.getElementById("zone-summary-title");
 const zoneSummaryCopy = document.getElementById("zone-summary-copy");
 const zoneSummaryStats = document.getElementById("zone-summary-stats");
 const zoneSummaryCloseButton = document.getElementById("zone-summary-close-button");
+const zoneTitleOverlay = document.getElementById("zone-title-overlay");
+const zoneTitlePeriod = document.getElementById("zone-title-period");
+const zoneTitleTitle = document.getElementById("zone-title-title");
+const zoneTitleQuestion = document.getElementById("zone-title-question");
+const zoneTitleSource = document.getElementById("zone-title-source");
+const zoneTitleContinueButton = document.getElementById("zone-title-continue-button");
 const combatStatus = document.getElementById("combat-status");
 const difficultyControls = document.getElementById("difficulty-controls");
 
@@ -320,6 +326,7 @@ const state = {
   tutorialSeen: false,
   completedZones: new Set(),
   zoneSummaryLevelId: null,
+  zoneTitleChapterId: null,
   cameraShakeUntil: 0,
   cameraShakeStrength: 0,
   hitStopUntil: 0,
@@ -745,6 +752,45 @@ function closeZoneSummary() {
   updateInteractionPrompt();
   saveGameProgress();
 }
+
+function getNarrativeChapterForLevel(levelId) {
+  return NARRATIVE_CHAPTER_DEFINITIONS.find((chapter) => chapter.levelId === levelId) ?? null;
+}
+
+function showZoneTitleCard(levelId) {
+  const chapter = getNarrativeChapterForLevel(levelId);
+  const seenFlag = chapter ? `chapter.${chapter.id}.titleSeen` : null;
+
+  if (!chapter || !seenFlag || state.narrative.branchFlags[seenFlag]) {
+    return false;
+  }
+
+  state.zoneTitleChapterId = chapter.id;
+  state.mode = "modal";
+  clearPressedKeys();
+  zoneTitlePeriod.textContent = chapter.period;
+  zoneTitleTitle.textContent = chapter.title;
+  zoneTitleQuestion.textContent = chapter.question;
+  zoneTitleSource.textContent = `Nguồn kiểm chứng: ${chapter.historicalSource.label}`;
+  zoneTitleOverlay.classList.remove("hidden");
+  zoneTitleOverlay.setAttribute("aria-hidden", "false");
+  zoneTitleContinueButton.focus();
+  return true;
+}
+
+function closeZoneTitleCard() {
+  const chapterId = state.zoneTitleChapterId;
+  if (chapterId) {
+    state.narrative.branchFlags[`chapter.${chapterId}.titleSeen`] = true;
+  }
+
+  state.zoneTitleChapterId = null;
+  zoneTitleOverlay.classList.add("hidden");
+  zoneTitleOverlay.setAttribute("aria-hidden", "true");
+  state.mode = "playing";
+  updateInteractionPrompt();
+  saveGameProgress();
+}
 const storyRegistry = createStoryRegistry(levels);
 initializeLevelRuntime();
 configureOpeningCopy();
@@ -780,6 +826,7 @@ storyNextButton.addEventListener("click", withUiClickSound(() => showStoryBookEn
 returnStartButton.addEventListener("click", withUiClickSound(handleReturnFromEnding));
 tutorialNextButton.addEventListener("click", withUiClickSound(advanceTutorial));
 zoneSummaryCloseButton.addEventListener("click", withUiClickSound(closeZoneSummary));
+zoneTitleContinueButton.addEventListener("click", withUiClickSound(closeZoneTitleCard));
 assetRetryButton.addEventListener("click", withUiClickSound(retryPendingAssetLoad));
 assetReturnButton.addEventListener("click", withUiClickSound(returnFromAssetFailure));
 difficultyControls.addEventListener("click", (event) => {
@@ -2220,6 +2267,9 @@ function resetGameplayProgress() {
   state.badEndingRecovery = null;
   state.completedZones.clear();
   state.zoneSummaryLevelId = null;
+  state.zoneTitleChapterId = null;
+  zoneTitleOverlay.classList.add("hidden");
+  zoneTitleOverlay.setAttribute("aria-hidden", "true");
   state.cameraShakeUntil = 0;
   state.cameraShakeStrength = 0;
   state.hitStopUntil = 0;
@@ -2422,8 +2472,8 @@ function installDebugTools() {
     getSnapshot() {
       return createDebugSnapshot();
     },
-    loadLevel(levelId, spawnOverride = null) {
-      loadLevel(levelId, spawnOverride);
+    loadLevel(levelId, spawnOverride = null, options = {}) {
+      loadLevel(levelId, spawnOverride, options);
       return createDebugSnapshot();
     },
     async triggerExit(exitId) {
@@ -2938,6 +2988,10 @@ function createTvaRelicReportDialogue(relicIds, nextRoute) {
     { speaker: "David", text: `${joinedLabels}. Tần số lịch sử khớp hoàn toàn; hồ sơ này được xác nhận.` },
   ];
 
+  if (relicIds.includes("red-compass")) {
+    lines.push({ speaker: "David", text: getZone1TvaReaction() });
+  }
+
   if (nextRoute) {
     lines.push({
       speaker: "David",
@@ -3131,6 +3185,25 @@ function getNarrativeChoiceOption(chapterId, decisionId, optionId) {
   }
 
   return { decision, option };
+}
+
+function getZone1TvaReaction() {
+  const reactions = NARRATIVE_TVA_REACTION_DEFINITIONS.zone1;
+  const flags = state.narrative.branchFlags;
+
+  if (flags["zone1.acceptedRecruiter"] && flags["zone1.repairAccepted"]) {
+    return reactions.compromisedAndRepaired;
+  }
+
+  if (flags["zone1.acceptedRecruiter"] || flags["zone1.lastIssueSurrendered"]) {
+    return reactions.compromised;
+  }
+
+  if (flags["zone1.soughtEvidence"] || flags["zone1.usedEvidence"]) {
+    return reactions.gatheredEvidence;
+  }
+
+  return reactions.protectedRoute;
 }
 
 function applyNarrativeChoice(chapterId, decisionId, optionId) {
@@ -3676,6 +3749,10 @@ function loadLevel(levelId, spawnOverride, options = {}) {
   updateProgressHud();
   if (options.save !== false) {
     saveGameProgress();
+  }
+
+  if (options.showTitleCard) {
+    showZoneTitleCard(levelId);
   }
 }
 
@@ -5323,7 +5400,7 @@ function handleLevelTransitions() {
     }
 
     if (isExitTriggered(exit)) {
-      loadLevel(target, exit.spawn);
+      loadLevel(target, exit.spawn, { showTitleCard: true });
       return true;
     }
   }

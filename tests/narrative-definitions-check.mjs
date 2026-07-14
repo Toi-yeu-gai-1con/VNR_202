@@ -3,6 +3,7 @@ import {
   NARRATIVE_CHAPTER_DEFINITIONS,
   NARRATIVE_CHOICE_DEFINITIONS,
   NARRATIVE_ENDING_DEFINITIONS,
+  NARRATIVE_TVA_REACTION_DEFINITIONS,
 } from "../src/data/narrative-definitions.js";
 
 assert.equal(NARRATIVE_CHAPTER_DEFINITIONS.length, 5, "Five historical chapters own chronology and title-card data.");
@@ -27,6 +28,12 @@ assert.equal(
   NARRATIVE_CHOICE_DEFINITIONS.zone1.find((choice) => choice.id === "recruiter-offer").options.some((option) => option.endingRisks?.zone1 > 0),
   true,
   "Early dangerous choices raise risk without immediately setting the confirmation flag.",
+);
+
+assert.equal(
+  typeof NARRATIVE_TVA_REACTION_DEFINITIONS.zone1.compromisedAndRepaired,
+  "string",
+  "David's Zone 1 debrief has a specific reaction for a repaired compromise.",
 );
 
 console.log("PASS: chronology, choice consequences, ending catalog, and source links are data-owned.");

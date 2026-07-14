@@ -47,6 +47,26 @@ test("debug overlay remains legible at a wide desktop viewport", async ({ page }
   await page.screenshot({ path: testInfo.outputPath("debug-overlay-wide.png"), fullPage: true });
 });
 
+test("entering Zone 1 through a portal route presents its historical title card once", async ({ page }, testInfo) => {
+  await openDebugSession(page);
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("village", null, { showTitleCard: true }));
+  await expect(page.locator("#zone-title-overlay")).toBeVisible();
+  await expect(page.locator("#zone-title-period")).toHaveText("1922–1929");
+  await expect(page.locator("#zone-title-title")).toContainText("Người cùng khổ");
+  const playerBefore = await snapshot(page).then((state) => ({ x: state.player.x, y: state.player.y }));
+  await page.keyboard.down("d");
+  await page.waitForTimeout(180);
+  await page.keyboard.up("d");
+  const playerDuringCard = await snapshot(page).then((state) => state.player);
+  expect(playerDuringCard.x).toBeCloseTo(playerBefore.x, 1);
+  expect(playerDuringCard.y).toBeCloseTo(playerBefore.y, 1);
+  await page.screenshot({ path: testInfo.outputPath("zone1-title-card.png"), fullPage: true });
+  await page.locator("#zone-title-continue-button").click();
+  await expect(page.locator("#zone-title-overlay")).toBeHidden();
+  await expect.poll(() => snapshot(page).then((state) => state.mode)).toBe("playing");
+  await expect.poll(() => snapshot(page).then((state) => state.narrative.branchFlags["chapter.zone1.titleSeen"])).toBe(true);
+});
+
 test("Zone 1 animated enemy roster renders in the village", async ({ page }, testInfo) => {
   await openDebugSession(page, "challenge");
   await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("village"));
@@ -278,7 +298,7 @@ test("reported relics unlock each later TVA coordinate in campaign order", async
     await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("hub", { x: 480, y: 260, direction: "up" }));
     await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("tva-clerk-placeholder"));
 
-    const lineCount = index === routes.length - 1 ? 5 : 4;
+    const lineCount = index === routes.length - 1 || index === 0 ? 5 : 4;
     for (let line = 1; line < lineCount; line += 1) await page.locator("#dialogue-next-button").click();
 
     if (index < nextRoutes.length) {
@@ -287,6 +307,9 @@ test("reported relics unlock each later TVA coordinate in campaign order", async
       await page.locator("#dialogue-next-button").click();
       await page.locator("#dialogue-next-button").click();
       await page.evaluate(() => window.__CROSSROADS_DEBUG__.triggerExit("tva-dispatch-portal"));
+      await expect(page.locator("#zone-title-overlay")).toBeVisible();
+      await page.locator("#zone-title-continue-button").click();
+      await expect(page.locator("#zone-title-overlay")).toBeHidden();
       continue;
     }
 
