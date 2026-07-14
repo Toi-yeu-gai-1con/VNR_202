@@ -12,6 +12,7 @@ export const GAMEPLAY_BALANCE = freezeBalance({
     speed: 92,
     interactionRadius: 30,
     maxHealth: 36,
+    deathRespawnDelayMs: 650,
   },
   corruption: {
     max: 100,

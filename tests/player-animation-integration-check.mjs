@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFile, stat } from "node:fs/promises";
 import { PLAYER_ANIMATIONS, PLAYER_SPRITE } from "../src/data/render-config.js";
+import { GAMEPLAY_BALANCE } from "../src/data/gameplay-balance.js";
 
 const runtime = await readFile(new URL("../src/runtime/game-runtime.js", import.meta.url), "utf8");
 const index = await readFile(new URL("../index.html", import.meta.url), "utf8");
@@ -25,6 +26,7 @@ assert.deepEqual(
   "Player animation metadata must preserve the Adventurer frame contract."
 );
 assert.deepEqual(PLAYER_ANIMATIONS.death.frameDurations, [90, 90, 90, 90, 90, 90, 600]);
+assert.equal(GAMEPLAY_BALANCE.player.deathRespawnDelayMs, 650);
 assert.equal(PLAYER_SPRITE.frameWidth, 96);
 assert.equal(PLAYER_SPRITE.frameHeight, 80);
 
@@ -43,6 +45,13 @@ assert.match(runtime, /startPlayerAnimation\("parry"/);
 assert.match(runtime, /startPlayerAnimation\("heal"/);
 assert.match(runtime, /startPlayerAnimation\("hurt"/);
 assert.match(runtime, /startPlayerAnimation\("death"/);
+assert.match(runtime, /attack1: loadSound\("assets\/audio\/sfx\/player-attack1\.mp3"/);
+assert.match(runtime, /attack2: loadSound\("assets\/audio\/sfx\/player-attack2\.mp3"/);
+assert.match(runtime, /parry: loadSound\("assets\/audio\/sfx\/player-parry\.mp3"/);
+assert.doesNotMatch(runtime, /playUiSound\(uiSounds\.parry\);\s*\n}\s*\n\s*function resolveParry/);
+assert.match(runtime, /playUiSound\(uiSounds\.dash\)/);
+assert.match(runtime, /playUiSound\(uiSounds\.heal\)/);
+assert.match(runtime, /playUiSound\(uiSounds\.death\)/);
 assert.match(runtime, /state\.mode === "playing" && key === "l"/);
 assert.doesNotMatch(runtime, /state\.mode === "playing" && key === "shift"/);
 assert.doesNotMatch(skillEffectRenderer, /drawAttackSlash/);
@@ -62,6 +71,20 @@ for (const [animation, frameCount] of Object.entries(expectedAnimations)) {
     const dimensions = readPngDimensions(await readFile(url));
     assert.deepEqual(dimensions, { width: frameCount * 96, height: 80 }, `${animation}_${direction} has the wrong strip layout.`);
   }
+}
+
+for (const sound of [
+  "player-attack1.mp3",
+  "player-attack2.mp3",
+  "player-parry.mp3",
+  "player-dash.wav",
+  "player-heal.wav",
+  "player-hurt.wav",
+  "player-death.wav",
+]) {
+  const soundUrl = new URL(`../assets/audio/sfx/${sound}`, import.meta.url);
+  const soundStats = await stat(soundUrl);
+  assert.ok(soundStats.size > 44, `${sound} must contain a generated WAV payload.`);
 }
 
 console.log("PASS: Adventurer action animations are mapped to gameplay and keep their source frame contract.");

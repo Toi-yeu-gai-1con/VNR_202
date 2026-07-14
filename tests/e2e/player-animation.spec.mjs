@@ -21,7 +21,7 @@ test("player action strips render the requested attack, dash, heal, hurt, and de
     await page.screenshot({ path: testInfo.outputPath(`player-${action}.png`), fullPage: true });
   }
 
-  await page.waitForTimeout(1250);
+  await page.waitForTimeout(2100);
   await expect.poll(() => page.evaluate(() => window.__CROSSROADS_DEBUG__.getSnapshot().player.animation)).toBe("idle");
 });
 

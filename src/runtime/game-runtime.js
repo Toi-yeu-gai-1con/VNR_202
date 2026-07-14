@@ -149,6 +149,7 @@ const INTERACTION_RADIUS = GAMEPLAY_BALANCE.player.interactionRadius;
 const STORY_UNLOCK_TOAST_MS = 2800;
 const RELIC_BOOK_OPEN_DELAY_MS = 900;
 const PLAYER_MAX_HEALTH = GAMEPLAY_BALANCE.player.maxHealth;
+const DEATH_RESPAWN_DELAY_MS = GAMEPLAY_BALANCE.player.deathRespawnDelayMs;
 const SA_DOA_MAX = GAMEPLAY_BALANCE.corruption.max;
 const SA_DOA_BAD_ENDING = GAMEPLAY_BALANCE.corruption.badEndingThreshold;
 const CORRUPTION_GLITCH_THRESHOLD = GAMEPLAY_BALANCE.corruption.glitchThreshold;
@@ -1166,6 +1167,13 @@ function loadUiSounds() {
   return {
     bookPageFlip: loadSound("assets/audio/book-page-flip.mp3", 0.42),
     pixelClick: loadSound("assets/audio/ui-pixel-click.mp3", 0.34),
+    attack1: loadSound("assets/audio/sfx/player-attack1.mp3", 0.34),
+    attack2: loadSound("assets/audio/sfx/player-attack2.mp3", 0.32),
+    parry: loadSound("assets/audio/sfx/player-parry.mp3", 0.38),
+    dash: loadSound("assets/audio/sfx/player-dash.wav", 0.22),
+    heal: loadSound("assets/audio/sfx/player-heal.wav", 0.24),
+    hurt: loadSound("assets/audio/sfx/player-hurt.wav", 0.2),
+    death: loadSound("assets/audio/sfx/player-death.wav", 0.28),
   };
 }
 
@@ -1799,13 +1807,15 @@ function getActivePlayerAnimationName() {
 
 function updatePlayerAnimation() {
   const active = state.activePlayerAnimation;
-  if (!active || state.lastTimestamp < active.endsAt) {
-    return;
+  if (active && state.lastTimestamp >= active.endsAt) {
+    const completedName = active.name;
+    state.activePlayerAnimation = null;
+    if (completedName === "death" && state.pendingRespawn) {
+      state.pendingRespawn.respawnAt ??= state.lastTimestamp + DEATH_RESPAWN_DELAY_MS;
+    }
   }
 
-  const completedName = active.name;
-  state.activePlayerAnimation = null;
-  if (completedName === "death" && state.pendingRespawn) {
+  if (!state.activePlayerAnimation && state.pendingRespawn?.respawnAt && state.lastTimestamp >= state.pendingRespawn.respawnAt) {
     completePlayerRespawn();
   }
 }
@@ -3569,6 +3579,7 @@ function useStrikeSkill(isCharged = false) {
   const strikeDamage = isCharged ? 4 : state.comboStep === 3 ? 2 : 1;
   const strikeAnimation = isCharged ? "attack2" : state.comboStep % 2 === 0 ? "attack2" : "attack1";
   startPlayerAnimation(strikeAnimation, { direction: player.direction });
+  playUiSound(isCharged || strikeAnimation === "attack2" ? uiSounds.attack2 : uiSounds.attack1);
   state.activeSkillEffect = {
     type: isCharged ? "chargedStrike" : "strike",
     direction: player.direction,
@@ -3631,6 +3642,7 @@ function useDodge() {
   resolveLevelCollisions("y", player.y - original.y);
   state.activeSkillEffect = { type: "dodge", x: original.x, y: original.y, direction: player.direction, startedAt: state.lastTimestamp, endsAt: state.dodgeEndsAt };
   startPlayerAnimation("dash", { direction: player.direction });
+  playUiSound(uiSounds.dash);
 }
 
 function useParrySkill() {
@@ -3666,6 +3678,7 @@ function resolveParry(sourceName, sourceMonster = null, options = {}) {
     startedAt: state.lastTimestamp,
     endsAt: state.lastTimestamp + 260,
   };
+  playUiSound(uiSounds.parry);
 
   if (sourceMonster && !sourceMonster.defeated && !options.projectile) {
     damageMonster(sourceMonster, sourceMonster.isBoss ? 2 : 3, { knockback: true, stun: true });
@@ -3887,6 +3900,7 @@ function updateWorldDrops() {
         state.health = Math.min(PLAYER_MAX_HEALTH, state.health + GAMEPLAY_BALANCE.drops.healthAmount);
         if (state.health > previousHealth) {
           startPlayerAnimation("heal", { direction: player.direction });
+          playUiSound(uiSounds.heal);
         }
       } else {
         state.stamina = Math.min(STAMINA_MAX, state.stamina + GAMEPLAY_BALANCE.drops.staminaAmount);
@@ -3982,6 +3996,7 @@ function damagePlayer(amount, sourceName = "bóng tối", sourceMonster = null) 
 
   if (state.health > 0) {
     startPlayerAnimation("hurt", { direction: player.direction });
+    playUiSound(uiSounds.hurt);
     showStoryToast(`${sourceName} gây ${amount} sát thương.`);
     return Promise.resolve();
   }
@@ -3991,10 +4006,15 @@ function damagePlayer(amount, sourceName = "bóng tối", sourceMonster = null) 
   const respawnLevelId = state.respawnLevelId ?? state.currentLevelId;
   const respawnLevel = levels[respawnLevelId] ?? currentLevel();
   const respawnSpawn = cloneSpawnPoint(state.respawnSpawn ?? respawnLevel.spawn);
-  state.pendingRespawn = { levelId: respawnLevelId, spawn: respawnSpawn };
-  state.invulnerableUntil = state.lastTimestamp + getPlayerAnimationDuration("death") + RESPAWN_INVULNERABILITY_MS;
+  state.pendingRespawn = {
+    levelId: respawnLevelId,
+    spawn: respawnSpawn,
+    respawnAt: state.lastTimestamp + getPlayerAnimationDuration("death") + DEATH_RESPAWN_DELAY_MS,
+  };
+  state.invulnerableUntil = state.pendingRespawn.respawnAt + RESPAWN_INVULNERABILITY_MS;
   clearPressedKeys();
   startPlayerAnimation("death", { direction: player.direction });
+  playUiSound(uiSounds.death);
 
   adjustSaDoa(
     DEATH_SA_DOA_PENALTY,

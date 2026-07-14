@@ -40,6 +40,14 @@ This project uses a small subset of free game assets:
   - Used for village cart props.
 - `assets/effects/petal-pink.png`
   - Created for this project.
+- Original player skill SFX
+  - Generated locally by `scripts/generate-skill-sfx.py` with deterministic oscillator/noise synthesis; no external samples or third-party recordings.
+  - Used for dash, heal, hurt, and death feedback in `assets/audio/sfx/`.
+- Pixabay sword combat SFX
+  - `player-attack1.mp3`: “Sword sound 2” by Merrick079 (Freesound community), https://pixabay.com/sound-effects/sword-sound-2-36274/
+  - `player-attack2.mp3`: “Sword Slash 01” by u_xjrmmgxfru, https://pixabay.com/sound-effects/sword-slash-01-266296/
+  - `player-parry.mp3`: “Sword Deflection - The Ballad of the Blades” by VoiceBosch, https://pixabay.com/sound-effects/sword-deflection-the-ballad-of-the-blades-255962/
+  - License: Pixabay Content License; included as in-game effects, not redistributed as standalone stock audio.
 - PixelLab generated character art
   - Used for the melee raider, corrupted chanter, and boss warden enemy sprites in `assets/monsters/pixellab/`.
   - Generated for this project through the configured PixelLab account; not redistributed as a third-party asset pack.
