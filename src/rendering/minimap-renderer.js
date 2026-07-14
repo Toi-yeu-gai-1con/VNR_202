@@ -32,6 +32,7 @@ export function createMiniMapRenderer({
     return { x: camera.x, y: camera.y, width: viewport.width, height: viewport.height };
   },
   getPlayer,
+  isVisible = () => true,
 }) {
   function drawLegend() {
     minimap.title = "Vàng: lối ra hoặc mục tiêu • xanh: tương tác • đỏ: quái • cam: boss";
@@ -47,7 +48,7 @@ export function createMiniMapRenderer({
     }
 
     const state = getState();
-    const shouldShow = state.mode === "playing";
+    const shouldShow = state.mode === "playing" && isVisible();
     minimap.classList.toggle("hidden", !shouldShow);
     minimap.setAttribute("aria-hidden", String(!shouldShow));
 

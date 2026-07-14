@@ -536,6 +536,58 @@ button {
   image-rendering: crisp-edges;
 }
 
+.settings-card {
+  width: min(540px, calc(100vw - 28px));
+}
+
+.settings-grid {
+  display: grid;
+  gap: 10px;
+  margin: 14px 0 18px;
+  text-align: left;
+}
+
+.settings-row,
+.settings-toggle {
+  display: grid;
+  gap: 6px;
+  color: #fff1cd;
+  font-size: clamp(1rem, 1.7vw, 1.22rem);
+}
+
+.settings-row input[type="range"] {
+  width: 100%;
+  accent-color: var(--accent-gold);
+}
+
+.settings-toggle {
+  grid-template-columns: 20px 1fr;
+  align-items: center;
+}
+
+.settings-toggle input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent-gold);
+}
+
+html[data-text-scale="large"] .dialogue-text,
+html[data-text-scale="large"] .intro-text,
+html[data-text-scale="large"] .end-copy,
+html[data-text-scale="large"] .slide-copy,
+html[data-text-scale="large"] .tutorial-copy {
+  font-size: 1.2em;
+}
+
+html[data-reduced-motion="true"] *,
+html[data-reduced-motion="true"] *::before,
+html[data-reduced-motion="true"] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  scroll-behavior: auto !important;
+  transition-duration: 0.01ms !important;
+}
+
 .dialogue-box.has-portrait {
   padding-right: 144px;
 }

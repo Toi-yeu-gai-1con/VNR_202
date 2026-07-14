@@ -147,6 +147,7 @@
           <p class="menu-label">Đang tạm dừng</p>
           <h2 id="pause-title">Đêm mưa thuộc địa</h2>
           <button id="resume-button" class="pixel-button" type="button">Tiếp tục</button>
+          <button id="settings-button" class="pixel-button" type="button">Thiết lập</button>
           <button id="restart-button" class="pixel-button" type="button">Chơi lại</button>
           <button id="about-button" class="pixel-button" type="button">Bối cảnh</button>
         </div>
@@ -227,6 +228,22 @@
           <p id="zone-summary-copy" class="zone-summary-copy"></p>
           <p id="zone-summary-stats" class="zone-summary-stats"></p>
           <button id="zone-summary-close-button" class="pixel-button" type="button">Tiếp tục về trung tâm</button>
+        </div>
+      </section>
+
+      <section id="settings-menu" class="overlay menu-overlay hidden" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+        <div class="menu-card settings-card">
+          <p class="menu-label">TÙY CHỈNH HÀNH TRÌNH</p>
+          <h2 id="settings-title">Thiết lập</h2>
+          <div class="settings-grid">
+            <label class="settings-row"><span>Âm lượng nhạc</span><input id="music-volume-input" type="range" min="0" max="100" step="1" value="100"></label>
+            <label class="settings-row"><span>Âm lượng hiệu ứng</span><input id="sfx-volume-input" type="range" min="0" max="100" step="1" value="100"></label>
+            <label class="settings-toggle"><input id="muted-input" type="checkbox"><span>Tắt toàn bộ âm thanh</span></label>
+            <label class="settings-toggle"><input id="reduced-motion-input" type="checkbox"><span>Giảm chuyển động không thiết yếu</span></label>
+            <label class="settings-toggle"><input id="large-text-input" type="checkbox"><span>Chữ hội thoại lớn hơn</span></label>
+            <label class="settings-toggle"><input id="minimap-input" type="checkbox" checked><span>Hiện bản đồ nhỏ</span></label>
+          </div>
+          <button id="close-settings-button" class="pixel-button" type="button">Quay lại tạm dừng</button>
         </div>
       </section>
 

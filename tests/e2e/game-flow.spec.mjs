@@ -457,6 +457,33 @@ test("Zone 1 choices record a recoverable risk and only trigger its bad ending a
   await expect(page.locator("#slide-modal")).toBeHidden();
 });
 
+test("pause settings persist audio, accessibility, and minimap preferences", async ({ page }, testInfo) => {
+  await openDebugSession(page);
+  await page.locator("#pause-button").click();
+  await expect(page.locator("#pause-menu")).toBeVisible();
+  await page.locator("#settings-button").click();
+  await expect(page.locator("#settings-menu")).toBeVisible();
+
+  await page.locator("#music-volume-input").fill("42");
+  await page.locator("#sfx-volume-input").fill("67");
+  await page.locator("#reduced-motion-input").check();
+  await page.locator("#large-text-input").check();
+  await page.locator("#minimap-input").uncheck();
+  await expect.poll(() => page.evaluate(() => document.documentElement.dataset.reducedMotion)).toBe("true");
+  await expect.poll(() => page.evaluate(() => document.documentElement.dataset.textScale)).toBe("large");
+  await page.screenshot({ path: testInfo.outputPath("pause-settings.png"), fullPage: true });
+
+  await page.locator("#close-settings-button").click();
+  await expect(page.locator("#pause-menu")).toBeVisible();
+  await page.locator("#resume-button").click();
+  await expect.poll(() => snapshot(page).then((state) => state.mode)).toBe("playing");
+  await expect(page.locator("#minimap")).toHaveClass(/hidden/);
+
+  await page.reload();
+  await expect.poll(() => page.evaluate(() => document.documentElement.dataset.reducedMotion)).toBe("true");
+  await expect.poll(() => page.evaluate(() => document.documentElement.dataset.textScale)).toBe("large");
+});
+
 test("Zone 2 division risk needs a separate emblem confirmation before its ending", async ({ page }, testInfo) => {
   await openDebugSession(page);
   await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("archive"));

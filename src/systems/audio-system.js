@@ -7,11 +7,25 @@ export function createAudioSystem({
   getZoneProfile,
   getCurrentLevel,
   getPlayer,
+  getSettings = () => ({ musicVolume: 1, sfxVolume: 1 }),
   eventTarget = window,
 }) {
   let audioRetryQueued = false;
   let suspended = false;
   const activeSfx = new Set();
+  const sourceVolumes = new WeakMap();
+
+  function getSourceVolume(sound) {
+    if (!sourceVolumes.has(sound)) {
+      sourceVolumes.set(sound, Number.isFinite(sound.volume) ? sound.volume : 1);
+    }
+    return sourceVolumes.get(sound);
+  }
+
+  function getVolumeSetting(key) {
+    const value = getSettings()?.[key];
+    return typeof value === "number" && value >= 0 && value <= 1 ? value : 1;
+  }
 
   function queueAudioRetry() {
     if (audioRetryQueued || state.soundMuted) {
@@ -38,6 +52,7 @@ export function createAudioSystem({
     }
 
     try {
+      sound.volume = getSourceVolume(sound) * getVolumeSetting("sfxVolume");
       sound.pause();
       sound.currentTime = 0;
       sound.play()?.catch(queueAudioRetry);
@@ -53,7 +68,7 @@ export function createAudioSystem({
     }
 
     const sound = typeof source.cloneNode === "function" ? source.cloneNode(true) : source;
-    sound.volume = Math.max(0, Math.min(1, options.volume ?? source.volume ?? 1));
+    sound.volume = Math.max(0, Math.min(1, (options.volume ?? getSourceVolume(source)) * getVolumeSetting("sfxVolume")));
     sound.playbackRate = options.playbackRate ?? 1;
     sound.muted = state.soundMuted;
     activeSfx.add(sound);
@@ -162,12 +177,12 @@ export function createAudioSystem({
 
     if (music) {
       const baseVolume = profile.music === "archive" || profile.music === "spring" ? 0.26 : 0.24;
-      music.volume = baseVolume * (combatActive ? 0.82 : 1);
+      music.volume = baseVolume * (combatActive ? 0.82 : 1) * getVolumeSetting("musicVolume");
     }
 
     const ambience = profile.ambience.map((key) => ambienceSounds[key]).filter(Boolean);
     for (const sound of ambience) {
-      sound.volume = combatActive ? 0.1 : 0.16;
+      sound.volume = (combatActive ? 0.1 : 0.16) * getVolumeSetting("musicVolume");
     }
 
     return { ambience, music: music ? [music] : [] };
@@ -182,12 +197,24 @@ export function createAudioSystem({
     const activeMusic = [];
 
     if (state.mode === "ending" && state.endingId === "bad") {
-      activeMusic.push(musicSounds.badEnding);
+      const endingMusic = musicSounds.badEnding;
+      if (endingMusic) {
+        endingMusic.volume = getSourceVolume(endingMusic) * getVolumeSetting("musicVolume");
+        activeMusic.push(endingMusic);
+      }
     } else if (state.mode === "ending" && state.endingId === "good") {
-      activeMusic.push(musicSounds.goodEnding);
+      const endingMusic = musicSounds.goodEnding;
+      if (endingMusic) {
+        endingMusic.volume = getSourceVolume(endingMusic) * getVolumeSetting("musicVolume");
+        activeMusic.push(endingMusic);
+      }
     } else if (state.mode !== "start") {
       if (state.currentLevelId === "hub") {
-        activeMusic.push(musicSounds.hub);
+        const hubMusic = musicSounds.hub;
+        if (hubMusic) {
+          hubMusic.volume = getSourceVolume(hubMusic) * getVolumeSetting("musicVolume");
+          activeMusic.push(hubMusic);
+        }
       } else {
         const zoneAudio = syncZoneAmbientAudio();
         activeAmbience.push(...zoneAudio.ambience);

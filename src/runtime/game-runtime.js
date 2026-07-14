@@ -12,6 +12,7 @@ import { createAudioSystem } from "../systems/audio-system.js";
 import { createLevelDefinitions } from "../systems/level-definitions.js";
 import { createSaveSystem } from "../systems/save-system.js";
 import { createEndingCollection } from "../systems/ending-collection.js";
+import { createGameSettingsStore, DEFAULT_GAME_SETTINGS } from "../systems/game-settings.js";
 import { INTERACTION_DIALOGUES, TVA_EMPLOYEE_DIALOGUES, RELIC_DEFINITIONS, RELIC_STORY_SLIDES, ENDING_DEFINITIONS, ENDING_OVERLAY_SCENES, ENDING_CINEMATIC_DEFINITIONS, BAD_ENDING_RECOVERY, OPENING_DIALOGUE } from "../data/story-content.js";
 import { createMiniMapRenderer } from "../rendering/minimap-renderer.js";
 import { createCoordinateSystem } from "../rendering/coordinate-system.js";
@@ -46,6 +47,7 @@ if (minimapCtx) {
 
 const startScreen = document.getElementById("start-screen");
 const pauseMenu = document.getElementById("pause-menu");
+const settingsMenu = document.getElementById("settings-menu");
 const slideModal = document.getElementById("slide-modal");
 const endOverlay = document.getElementById("end-overlay");
 const interactionPrompt = document.getElementById("interaction-prompt");
@@ -87,6 +89,14 @@ const soundButton = document.getElementById("sound-button");
 const fullscreenButton = document.getElementById("fullscreen-button");
 const resumeButton = document.getElementById("resume-button");
 const restartButton = document.getElementById("restart-button");
+const settingsButton = document.getElementById("settings-button");
+const closeSettingsButton = document.getElementById("close-settings-button");
+const musicVolumeInput = document.getElementById("music-volume-input");
+const sfxVolumeInput = document.getElementById("sfx-volume-input");
+const mutedInput = document.getElementById("muted-input");
+const reducedMotionInput = document.getElementById("reduced-motion-input");
+const largeTextInput = document.getElementById("large-text-input");
+const minimapInput = document.getElementById("minimap-input");
 const aboutButton = document.getElementById("about-button");
 const closeSlideButton = document.getElementById("close-slide-button");
 const returnStartButton = document.getElementById("return-start-button");
@@ -191,6 +201,7 @@ const RESPAWN_INVULNERABILITY_MS = GAMEPLAY_BALANCE.mob.respawnInvulnerabilityMs
 const RELIC_TARGET_COUNT = 5;
 const SAVE_STORAGE_KEY = "crossroads-save-v1";
 const ENDING_COLLECTION_STORAGE_KEY = "crossroads-ending-collection-v1";
+const GAME_SETTINGS_STORAGE_KEY = "crossroads-settings-v1";
 const SAVE_VERSION = 2;
 const PLAYER_ATTACK_ANIMATION_MS = GAMEPLAY_BALANCE.combat.strike.animationMs;
 const MONSTER_ATTACK_ANIMATION_MS = GAMEPLAY_BALANCE.mob.attackAnimationMs;
@@ -296,7 +307,8 @@ const state = {
   activeInteractionId: null,
   aboutFromPause: false,
   pendingEnding: false,
-  soundMuted: false,
+  soundMuted: DEFAULT_GAME_SETTINGS.soundMuted,
+  settings: { ...DEFAULT_GAME_SETTINGS },
   health: PLAYER_MAX_HEALTH,
   saDoa: 0,
   inventory: new Set(),
@@ -399,6 +411,13 @@ const saveSystem = createSaveSystem({
   clamp,
 });
 
+const gameSettingsStore = createGameSettingsStore({
+  storage: localStorage,
+  storageKey: GAME_SETTINGS_STORAGE_KEY,
+});
+state.settings = gameSettingsStore.load();
+state.soundMuted = state.settings.soundMuted;
+
 const endingCollection = createEndingCollection({
   storage: localStorage,
   storageKey: ENDING_COLLECTION_STORAGE_KEY,
@@ -414,6 +433,7 @@ const audioSystem = createAudioSystem({
   getZoneProfile,
   getCurrentLevel: currentLevel,
   getPlayer: () => player,
+  getSettings: () => state.settings,
 });
 
 const frameLoop = createRuntimeLoop({
@@ -444,6 +464,7 @@ const miniMapRenderer = createMiniMapRenderer({
   getCamera: () => camera,
   getVisibleWorldRect: () => coordinateSystem.getVisibleWorldRect(),
   getPlayer: () => player,
+  isVisible: () => state.settings.minimapVisible,
 });
 
 function getZoneProfile(levelId = state.currentLevelId) {
@@ -805,6 +826,7 @@ const storyRegistry = createStoryRegistry(levels);
 initializeLevelRuntime();
 configureOpeningCopy();
 updateProgressHud();
+applyGameSettings();
 
 startButton.addEventListener("click", withUiClickSound(startGame));
 continueButton.addEventListener("click", withUiClickSound(continueSavedGame));
@@ -812,6 +834,8 @@ pauseButton.addEventListener("click", withUiClickSound(togglePause));
 soundButton.addEventListener("click", toggleSound);
 fullscreenButton.addEventListener("click", withUiClickSound(toggleFullscreen));
 resumeButton.addEventListener("click", withUiClickSound(resumeGame));
+settingsButton.addEventListener("click", withUiClickSound(openSettingsMenu));
+closeSettingsButton.addEventListener("click", withUiClickSound(closeSettingsMenu));
 restartButton.addEventListener("click", withUiClickSound(restartGame));
 storyBookButton.addEventListener("click", withUiClickSound(() => openStoryBook()));
 aboutButton.addEventListener("click", withUiClickSound(() => {
@@ -821,6 +845,10 @@ aboutButton.addEventListener("click", withUiClickSound(() => {
   openSlide(currentLevel().aboutSlide);
 }));
 closeSlideButton.addEventListener("click", closeSlide);
+for (const settingsControl of [musicVolumeInput, sfxVolumeInput, mutedInput, reducedMotionInput, largeTextInput, minimapInput]) {
+  settingsControl.addEventListener("input", saveSettingsFromControls);
+  settingsControl.addEventListener("change", saveSettingsFromControls);
+}
 dialogueNextButton.addEventListener("click", withUiClickSound(advanceDialogue));
 dialogueChoiceList.addEventListener("click", (event) => {
   const button = event.target.closest("[data-dialogue-choice]");
@@ -875,6 +903,60 @@ function toggleFullscreen() {
   fullscreenAction?.catch(() => updateFullscreenButton());
 }
 
+function updateSettingsControls() {
+  musicVolumeInput.value = String(Math.round(state.settings.musicVolume * 100));
+  sfxVolumeInput.value = String(Math.round(state.settings.sfxVolume * 100));
+  mutedInput.checked = state.settings.soundMuted;
+  reducedMotionInput.checked = state.settings.reducedMotion;
+  largeTextInput.checked = state.settings.textScale === "large";
+  minimapInput.checked = state.settings.minimapVisible;
+}
+
+function applyGameSettings() {
+  state.soundMuted = state.settings.soundMuted;
+  document.documentElement.dataset.reducedMotion = String(state.settings.reducedMotion);
+  document.documentElement.dataset.textScale = state.settings.textScale;
+  audioSystem.setMuted(state.soundMuted);
+  updateSoundButton();
+  updateSettingsControls();
+}
+
+function saveSettingsFromControls() {
+  state.settings = gameSettingsStore.save({
+    soundMuted: mutedInput.checked,
+    musicVolume: Number(musicVolumeInput.value) / 100,
+    sfxVolume: Number(sfxVolumeInput.value) / 100,
+    reducedMotion: reducedMotionInput.checked,
+    textScale: largeTextInput.checked ? "large" : "normal",
+    minimapVisible: minimapInput.checked,
+  });
+  applyGameSettings();
+  syncAmbienceAudio();
+}
+
+function openSettingsMenu() {
+  if (state.mode !== "paused") {
+    return;
+  }
+
+  updateSettingsControls();
+  pauseMenu.classList.add("hidden");
+  pauseMenu.setAttribute("aria-hidden", "true");
+  settingsMenu.classList.remove("hidden");
+  settingsMenu.setAttribute("aria-hidden", "false");
+}
+
+function closeSettingsMenu() {
+  if (state.mode !== "paused") {
+    return;
+  }
+
+  settingsMenu.classList.add("hidden");
+  settingsMenu.setAttribute("aria-hidden", "true");
+  pauseMenu.classList.remove("hidden");
+  pauseMenu.setAttribute("aria-hidden", "false");
+}
+
 function updateFullscreenButton() {
   if (!fullscreenButton) {
     return;
@@ -888,9 +970,8 @@ function updateFullscreenButton() {
 }
 
 function toggleSound() {
-  audioSystem.setMuted(!state.soundMuted);
-
-  updateSoundButton();
+  state.settings = gameSettingsStore.save({ ...state.settings, soundMuted: !state.soundMuted });
+  applyGameSettings();
 
   if (!state.soundMuted) {
     playUiSound(uiSounds.pixelClick);
@@ -958,6 +1039,11 @@ window.addEventListener("keydown", (event) => {
     }
 
     if (state.mode === "playing" || state.mode === "paused") {
+      if (state.mode === "paused" && !settingsMenu.classList.contains("hidden")) {
+        playUiSound(uiSounds.pixelClick);
+        closeSettingsMenu();
+        return;
+      }
       playUiSound(uiSounds.pixelClick);
       togglePause();
       return;
@@ -1023,7 +1109,7 @@ window.addEventListener("keydown", (event) => {
   }
 
   if (state.mode === "playing" && key === "b") {
-    if (state.unlockedStoryIds.size > 0) {
+    if (getStoryBookEntryIds().length > 0) {
       playUiSound(uiSounds.pixelClick);
       openStoryBook();
     }
@@ -3857,6 +3943,8 @@ function togglePause() {
     state.mode = "paused";
     pauseMenu.classList.remove("hidden");
     pauseMenu.setAttribute("aria-hidden", "false");
+    settingsMenu.classList.add("hidden");
+    settingsMenu.setAttribute("aria-hidden", "true");
     updateStoryBookButton();
     return;
   }
@@ -3871,6 +3959,8 @@ function resumeGame() {
   state.aboutFromPause = false;
   pauseMenu.classList.add("hidden");
   pauseMenu.setAttribute("aria-hidden", "true");
+  settingsMenu.classList.add("hidden");
+  settingsMenu.setAttribute("aria-hidden", "true");
   updateInteractionPrompt();
   syncAmbienceAudio();
   updateStoryBookButton();
@@ -5671,6 +5761,10 @@ function updateCamera() {
 }
 
 function getCameraShakeOffset() {
+  if (state.settings.reducedMotion) {
+    return { x: 0, y: 0 };
+  }
+
   const isShaking = state.lastTimestamp < state.cameraShakeUntil;
   const magnitude = isShaking ? state.cameraShakeStrength : 0;
   return {

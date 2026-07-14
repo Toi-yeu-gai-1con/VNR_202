@@ -30,6 +30,7 @@ const rain = sound();
 const click = sound();
 const baton = sound();
 const state = { mode: "playing", currentLevelId: "hub", endingId: null, soundMuted: false };
+const settings = { musicVolume: 0.5, sfxVolume: 0.5 };
 const audio = createAudioSystem({
   state,
   uiSounds: { click },
@@ -39,11 +40,13 @@ const audio = createAudioSystem({
   getZoneProfile: () => ({ ambience: ["rain"], music: "portMaze" }),
   getCurrentLevel: () => ({ monsters: [] }),
   getPlayer: () => ({ x: 0, y: 0 }),
+  getSettings: () => settings,
   eventTarget: new EventTarget(),
 });
 
 audio.syncAmbienceAudio();
 assert.equal(hub.playCalls, 1, "Hub music plays while exploring the centre.");
+assert.equal(hub.volume, 0.5, "Hub music respects the persistent music-volume preference.");
 assert.equal(zone.playCalls, 0, "Zone music is not mixed into the hub.");
 
 state.currentLevelId = "village";
@@ -73,7 +76,7 @@ assert.equal(rain.currentTime, 14.5, "Resuming does not rewind ambience.");
 
 audio.playSfx("baton", { volume: 0.6, playbackRate: 1.08 });
 assert.equal(baton.playCalls, 1, "Combat SFX plays through the isolated audio system.");
-assert.equal(baton.volume, 0.6, "Combat SFX applies its local volume without touching music.");
+assert.equal(baton.volume, 0.3, "Combat SFX applies both its local mix and the persistent effects-volume preference.");
 
 state.mode = "ending";
 state.endingId = "good";
