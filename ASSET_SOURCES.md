@@ -51,6 +51,10 @@ This project uses a small subset of free game assets:
   - Created for this project with the built-in image generation workflow, then background-keyed to transparent PNG.
   - Used for the restored rural cooperative scene in `assets/recovery/doi-moi-irrigation-station.png`.
 
+- TVA employee directional sprite strips
+  - Supplied by the project owner and normalized for this project from the original high-resolution character sheets.
+  - The five direction sheets in `assets/npcs/tva-employee/` use transparent 192 x 384 frames, shared bottom-center anchors, and separate idle/walk rows.
+
 ## Music
 
 - Unexplored Expansion by Bo Jingles and TAD: https://opengameart.org/content/unexplored-expansion

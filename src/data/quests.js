@@ -1,8 +1,12 @@
 export function createQuestState() {
   return {
+    tvaBriefingAccepted: false,
+    tvaPortalTarget: null,
+    tvaReportedRelics: new Set(),
     zone1Started: false,
     zone1Delivered: new Set(),
     zone1RewardClaimed: false,
+    zone1SoldierDecision: null,
     zone2Fragments: new Set(),
     zone2TowerActivated: false,
     zone2RewardClaimed: false,

@@ -1,4 +1,54 @@
+export const TVA_EMPLOYEE_DIALOGUES = {
+  introduction: {
+    speaker: "Nhân viên TVA",
+    lines: [
+      { speaker: "Nhân viên TVA", text: "Bảy chồng biên bản, ba dòng thời gian lệch chuẩn... tuyệt thật, lại OT đến hết kỷ nguyên." },
+      { speaker: "Nhân viên TVA", text: "Khoan đã. Cậu là ai? Mã nhân sự, số hồ sơ biến thể, phòng ban phụ trách?" },
+      { speaker: "Nhà du hành", text: "Tôi còn chẳng biết mình đang ở đâu. Tôi chỉ nhớ mặt đất biến mất rồi rơi thẳng xuống đây." },
+      { speaker: "Nhân viên TVA", text: "Thôi, bỏ qua phần danh tính. Cậu còn nguyên tay chân, đi lại được và vừa sống sót qua một khe nứt thời gian. Thế là đủ hữu dụng rồi." },
+      { speaker: "Nhà du hành", text: "Hữu dụng? Ít nhất hãy nói cho tôi biết đây là đâu đã." },
+      { speaker: "Nhân viên TVA", text: "Đây là Cơ quan Phương sai Thời gian, gọi tắt là TVA. Chúng tôi theo dõi những nhánh lịch sử đi chệch khỏi quỹ đạo." },
+      { speaker: "Nhà du hành", text: "TVA? Vậy những dãy bàn vô tận và đống giấy kia dùng để kiểm soát thời gian sao?" },
+      { speaker: "Nhân viên TVA", text: "Mỗi tờ giấy là một sự kiện. Và vì cậu đã rơi vào đúng ca trực của tôi, giúp tôi xử lý vài hồ sơ tồn đọng đi. Đổi lại, tôi sẽ tìm tọa độ đưa cậu về nhà." },
+    ],
+    choices: [
+      { id: "accept-assignment", label: "Được, tôi sẽ giúp" },
+      { id: "refuse-assignment", label: "Không, tôi muốn về ngay", tone: "danger" },
+    ],
+  },
+  refusal: {
+    speaker: "Nhân viên TVA",
+    lines: [
+      { speaker: "Nhà du hành", text: "Không. Tôi không biết anh là ai, cũng không định làm việc không công cho một văn phòng kỳ quặc." },
+      { speaker: "Nhân viên TVA", text: "Tùy cậu. Nhưng nếu không hợp tác, tôi sẽ không nhập tọa độ và cũng không chỉ cách về nhà." },
+      { speaker: "Nhà du hành", text: "Nơi này không có cửa sổ, cũng chẳng có lối ra... Anh đang nói tôi không còn lựa chọn nào khác à?" },
+      { speaker: "Nhân viên TVA", text: "Trên giấy tờ thì cậu luôn có lựa chọn. Trên thực tế thì không." },
+    ],
+    choices: [
+      { id: "forced-accept-assignment", label: "Được rồi, tôi đồng ý" },
+    ],
+  },
+  dispatchPrompt: {
+    speaker: "Nhân viên TVA",
+    lines: [
+      { speaker: "Nhân viên TVA", text: "Tốt. Hồ sơ đầu tiên đã nằm trên bàn. Cậu muốn xuất phát ngay chưa?" },
+    ],
+    choices: [
+      { id: "dispatch-ready", label: "Tôi sẵn sàng" },
+      { id: "dispatch-later", label: "Cho tôi thêm chút thời gian" },
+    ],
+  },
+  portalActive: {
+    speaker: "Nhân viên TVA",
+    storyId: null,
+    lines: [
+      { speaker: "Nhân viên TVA", text: "Tọa độ vẫn ổn định. Cổng ở ngay bên cạnh; bước qua khi cậu sẵn sàng." },
+    ],
+  },
+};
+
 export const INTERACTION_DIALOGUES = {
+  "tva-clerk-placeholder": TVA_EMPLOYEE_DIALOGUES.introduction,
   "old-peasant": {
     speaker: "Người nông dân",
     lines: [
@@ -21,6 +71,18 @@ export const INTERACTION_DIALOGUES = {
       "Cuối năm 1929, ba tổ chức cộng sản cùng hướng tới cách mạng nhưng vẫn hoạt động biệt lập, tiềm ẩn nguy cơ chia rẽ và công kích lẫn nhau.",
       "Ngày 3/2/1930 tại Hương Cảng, Nguyễn Ái Quốc đã chủ trì hội nghị hợp nhất, thống nhất các tổ chức thành Đảng Cộng sản Việt Nam.",
       "Từ đây, phong trào cách mạng có tổ chức thống nhất và một bàn chỉ nam lý luận rõ ràng để dẫn đường.",
+    ],
+  },
+  "colonial-recruiter": {
+    speaker: "Lính tuần tra Pháp",
+    lines: [
+      "Ta biết cậu đang giữ những tờ Le Paria. Đừng phí công mang chúng đến tay đám phu bến cảng.",
+      "Theo ta làm tay sai, cậu sẽ có tiền bạc và được yên thân. Chỉ cần đốt số báo còn lại, hoặc giữ chúng mãi không cho ai đọc.",
+      "Chọn đi: phục vụ cho ta, hay tiếp tục truyền những lời phản kháng ấy?",
+    ],
+    choices: [
+      { id: "refuse", label: "Từ chối, tiếp tục truyền báo" },
+      { id: "accept", label: "Nhận lời và đốt báo", tone: "danger" },
     ],
   },
   "guiding-compass": {
@@ -514,22 +576,35 @@ export const ENDING_CINEMATIC_DEFINITIONS = {
   },
 };
 
+export const BAD_ENDING_RECOVERY = {
+  lingerDuration: 2200,
+  blackoutDuration: 700,
+  walkDuration: 1700,
+  complaintDuration: 3200,
+  resetDuration: 600,
+  corruptionAfterReset: 45,
+  speaker: "Nhân viên TVA",
+  lines: [
+    "Lại một nhánh thời gian hỏng nữa... Tôi còn chưa uống xong cà phê.",
+    "Đứng dậy. Tôi đưa cậu về điểm kiểm soát gần nhất. Lần này đừng làm đầy thanh Tha hóa nữa.",
+  ],
+};
+
 export const OPENING_DIALOGUE = [
   {
-    speaker: "Nhà du hành thời gian",
-    text: "Hãy trở thành một người vô danh du hành về các nhánh thời gian khác nhau.",
+    speaker: "Khoảng không",
+    text: "Không có cánh cửa, không có tiếng cảnh báo. Mặt đất biến mất và bạn rơi xuyên qua một khe nứt giữa các dòng thời gian.",
+    stage: "fall",
   },
   {
-    speaker: "Cảnh 2",
-    text: "Hãy chứng kiến câu chuyện của các thời đại đó để mở ra tương lai thật sự.",
+    speaker: "Nhà du hành",
+    text: "Bạn đáp xuống một nền bê tông lạnh ngắt. Trên đầu là vô số hộp đèn; trước mặt, những dãy bàn giấy kéo dài đến mức không thấy điểm cuối.",
+    stage: "landed",
   },
   {
-    speaker: "Cảnh 3",
-    text: "Những lựa chọn đúng sẽ đưa bạn đến cánh cửa của tương lai thật sự.",
-  },
-  {
-    speaker: "Cảnh 4",
-    text: "Nhưng nếu vi phạm vào sai lầm, bạn sẽ rơi vào cái kết tệ nhất.",
+    speaker: "Nhà du hành",
+    text: "Không biết đây là đâu, bạn chỉ còn cách đi theo lối hành lang dài hun hút. Có tiếng ai đó đang càm ràm về chuyện tăng ca ở phía trước.",
+    stage: "orient",
   },
 ];
 

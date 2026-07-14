@@ -14,4 +14,11 @@ assert.equal(scenes.isSimulationRunning(), false, "Paused gameplay stops the sim
 assert.equal(scenes.transition(SCENES.ENDING), false, "Invalid transitions are rejected without changing scene.");
 assert.equal(scenes.current, SCENES.PAUSED, "Rejected transitions keep the previous scene.");
 
+const badEndingRecovery = createSceneController(SCENES.ENDING);
+assert.equal(
+  badEndingRecovery.transition(SCENES.PLAYING),
+  true,
+  "A recovered bad ending can resume gameplay at its checkpoint."
+);
+
 console.log("PASS: scene transitions are explicit and gameplay-only updates are enforced.");

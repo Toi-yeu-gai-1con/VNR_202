@@ -11,11 +11,11 @@ export function getAssetGroupForSource(src) {
     return "ending";
   }
 
-  if (/hub-unexplored|history-hub|final-history-gate|historyDoor|portal-spinning/i.test(src)) {
+  if (/hub-unexplored|history-hub|tva-office|tva-employee|final-history-gate|historyDoor|portal-spinning/i.test(src)) {
     return "hub";
   }
 
-  if (/unforgiving_himalayas|rain-ambient|colonial-harbor|storm-shelter|mutterpixel-ruined-village/i.test(src)) {
+  if (/unforgiving_himalayas|rain-ambient|colonial-harbor|storm-shelter|mutterpixel-ruined-village|french-colonial-soldier/i.test(src)) {
     return "zone1";
   }
 
@@ -39,5 +39,5 @@ export function isCriticalAsset(src, group) {
     return false;
   }
 
-  return group !== "core" || /player|npc|monster/i.test(src);
+  return group !== "core" || /player|npc|monster|enemy|enemies/i.test(src);
 }

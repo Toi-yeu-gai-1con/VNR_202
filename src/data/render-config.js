@@ -27,6 +27,21 @@ export const NPC_SPRITE = {
   idleFrameDuration: 240,
   walkFrameDuration: 150,
 };
+export const TVA_EMPLOYEE_SPRITE = {
+  frameWidth: 192,
+  frameHeight: 384,
+  cropX: 0,
+  cropY: 0,
+  cropWidth: 192,
+  cropHeight: 384,
+  drawWidth: 26,
+  drawHeight: 46,
+  idleFrames: 4,
+  walkFrames: 8,
+  idleFrameDuration: 240,
+  walkFrameDuration: 150,
+  smoothing: true,
+};
 export const ENVIRONMENT_SPRITES = {
   deadBranches: [
     { x: 0, y: 0, width: 28, height: 44 },
@@ -220,6 +235,31 @@ export const HOUSE_INTERIOR_A_SPRITES = {
   doorPanel: { x: 160, y: 192, width: 32, height: 32, shadowWidth: 18, shadowHeight: 5, shadowOffsetY: 28 },
 };
 export const MONSTER_SPRITE_CONFIG = {
+  frenchColonialSoldier: {
+    directional: true,
+    directionalAnimation: true,
+    horizontalOnly: true,
+    drawWidth: 55,
+    drawHeight: 46,
+    drawOffsetX: -12,
+    drawOffsetY: -44,
+    directionalOffsets: {
+      east: { x: -12, y: -44 },
+      west: { x: -43, y: -44 },
+    },
+    projectileOffsets: {
+      east: { x: 36, y: -31 },
+      west: { x: -36, y: -31 },
+    },
+    healthBarOffsetY: -48,
+    healthBarWidth: 24,
+    shadowWidth: 20,
+    animations: {
+      idle: { frameWidth: 96, frameHeight: 80, frameCount: 8, frameDuration: 160 },
+      run: { frameWidth: 96, frameHeight: 80, frameCount: 8, frameDuration: 110 },
+      attack: { frameWidth: 96, frameHeight: 80, frameCount: 8, frameDuration: 100 },
+    },
+  },
   rifleman: {
     directional: true,
     directionalAnimation: true,

@@ -6,11 +6,13 @@ const story = readFileSync(new URL("../src/data/story-content.js", import.meta.u
 
 for (const exportName of [
   "INTERACTION_DIALOGUES",
+  "TVA_EMPLOYEE_DIALOGUES",
   "RELIC_DEFINITIONS",
   "RELIC_STORY_SLIDES",
   "ENDING_DEFINITIONS",
   "ENDING_OVERLAY_SCENES",
   "ENDING_CINEMATIC_DEFINITIONS",
+  "BAD_ENDING_RECOVERY",
   "OPENING_DIALOGUE",
 ]) {
   assert.match(story, new RegExp(`export const ${exportName} =`), `${exportName} must be owned by story content data.`);
