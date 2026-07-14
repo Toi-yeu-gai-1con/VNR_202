@@ -29,6 +29,10 @@ const tvaCaseboard = levels.hub.interactables.find((item) => item.id === "tva-ca
 assert.equal(tvaCaseboard?.interactionType, "tvaCaseboard", "The TVA hub offers an interactive caseboard for known mission files.");
 assert.equal(tvaCaseboard?.variant, "tva-caseboard", "The caseboard routes through its dedicated office prop renderer.");
 assert.ok(tvaCaseboard?.interactionRadius >= 42, "The caseboard is comfortably usable without colliding with the office furniture.");
+const hubReturnees = levels.hub.interactables.filter((item) => item.hubReturnee);
+assert.equal(hubReturnees.length, 5, "Five earned TVA returnees cover the four zones with both Zone 3 chapters represented.");
+assert.ok(hubReturnees.every((item) => item.kind === "npc" && item.spriteKey && item.animation === "idle"), "Returnees use real animated NPC sprite actors.");
+assert.equal(hubReturnees.find((item) => item.id === "tva-returnee-zone1")?.visibleWhen(), true, "Zone 1's returnee appears only after the earned reward flag is present.");
 assert.ok(
   Math.hypot(tvaClerk.x - tvaPortal.x, tvaClerk.y - tvaPortal.y) >= 96,
   "The TVA employee stands clear of the dispatch portal."

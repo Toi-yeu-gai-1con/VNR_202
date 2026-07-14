@@ -3040,6 +3040,10 @@ function getInteractionDialogue(item) {
     );
   }
 
+  if (item.hubReturnee) {
+    return { speaker: item.name, lines: [item.dialogue] };
+  }
+
   const scriptedDialogue = INTERACTION_DIALOGUES[item.dialogueKey ?? item.id];
 
   if (scriptedDialogue) {
@@ -6561,6 +6565,10 @@ function getNearestInteractable() {
 }
 
 function isInteractableAvailable(item) {
+  if (typeof item.visibleWhen === "function" && !item.visibleWhen()) {
+    return false;
+  }
+
   switch (item.interactionType) {
     case "startPapers":
       return !state.quests.zone1Started;
@@ -9313,6 +9321,10 @@ function drawEnemyProjectiles() {
 }
 
 function shouldDrawInteractable(item) {
+  if (typeof item.visibleWhen === "function" && !item.visibleWhen()) {
+    return false;
+  }
+
   if (item.interactionType === "rewardCompass") {
     return state.quests.zone1Delivered.size === 3 && !state.quests.zone1RewardClaimed;
   }

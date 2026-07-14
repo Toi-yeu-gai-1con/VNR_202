@@ -75,6 +75,36 @@ function createHubLevel() {
         interactionType: "tvaCaseboard",
         interactionRadius: 52,
       },
+      {
+        id: "tva-returnee-zone1", name: "Người công nhân bến cảng", x: 334, y: 392, width: 20, height: 38,
+        kind: "npc", spriteKey: "npc01", direction: "right", animation: "idle", hubReturnee: true,
+        prompt: "hỏi thăm người công nhân", visibleWhen: () => Boolean(getState().quests.zone1RewardClaimed),
+        dialogue: "Tờ báo đã tới tay chúng tôi. Điều giữ được con đường chung là không để ai bị bỏ lại phía sau.",
+      },
+      {
+        id: "tva-returnee-zone2", name: "Đại biểu kho lưu trữ", x: 626, y: 392, width: 20, height: 38,
+        kind: "npc", spriteKey: "npc03", direction: "left", animation: "idle", hubReturnee: true,
+        prompt: "xem hồ sơ hợp nhất", visibleWhen: () => Boolean(getState().quests.zone2RewardClaimed),
+        dialogue: "Ba nguồn tư liệu đã được đặt lại cạnh nhau. Khác biệt không còn là cái cớ để chia rẽ.",
+      },
+      {
+        id: "tva-returnee-zone3a", name: "Người liên lạc Việt Minh", x: 380, y: 474, width: 20, height: 38,
+        kind: "npc", spriteKey: "npc06", direction: "right", animation: "idle", hubReturnee: true,
+        prompt: "hỏi về thời cơ Tháng Tám", visibleWhen: () => Boolean(getState().quests.zone3ThreadClaimed),
+        dialogue: "Thời cơ chỉ thành sức mạnh khi người dân đã được nối lại thành một khối.",
+      },
+      {
+        id: "tva-returnee-zone3b", name: "Người giữ bản đồ", x: 580, y: 474, width: 20, height: 38,
+        kind: "npc", spriteKey: "npc02", direction: "left", animation: "idle", hubReturnee: true,
+        prompt: "hỏi về giới tuyến tạm thời", visibleWhen: () => Boolean(getState().quests.zone3MapClaimed),
+        dialogue: "Một đường tạm thời không được phép trở thành bức tường trong lòng người.",
+      },
+      {
+        id: "tva-returnee-zone4", name: "Nông dân Đổi Mới", x: 480, y: 506, width: 20, height: 38,
+        kind: "npc", spriteKey: "npc05", direction: "up", animation: "idle", hubReturnee: true,
+        prompt: "hỏi về Khoán 10", visibleWhen: () => Boolean(getState().quests.zone4GearClaimed),
+        dialogue: "Khi người làm ruộng được tin và được quyền làm chủ, guồng máy mới có thể quay.",
+      },
     ],
     colliders: [
       { x: 0, y: 0, width: 380, height: 260 },
