@@ -2635,6 +2635,7 @@ function installDebugTools() {
 
       for (const relicId of route.relicIds) {
         state.inventory.add(relicId);
+        unlockStory(RELIC_DEFINITIONS[relicId]?.storyId, { silent: true });
       }
       state.completedZones.add(levelId);
       state.quests.tvaPortalTarget = null;
@@ -6683,6 +6684,13 @@ function handleSystemInteraction(item) {
     case "tvaCaseboard":
       startDialogue(item);
       return;
+    case "openMemoryArchive":
+      if (getStoryBookEntryIds().length === 0) {
+        showStoryToast("Trạm Ký ức chưa có hồ sơ nào được mở khóa.");
+        return;
+      }
+      openStoryBook();
+      return;
     case "colonialRecruitment":
       startDialogue(item);
       return;
@@ -9408,6 +9416,11 @@ function drawNpc(npc) {
 }
 
 function drawObject(item) {
+  if (item.variant === "tva-memory-archive") {
+    drawTvaMemoryArchive(item);
+    return;
+  }
+
   if (item.variant === "tva-caseboard") {
     drawTvaCaseboard(item);
     return;
@@ -9590,6 +9603,29 @@ function drawTvaCaseboard(item) {
   ctx.fillRect(drawX + 21, drawY + 22, 3, 3);
   ctx.fillRect(drawX + 45, drawY + 31, 3, 3);
   ctx.fillRect(drawX + 32, drawY + 42, 3, 3);
+  ctx.restore();
+}
+
+function drawTvaMemoryArchive(item) {
+  const desk = LIMEZU_INTERIOR_SPRITES.deskArchive;
+  const source = environmentSprites.limezu?.interiors;
+  const drawWidth = 62;
+  const drawHeight = 62;
+  const drawX = Math.round(item.x - drawWidth / 2);
+  const drawY = Math.round(item.y - drawHeight + 8);
+
+  if (!drawSpriteRect(source, desk, drawX, drawY, drawWidth, drawHeight, {
+    filter: "brightness(0.86) saturate(0.84) contrast(1.06)",
+  })) {
+    return;
+  }
+
+  const pulse = 0.28 + (Math.sin(state.lastTimestamp * 0.004 + 1.8) + 1) * 0.18;
+  ctx.save();
+  ctx.globalCompositeOperation = "screen";
+  ctx.fillStyle = `rgba(127, 205, 224, ${pulse})`;
+  ctx.fillRect(drawX + 27, drawY + 18, 7, 3);
+  ctx.fillRect(drawX + 39, drawY + 24, 3, 3);
   ctx.restore();
 }
 

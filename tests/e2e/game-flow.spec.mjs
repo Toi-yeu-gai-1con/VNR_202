@@ -340,6 +340,16 @@ test("five relics activate the TVA convergence state without reopening the porta
   expect((await snapshot(page)).quests.tvaPortalTarget).toBeNull();
 });
 
+test("the TVA memory archive opens only earned history", async ({ page }, testInfo) => {
+  await openDebugSession(page);
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.completeTvaRoute("village"));
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("hub", { x: 480, y: 260, direction: "up" }));
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("tva-memory-archive"));
+  await expect(page.locator("#slide-modal")).toBeVisible();
+  await expect(page.locator("#slide-title")).toContainText("LA BÀN ĐỎ");
+  await page.screenshot({ path: testInfo.outputPath("tva-memory-archive.png"), fullPage: true });
+});
+
 test("reported relics unlock each later TVA coordinate in campaign order", async ({ page }) => {
   await openDebugSession(page);
   await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("hub", { x: 480, y: 260, direction: "up" }));

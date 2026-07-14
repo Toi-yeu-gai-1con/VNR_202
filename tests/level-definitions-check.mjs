@@ -29,6 +29,9 @@ const tvaCaseboard = levels.hub.interactables.find((item) => item.id === "tva-ca
 assert.equal(tvaCaseboard?.interactionType, "tvaCaseboard", "The TVA hub offers an interactive caseboard for known mission files.");
 assert.equal(tvaCaseboard?.variant, "tva-caseboard", "The caseboard routes through its dedicated office prop renderer.");
 assert.ok(tvaCaseboard?.interactionRadius >= 42, "The caseboard is comfortably usable without colliding with the office furniture.");
+const memoryArchive = levels.hub.interactables.find((item) => item.id === "tva-memory-archive");
+assert.equal(memoryArchive?.interactionType, "openMemoryArchive", "The TVA hub includes a real interaction point for revisiting unlocked memories.");
+assert.equal(memoryArchive?.variant, "tva-memory-archive", "The memory room surface has a dedicated completed-prop renderer.");
 const hubReturnees = levels.hub.interactables.filter((item) => item.hubReturnee);
 assert.equal(hubReturnees.length, 5, "Five earned TVA returnees cover the four zones with both Zone 3 chapters represented.");
 assert.ok(hubReturnees.every((item) => item.kind === "npc" && item.spriteKey && item.animation === "idle"), "Returnees use real animated NPC sprite actors.");

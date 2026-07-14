@@ -76,6 +76,11 @@ function createHubLevel() {
         interactionRadius: 52,
       },
       {
+        id: "tva-memory-archive", name: "Trạm Ký ức TVA", x: 630, y: 318, width: 56, height: 56,
+        kind: "object", variant: "tva-memory-archive", prompt: "mở kho ký ức đã thu thập",
+        interactionType: "openMemoryArchive", interactionRadius: 50,
+      },
+      {
         id: "tva-returnee-zone1", name: "Người công nhân bến cảng", x: 334, y: 392, width: 20, height: 38,
         kind: "npc", spriteKey: "npc01", direction: "right", animation: "idle", hubReturnee: true,
         prompt: "hỏi thăm người công nhân", visibleWhen: () => Boolean(getState().quests.zone1RewardClaimed),
