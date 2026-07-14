@@ -80,6 +80,15 @@ This project uses a small subset of free game assets:
 - The brutalist office plate is an original lossless WEBP: `assets/time-archive/environment/chronicle-office.webp`.
 - M-90's non-looping `reset_activate` action was authored from the approved seed with Aseprite MCP, exported as `reset-activate.aseprite` / `reset-activate.png`, and tagged with per-frame durations plus reset event metadata.
 
+## Restored TVA office and David character art
+
+- `assets/environment/generated-worlds/tva-office-hub.webp`
+  - Existing project-owned generated world plate restored from `codex/tva-office-bad-ending` for the playable TVA office.
+- `assets/npcs/tva-employee/*.png`
+  - Supplied by the project owner and normalized from the original high-resolution David character sheets.
+  - Five directional sheets use transparent 192 × 384 frames, shared bottom-center anchors, and separate idle/walk rows; right-facing views mirror the corresponding left-facing sheets in the renderer.
+- The M-90 `reset-activate` strip and reset-wave remain the authored special-action sequence for bad-ending recovery.
+
 ## Music
 
 ## Combat sound effects
