@@ -2622,7 +2622,7 @@ function installDebugTools() {
 
 function getDebugEndingIdFromUrl() {
   const requestedEnding = new URLSearchParams(window.location.search).get("debugEnding");
-  return requestedEnding === "good" || requestedEnding === "bad" ? requestedEnding : null;
+  return requestedEnding === "bad" || NARRATIVE_ENDING_DEFINITIONS[requestedEnding] ? requestedEnding : null;
 }
 
 function getDebugLevelIdFromUrl() {
@@ -2673,11 +2673,11 @@ function applyDebugEndingFromUrl() {
 
   state.inventory.clear();
 
-  if (endingId === "good") {
+  if (endingId === "good" || endingId === "neutral") {
     for (const relicId of REQUIRED_RELIC_IDS) {
       state.inventory.add(relicId);
     }
-    state.saDoa = 18;
+    state.saDoa = endingId === "neutral" ? 42 : 18;
   } else {
     state.saDoa = SA_DOA_MAX;
   }
@@ -4258,7 +4258,7 @@ function updateEndingCinematicUiState() {
 
 function showEndOverlay() {
   const endingId = state.endingId ?? "bad";
-  const musicEndingId = endingId === "good" ? "good" : "bad";
+  const musicEndingId = endingId === "good" || endingId === "neutral" ? "good" : "bad";
   const endingAssetsReady = assetManager.loadGroup("ending");
   const ending = ENDING_DEFINITIONS[state.endingId] ?? ENDING_DEFINITIONS.bad;
   resetSound(musicSounds[musicEndingId === "good" ? "goodEnding" : "badEnding"]);
@@ -4589,7 +4589,7 @@ function renderEndingSceneOverlay() {
   context.clearRect(0, 0, width, height);
   context.save();
 
-  if (state.endingId === "good") {
+  if (state.endingId === "good" || state.endingId === "neutral") {
     renderGoodEndingSceneOverlay(context, width, height, scene);
   } else if (state.badEndingRecovery) {
     renderBadEndingRecoveryScene(context, width, height, scene);
@@ -6624,7 +6624,27 @@ function triggerNarrativeEnding(candidate, summary) {
   showEndOverlay();
 }
 
+function showResolvedEnding(candidate, summary) {
+  if (!candidate?.id || !NARRATIVE_ENDING_DEFINITIONS[candidate.id]) {
+    return false;
+  }
+
+  state.narrative.endingsUnlocked.add(candidate.id);
+  state.endingId = candidate.id;
+  state.endingSummary = summary;
+  saveGameProgress();
+  showEndOverlay();
+  return true;
+}
+
 function attemptEndingInteraction() {
+  const candidate = resolveEnding({ narrative: state.narrative, inventory: state.inventory, saDoa: state.saDoa });
+
+  if (candidate.id === "secret-corruption") {
+    showResolvedEnding(candidate, "Tha hóa đã vượt mọi ngưỡng cảnh báo, khiến hồ sơ rạn vỡ từ bên trong.");
+    return;
+  }
+
   if (state.saDoa >= SA_DOA_BAD_ENDING) {
     state.endingId = "bad";
     state.endingSummary = "Tha hóa đã vượt ngưỡng an toàn trước khi lịch sử kịp được mở khóa.";
@@ -6632,16 +6652,15 @@ function attemptEndingInteraction() {
     return;
   }
 
-  const hasAllRelics = REQUIRED_RELIC_IDS.every((itemId) => state.inventory.has(itemId));
-
-  if (!hasAllRelics) {
+  if (!candidate.id) {
     showStoryToast("Cánh Cửa Lịch Sử vẫn bị khóa. Bạn cần đủ 5 vật phẩm then chốt.");
     return;
   }
 
-  state.endingId = "good";
-  state.endingSummary = "Năm vật phẩm hội tụ và thanh Tha hóa vẫn được giữ ở mức thấp.";
-  showEndOverlay();
+  const summary = candidate.id === "neutral"
+    ? "Năm vật phẩm đã hội tụ, nhưng những lựa chọn chưa được hàn gắn vẫn để lại vết nứt trong hồ sơ."
+    : "Năm vật phẩm hội tụ và thanh Tha hóa vẫn được giữ ở mức thấp.";
+  showResolvedEnding(candidate, summary);
 }
 
 function render() {

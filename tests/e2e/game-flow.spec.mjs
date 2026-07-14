@@ -525,13 +525,17 @@ test("Zone 4 stagnation needs a Doi Moi confirmation before its ending", async (
   await page.screenshot({ path: testInfo.outputPath("zone4-stalled-machine-ending.png"), fullPage: true });
 });
 
-for (const endingId of ["good", "bad"]) {
+for (const endingId of ["good", "neutral", "bad", "secret-corruption"]) {
   test(`${endingId} ending renders from its explicit debug route`, async ({ page }, testInfo) => {
     await page.goto(`/?debugTools=1&debugEnding=${endingId}`);
     await page.waitForFunction(() => Boolean(window.__CROSSROADS_DEBUG__));
     await expect(page.locator("#end-overlay")).toBeVisible();
     expect((await snapshot(page)).mode).toBe("ending");
     expect((await snapshot(page)).endingId).toBe(endingId);
+    if (endingId === "neutral") {
+      await page.evaluate(() => window.__CROSSROADS_DEBUG__.completeEndingCinematic());
+      await expect(page.locator("#end-overlay")).toHaveAttribute("data-cinematic", "complete");
+    }
     await page.screenshot({ path: testInfo.outputPath(`${endingId}-ending.png`), fullPage: true });
   });
 }

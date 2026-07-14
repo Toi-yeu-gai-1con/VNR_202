@@ -97,6 +97,16 @@ This project uses a small subset of free game assets:
   - Prompted as an early-dawn Vietnamese agricultural cooperative in 1986–1988 with a stalled waterwheel, irrigation gate, fallow but cared-for rice plots, an idle gear mechanism, and an orderly ledger.
   - Used only by the hypothetical Khu 4 ending “Cỗ máy đứng im”; no third-party character, logo, or stock asset was imported.
 
+- `assets/environment/generated-worlds/neutral-history-fracture-ending.png`
+  - Original project art generated with the built-in image-generation workflow on 2026-07-15.
+  - Prompted as a warm Vietnamese archive room holding the five relic symbols while a thin time fracture and unfinished filing show a recoverable, incomplete result.
+  - Used only by the neutral ending “Dòng lịch sử còn vết nứt”; no third-party character, logo, or stock asset was imported.
+
+- `assets/environment/generated-worlds/secret-corruption-ending.png`
+  - Original project art generated with the built-in image-generation workflow on 2026-07-15.
+  - Prompted as a dark archival hall with an open ledger, petitions, a stopped clock, and a cool time fracture; it deliberately contains no national symbol, logo, text, or degrading depiction.
+  - Used only by the hypothetical secret ending “Có ngọn cờ nhưng mất lòng dân”; no third-party character, logo, or stock asset was imported.
+
 ## Original Cục Lưu Trữ Niên Tuyến (CLTNT) time-archive art pack
 
 - Generated for this project with the built-in image generation workflow; no Marvel/TVA artwork, logos, or traced character likenesses were used.

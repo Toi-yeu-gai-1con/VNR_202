@@ -483,6 +483,20 @@ export const ENDING_DEFINITIONS = {
     artSrc: "assets/environment/generated-worlds/bad-ending-hero.webp",
     artAlt: "Khung cảnh kết thúc xấu với xã hội đen tối hiện đại, trụ Tha hóa, chia rẽ và lệ thuộc.",
   },
+  neutral: {
+    title: "KẾT CỤC: DÒNG LỊCH SỬ CÒN VẾT NỨT",
+    copy:
+      "Năm tín vật đã được đưa về, nhưng những hệ quả của các lựa chọn chưa được sửa trọn vẹn. Hành trình chứng minh rằng giữ được hướng chung không chỉ là chạm tới đích, mà còn là trách nhiệm tiếp tục hàn gắn các vết nứt đã tạo ra.",
+    artSrc: "assets/environment/generated-worlds/neutral-history-fracture-ending.png",
+    artAlt: "Kết cục trung tính với năm tín vật trên bàn hồ sơ và một vết nứt thời gian còn sáng trên nền gạch.",
+  },
+  "secret-corruption": {
+    title: "NHÁNH GIẢ ĐỊNH: CÓ NGỌN CỜ NHƯNG MẤT LÒNG DÂN",
+    copy:
+      "Khi Tha hóa vượt mọi ngưỡng cảnh báo, hồ sơ không còn được dẫn lối bởi trách nhiệm với nhân dân. Đây là nhánh giả định: bộ máy vẫn còn đó, nhưng niềm tin bị bào mòn và dòng thời gian rạn vỡ từ bên trong.",
+    artSrc: "assets/environment/generated-worlds/secret-corruption-ending.png",
+    artAlt: "Nhánh giả định về một kho hồ sơ tối, sổ công vụ bỏ ngỏ và vết nứt thời gian xanh lạnh trên nền nhà.",
+  },
   "zone1-lost-compass": {
     title: "NHÁNH GIẢ ĐỊNH: CON TÀU KHÔNG LA BÀN",
     copy:
@@ -613,6 +627,30 @@ export const ENDING_OVERLAY_SCENES = {
       { x: 0.37, y: 0.72, size: 9, speed: 0.0015, drift: 5, alpha: 0.16 },
       { x: 0.66, y: 0.73, size: 8, speed: 0.0019, drift: 5, alpha: 0.16 },
       { x: 0.5, y: 0.49, size: 15, speed: 0.0011, drift: 7, alpha: 0.18 },
+    ],
+  },
+  neutral: {
+    figures: [
+      { kind: "npc", x: 0.3, y: 0.8, spriteKey: "npc02", direction: "up", scale: 1.04, animation: "walk", bobAmplitude: 1.2, swayAmplitude: 1.5, swaySpeed: 0.0024, frameOffset: 0.15, opacity: 0.78 },
+      { kind: "player", x: 0.5, y: 0.78, direction: "up", scale: 1.18, bobAmplitude: 0.72, swayAmplitude: 0.45, swaySpeed: 0.0013, frameOffset: 0.5, opacity: 0.82 },
+      { kind: "npc", x: 0.7, y: 0.8, spriteKey: "npc03", direction: "up", scale: 1.04, animation: "walk", bobAmplitude: 1.2, swayAmplitude: 1.5, swaySpeed: 0.0024, frameOffset: 0.82, opacity: 0.78 },
+    ],
+    motes: [
+      { x: 0.4, y: 0.62, size: 8, speed: 0.0012, drift: 4, alpha: 0.1 },
+      { x: 0.55, y: 0.56, size: 11, speed: 0.0015, drift: 5, alpha: 0.14 },
+      { x: 0.66, y: 0.64, size: 8, speed: 0.0012, drift: 4, alpha: 0.1 },
+    ],
+  },
+  "secret-corruption": {
+    figures: [
+      { kind: "npc", x: 0.24, y: 0.82, spriteKey: "npc05", direction: "left", scale: 1.08, animation: "walk", bobAmplitude: 1.3, swayAmplitude: 2, swaySpeed: 0.0027, frameOffset: 0.18, opacity: 0.76 },
+      { kind: "player", x: 0.5, y: 0.79, direction: "up", scale: 1.18, bobAmplitude: 0.72, swayAmplitude: 0.46, swaySpeed: 0.0013, frameOffset: 0.52, opacity: 0.66 },
+      { kind: "npc", x: 0.76, y: 0.82, spriteKey: "npc01", direction: "right", scale: 1.08, animation: "walk", bobAmplitude: 1.3, swayAmplitude: 2, swaySpeed: 0.0027, frameOffset: 0.8, opacity: 0.76 },
+    ],
+    motes: [
+      { x: 0.32, y: 0.63, size: 8, speed: 0.0012, drift: 4, alpha: 0.1 },
+      { x: 0.51, y: 0.55, size: 11, speed: 0.0015, drift: 5, alpha: 0.13 },
+      { x: 0.71, y: 0.63, size: 8, speed: 0.0012, drift: 4, alpha: 0.1 },
     ],
   },
   bad: {
@@ -787,6 +825,24 @@ export const ENDING_CINEMATIC_DEFINITIONS = {
       { at: 0.24, x: 0.82, y: 0.2, zoom: 2.4 },
       { at: 0.52, x: 0.82, y: 0.78, zoom: 2.18 },
       { at: 0.78, x: 0.2, y: 0.8, zoom: 1.94 },
+      { at: 1, x: 0.5, y: 0.5, zoom: 1 },
+    ],
+  },
+  neutral: {
+    duration: 8200,
+    keyframes: [
+      { at: 0, x: 0.24, y: 0.68, zoom: 2.28 },
+      { at: 0.34, x: 0.72, y: 0.64, zoom: 2.06 },
+      { at: 0.7, x: 0.5, y: 0.43, zoom: 1.7 },
+      { at: 1, x: 0.5, y: 0.5, zoom: 1 },
+    ],
+  },
+  "secret-corruption": {
+    duration: 9000,
+    keyframes: [
+      { at: 0, x: 0.28, y: 0.74, zoom: 2.32 },
+      { at: 0.32, x: 0.51, y: 0.48, zoom: 2.12 },
+      { at: 0.68, x: 0.72, y: 0.3, zoom: 1.72 },
       { at: 1, x: 0.5, y: 0.5, zoom: 1 },
     ],
   },
