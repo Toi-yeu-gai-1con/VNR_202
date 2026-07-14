@@ -167,4 +167,30 @@ export const NARRATIVE_CHOICE_DEFINITIONS = Object.freeze({
       ]),
     },
   ]),
+  zone4: Object.freeze([
+    {
+      id: "production-choice",
+      options: Object.freeze([
+        { id: "open-ledger", branchFlags: { "zone4.openedLedger": true }, themeScores: { renewal: 1 } },
+        { id: "listen-farmers", branchFlags: { "zone4.listenedFarmers": true }, themeScores: { renewal: 1 } },
+        { id: "protect-private-privilege", branchFlags: { "zone4.protectedPrivilege": true }, endingRisks: { zone4: 1 }, corruption: 8 },
+      ]),
+    },
+    {
+      id: "stalled-mechanism-choice",
+      options: Object.freeze([
+        { id: "remove-bottlenecks", branchFlags: { "zone4.removedBottlenecks": true }, themeScores: { renewal: 1 } },
+        { id: "test-local-initiative", branchFlags: { "zone4.testedLocalInitiative": true }, themeScores: { renewal: 1 } },
+        { id: "freeze-production", branchFlags: { "zone4.frozeProduction": true }, endingRisks: { zone4: 1 }, corruption: 8 },
+      ]),
+    },
+    {
+      id: "doi-moi-verdict",
+      options: Object.freeze([
+        { id: "put-producers-first", branchFlags: { "zone4.producersFirst": true }, themeScores: { renewal: 1 } },
+        { id: "repair-privilege", branchFlags: { "zone4.repairedPrivilege": true }, endingRisks: { zone4: -1 }, themeScores: { renewal: 1 }, corruption: 4 },
+        { id: "confirm-stagnation", branchFlags: { "zone4.badConfirmed": true }, endingRisks: { zone4: 2 }, corruption: 10 },
+      ]),
+    },
+  ]),
 });

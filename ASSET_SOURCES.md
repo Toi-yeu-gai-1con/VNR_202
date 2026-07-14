@@ -92,6 +92,11 @@ This project uses a small subset of free game assets:
   - Prompted as two Vietnamese riverside homes separated by a broken bridge and river in rain, with a severed red thread across a map; it intentionally avoids presenting the hypothetical branch as historical fact.
   - Used only by the hypothetical Khu 3B ending “Vĩ tuyến thành biên giới”; no third-party character, logo, or stock asset was imported.
 
+- `assets/environment/generated-worlds/zone4-stalled-machine-ending.png`
+  - Original project art generated with the built-in image-generation workflow on 2026-07-15.
+  - Prompted as an early-dawn Vietnamese agricultural cooperative in 1986–1988 with a stalled waterwheel, irrigation gate, fallow but cared-for rice plots, an idle gear mechanism, and an orderly ledger.
+  - Used only by the hypothetical Khu 4 ending “Cỗ máy đứng im”; no third-party character, logo, or stock asset was imported.
+
 ## Original Cục Lưu Trữ Niên Tuyến (CLTNT) time-archive art pack
 
 - Generated for this project with the built-in image generation workflow; no Marvel/TVA artwork, logos, or traced character likenesses were used.

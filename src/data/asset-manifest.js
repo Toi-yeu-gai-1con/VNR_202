@@ -7,7 +7,7 @@ export const LEVEL_ASSET_GROUPS = Object.freeze({
 });
 
 export function getAssetGroupForSource(src) {
-  if (/good-ending|bad-ending|lost-compass-ending|fading-fires-ending|missed-moment-ending|divided-border-ending/i.test(src)) {
+  if (/good-ending|bad-ending|lost-compass-ending|fading-fires-ending|missed-moment-ending|divided-border-ending|stalled-machine-ending/i.test(src)) {
     return "ending";
   }
 

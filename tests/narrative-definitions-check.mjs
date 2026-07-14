@@ -43,7 +43,7 @@ assert.equal(
   "Zone 2 bad ending also requires an explicit final confirmation.",
 );
 
-for (const [zoneId, confirmationFlag] of [["zone3a", "zone3a.badConfirmed"], ["zone3b", "zone3b.badConfirmed"]]) {
+for (const [zoneId, confirmationFlag] of [["zone3a", "zone3a.badConfirmed"], ["zone3b", "zone3b.badConfirmed"], ["zone4", "zone4.badConfirmed"]]) {
   assert.equal(
     NARRATIVE_CHOICE_DEFINITIONS[zoneId].some((choice) => choice.options.some((option) => option.branchFlags?.[confirmationFlag])),
     true,

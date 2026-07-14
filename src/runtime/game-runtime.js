@@ -3418,11 +3418,48 @@ function resolveZone3BorderVerdictChoice(choiceId, item) {
   );
 }
 
+function resolveZone4EarlyChoice(decisionId, choiceId, item) {
+  const option = applyNarrativeChoice("zone4", decisionId, choiceId);
+  if (!option) return;
+
+  item.used = true;
+  closeDialogueForChoice();
+  updateInteractionPrompt();
+  const isRisk = choiceId === "protect-private-privilege" || choiceId === "freeze-production";
+  showStoryToast(
+    isRisk
+      ? "Bạn đã tạo thêm một nguy cơ cho Đổi Mới. Vẫn còn cơ hội sửa lại khi chốt Bánh răng Đổi Mới."
+      : "Lựa chọn của bạn đã mở một hướng đổi mới đặt sản xuất và trách nhiệm ở trung tâm."
+  );
+  saveGameProgress();
+}
+
+function resolveZone4VerdictChoice(choiceId, item) {
+  const option = applyNarrativeChoice("zone4", "doi-moi-verdict", choiceId);
+  if (!option) return;
+
+  closeDialogueForChoice();
+  item.collected = true;
+  state.quests.zone4GearClaimed = true;
+  const candidate = resolveEnding({ narrative: state.narrative, inventory: state.inventory, saDoa: state.saDoa });
+  if (candidate.id === "zone4-stalled-machine") {
+    triggerNarrativeEnding(candidate, "Bạn đã xác nhận giữ đặc quyền sau khi để sản xuất bị bế tắc, khiến guồng máy đổi mới tiếp tục đứng im.");
+    return;
+  }
+
+  collectRelic("doi-moi-gear", getReturnGuidanceForLevel("spring"));
+  showStoryToast(
+    choiceId === "repair-privilege"
+      ? "Bạn đã sửa phần đặc quyền gây bế tắc. Bánh răng Đổi Mới quay trở lại."
+      : "Bánh răng Đổi Mới đã sẵn sàng. Hãy trở về TVA báo cáo với David."
+  );
+}
+
 function resolveDialogueChoice(choiceId) {
   const dialogue = state.activeDialogue;
   const choice = getPendingDialogueChoices().find((entry) => entry.id === choiceId);
   const item = currentLevel().interactables.find((entry) => entry.id === dialogue?.interactionId);
-  const supportedInteraction = ["colonialRecruitment", "tvaBriefing", "startPapers", "compassVerdict", "splitChoice", "emblemVerdict", "rallyChoice", "augustVerdict", "temporaryLineChoice", "borderVerdict"].includes(item?.interactionType);
+  const supportedInteraction = ["colonialRecruitment", "tvaBriefing", "startPapers", "compassVerdict", "splitChoice", "emblemVerdict", "rallyChoice", "augustVerdict", "temporaryLineChoice", "borderVerdict", "productionChoice", "stalledMechanismChoice", "doiMoiVerdict"].includes(item?.interactionType);
 
   if (!dialogue || !choice || !item || !supportedInteraction) {
     return;
@@ -3470,6 +3507,21 @@ function resolveDialogueChoice(choiceId) {
 
   if (item.interactionType === "borderVerdict") {
     resolveZone3BorderVerdictChoice(choice.id, item);
+    return;
+  }
+
+  if (item.interactionType === "productionChoice") {
+    resolveZone4EarlyChoice("production-choice", choice.id, item);
+    return;
+  }
+
+  if (item.interactionType === "stalledMechanismChoice") {
+    resolveZone4EarlyChoice("stalled-mechanism-choice", choice.id, item);
+    return;
+  }
+
+  if (item.interactionType === "doiMoiVerdict") {
+    resolveZone4VerdictChoice(choice.id, item);
     return;
   }
 
@@ -6330,8 +6382,10 @@ function isInteractableAvailable(item) {
       return !state.quests.zone4Farmers.has(item.farmerId);
     case "rewardGear":
       return !state.quests.zone4GearClaimed;
-    case "fillCorruption":
-    case "ideologyTrap":
+    case "doiMoiVerdict":
+      return !state.quests.zone4GearClaimed;
+    case "productionChoice":
+    case "stalledMechanismChoice":
       return !item.used && !item.purified;
     default:
       return true;
@@ -6476,16 +6530,14 @@ function handleSystemInteraction(item) {
         showStoryToast("Hãy phá hết rào cản và trao đủ Khoán 10 cho nông dân.");
         return;
       }
-      state.quests.zone4GearClaimed = true;
-      collectRelic("doi-moi-gear", getReturnGuidanceForLevel("spring"));
+      item.interactionType = "doiMoiVerdict";
+      item.dialogueKey = "doi-moi-verdict";
+      startDialogue(item);
       return;
-    case "fillCorruption":
-      item.used = true;
-      triggerBadEnding("Bạn sa vào tham nhũng, quan liêu và đánh mất lòng dân.");
-      return;
-    case "ideologyTrap":
-      item.used = true;
-      triggerBadEnding("Bạn nghe theo lời dụ dỗ đa nguyên chính trị và làm chệch hướng đất nước.");
+    case "productionChoice":
+    case "stalledMechanismChoice":
+    case "doiMoiVerdict":
+      startDialogue(item);
       return;
     case "ending":
       attemptEndingInteraction();

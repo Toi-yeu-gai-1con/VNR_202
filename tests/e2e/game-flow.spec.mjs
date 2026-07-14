@@ -501,6 +501,30 @@ test("Zone 3B separation needs a border confirmation before its ending", async (
   await page.screenshot({ path: testInfo.outputPath("zone3b-divided-border-ending.png"), fullPage: true });
 });
 
+test("Zone 4 stagnation needs a Doi Moi confirmation before its ending", async ({ page }, testInfo) => {
+  await openDebugSession(page);
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("spring"));
+  await expect.poll(() => snapshot(page).then((state) => state.currentLevelId)).toBe("spring");
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("corrupt-official"));
+  await page.locator('[data-dialogue-choice="protect-private-privilege"]').click();
+  await expect.poll(() => snapshot(page).then((state) => state.narrative.endingRisks.zone4)).toBe(1);
+  await expect(page.locator("#end-overlay")).toBeHidden();
+
+  for (const wallId of ["bao-cap-wall-1", "bao-cap-wall-2", "bao-cap-wall-3"]) {
+    await page.evaluate((interactableId) => window.__CROSSROADS_DEBUG__.interactById(interactableId), wallId);
+  }
+  for (const farmerId of ["farmer-khoan-1", "farmer-khoan-2", "farmer-khoan-3"]) {
+    await page.evaluate((interactableId) => window.__CROSSROADS_DEBUG__.interactById(interactableId), farmerId);
+  }
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("doi-moi-leader"));
+  await page.locator('[data-dialogue-choice="confirm-stagnation"]').click();
+  await expect(page.locator("#end-overlay")).toBeVisible();
+  await expect.poll(() => snapshot(page).then((state) => state.endingId)).toBe("zone4-stalled-machine");
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.completeEndingCinematic());
+  await expect(page.locator("#end-overlay")).toHaveAttribute("data-cinematic", "complete");
+  await page.screenshot({ path: testInfo.outputPath("zone4-stalled-machine-ending.png"), fullPage: true });
+});
+
 for (const endingId of ["good", "bad"]) {
   test(`${endingId} ending renders from its explicit debug route`, async ({ page }, testInfo) => {
     await page.goto(`/?debugTools=1&debugEnding=${endingId}`);

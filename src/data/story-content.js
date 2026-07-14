@@ -178,6 +178,39 @@ export const INTERACTION_DIALOGUES = {
       { id: "confirm-permanent-division", label: "Chấp nhận biến giới tuyến tạm thời thành chia cắt lâu dài", tone: "danger" },
     ],
   },
+  "production-choice": {
+    speaker: "Sổ phân phối",
+    lines: [
+      "Một cơ chế có thể phục vụ đời sống hoặc nuôi đặc quyền. Khi kho hàng và sổ sách không còn khớp, cậu sẽ làm gì trước?",
+    ],
+    choices: [
+      { id: "open-ledger", label: "Công khai sổ sách và trả lại nguồn lực cho sản xuất" },
+      { id: "listen-farmers", label: "Lắng nghe người sản xuất về điều gì đang làm họ bế tắc" },
+      { id: "protect-private-privilege", label: "Che giấu đặc quyền để giữ lợi ích riêng", tone: "danger" },
+    ],
+  },
+  "stalled-mechanism-choice": {
+    speaker: "Bàn tem phiếu cũ",
+    lines: [
+      "Hàng rào thủ tục đang khiến nông hộ không thể chủ động sản xuất. Cậu sẽ tháo nút thắt hay giữ guồng máy đứng yên?",
+    ],
+    choices: [
+      { id: "remove-bottlenecks", label: "Bỏ thủ tục cản trở và để nguồn lực đến nơi cần thiết" },
+      { id: "test-local-initiative", label: "Thử quyền chủ động có trách nhiệm tại địa phương" },
+      { id: "freeze-production", label: "Giữ nguyên cơ chế dù sản xuất tiếp tục trì trệ", tone: "danger" },
+    ],
+  },
+  "doi-moi-verdict": {
+    speaker: "Bánh răng Đổi Mới",
+    lines: [
+      "Đổi mới chỉ vận hành khi sự chủ động của người sản xuất đi cùng trách nhiệm và minh bạch. Cậu sẽ chốt hướng nào cho hồ sơ?",
+    ],
+    choices: [
+      { id: "put-producers-first", label: "Đặt đời sống và quyền chủ động của người sản xuất ở trung tâm" },
+      { id: "repair-privilege", label: "Sửa phần đặc quyền đã tạo ra để guồng máy vận hành công bằng" },
+      { id: "confirm-stagnation", label: "Giữ đặc quyền và chấp nhận để guồng máy tiếp tục đình trệ", tone: "danger" },
+    ],
+  },
   "guiding-compass": {
     speaker: "Chiếc la bàn",
     lines: [
@@ -478,6 +511,13 @@ export const ENDING_DEFINITIONS = {
     artSrc: "assets/environment/generated-worlds/zone3b-divided-border-ending.png",
     artAlt: "Nhánh giả định về hai mái nhà bên một con sông và cây cầu gãy ở giữa, với sợi chỉ đỏ đứt trên bản đồ.",
   },
+  "zone4-stalled-machine": {
+    title: "NHÁNH GIẢ ĐỊNH: CỖ MÁY ĐỨNG IM",
+    copy:
+      "Khi đặc quyền được bảo vệ và những nút thắt cũ không được tháo gỡ, sức sản xuất không thể tự mở đường. Đây là nhánh giả định: người dân vẫn lao động, nhưng cơ hội đổi mới bị trì hoãn bởi một guồng máy không chịu sửa mình.",
+    artSrc: "assets/environment/generated-worlds/zone4-stalled-machine-ending.png",
+    artAlt: "Nhánh giả định về một trạm nước và bánh răng ngừng quay bên ruộng đồng, với sổ phân phối còn bỏ ngỏ trên bàn.",
+  },
 };
 
 export const ENDING_OVERLAY_SCENES = {
@@ -724,6 +764,19 @@ export const ENDING_OVERLAY_SCENES = {
       { x: 0.74, y: 0.61, size: 7, speed: 0.0012, drift: 4, alpha: 0.1 },
     ],
   },
+  "zone4-stalled-machine": {
+    figures: [
+      { kind: "npc", x: 0.2, y: 0.81, spriteKey: "npc02", direction: "left", scale: 1.08, animation: "walk", bobAmplitude: 1.28, swayAmplitude: 1.9, swaySpeed: 0.0027, frameOffset: 0.16, opacity: 0.86 },
+      { kind: "npc", x: 0.37, y: 0.78, spriteKey: "npc04", direction: "up", scale: 1.14, animation: "walk", bobAmplitude: 1.2, swayAmplitude: 1.7, swaySpeed: 0.0025, frameOffset: 0.48, opacity: 0.88 },
+      { kind: "player", x: 0.53, y: 0.79, direction: "up", scale: 1.2, bobAmplitude: 0.72, swayAmplitude: 0.46, swaySpeed: 0.0014, frameOffset: 0.62, opacity: 0.78 },
+      { kind: "npc", x: 0.7, y: 0.8, spriteKey: "npc01", direction: "right", scale: 1.1, animation: "walk", bobAmplitude: 1.3, swayAmplitude: 2, swaySpeed: 0.0027, frameOffset: 0.8, opacity: 0.86 },
+    ],
+    motes: [
+      { x: 0.32, y: 0.62, size: 8, speed: 0.0012, drift: 4, alpha: 0.1 },
+      { x: 0.54, y: 0.58, size: 10, speed: 0.0014, drift: 5, alpha: 0.12 },
+      { x: 0.73, y: 0.64, size: 7, speed: 0.0012, drift: 4, alpha: 0.1 },
+    ],
+  },
 };
 
 export const ENDING_CINEMATIC_DEFINITIONS = {
@@ -780,6 +833,15 @@ export const ENDING_CINEMATIC_DEFINITIONS = {
       { at: 0, x: 0.3, y: 0.42, zoom: 2.3 },
       { at: 0.3, x: 0.7, y: 0.42, zoom: 2.12 },
       { at: 0.65, x: 0.5, y: 0.74, zoom: 1.72 },
+      { at: 1, x: 0.5, y: 0.5, zoom: 1 },
+    ],
+  },
+  "zone4-stalled-machine": {
+    duration: 9000,
+    keyframes: [
+      { at: 0, x: 0.18, y: 0.48, zoom: 2.28 },
+      { at: 0.32, x: 0.77, y: 0.7, zoom: 2.08 },
+      { at: 0.68, x: 0.48, y: 0.7, zoom: 1.72 },
       { at: 1, x: 0.5, y: 0.5, zoom: 1 },
     ],
   },
