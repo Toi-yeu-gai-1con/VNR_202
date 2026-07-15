@@ -741,17 +741,15 @@ test("Zone 1 choices record a recoverable risk and only trigger its bad ending a
   await expect(page.locator("#end-overlay")).toHaveAttribute("data-cinematic", "complete");
   await page.screenshot({ path: testInfo.outputPath("zone1-lost-compass-ending.png"), fullPage: true });
 
-  await page.evaluate(() => window.__CROSSROADS_DEBUG__.beginSession());
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.setBadEndingRecoveryElapsed(11_000));
   await expect.poll(() => snapshot(page).then((state) => state.mode)).toBe("playing");
-  await expect(page.locator("#story-book-button")).toBeVisible();
-  await expect(page.locator("#story-book-count")).toHaveText("1");
-  await page.locator("#story-book-button").click();
-  await expect(page.locator("#slide-modal")).toBeVisible();
-  await expect(page.locator("#slide-kicker")).toContainText("Hồ sơ kết cục");
-  await expect(page.locator("#slide-gallery img")).toHaveAttribute("src", /zone1-lost-compass-ending\.png/);
-  await page.screenshot({ path: testInfo.outputPath("ending-case-file-after-new-journey.png"), fullPage: true });
-  await page.locator("#close-slide-button").click();
-  await expect(page.locator("#slide-modal")).toBeHidden();
+  const retry = await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("red-compass-reward"));
+  expect(retry.currentLevelId).toBe("village");
+  expect(retry.quests.zone1RewardClaimed).toBe(false);
+  expect(retry.saDoa).toBe(0);
+  expect(retry.mode).toBe("dialogue");
+  await expect(page.locator("#dialogue-choice-list")).toBeVisible();
+
 });
 
 test("pause settings persist audio, accessibility, and minimap preferences", async ({ page }, testInfo) => {

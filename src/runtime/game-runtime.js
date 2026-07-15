@@ -1,5 +1,5 @@
 import { createQuestState } from "../data/quests.js";
-import { createNarrativeState, recordNarrativeChoice } from "../systems/narrative-state.js";
+import { createNarrativeState, recordNarrativeChoice, serializeNarrativeState } from "../systems/narrative-state.js";
 import { resolveEnding } from "../systems/ending-resolver.js";
 import { NARRATIVE_CHAPTER_DEFINITIONS, NARRATIVE_CHOICE_DEFINITIONS, NARRATIVE_ENDING_DEFINITIONS, NARRATIVE_TVA_REACTION_DEFINITIONS } from "../data/narrative-definitions.js";
 import { ZONE_PROFILES } from "../data/zone-profiles.js";
@@ -17,6 +17,8 @@ import { evaluateOptionalChallenge } from "../systems/optional-challenge.js";
 import { ACHIEVEMENT_DEFINITIONS, getEarnedAchievementIds } from "../data/achievement-definitions.js";
 import { createAchievementCollection } from "../systems/achievement-collection.js";
 import { createLevelDefinitions } from "../systems/level-definitions.js";
+import { captureInteractableRuntimeState, restoreInteractableRuntimeState } from "../systems/interactable-runtime-state.js";
+import { createFinalVerdictCheckpoint, restoreFinalVerdictCheckpoint } from "../systems/bad-ending-recovery.js";
 import { getPortalState } from "../systems/portal-state.js";
 import { createSaveSystem } from "../systems/save-system.js";
 import { createEndingCollection } from "../systems/ending-collection.js";
@@ -395,6 +397,7 @@ const state = {
   hubEpilogueEndingId: null,
   endingCinematic: null,
   badEndingRecovery: null,
+  finalVerdictCheckpoint: null,
   tutorialStep: 0,
   tutorialSeen: false,
   completedZones: new Set(),
@@ -469,6 +472,7 @@ const saveSystem = createSaveSystem({
   cloneSpawnPoint,
   clamp,
 });
+const authoredInteractableState = captureInteractableRuntimeState(levels);
 
 const gameSettingsStore = createGameSettingsStore({
   storage: localStorage,
@@ -2573,6 +2577,7 @@ function createStoryRegistry(levelMap) {
 
 function initializeLevelRuntime() {
   const difficulty = getDifficultySettings(state.difficulty);
+  restoreInteractableRuntimeState(levels, authoredInteractableState);
   for (const level of Object.values(levels)) {
     level.drops = [];
     for (const trap of level.traps ?? []) {
@@ -2582,13 +2587,6 @@ function initializeLevelRuntime() {
       breakable.health = breakable.maxHealth;
       breakable.destroyed = false;
     }
-    for (const item of level.interactables ?? []) {
-      item.collected = false;
-      item.used = false;
-      item.purified = false;
-      item.activated = false;
-    }
-
     for (const monster of level.monsters ?? []) {
       monster.homeX = monster.x;
       monster.homeY = monster.y;
@@ -2725,6 +2723,7 @@ function resetGameplayProgress() {
   state.hubEpilogueEndingId = null;
   state.endingCinematic = null;
   state.badEndingRecovery = null;
+  state.finalVerdictCheckpoint = null;
   state.completedZones.clear();
   state.zoneSummaryLevelId = null;
   state.zoneTitleChapterId = null;
@@ -3944,6 +3943,53 @@ function applyNarrativeChoice(chapterId, decisionId, optionId) {
   return option;
 }
 
+function captureFinalVerdictCheckpoint(item) {
+  return createFinalVerdictCheckpoint({
+    levelId: state.currentLevelId,
+    spawn: { x: player.x, y: player.y, direction: player.direction },
+    respawnLevelId: state.respawnLevelId,
+    respawnSpawn: cloneSpawnPoint(state.respawnSpawn),
+    inventory: [...state.inventory],
+    quests: serializeQuestState(),
+    narrative: serializeNarrativeState(state.narrative),
+    runtime: getRuntimeSaveState(),
+    completedZones: [...state.completedZones],
+    verdictItem: {
+      id: item.id,
+      interactionType: item.interactionType,
+      dialogueKey: item.dialogueKey,
+      prompt: item.prompt,
+      collected: Boolean(item.collected),
+      used: Boolean(item.used),
+      purified: Boolean(item.purified),
+      activated: Boolean(item.activated),
+    },
+  });
+}
+
+function applyFinalVerdictCheckpoint(checkpoint) {
+  const restored = restoreFinalVerdictCheckpoint(checkpoint);
+  const level = levels[restored.levelId];
+  if (!level) {
+    return null;
+  }
+
+  state.inventory = new Set(restored.inventory ?? []);
+  restoreQuestState(restored.quests);
+  restoreNarrativeSaveState(restored.narrative);
+  restoreRuntimeSaveState(restored.runtime);
+  state.completedZones = new Set(restored.completedZones ?? []);
+  state.respawnLevelId = levels[restored.respawnLevelId] ? restored.respawnLevelId : restored.levelId;
+  state.respawnSpawn = cloneSpawnPoint(restored.respawnSpawn ?? restored.spawn ?? level.spawn);
+
+  const verdictItem = level.interactables.find((item) => item.id === restored.verdictItem?.id);
+  if (verdictItem && restored.verdictItem) {
+    Object.assign(verdictItem, restored.verdictItem);
+  }
+
+  return restored;
+}
+
 function closeDialogueForChoice() {
   state.activeDialogue = null;
   state.activeDialogueIndex = 0;
@@ -3994,6 +4040,7 @@ function resolveZone1RecruiterChoice(choiceId, item) {
 }
 
 function resolveZone1CompassVerdictChoice(choiceId, item) {
+  const checkpoint = captureFinalVerdictCheckpoint(item);
   const option = applyNarrativeChoice("zone1", "compass-verdict", choiceId);
 
   if (!option) {
@@ -4006,7 +4053,8 @@ function resolveZone1CompassVerdictChoice(choiceId, item) {
   const candidate = resolveEnding({ narrative: state.narrative, inventory: state.inventory, saDoa: state.saDoa });
 
   if (candidate.id === "zone1-lost-compass") {
-    triggerNarrativeEnding(candidate, "Bạn đã xác nhận lợi ích cá nhân sau một chuỗi thỏa hiệp, để con đường chung bị đánh mất.");
+    applyFinalVerdictCheckpoint(checkpoint);
+    triggerNarrativeEnding(candidate, "Bạn đã xác nhận lợi ích cá nhân sau một chuỗi thỏa hiệp, để con đường chung bị đánh mất.", checkpoint);
     return;
   }
 
@@ -4034,6 +4082,7 @@ function resolveZone2UnityChoice(choiceId, item) {
 }
 
 function resolveZone2EmblemVerdictChoice(choiceId, item) {
+  const checkpoint = captureFinalVerdictCheckpoint(item);
   const option = applyNarrativeChoice("zone2", "emblem-verdict", choiceId);
   if (!option) return;
 
@@ -4042,7 +4091,8 @@ function resolveZone2EmblemVerdictChoice(choiceId, item) {
   state.quests.zone2RewardClaimed = true;
   const candidate = resolveEnding({ narrative: state.narrative, inventory: state.inventory, saDoa: state.saDoa });
   if (candidate.id === "zone2-fading-fires") {
-    triggerNarrativeEnding(candidate, "Bạn đã xác nhận sự chia rẽ sau khi để nghi kỵ lan rộng, khiến các ngọn lửa cùng mục tiêu dần lụi tàn.");
+    applyFinalVerdictCheckpoint(checkpoint);
+    triggerNarrativeEnding(candidate, "Bạn đã xác nhận sự chia rẽ sau khi để nghi kỵ lan rộng, khiến các ngọn lửa cùng mục tiêu dần lụi tàn.", checkpoint);
     return;
   }
 
@@ -4072,6 +4122,7 @@ function resolveZone3RallyChoice(choiceId, item) {
 }
 
 function resolveZone3AugustVerdictChoice(choiceId, item) {
+  const checkpoint = captureFinalVerdictCheckpoint(item);
   const option = applyNarrativeChoice("zone3a", "august-verdict", choiceId);
   if (!option) return;
 
@@ -4080,7 +4131,8 @@ function resolveZone3AugustVerdictChoice(choiceId, item) {
   state.quests.zone3ThreadClaimed = true;
   const candidate = resolveEnding({ narrative: state.narrative, inventory: state.inventory, saDoa: state.saDoa });
   if (candidate.id === "zone3a-missed-moment") {
-    triggerNarrativeEnding(candidate, "Bạn đã xác nhận để lực lượng phân tán sau khi bỏ qua công việc chuẩn bị, khiến thời cơ Tháng Tám vụt qua.");
+    applyFinalVerdictCheckpoint(checkpoint);
+    triggerNarrativeEnding(candidate, "Bạn đã xác nhận để lực lượng phân tán sau khi bỏ qua công việc chuẩn bị, khiến thời cơ Tháng Tám vụt qua.", checkpoint);
     return;
   }
 
@@ -4108,6 +4160,7 @@ function resolveZone3TemporaryLineChoice(choiceId, item) {
 }
 
 function resolveZone3BorderVerdictChoice(choiceId, item) {
+  const checkpoint = captureFinalVerdictCheckpoint(item);
   const option = applyNarrativeChoice("zone3b", "border-verdict", choiceId);
   if (!option) return;
 
@@ -4116,7 +4169,8 @@ function resolveZone3BorderVerdictChoice(choiceId, item) {
   state.quests.zone3MapClaimed = true;
   const candidate = resolveEnding({ narrative: state.narrative, inventory: state.inventory, saDoa: state.saDoa });
   if (candidate.id === "zone3b-divided-border") {
-    triggerNarrativeEnding(candidate, "Bạn đã xác nhận biến giới tuyến tạm thời thành chia cắt lâu dài, làm những liên hệ của người dân hai miền bị đứt gãy.");
+    applyFinalVerdictCheckpoint(checkpoint);
+    triggerNarrativeEnding(candidate, "Bạn đã xác nhận biến giới tuyến tạm thời thành chia cắt lâu dài, làm những liên hệ của người dân hai miền bị đứt gãy.", checkpoint);
     return;
   }
 
@@ -4145,6 +4199,7 @@ function resolveZone4EarlyChoice(decisionId, choiceId, item) {
 }
 
 function resolveZone4VerdictChoice(choiceId, item) {
+  const checkpoint = captureFinalVerdictCheckpoint(item);
   const option = applyNarrativeChoice("zone4", "doi-moi-verdict", choiceId);
   if (!option) return;
 
@@ -4153,7 +4208,8 @@ function resolveZone4VerdictChoice(choiceId, item) {
   state.quests.zone4GearClaimed = true;
   const candidate = resolveEnding({ narrative: state.narrative, inventory: state.inventory, saDoa: state.saDoa });
   if (candidate.id === "zone4-stalled-machine") {
-    triggerNarrativeEnding(candidate, "Bạn đã xác nhận giữ đặc quyền sau khi để sản xuất bị bế tắc, khiến guồng máy đổi mới tiếp tục đứng im.");
+    applyFinalVerdictCheckpoint(checkpoint);
+    triggerNarrativeEnding(candidate, "Bạn đã xác nhận giữ đặc quyền sau khi để sản xuất bị bế tắc, khiến guồng máy đổi mới tiếp tục đứng im.", checkpoint);
     return;
   }
 
@@ -5098,6 +5154,7 @@ function beginBadEndingRecovery() {
   state.badEndingRecovery = {
     startedAt: state.lastTimestamp,
     phase: "linger",
+    checkpoint: state.finalVerdictCheckpoint,
   };
   syncBadEndingRecoveryUi(getBadEndingRecoveryFrame());
   updateEndingCinematicUiState();
@@ -5123,9 +5180,12 @@ function updateBadEndingRecovery() {
 }
 
 function restoreBadEndingCheckpoint() {
-  const checkpointLevelId = levels[state.respawnLevelId] ? state.respawnLevelId : "hub";
+  const restoredVerdict = state.badEndingRecovery?.checkpoint
+    ? applyFinalVerdictCheckpoint(state.badEndingRecovery.checkpoint)
+    : null;
+  const checkpointLevelId = restoredVerdict?.levelId ?? (levels[state.respawnLevelId] ? state.respawnLevelId : "hub");
   const checkpointSpawn = cloneSpawnPoint(
-    state.respawnSpawn ?? levels[checkpointLevelId]?.spawn ?? levels.hub.spawn
+    restoredVerdict?.spawn ?? state.respawnSpawn ?? levels[checkpointLevelId]?.spawn ?? levels.hub.spawn
   );
 
   const recoveredEndingId = state.endingId;
@@ -5148,18 +5208,24 @@ function restoreBadEndingCheckpoint() {
   state.invulnerableUntil = state.lastTimestamp + RESPAWN_INVULNERABILITY_MS;
   state.highCorruptionWarningShown = false;
   clearPressedKeys();
-  resetLevelMonstersForRespawn(checkpointLevelId);
+  if (!restoredVerdict) {
+    resetLevelMonstersForRespawn(checkpointLevelId);
+  }
   hideEndOverlay();
   state.hubEpilogueEndingId = recoveredEndingId;
   state.endingId = null;
   state.endingSummary = "";
+  state.finalVerdictCheckpoint = null;
   state.mode = "playing";
   returnStartButton.disabled = false;
   loadLevel(checkpointLevelId, checkpointSpawn, {
     updateRespawnCheckpoint: false,
     announcePresentation: false,
   });
-  showStoryToast("TVA đã đưa bạn trở lại điểm kiểm soát gần nhất.");
+  showStoryToast(restoredVerdict
+    ? "David đã trả bạn về quyết định cuối. Cổng vẫn niêm phong; hãy chọn lại con đường của mình."
+    : "TVA đã đưa bạn trở lại điểm kiểm soát gần nhất.");
+  saveGameProgress();
 }
 
 function updateEndingCinematicUiState() {
@@ -7545,6 +7611,9 @@ function handleSystemInteraction(item) {
       item.interactionType = "compassVerdict";
       startDialogue(item);
       return;
+    case "compassVerdict":
+      startDialogue(item);
+      return;
     case "offerBribe":
       item.used = true;
       adjustSaDoa(34, "Bạn nhận vinh hoa làm tay sai cho mẫu quốc. Tha hóa tăng mạnh.");
@@ -7581,6 +7650,9 @@ function handleSystemInteraction(item) {
         return;
       }
       item.interactionType = "emblemVerdict";
+      startDialogue(item);
+      return;
+    case "emblemVerdict":
       startDialogue(item);
       return;
     case "splitChoice":
@@ -7718,6 +7790,7 @@ function adjustSaDoa(delta, message = "") {
 }
 
 function triggerBadEnding(summary) {
+  state.finalVerdictCheckpoint = null;
   state.saDoa = SA_DOA_MAX;
   state.runStats.maxCorruption = SA_DOA_MAX;
   state.endingId = "bad";
@@ -7730,7 +7803,7 @@ function isBadEndingId(endingId) {
   return endingId === "bad" || NARRATIVE_ENDING_DEFINITIONS[endingId]?.kind === "bad";
 }
 
-function triggerNarrativeEnding(candidate, summary) {
+function triggerNarrativeEnding(candidate, summary, checkpoint = null) {
   const ending = NARRATIVE_ENDING_DEFINITIONS[candidate?.id];
 
   if (!ending || ending.kind !== "bad") {
@@ -7740,9 +7813,9 @@ function triggerNarrativeEnding(candidate, summary) {
 
   state.narrative.endingsUnlocked.add(candidate.id);
   recordEndingCollection(candidate.id);
+  state.finalVerdictCheckpoint = checkpoint;
   state.endingId = candidate.id;
   state.endingSummary = summary;
-  saveGameProgress();
   showEndOverlay();
 }
 
@@ -7753,6 +7826,7 @@ function showResolvedEnding(candidate, summary) {
 
   state.narrative.endingsUnlocked.add(candidate.id);
   recordEndingCollection(candidate.id);
+  state.finalVerdictCheckpoint = null;
   state.endingId = candidate.id;
   state.endingSummary = summary;
   saveGameProgress();
@@ -7795,8 +7869,10 @@ function render() {
   drawVignette();
   drawCombatFeedback();
   drawPortalTransition();
-  drawNavigationAssist();
-  drawMiniMap();
+  if (state.mode === "playing") {
+    drawNavigationAssist();
+    drawMiniMap();
+  }
   drawDialoguePortrait();
 }
 
@@ -7905,7 +7981,9 @@ function drawWorld() {
     drawTvaHubRelics();
   }
 
-  drawLevelExitPortals(currentLevel().exits);
+  if (state.mode !== "ending") {
+    drawLevelExitPortals(currentLevel().exits);
+  }
 
   ctx.restore();
 }
