@@ -737,6 +737,8 @@ test("Zone 1 choices record a recoverable risk and only trigger its bad ending a
   await expect(page.locator("#end-overlay")).toBeVisible();
   await expect(page.locator("#end-title")).toContainText("CON TÀU KHÔNG LA BÀN");
   await expect.poll(() => snapshot(page).then((state) => state.endingId)).toBe("zone1-lost-compass");
+  await expect.poll(() => snapshot(page).then((state) => state.audio.music.zone1LostCompass.readyState)).toBeGreaterThan(0);
+  await expect.poll(() => snapshot(page).then((state) => state.audio.music.zone1LostCompass.paused)).toBe(false);
   await page.evaluate(() => window.__CROSSROADS_DEBUG__.completeEndingCinematic());
   await expect(page.locator("#end-overlay")).toHaveAttribute("data-cinematic", "complete");
   await page.screenshot({ path: testInfo.outputPath("zone1-lost-compass-ending.png"), fullPage: true });
