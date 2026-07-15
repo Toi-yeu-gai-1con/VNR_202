@@ -11,6 +11,7 @@ import { createDebugOverlay } from "../debug/debug-overlay.js";
 import { createAudioSystem } from "../systems/audio-system.js";
 import { createLevelDefinitions } from "../systems/level-definitions.js";
 import { createTrainingSession } from "../systems/training-session.js";
+import { getPortalState } from "../systems/portal-state.js";
 import { createSaveSystem } from "../systems/save-system.js";
 import { createEndingCollection } from "../systems/ending-collection.js";
 import { createGameSettingsStore, DEFAULT_GAME_SETTINGS } from "../systems/game-settings.js";
@@ -2577,6 +2578,7 @@ function createDebugSnapshot() {
     },
     camera: { ...camera },
     questSummary: getZoneProgressText(state.currentLevelId),
+    portalStates: currentLevel().exits.map((exit) => ({ id: exit.id, ...getExitPortalState(exit) })),
     activeMonsterCount: (currentLevel().monsters ?? []).filter((monster) => isMonsterActive(monster)).length,
     monsters: (currentLevel().monsters ?? []).map((monster) => {
       const screen = coordinateSystem.worldToScreen(monster);
@@ -7188,12 +7190,17 @@ function drawLevelExitPortals(exits) {
 }
 
 function shouldDrawExitPortal(exit) {
-  if (!exit.portal || !isExitAvailable(exit)) {
+  if (!exit.portal) {
+    return false;
+  }
+
+  const portalState = getExitPortalState(exit);
+  if (!portalState.visible) {
     return false;
   }
 
   if (typeof exit.portal.visibleWhen === "function") {
-    return exit.portal.visibleWhen();
+    return exit.portal.visibleWhen() || portalState.status === "sealed";
   }
 
   if (typeof exit.portal.visibleWhen === "boolean") {
@@ -7203,8 +7210,19 @@ function shouldDrawExitPortal(exit) {
   return true;
 }
 
+function getExitPortalState(exit) {
+  return getPortalState({
+    levelId: state.currentLevelId,
+    exitId: exit.id,
+    targetLevelId: getExitTarget(exit),
+    available: isExitAvailable(exit),
+    narrative: state.narrative,
+  });
+}
+
 function drawLevelExitPortal(exit) {
   const portal = exit.portal;
+  const portalState = getExitPortalState(exit);
   const centerX = portal.x ?? Math.round(exit.x + exit.width / 2);
   const centerY = portal.y ?? Math.round(exit.y + exit.height / 2);
   const pulse = 0.7 + (Math.sin(state.lastTimestamp * 0.0045 + centerX * 0.01 + centerY * 0.01) + 1) * 0.12;
@@ -7217,21 +7235,27 @@ function drawLevelExitPortal(exit) {
   ctx.fill();
   ctx.restore();
 
-  drawWorldWarmGlow(centerX, centerY - 4, portal.auraRadius ?? 42, (portal.auraAlpha ?? 0.12) + pulse * 0.08);
+  const isSealed = portalState.status === "sealed";
+  drawWorldWarmGlow(centerX, centerY - 4, portal.auraRadius ?? 42, isSealed ? 0.05 : (portal.auraAlpha ?? 0.12) + pulse * 0.08);
   drawHubPortalSprite({
     x: centerX,
     y: centerY,
-    color: portal.color ?? "#dce4f3",
-    glow: portal.glow ?? "#d8a65e",
+    color: portalState.color,
+    glow: portalState.glow,
     drawSize: portal.drawSize ?? 56,
     auraWidth: portal.auraWidth ?? 20,
     auraHeight: portal.auraHeight ?? 24,
-    innerGlowAlpha: portal.innerGlowAlpha ?? 0.28,
-    spriteAlpha: portal.spriteAlpha ?? 0.96,
+    innerGlowAlpha: isSealed ? 0.08 : portal.innerGlowAlpha ?? 0.28,
+    spriteAlpha: isSealed ? 0.3 : portal.spriteAlpha ?? 0.96,
+    filter: isSealed ? "grayscale(0.94) brightness(0.44) contrast(1.08)" : undefined,
   });
 
-  if (portal.label) {
-    drawLevelExitPortalLabel(portal, centerX, centerY, pulse);
+  if (isSealed) {
+    drawSealedPortalLock(centerX, centerY, pulse, portalState);
+  }
+
+  if (portalState.label) {
+    drawLevelExitPortalLabel({ ...portal, label: portalState.label, color: portalState.color, icon: portalState.icon }, centerX, centerY, pulse);
   }
 }
 
@@ -7251,7 +7275,58 @@ function drawLevelExitPortalLabel(portal, centerX, centerY, pulse) {
   ctx.font = '9px "Courier New", monospace';
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillText(portal.label, centerX, labelY + labelHeight / 2 + 1);
+  ctx.fillText(portal.label, centerX + 4, labelY + labelHeight / 2 + 1);
+  drawPortalStateIcon(portal.icon, centerX - labelWidth / 2 + 9, labelY + Math.round(labelHeight / 2), portal.color ?? "#f6ebca");
+  ctx.restore();
+}
+
+function drawPortalStateIcon(icon, centerX, centerY, color, cellSize = 2) {
+  const patterns = {
+    standby: ["010", "101", "010"],
+    depart: ["010", "011", "111", "011", "010"],
+    warning: ["111", "101", "101", "000", "010"],
+    lock: ["01110", "01010", "11111", "11011", "11111"],
+    return: ["010", "110", "111", "110", "010"],
+    safe: ["001", "011", "110", "011", "001"],
+  };
+  const pattern = patterns[icon] ?? patterns.standby;
+  const offsetX = Math.floor(pattern[0].length / 2);
+  const offsetY = Math.floor(pattern.length / 2);
+
+  ctx.fillStyle = color;
+  for (let row = 0; row < pattern.length; row += 1) {
+    for (let column = 0; column < pattern[row].length; column += 1) {
+      if (pattern[row][column] === "1") {
+        ctx.fillRect(centerX + (column - offsetX) * cellSize, centerY + (row - offsetY) * cellSize, cellSize, cellSize);
+      }
+    }
+  }
+}
+
+function drawSealedPortalLock(centerX, centerY, pulse, portalState) {
+  const scanPhase = state.lastTimestamp * 0.006;
+  const shutterOffset = Math.round(Math.sin(scanPhase) * 2);
+  const scanAlpha = 0.34 + (Math.sin(scanPhase * 0.72) + 1) * 0.1;
+
+  ctx.save();
+  ctx.globalAlpha = scanAlpha;
+  ctx.fillStyle = "rgba(11, 17, 24, 0.72)";
+  for (let row = -2; row <= 2; row += 1) {
+    const width = 33 - Math.abs(row) * 3;
+    const y = centerY + row * 8 + shutterOffset;
+    ctx.fillRect(centerX - width / 2, y, width, 3);
+  }
+  ctx.strokeStyle = "#aebbc2";
+  ctx.globalAlpha = 0.72 + pulse * 0.1;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(centerX - 18, centerY - 17 + shutterOffset);
+  ctx.lineTo(centerX + 18, centerY + 17 + shutterOffset);
+  ctx.moveTo(centerX + 18, centerY - 17 + shutterOffset);
+  ctx.lineTo(centerX - 18, centerY + 17 + shutterOffset);
+  ctx.stroke();
+  ctx.globalAlpha = 0.95;
+  drawPortalStateIcon("lock", centerX, centerY + shutterOffset, "#d7e0e0", 4);
   ctx.restore();
 }
 
@@ -7511,8 +7586,7 @@ function drawHubPortalSprite(portal) {
   const portalSheet = environmentSprites.hubPortalSheet;
 
   if (!canDrawSprite(portalSheet)) {
-    drawFallbackHubPortal(portal);
-    return;
+    return false;
   }
 
   const frameIndex = Math.floor(state.lastTimestamp / HUB_PORTAL_SPRITE.frameDuration) % HUB_PORTAL_SPRITE.frameCount;
@@ -7536,6 +7610,9 @@ function drawHubPortalSprite(portal) {
 
   ctx.save();
   ctx.globalAlpha = portal.spriteAlpha ?? 1;
+  if (portal.filter) {
+    ctx.filter = portal.filter;
+  }
   ctx.drawImage(
     portalSheet,
     sourceX,
@@ -7548,24 +7625,7 @@ function drawHubPortalSprite(portal) {
     drawSize
   );
   ctx.restore();
-}
-
-function drawFallbackHubPortal(portal) {
-  const drawSize = portal.drawSize ?? HUB_PORTAL_SPRITE.drawSize;
-  const scale = drawSize / HUB_PORTAL_SPRITE.drawSize;
-  const outerHalfWidth = Math.round(26 * scale);
-  const outerHalfHeight = Math.round(18 * scale);
-  const innerHalfWidth = Math.round(18 * scale);
-  const innerHalfHeight = Math.round(26 * scale);
-  const coreHalfWidth = Math.round(10 * scale);
-  const coreHalfHeight = Math.round(18 * scale);
-
-  ctx.fillStyle = "#2a3446";
-  ctx.fillRect(portal.x - outerHalfWidth, portal.y - outerHalfHeight, outerHalfWidth * 2, outerHalfHeight * 2);
-  ctx.fillStyle = portal.color;
-  ctx.fillRect(portal.x - innerHalfWidth, portal.y - innerHalfHeight, innerHalfWidth * 2, innerHalfHeight * 2);
-  ctx.fillStyle = portal.glow;
-  ctx.fillRect(portal.x - coreHalfWidth, portal.y - coreHalfHeight, coreHalfWidth * 2, coreHalfHeight * 2);
+  return true;
 }
 
 function drawPixelCrawlerVegetation(patches = []) {

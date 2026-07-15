@@ -319,6 +319,21 @@ test("the TVA caseboard reveals only the authorized file and tracks it", async (
   await expect(page.locator("#quest-chip")).toContainText("Hồ sơ: Báo Người cùng khổ");
 });
 
+test("zone return anchors distinguish sealed and completed states without opening collision early", async ({ page }, testInfo) => {
+  await openDebugSession(page);
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("village", { x: 146, y: 178, direction: "down" }));
+  await expect.poll(() => snapshot(page).then((state) => state.portalStates[0]?.status)).toBe("sealed");
+  await page.screenshot({ path: testInfo.outputPath("zone1-return-anchor-sealed.png"), fullPage: true });
+  const lockedExit = await page.evaluate(() => window.__CROSSROADS_DEBUG__.triggerExit("back-to-hub-1"));
+  expect(lockedExit.transitioned).toBe(false);
+  expect(lockedExit.currentLevelId).toBe("village");
+
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.setPlayerPosition(320, 360));
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.completeTvaRoute("village"));
+  await expect.poll(() => snapshot(page).then((state) => state.portalStates[0]?.status)).toBe("complete");
+  await page.screenshot({ path: testInfo.outputPath("zone1-return-anchor-open.png"), fullPage: true });
+});
+
 test("collected relics visibly converge around the TVA dispatch portal", async ({ page }, testInfo) => {
   await openDebugSession(page);
   await page.evaluate(() => window.__CROSSROADS_DEBUG__.completeTvaRoute("crossroads"));

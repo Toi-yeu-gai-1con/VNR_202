@@ -49,8 +49,18 @@ assert.match(
 );
 assert.match(
   runtime,
-  /function shouldDrawExitPortal\(exit\)[\s\S]{0,180}isExitAvailable\(exit\)/,
-  "A locked return portal must not leave visible portal art behind.",
+  /function getExitPortalState\(exit\)[\s\S]{0,220}isExitAvailable\(exit\)/,
+  "Portal presentation must receive the same completion predicate as collision and transitions.",
+);
+assert.match(
+  runtime,
+  /function drawLevelExitPortal\(exit\)[\s\S]{0,1000}portalState\.status === "sealed"/,
+  "A locked return anchor must be rendered as sealed rather than as an active exit.",
+);
+assert.match(
+  runtime,
+  /function drawLevelExitPortal\(exit\)[\s\S]{0,1600}drawSealedPortalLock/,
+  "A sealed anchor must carry a visible lock treatment in addition to its label.",
 );
 
-console.log("PASS: every zone return portal stays closed until its mission is complete.");
+console.log("PASS: every zone return portal stays sealed until its mission is complete.");
