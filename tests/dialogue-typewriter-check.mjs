@@ -13,7 +13,7 @@ assert.match(runtime, /dialogueMale: loadSound\("assets\/audio\/sfx\/sfx-blipmal
 assert.match(runtime, /dialogueFemale: loadSound\("assets\/audio\/sfx\/sfx-blipfemale\.wav"/, "Female dialogue blip must be preloaded.");
 assert.match(runtime, /function updateTypewriter\(/, "Dialogue text must advance through a typewriter update loop.");
 assert.match(runtime, /function revealActiveTypewriter\(/, "Input must be able to finish the current line before advancing.");
-assert.match(runtime, /playDialogueSound\(uiSounds\[typewriter\.voiceKey\]/, "Each revealed dialogue character must emit its voice blip through the dialogue-volume path.");
+assert.match(runtime, /Dialogue typewriter blips are intentionally disabled/, "Keyboard-led dialogue must not emit typewriter blips.");
 assert.match(runtime, /DIALOGUE_VOICE_BY_SPEAKER/, "Dialogue voices must use an explicit speaker map instead of treating every non-David speaker as female.");
 assert.doesNotMatch(runtime, /speaker === "David" \? "dialogueMale" : "dialogueFemale"/, "Unknown, narrator, and object speakers must not silently receive the female voice.");
 assert.match(runtime, /endingRecovery.*intervalMs|intervalMs.*endingRecovery/s, "Bad-ending recovery must use its own slower typewriter timing.");
@@ -27,4 +27,4 @@ assert.match(runtime, /!\/?\[\\p\{L\}\\p\{N\}\]/, "Voice blips must ignore white
 assert.match(runtime, /typewriter\?\.kind === "dialogue" && !typewriter\.complete/, "Hidden dialogue choices must remain unavailable until the active line is fully revealed.");
 assert.match(runtime, /lineEndOffsets/, "Bad-ending recovery line changes must be scheduled from their actual reveal durations.");
 
-console.log("PASS: dialogue typewriter and male/female voice blips are wired into the runtime.");
+console.log("PASS: dialogue typewriter stays keyboard-quiet while preserving its reveal cadence.");

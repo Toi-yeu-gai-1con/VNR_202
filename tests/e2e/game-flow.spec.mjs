@@ -696,7 +696,7 @@ test("David remains interactable in the TVA hub", async ({ page }) => {
   await expect(page.locator("#dialogue-speaker")).toHaveText("David");
 });
 
-test("dialogue types one character at a time with speaker voice blips", async ({ page }, testInfo) => {
+test("dialogue types one character at a time without keyboard-triggered blips", async ({ page }, testInfo) => {
   await page.addInitScript(() => {
     window.__playedDialogueSources = [];
     const originalPlay = HTMLMediaElement.prototype.play;
@@ -719,12 +719,12 @@ test("dialogue types one character at a time with speaker voice blips", async ({
   expect(partial.typewriter.visibleCount).toBeGreaterThan(0);
   expect(partial.typewriter.visibleCount).toBeLessThan(partial.typewriter.totalCount);
   await page.screenshot({ path: testInfo.outputPath("dialogue-typewriter-partial.png"), fullPage: true });
-  await expect.poll(() => page.evaluate(() => window.__playedDialogueSources.some((source) => source.includes("sfx-blipmale")))).toBe(true);
+  await expect.poll(() => snapshot(page).then((state) => state.typewriter?.complete)).toBe(true);
+  expect(await page.evaluate(() => window.__playedDialogueSources)).toEqual([]);
 
-  await waitForDialogueComplete(page);
   await advanceDialogue(page);
-  await expect.poll(() => page.evaluate(() => window.__playedDialogueSources.filter((source) => source.includes("sfx-blipmale")).length)).toBeGreaterThan(1);
-  expect(await page.evaluate(() => window.__playedDialogueSources.some((source) => source.includes("sfx-blipfemale")))).toBe(false);
+  await page.waitForTimeout(120);
+  expect(await page.evaluate(() => window.__playedDialogueSources)).toEqual([]);
 });
 
 test("number keys cannot select a hidden choice while its dialogue line is still typing", async ({ page }) => {

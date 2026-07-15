@@ -2025,8 +2025,8 @@ function playUiSound(sound) {
   audioSystem.playUiSound(sound);
 }
 
-function playDialogueSound(sound, options) {
-  audioSystem.playDialogueSound(sound, options);
+function playDialogueSound() {
+  // Dialogue typewriter blips are intentionally disabled: keyboard-led reading must stay quiet.
 }
 
 function playCombatSfx(key, options) {
