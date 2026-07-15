@@ -11,6 +11,7 @@ import { createDebugOverlay } from "../debug/debug-overlay.js";
 import { createAudioSystem } from "../systems/audio-system.js";
 import { createPortalTransition } from "../systems/portal-transition.js";
 import { createRunStats, createRunSummary, recordRunStat } from "../systems/run-summary.js";
+import { createFinalRunReport } from "../systems/final-run-report.js";
 import { ACHIEVEMENT_DEFINITIONS, getEarnedAchievementIds } from "../data/achievement-definitions.js";
 import { createAchievementCollection } from "../systems/achievement-collection.js";
 import { createLevelDefinitions } from "../systems/level-definitions.js";
@@ -171,6 +172,12 @@ const endCopy = document.getElementById("end-copy");
 const endSummary = document.getElementById("end-summary");
 const endRunScore = document.getElementById("end-run-score");
 const endRunDetails = document.getElementById("end-run-details");
+const endRunReport = document.getElementById("end-run-report");
+const endRunOverview = document.getElementById("end-run-overview");
+const endRunResolution = document.getElementById("end-run-resolution");
+const endRunPeople = document.getElementById("end-run-people");
+const endRunTimeline = document.getElementById("end-run-timeline");
+const endRunReplayPrompts = document.getElementById("end-run-replay-prompts");
 const endArtFrame = document.getElementById("end-art-frame");
 const endArtCinematic = document.getElementById("end-art-cinematic");
 const endArtImage = document.getElementById("end-art-image");
@@ -2870,6 +2877,7 @@ function createDebugSnapshot() {
     inventory: Array.from(state.inventory),
     narrative: {
       choices: { ...state.narrative.choices },
+      choiceHistory: state.narrative.choiceHistory.map((entry) => ({ ...entry })),
       branchFlags: { ...state.narrative.branchFlags },
       npcRelations: { ...state.narrative.npcRelations },
       themeScores: { ...state.narrative.themeScores },
@@ -3912,6 +3920,7 @@ function applyNarrativeChoice(chapterId, decisionId, optionId) {
   const { decision, option } = resolved;
   recordNarrativeChoice(state.narrative, {
     ...option,
+    optionId,
     id: `${chapterId}.${decision.id}`,
     chapterId,
   });
@@ -5088,6 +5097,66 @@ function updateEndingRunSummary() {
   });
   endRunScore.textContent = `Hồ sơ hành trình: ${summary.score} điểm`;
   endRunDetails.textContent = `${summary.durationLabel} • ${summary.combatStyle} • ${summary.corruptionLabel}`;
+  updateEndingRunReport();
+}
+
+function replaceEndingReportList(container, entries, formatEntry, emptyLabel) {
+  if (!container) {
+    return;
+  }
+
+  const items = entries.length > 0
+    ? entries.map((entry) => {
+      const item = document.createElement("li");
+      item.textContent = formatEntry(entry);
+      return item;
+    })
+    : [(() => {
+      const item = document.createElement("li");
+      item.textContent = emptyLabel;
+      return item;
+    })()];
+
+  container.replaceChildren(...items);
+}
+
+function updateEndingRunReport() {
+  if (!endRunOverview || !endRunResolution || !endRunPeople || !endRunTimeline || !endRunReplayPrompts) {
+    return;
+  }
+
+  const report = createFinalRunReport({
+    endingId: state.endingId,
+    corruption: state.saDoa,
+    runStats: state.runStats,
+    quests: state.quests,
+    narrative: state.narrative,
+    difficulty: state.difficulty,
+  });
+  endRunOverview.textContent = `${report.ending.kind}: ${report.ending.label} • ${report.durationLabel} • ${report.challenge.label}`;
+  endRunResolution.textContent = `${report.resolution.label} • ${report.corruptionLabel}`;
+  replaceEndingReportList(
+    endRunPeople,
+    report.people,
+    (entry) => `${entry.label}: ${entry.completed}/${entry.total}${entry.completed < entry.total ? ` • còn ${entry.total - entry.completed} mục chưa hoàn tất` : ""}`,
+    "Hồ sơ chưa ghi nhận hoạt động hỗ trợ nhân chứng."
+  );
+  replaceEndingReportList(
+    endRunTimeline,
+    report.timeline,
+    (entry) => `${entry.chapterLabel} — ${entry.label}`,
+    "Hồ sơ cũ chưa lưu chi tiết các điểm rẽ."
+  );
+  replaceEndingReportList(
+    endRunReplayPrompts,
+    report.replayPrompts,
+    (prompt) => prompt,
+    "Hãy mở một hồ sơ khu để David ghi lại các điểm rẽ đầu tiên."
+  );
+
+  if (endRunReport) {
+    endRunReport.open = false;
+  }
 }
 
 function hideEndOverlay() {

@@ -560,7 +560,23 @@ test("ending recap shows an explainable run score after the cinematic", async ({
   await expect(page.locator("#end-overlay")).toHaveAttribute("data-cinematic", "complete");
   await expect(page.locator("#end-run-score")).toContainText("điểm");
   await expect(page.locator("#end-run-details")).toContainText("Tha hóa");
+  await page.locator("#end-run-report-toggle").click();
+  await expect(page.locator("#end-run-report")).toHaveAttribute("open", "");
+  await expect(page.locator("#end-run-resolution")).toContainText("điểm rẽ đối thoại");
+  await expect(page.locator("#end-run-people")).toContainText("Công nhân bến cảng");
   await page.screenshot({ path: testInfo.outputPath("ending-run-summary.png"), fullPage: true });
+});
+
+test("detailed ending report remains readable on a compact viewport", async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/?debugTools=1&debugEnding=good");
+  await page.waitForFunction(() => Boolean(window.__CROSSROADS_DEBUG__));
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.completeEndingCinematic());
+  await expect(page.locator("#end-overlay")).toHaveAttribute("data-cinematic", "complete");
+  await page.locator("#end-run-report-toggle").click();
+  await expect(page.locator("#end-run-report-content")).toBeVisible();
+  await expect(page.locator("#return-start-button")).toBeVisible();
+  await page.screenshot({ path: testInfo.outputPath("ending-run-report-mobile.png"), fullPage: true });
 });
 
 test("checkpoint survives lethal damage and persisted progress survives reload", async ({ page }) => {

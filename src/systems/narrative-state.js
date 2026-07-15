@@ -32,9 +32,25 @@ function restoreNumericRecord(keys, saved) {
   return restored;
 }
 
+function restoreChoiceHistory(saved) {
+  if (!Array.isArray(saved)) {
+    return [];
+  }
+
+  return saved
+    .filter((entry) => entry && typeof entry === "object")
+    .map((entry) => ({
+      chapterId: typeof entry.chapterId === "string" ? entry.chapterId : "global",
+      decisionId: typeof entry.decisionId === "string" ? entry.decisionId : "",
+      optionId: typeof entry.optionId === "string" ? entry.optionId : "",
+    }))
+    .filter((entry) => entry.decisionId && entry.optionId);
+}
+
 export function createNarrativeState() {
   return {
     choices: {},
+    choiceHistory: [],
     branchFlags: {},
     npcRelations: {},
     themeScores: createNumericRecord(THEME_SCORE_KEYS),
@@ -49,6 +65,12 @@ export function recordNarrativeChoice(narrative, choice) {
   }
 
   narrative.choices[choice.id] = choice.chapterId ?? "global";
+  if (typeof choice.optionId === "string" && choice.optionId) {
+    const chapterId = choice.chapterId ?? "global";
+    const prefix = `${chapterId}.`;
+    const decisionId = choice.id.startsWith(prefix) ? choice.id.slice(prefix.length) : choice.id;
+    narrative.choiceHistory.push({ chapterId, decisionId, optionId: choice.optionId });
+  }
 
   for (const [key, value] of Object.entries(asRecord(choice.branchFlags))) {
     narrative.branchFlags[key] = Boolean(value);
@@ -84,6 +106,7 @@ export function serializeNarrativeState(narrative) {
   const normalized = restoreNarrativeState(narrative);
   return {
     choices: { ...normalized.choices },
+    choiceHistory: normalized.choiceHistory.map((entry) => ({ ...entry })),
     branchFlags: { ...normalized.branchFlags },
     npcRelations: { ...normalized.npcRelations },
     themeScores: { ...normalized.themeScores },
@@ -99,6 +122,7 @@ export function restoreNarrativeState(saved = {}) {
   narrative.choices = Object.fromEntries(
     Object.entries(asRecord(source.choices)).map(([key, value]) => [key, String(value)])
   );
+  narrative.choiceHistory = restoreChoiceHistory(source.choiceHistory);
   narrative.branchFlags = Object.fromEntries(
     Object.entries(asRecord(source.branchFlags)).map(([key, value]) => [key, Boolean(value)])
   );

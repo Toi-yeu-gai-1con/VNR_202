@@ -17,6 +17,7 @@ const state = {
   difficulty: "normal",
   tutorialSeen: true,
   runStats: { activeMilliseconds: 3456, strikes: 4, successfulParries: 2, damageTaken: 3, choicesMade: 1, maxCorruption: 12 },
+  narrative: { choices: { "zone1.dock-workers": "zone1" }, choiceHistory: [{ chapterId: "zone1", decisionId: "dock-workers", optionId: "protect" }] },
   quests: { tvaBriefingAccepted: true, tvaPortalTarget: "village", tvaTrackedChapterId: "zone1", tvaReportedRelics: new Set(["red-compass"]), zone1Started: true, zone1Delivered: new Set(["worker-1"]), zone1RewardClaimed: false, zone1SoldierDecision: "refused", zone2Fragments: new Set(), zone2TowerActivated: false, zone2RewardClaimed: false, zone3Recruits: new Set(), zone3ThreadClaimed: false, zone3HamletsFreed: new Set(), zone3BossDefeated: false, zone3MapClaimed: false, zone4Barriers: new Set(), zone4Farmers: new Set(), zone4GearClaimed: false },
 };
 const levels = { hub: { interactables: [{ id: "item", collected: true }], monsters: [{ id: "monster", health: 3, maxHealth: 5, defeated: false }] } };
@@ -42,6 +43,7 @@ assert.deepEqual(loaded.quests.tvaReportedRelics, ["red-compass"], "Reported rel
 assert.equal(loaded.quests.zone1SoldierDecision, "refused", "Dialogue choices persist with quest progress.");
 assert.equal(loaded.hubEpilogueEndingId, "good", "The current campaign preserves its TVA epilogue after an ending.");
 assert.deepEqual(loaded.runStats, state.runStats, "Run summary counters survive save/load without becoming a second progress source.");
+assert.deepEqual(loaded.narrative.choiceHistory, state.narrative.choiceHistory, "Detailed turning points survive save/load for the final journey report.");
 
 state.quests.zone1Delivered = new Set();
 levels.hub.interactables[0].collected = false;
