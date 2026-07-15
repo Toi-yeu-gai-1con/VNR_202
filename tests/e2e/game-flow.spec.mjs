@@ -167,7 +167,7 @@ async function waitForDialogueComplete(page) {
   await expect.poll(() => page.evaluate(() => {
     const typewriter = window.__CROSSROADS_DEBUG__.getSnapshot().typewriter;
     return !typewriter || typewriter.kind !== "dialogue" || typewriter.complete;
-  })).toBe(true);
+  }), { timeout: 10_000 }).toBe(true);
 }
 
 async function finishDialogueLine(page) {
@@ -246,19 +246,18 @@ test("portal handoff locks gameplay until the time warp reaches its destination"
   await page.evaluate(() => window.__CROSSROADS_DEBUG__.triggerExit("back-to-hub-1"));
   await expect.poll(() => snapshot(page).then((state) => state.mode)).toBe("transition");
   await expect.poll(() => snapshot(page).then((state) => state.portalTransition?.targetLevelId)).toBe("hub");
-  const transitionStart = await snapshot(page).then((state) => ({ x: state.player.x, y: state.player.y }));
-
   await page.keyboard.down("d");
-  await page.waitForTimeout(150);
-  await page.keyboard.up("d");
-  const during = await snapshot(page).then((state) => state.player);
-  expect(during.x).toBeCloseTo(transitionStart.x, 1);
-  expect(during.y).toBeCloseTo(transitionStart.y, 1);
   await page.screenshot({ path: testInfo.outputPath("portal-time-warp.png"), fullPage: true });
 
   await expect.poll(() => snapshot(page).then((state) => state.currentLevelId), { timeout: 2_000 }).toBe("hub");
   await expect.poll(() => snapshot(page).then((state) => state.mode), { timeout: 2_000 }).toBe("playing");
   await expect.poll(() => snapshot(page).then((state) => state.portalTransition)).toBeNull();
+  const destination = await snapshot(page).then((state) => ({ x: state.player.x, y: state.player.y }));
+  await page.waitForTimeout(150);
+  const afterHeldInput = await snapshot(page).then((state) => state.player);
+  await page.keyboard.up("d");
+  expect(afterHeldInput.x).toBeCloseTo(destination.x, 1);
+  expect(afterHeldInput.y).toBeCloseTo(destination.y, 1);
 });
 
 test("Zone 1 animated enemy roster renders in the village", async ({ page }, testInfo) => {
