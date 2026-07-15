@@ -101,6 +101,29 @@ test("entering Zone 1 through a portal route presents its historical title card 
   await expect.poll(() => snapshot(page).then((state) => state.narrative.branchFlags["chapter.zone1.titleSeen"])).toBe(true);
 });
 
+test("portal handoff locks gameplay until the time warp reaches its destination", async ({ page }, testInfo) => {
+  await openDebugSession(page);
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("village"));
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.completeTvaRoute("village"));
+
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.triggerExit("back-to-hub-1"));
+  await expect.poll(() => snapshot(page).then((state) => state.mode)).toBe("transition");
+  await expect.poll(() => snapshot(page).then((state) => state.portalTransition?.targetLevelId)).toBe("hub");
+  const transitionStart = await snapshot(page).then((state) => ({ x: state.player.x, y: state.player.y }));
+
+  await page.keyboard.down("d");
+  await page.waitForTimeout(150);
+  await page.keyboard.up("d");
+  const during = await snapshot(page).then((state) => state.player);
+  expect(during.x).toBeCloseTo(transitionStart.x, 1);
+  expect(during.y).toBeCloseTo(transitionStart.y, 1);
+  await page.screenshot({ path: testInfo.outputPath("portal-time-warp.png"), fullPage: true });
+
+  await expect.poll(() => snapshot(page).then((state) => state.currentLevelId), { timeout: 2_000 }).toBe("hub");
+  await expect.poll(() => snapshot(page).then((state) => state.mode), { timeout: 2_000 }).toBe("playing");
+  await expect.poll(() => snapshot(page).then((state) => state.portalTransition)).toBeNull();
+});
+
 test("Zone 1 animated enemy roster renders in the village", async ({ page }, testInfo) => {
   await openDebugSession(page, "challenge");
   await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("village"));

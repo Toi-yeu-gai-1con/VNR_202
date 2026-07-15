@@ -9,6 +9,9 @@ assert.equal(scenes.transition(SCENES.OPENING), true, "A valid scene transition 
 assert.equal(scenes.current, SCENES.OPENING, "The active scene updates after transition.");
 assert.equal(scenes.transition(SCENES.PLAYING), true, "The introduction enters gameplay.");
 assert.equal(scenes.isSimulationRunning(), true, "Only gameplay advances the simulation.");
+assert.equal(scenes.transition(SCENES.TRANSITION), true, "Gameplay can enter an input-locked portal transition.");
+assert.equal(scenes.isSimulationRunning(), false, "A portal transition freezes gameplay simulation until its handoff completes.");
+assert.equal(scenes.transition(SCENES.PLAYING), true, "A completed portal transition returns to gameplay.");
 assert.equal(scenes.transition(SCENES.PAUSED), true, "Gameplay can pause.");
 assert.equal(scenes.isSimulationRunning(), false, "Paused gameplay stops the simulation.");
 assert.equal(scenes.transition(SCENES.ENDING), false, "Invalid transitions are rejected without changing scene.");

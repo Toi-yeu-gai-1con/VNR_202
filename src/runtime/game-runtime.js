@@ -9,6 +9,7 @@ import { createRuntimeLoop } from "../core/runtime-loop.js";
 import { createSceneController, SCENES } from "../core/scene-controller.js";
 import { createDebugOverlay } from "../debug/debug-overlay.js";
 import { createAudioSystem } from "../systems/audio-system.js";
+import { createPortalTransition } from "../systems/portal-transition.js";
 import { createLevelDefinitions } from "../systems/level-definitions.js";
 import { createTrainingSession } from "../systems/training-session.js";
 import { getPortalState } from "../systems/portal-state.js";
@@ -388,6 +389,7 @@ const state = {
   respawnLevelId: "hub",
   respawnSpawn: null,
   blockedExitIds: new Set(),
+  portalTransition: null,
   puzzleState: {
     archiveSequence: 0,
     archiveSolved: false,
@@ -485,6 +487,7 @@ const GAMEPLAY_BLOCKING_SCENES = new Set([
   SCENES.MODAL,
   SCENES.TUTORIAL,
   SCENES.SUMMARY,
+  SCENES.TRANSITION,
 ]);
 
 sceneController.subscribe(({ previous, current }) => {
@@ -2816,6 +2819,12 @@ function createDebugSnapshot() {
     fps: smoothedFps,
     suspended: frameLoop.isSuspended(),
     mode: state.mode,
+    portalTransition: state.portalTransition
+      ? {
+          targetLevelId: state.portalTransition.spec.targetLevelId,
+          progress: state.portalTransition.spec.getFrame(state.lastTimestamp).progress,
+        }
+      : null,
     currentLevelId: state.currentLevelId,
     respawnLevelId: state.respawnLevelId,
     endingId: state.endingId,
@@ -3202,6 +3211,8 @@ function frame({ now: timestamp, deltaSeconds }) {
     const instantFps = 1 / deltaSeconds;
     smoothedFps = smoothedFps === 0 ? instantFps : smoothedFps * 0.86 + instantFps * 0.14;
   }
+
+  updatePortalTransition();
 
   if (state.mode === "playing" && timestamp >= state.hitStopUntil) {
     updatePlayerAnimation();
@@ -6333,12 +6344,93 @@ function handleLevelTransitions() {
         leaveTrainingSession(exit.spawn);
         return true;
       }
-      loadLevel(target, exit.spawn, { showTitleCard: true });
+      beginPortalTransition(target, exit.spawn, { showTitleCard: true });
       return true;
     }
   }
 
   return false;
+}
+
+function beginPortalTransition(targetLevelId, spawn, { showTitleCard = true } = {}) {
+  if (state.portalTransition) {
+    return false;
+  }
+
+  state.portalTransition = {
+    spec: createPortalTransition({
+      targetLevelId,
+      spawn,
+      startedAt: state.lastTimestamp,
+      showTitleCard,
+    }),
+    swapped: false,
+  };
+  player.isMoving = false;
+  clearPressedKeys();
+  state.mode = SCENES.TRANSITION;
+  return true;
+}
+
+function updatePortalTransition() {
+  const handoff = state.portalTransition;
+  if (!handoff) {
+    return;
+  }
+
+  const transitionFrame = handoff.spec.getFrame(state.lastTimestamp);
+  if (transitionFrame.shouldSwapLevel && !handoff.swapped) {
+    handoff.swapped = true;
+    loadLevel(handoff.spec.targetLevelId, handoff.spec.spawn, { showTitleCard: false });
+  }
+
+  if (!transitionFrame.complete || !handoff.swapped || state.mode !== SCENES.TRANSITION || state.currentLevelId !== handoff.spec.targetLevelId) {
+    return;
+  }
+
+  const showTitleCard = handoff.spec.showTitleCard;
+  state.portalTransition = null;
+  state.mode = SCENES.PLAYING;
+  if (showTitleCard) {
+    showZoneTitleCard(state.currentLevelId);
+  }
+}
+
+function drawPortalTransition() {
+  const handoff = state.portalTransition;
+  if (!handoff) {
+    return;
+  }
+
+  const { progress, phase } = handoff.spec.getFrame(state.lastTimestamp);
+  const pulse = Math.sin(progress * Math.PI);
+  const centerX = VIEWPORT.width / 2;
+  const centerY = VIEWPORT.height / 2;
+  ctx.save();
+  ctx.fillStyle = `rgba(13, 20, 34, ${0.18 + pulse * 0.46})`;
+  ctx.fillRect(0, 0, VIEWPORT.width, VIEWPORT.height);
+
+  const gradient = ctx.createRadialGradient(centerX, centerY, 8, centerX, centerY, Math.max(VIEWPORT.width, VIEWPORT.height) * 0.62);
+  gradient.addColorStop(0, `rgba(206, 239, 255, ${0.24 + pulse * 0.24})`);
+  gradient.addColorStop(0.28, `rgba(102, 184, 223, ${0.1 + pulse * 0.16})`);
+  gradient.addColorStop(1, "rgba(11, 18, 31, 0)");
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, VIEWPORT.width, VIEWPORT.height);
+
+  if (!state.settings.reducedMotion) {
+    ctx.strokeStyle = `rgba(239, 227, 174, ${0.16 + pulse * 0.26})`;
+    ctx.lineWidth = 1;
+    for (let index = 0; index < 11; index += 1) {
+      const angle = (Math.PI * 2 * index) / 11 + state.lastTimestamp * 0.0018 * (phase === "depart" ? 1 : -1);
+      const inner = 14 + pulse * 22;
+      const outer = 72 + index * 17 + pulse * 95;
+      ctx.beginPath();
+      ctx.moveTo(centerX + Math.cos(angle) * inner, centerY + Math.sin(angle) * inner);
+      ctx.lineTo(centerX + Math.cos(angle) * outer, centerY + Math.sin(angle) * outer);
+      ctx.stroke();
+    }
+  }
+  ctx.restore();
 }
 
 function updateInteractionPrompt() {
@@ -7450,6 +7542,7 @@ function render() {
   drawAtmosphere();
   drawVignette();
   drawCombatFeedback();
+  drawPortalTransition();
   drawNavigationAssist();
   drawMiniMap();
   drawDialoguePortrait();
