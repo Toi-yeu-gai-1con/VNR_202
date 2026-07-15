@@ -1785,6 +1785,33 @@ html[data-reduced-motion="true"] *::after {
   width: 100%;
 }
 
+.progress-confirm-dialog {
+  z-index: 12;
+}
+
+.progress-confirm-card {
+  max-width: 460px;
+}
+
+.progress-confirm-copy {
+  margin: 0 0 18px;
+  color: #f3dec0;
+  font-size: clamp(1.04rem, 2vw, 1.28rem);
+  line-height: 1.35;
+  text-align: center;
+}
+
+.progress-confirm-actions {
+  display: grid;
+  gap: 10px;
+}
+
+.progress-confirm-danger {
+  background-image:
+    url("assets/ui/kenney-rpg/buttonLong_brown.png"),
+    linear-gradient(180deg, #a94a43 0%, #713236 100%);
+}
+
 .end-overlay {
   display: grid;
   place-items: stretch;

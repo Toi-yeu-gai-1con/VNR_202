@@ -298,6 +298,29 @@ test("held movement stops on blur and paused scenes ignore movement", async ({ p
   await page.keyboard.up("d");
 });
 
+test("restart requires explicit confirmation before replacing the current journey", async ({ page }, testInfo) => {
+  await openDebugSession(page);
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("village"));
+  const beforeRestart = await snapshot(page);
+
+  await page.locator("#pause-button").click();
+  await page.locator("#restart-button").click();
+  await expect(page.locator("#progress-confirm-dialog")).toBeVisible();
+  await expect(page.locator("#progress-confirm-copy")).toContainText("thay thế");
+  await expect(page.locator("#cancel-progress-action")).toBeFocused();
+  await page.screenshot({ path: testInfo.outputPath("restart-confirmation.png"), fullPage: true });
+
+  await page.keyboard.press("Escape");
+  await expect(page.locator("#progress-confirm-dialog")).toBeHidden();
+  expect((await snapshot(page)).currentLevelId).toBe(beforeRestart.currentLevelId);
+  await expect.poll(() => snapshot(page).then((state) => state.mode)).toBe("paused");
+
+  await page.locator("#restart-button").click();
+  await page.locator("#confirm-progress-action").click();
+  await expect.poll(() => snapshot(page).then((state) => state.mode)).toBe("playing");
+  expect((await snapshot(page)).currentLevelId).toBe("hub");
+});
+
 test("the employee forces the TVA briefing choice and opens the first dispatch portal", async ({ page }, testInfo) => {
   await openDebugSession(page);
   await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("hub", { x: 480, y: 260, direction: "up" }));

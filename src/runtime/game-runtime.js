@@ -97,6 +97,11 @@ const buildVersionLabel = document.getElementById("build-version");
 
 const startButton = document.getElementById("start-button");
 const continueButton = document.getElementById("continue-button");
+const progressConfirmDialog = document.getElementById("progress-confirm-dialog");
+const progressConfirmTitle = document.getElementById("progress-confirm-title");
+const progressConfirmCopy = document.getElementById("progress-confirm-copy");
+const cancelProgressAction = document.getElementById("cancel-progress-action");
+const confirmProgressAction = document.getElementById("confirm-progress-action");
 const pauseButton = document.getElementById("pause-button");
 const soundButton = document.getElementById("sound-button");
 const fullscreenButton = document.getElementById("fullscreen-button");
@@ -306,6 +311,7 @@ let storyToastTimeoutId = 0;
 let soundCaptionTimeoutId = 0;
 let lastSoundCaption = { key: null, shownAt: 0 };
 let pendingKeyBindingAction = null;
+let pendingProgressAction = null;
 let corruptionWarningTimeoutId = 0;
 let relicBookOpenTimeoutId = 0;
 let pendingAssetLoad = null;
@@ -802,6 +808,68 @@ function clearSavedProgress() {
   refreshContinueButton();
 }
 
+function openProgressConfirmation({ title, copy, confirmLabel, action, returnFocus }) {
+  pendingProgressAction = { action, returnFocus };
+  progressConfirmTitle.textContent = title;
+  progressConfirmCopy.textContent = copy;
+  confirmProgressAction.textContent = confirmLabel;
+  progressConfirmDialog.classList.remove("hidden");
+  progressConfirmDialog.setAttribute("aria-hidden", "false");
+  clearPressedKeys();
+  window.requestAnimationFrame(() => cancelProgressAction.focus());
+}
+
+function closeProgressConfirmation({ restoreFocus = true } = {}) {
+  const returnFocus = pendingProgressAction?.returnFocus;
+  pendingProgressAction = null;
+  progressConfirmDialog.classList.add("hidden");
+  progressConfirmDialog.setAttribute("aria-hidden", "true");
+  if (restoreFocus && returnFocus?.isConnected) {
+    returnFocus.focus();
+  }
+}
+
+function cancelPendingProgressAction() {
+  if (!pendingProgressAction) {
+    return;
+  }
+  closeProgressConfirmation();
+}
+
+function confirmPendingProgressAction() {
+  const action = pendingProgressAction?.action;
+  if (!action) {
+    return;
+  }
+  closeProgressConfirmation({ restoreFocus: false });
+  action();
+}
+
+function requestStartGame() {
+  if (!loadSavedProgress()) {
+    startGame();
+    return;
+  }
+
+  openProgressConfirmation({
+    title: "Bắt đầu hành trình mới?",
+    copy: "Bản lưu hiện tại sẽ bị thay thế sau phần mở đầu. Tín vật, lựa chọn, Tha hóa và điểm kiểm soát của hành trình cũ sẽ mất.",
+    confirmLabel: "Bắt đầu hành trình mới",
+    action: startGame,
+    returnFocus: startButton,
+  });
+}
+
+function requestRestartGame() {
+  openProgressConfirmation({
+    title: "Chơi lại từ TVA?",
+    copy: "Hành trình hiện tại sẽ bị thay thế bằng một lượt mới từ TVA. Tín vật, lựa chọn, Tha hóa và điểm kiểm soát hiện tại sẽ mất.",
+    confirmLabel: "Xác nhận chơi lại",
+    action: restartGame,
+    returnFocus: restartButton,
+  });
+}
+
 function setDifficulty(difficulty) {
   if (!['story', 'normal', 'challenge'].includes(difficulty)) {
     return;
@@ -955,8 +1023,10 @@ configureOpeningCopy();
 updateProgressHud();
 applyGameSettings();
 
-startButton.addEventListener("click", withUiClickSound(startGame));
+startButton.addEventListener("click", withUiClickSound(requestStartGame));
 continueButton.addEventListener("click", withUiClickSound(continueSavedGame));
+cancelProgressAction.addEventListener("click", withUiClickSound(cancelPendingProgressAction));
+confirmProgressAction.addEventListener("click", withUiClickSound(confirmPendingProgressAction));
 pauseButton.addEventListener("click", withUiClickSound(togglePause));
 soundButton.addEventListener("click", toggleSound);
 fullscreenButton.addEventListener("click", withUiClickSound(toggleFullscreen));
@@ -974,7 +1044,7 @@ keyBindingsList.addEventListener("click", (event) => {
   pendingKeyBindingAction = button.dataset.keyBinding;
   renderKeyBindings();
 });
-restartButton.addEventListener("click", withUiClickSound(restartGame));
+restartButton.addEventListener("click", withUiClickSound(requestRestartGame));
 storyBookButton.addEventListener("click", withUiClickSound(() => openStoryBook()));
 aboutButton.addEventListener("click", withUiClickSound(() => {
   state.aboutFromPause = true;
@@ -1169,7 +1239,8 @@ function clearPressedKeys() {
 
 window.addEventListener("keydown", (event) => {
   const isCorruptionHelpControl = event.target === corruptionHelpButton;
-  if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(event.key) || (event.key === " " && !isCorruptionHelpControl)) {
+  const isProgressConfirmControl = event.target === cancelProgressAction || event.target === confirmProgressAction;
+  if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(event.key) || (event.key === " " && !isCorruptionHelpControl && !isProgressConfirmControl)) {
     event.preventDefault();
   }
 
@@ -1178,6 +1249,14 @@ window.addEventListener("keydown", (event) => {
   }
 
   const key = normalizeKey(event.key);
+
+  if (!progressConfirmDialog.classList.contains("hidden")) {
+    if (key === "escape") {
+      event.preventDefault();
+      cancelPendingProgressAction();
+    }
+    return;
+  }
 
   if (isCorruptionHelpControl && (key === "enter" || key === "space")) {
     return;
@@ -1253,7 +1332,7 @@ window.addEventListener("keydown", (event) => {
 
   if (state.mode === "start" && (key === "enter" || key === "space")) {
     playUiSound(uiSounds.pixelClick);
-    startGame();
+    requestStartGame();
     return;
   }
 
