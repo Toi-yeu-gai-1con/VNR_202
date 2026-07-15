@@ -198,6 +198,37 @@ test("Zone 1 captain exposes its phase-two combat profile", async ({ page }, tes
   await page.screenshot({ path: testInfo.outputPath("zone1-captain-phase-two.png"), fullPage: true });
 });
 
+test("encountering a monster unlocks an animated TVA codex record", async ({ page }, testInfo) => {
+  await openDebugSession(page);
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("archive"));
+  await expect.poll(() => snapshot(page).then((state) => state.currentLevelId)).toBe("archive");
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.setPlayerPosition(270, 392));
+  await expect(page.locator("#story-book-button")).toBeVisible();
+  await page.locator("#story-book-button").click();
+  await expect(page.locator("#slide-kicker")).toContainText("Hồ sơ đối thủ");
+  const codexPreview = page.locator(".monster-codex-preview-canvas");
+  await expect(codexPreview).toBeVisible();
+  await expect(page.locator("#slide-text")).toContainText("Telegraph:");
+  const firstPreviewFrame = await codexPreview.evaluate((canvas) => canvas.toDataURL());
+  await page.waitForTimeout(440);
+  const secondPreviewFrame = await codexPreview.evaluate((canvas) => canvas.toDataURL());
+  expect(secondPreviewFrame).not.toBe(firstPreviewFrame);
+  await page.screenshot({ path: testInfo.outputPath("monster-codex-preview.png"), fullPage: true });
+});
+
+test("monster codex preview remains legible on a compact viewport", async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await openDebugSession(page);
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("archive"));
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.setPlayerPosition(270, 392));
+  await expect(page.locator("#story-book-button")).toBeVisible();
+  await page.locator("#story-book-button").click();
+  await expect(page.locator("#slide-kicker")).toContainText("Hồ sơ đối thủ");
+  await expect(page.locator(".monster-codex-preview-canvas")).toBeVisible();
+  await expect(page.locator("#close-slide-button")).toBeVisible();
+  await page.screenshot({ path: testInfo.outputPath("monster-codex-preview-mobile.png"), fullPage: true });
+});
+
 test("boss combat panel names the threat and makes phase two legible", async ({ page }, testInfo) => {
   await openDebugSession(page);
   await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("village"));

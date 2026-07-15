@@ -31,6 +31,7 @@ import { getParallaxOffset } from "../rendering/parallax.js";
 import { LEVEL_ASSET_GROUPS, getAssetGroupForSource, isCriticalAsset } from "../data/asset-manifest.js";
 import { BOSS_DEFINITIONS, COMBAT_DENSITY, COMBAT_ROSTER } from "../data/combat-config.js";
 import { MONSTER_ART_DEFINITIONS, MONSTER_ART_KEY_BY_ID, getMonsterStripSource, isDedicatedMonsterArtKey } from "../data/monster-art-definitions.js";
+import { MONSTER_CODEX_DEFINITIONS, getMonsterCodexEntry } from "../data/monster-codex-definitions.js";
 import { GAMEPLAY_BALANCE, getDifficultySettings } from "../data/gameplay-balance.js";
 import { AUDIO_TRACKS, COMBAT_SFX, getAudioSourceCandidates, resolveAudioSource } from "../data/media-sources.js";
 import { BUILD_VERSION, withAssetVersion } from "../data/build-info.js";
@@ -335,6 +336,7 @@ let pendingKeyBindingAction = null;
 let pendingProgressAction = null;
 let corruptionWarningTimeoutId = 0;
 let relicBookOpenTimeoutId = 0;
+let slideMonsterPreviewFrameId = 0;
 let pendingAssetLoad = null;
 let audioLoadWarningShown = false;
 let audioPlaybackBlocked = false;
@@ -2572,6 +2574,22 @@ function createStoryRegistry(levelMap) {
     };
   }
 
+  for (const entry of MONSTER_CODEX_DEFINITIONS) {
+    registry[entry.storyId] = {
+      id: entry.storyId,
+      kicker: entry.boss ? "Hồ sơ đối thủ trọng yếu" : "Hồ sơ đối thủ đã chạm trán",
+      title: entry.title,
+      text: [
+        `Silhouette: ${entry.silhouette}`,
+        `Hành vi: ${entry.behavior}`,
+        `Telegraph: ${entry.telegraph}`,
+        entry.note,
+      ].join("\n"),
+      caption: entry.zoneLabel,
+      monsterPreview: { artKey: entry.artKey, title: entry.title },
+    };
+  }
+
   return registry;
 }
 
@@ -3770,6 +3788,21 @@ function unlockStory(storyId, options = {}) {
   return true;
 }
 
+function unlockMonsterCodex(monster) {
+  if (monster.trainingOpponent) {
+    return false;
+  }
+
+  const entry = getMonsterCodexEntry(monster.id);
+  if (!entry || !unlockStory(entry.storyId, { silent: true })) {
+    return false;
+  }
+
+  saveGameProgress();
+  showStoryToast(`TVA đã ghi thêm hồ sơ đối thủ: ${entry.title}.`);
+  return true;
+}
+
 function startDialogue(item) {
   const dialogue = getInteractionDialogue(item);
 
@@ -4751,11 +4784,108 @@ function renderSlideGallery(galleryItems) {
   }
 }
 
+function stopMonsterCodexPreview() {
+  if (slideMonsterPreviewFrameId) {
+    cancelAnimationFrame(slideMonsterPreviewFrameId);
+    slideMonsterPreviewFrameId = 0;
+  }
+}
+
+function resolveMonsterCodexPreviewSprite(preview) {
+  const config = MONSTER_SPRITE_CONFIG[preview.artKey];
+  const spriteSet = monsterSprites[preview.artKey];
+  const animation = config?.animations?.idle;
+  const direction = ["south", "east", "north", "west"].find((candidate) => canDrawSprite(spriteSet?.[candidate]?.idle));
+  const sprite = direction ? spriteSet[direction].idle : spriteSet?.idle;
+
+  if (!config || !animation || !canDrawSprite(sprite)) {
+    return null;
+  }
+
+  return { config, animation, sprite };
+}
+
+function renderMonsterCodexPreview(preview) {
+  stopMonsterCodexPreview();
+  slideGallery.replaceChildren();
+  slideGallery.dataset.count = "1";
+
+  const resolved = resolveMonsterCodexPreviewSprite(preview);
+  if (!resolved) {
+    return;
+  }
+
+  const figure = document.createElement("figure");
+  figure.className = "slide-gallery-item monster-codex-preview";
+  const previewCanvas = document.createElement("canvas");
+  previewCanvas.className = "monster-codex-preview-canvas";
+  previewCanvas.width = 256;
+  previewCanvas.height = 164;
+  previewCanvas.setAttribute("role", "img");
+  previewCanvas.setAttribute("aria-label", `Mô phỏng chuyển động của ${preview.title}`);
+  const caption = document.createElement("p");
+  caption.className = "slide-gallery-caption";
+  caption.textContent = "Mô phỏng idle từ spritesheet đã chạm trán.";
+  figure.append(previewCanvas, caption);
+  slideGallery.append(figure);
+
+  const previewContext = previewCanvas.getContext("2d");
+  if (!previewContext) {
+    return;
+  }
+  previewContext.imageSmoothingEnabled = false;
+
+  const drawFrame = (timestamp) => {
+    if (state.activeSlide?.monsterPreview !== preview) {
+      return;
+    }
+
+    const { config, animation, sprite } = resolved;
+    const frameIndex = state.settings.reducedMotion
+      ? 0
+      : Math.floor(timestamp / animation.frameDuration) % animation.frameCount;
+    const drawScale = Math.min(3.2, 148 / config.drawHeight);
+    const drawWidth = Math.round(config.drawWidth * drawScale);
+    const drawHeight = Math.round(config.drawHeight * drawScale);
+    const drawX = Math.round((previewCanvas.width - drawWidth) / 2);
+    const drawY = Math.round(previewCanvas.height - drawHeight - 14);
+
+    previewContext.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+    const backdrop = previewContext.createLinearGradient(0, 0, 0, previewCanvas.height);
+    backdrop.addColorStop(0, "#1e2730");
+    backdrop.addColorStop(1, "#10151a");
+    previewContext.fillStyle = backdrop;
+    previewContext.fillRect(0, 0, previewCanvas.width, previewCanvas.height);
+    previewContext.fillStyle = "rgba(6, 8, 10, 0.52)";
+    previewContext.beginPath();
+    previewContext.ellipse(previewCanvas.width / 2, previewCanvas.height - 17, drawWidth * 0.24, 7, 0, 0, Math.PI * 2);
+    previewContext.fill();
+    previewContext.drawImage(
+      sprite,
+      frameIndex * animation.frameWidth,
+      0,
+      animation.frameWidth,
+      animation.frameHeight,
+      drawX,
+      drawY,
+      drawWidth,
+      drawHeight
+    );
+
+    if (!state.settings.reducedMotion) {
+      slideMonsterPreviewFrameId = requestAnimationFrame(drawFrame);
+    }
+  };
+
+  drawFrame(performance.now());
+}
+
 function openSlide(slideData) {
   if (!slideData) {
     return;
   }
 
+  stopMonsterCodexPreview();
   state.activeSlide = slideData;
   state.pendingEnding = Boolean(slideData.endsGame);
   state.mode = "modal";
@@ -4768,18 +4898,22 @@ function openSlide(slideData) {
   delete slideGallery.dataset.count;
 
   const hasGallery = Array.isArray(slideData.gallery) && slideData.gallery.length > 0;
+  const hasMonsterPreview = Boolean(slideData.monsterPreview);
+  const hasMedia = hasGallery || hasMonsterPreview;
   const hasInlineArt = Boolean(slideData.art);
 
-  slideGallery.classList.toggle("hidden", !hasGallery);
-  slideGallery.setAttribute("aria-hidden", hasGallery ? "false" : "true");
-  slideImageFrame.classList.toggle("hidden", hasGallery || !hasInlineArt);
-  slideCaption.classList.toggle("hidden", hasGallery || !hasInlineArt);
+  slideGallery.classList.toggle("hidden", !hasMedia);
+  slideGallery.setAttribute("aria-hidden", hasMedia ? "false" : "true");
+  slideImageFrame.classList.toggle("hidden", hasMedia || !hasInlineArt);
+  slideCaption.classList.toggle("hidden", hasMedia || !hasInlineArt);
 
   if (hasGallery) {
     renderSlideGallery(slideData.gallery);
+  } else if (hasMonsterPreview) {
+    renderMonsterCodexPreview(slideData.monsterPreview);
   }
 
-  if (!hasGallery && hasInlineArt) {
+  if (!hasMedia && hasInlineArt) {
     slideImage.classList.add(`art-${slideData.art}`);
   }
 
@@ -4796,6 +4930,7 @@ function openSlide(slideData) {
 function closeSlide() {
   const shouldEnd = state.pendingEnding;
 
+  stopMonsterCodexPreview();
   playUiSound(uiSounds.bookPageFlip);
   slideModal.classList.add("hidden");
   slideModal.setAttribute("aria-hidden", "true");
@@ -5881,6 +6016,9 @@ function updateMonsters(deltaSeconds) {
     const dx = player.x - monster.x;
     const dy = player.y - monster.y;
     const distance = Math.hypot(dx, dy);
+    if (distance <= (monster.aggroRadius ?? 120) + 80) {
+      unlockMonsterCodex(monster);
+    }
     const settings = getDifficultySettings(state.difficulty);
     const isStunned = state.lastTimestamp < (monster.stunnedUntil ?? 0);
     const isHurt = state.lastTimestamp < (monster.hurtEndsAt ?? 0);
