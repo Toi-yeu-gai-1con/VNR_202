@@ -321,6 +321,7 @@ let corruptionWarningTimeoutId = 0;
 let relicBookOpenTimeoutId = 0;
 let pendingAssetLoad = null;
 let audioLoadWarningShown = false;
+let audioPlaybackBlocked = false;
 let debugOverlay = null;
 let smoothedFps = 0;
 let lastDebugTextUpdateAt = 0;
@@ -468,6 +469,13 @@ const audioSystem = createAudioSystem({
   getCurrentLevel: currentLevel,
   getPlayer: () => player,
   getSettings: () => state.settings,
+  onPlaybackBlocked: () => {
+    if (!state.soundMuted && !audioPlaybackBlocked) {
+      audioPlaybackBlocked = true;
+      showStoryToast("Trình duyệt chưa cho phát âm thanh. Nhấn ↻ để thử bật lại; bạn vẫn có thể tiếp tục chơi.");
+      updateSoundButton();
+    }
+  },
 });
 
 const GAMEPLAY_BLOCKING_SCENES = new Set([
@@ -1208,6 +1216,12 @@ function updateFullscreenButton() {
 }
 
 function toggleSound() {
+  if (audioPlaybackBlocked && !state.soundMuted) {
+    audioPlaybackBlocked = false;
+    syncAmbienceAudio();
+    updateSoundButton();
+    return;
+  }
   state.settings = gameSettingsStore.save({ ...state.settings, soundMuted: !state.soundMuted });
   applyGameSettings();
 
@@ -1224,11 +1238,12 @@ function updateSoundButton() {
 
   const soundEnabled = !state.soundMuted;
   const audioHasFailed = assetManager.getFailedEntries({ type: "audio" }).length > 0;
+  const needsPlaybackRetry = soundEnabled && audioPlaybackBlocked;
   soundButton.setAttribute("aria-pressed", String(soundEnabled));
-  soundButton.classList.toggle("has-load-warning", audioHasFailed);
-  soundButton.setAttribute("aria-label", soundEnabled ? "Tắt âm thanh" : "Bật âm thanh");
-  soundButton.title = soundEnabled ? "Tắt âm thanh" : "Bật âm thanh";
-  soundButton.textContent = soundEnabled ? "♫" : "×";
+  soundButton.classList.toggle("has-load-warning", audioHasFailed || needsPlaybackRetry);
+  soundButton.setAttribute("aria-label", needsPlaybackRetry ? "Thử bật lại âm thanh" : soundEnabled ? "Tắt âm thanh" : "Bật âm thanh");
+  soundButton.title = needsPlaybackRetry ? "Thử bật lại âm thanh" : soundEnabled ? "Tắt âm thanh" : "Bật âm thanh";
+  soundButton.textContent = needsPlaybackRetry ? "↻" : soundEnabled ? "♫" : "×";
 }
 
 async function retryFailedAudioAssets() {

@@ -9,6 +9,7 @@ export function createAudioSystem({
   getPlayer,
   getSettings = () => ({ musicVolume: 1, sfxVolume: 1, dialogueVolume: 1 }),
   eventTarget = window,
+  onPlaybackBlocked = () => {},
 }) {
   let audioRetryQueued = false;
   let suspended = false;
@@ -34,6 +35,7 @@ export function createAudioSystem({
     }
 
     audioRetryQueued = true;
+    onPlaybackBlocked();
     const retry = () => {
       eventTarget.removeEventListener("pointerdown", retry);
       eventTarget.removeEventListener("keydown", retry);
