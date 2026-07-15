@@ -44,7 +44,13 @@ export function resolveEnding(input = {}) {
     return createResult("bad", "total-corruption", { corruption });
   }
 
-  if (corruption >= endingRules.secretCorruption || risks.secret >= endingRules.secretRiskThreshold) {
+  // The Secret Bad Ending is a failed completed campaign. Before all five
+  // relics are collected, high corruption remains a warning/risk so it cannot
+  // interrupt a zone before the player reaches its final verdict.
+  if (
+    missingRelics.length === 0 &&
+    (corruption >= endingRules.secretCorruption || risks.secret >= endingRules.secretRiskThreshold)
+  ) {
     return createResult("secret-corruption", "extreme-corruption", { corruption, risk: risks.secret ?? 0 });
   }
 

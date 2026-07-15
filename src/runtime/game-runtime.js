@@ -2050,8 +2050,8 @@ function playUiSound(sound) {
   audioSystem.playUiSound(sound);
 }
 
-function playDialogueSound() {
-  // Dialogue typewriter blips are intentionally disabled: keyboard-led reading must stay quiet.
+function playDialogueSound(sound, options) {
+  audioSystem.playDialogueSound(sound, options);
 }
 
 function playCombatSfx(key, options) {
@@ -8680,7 +8680,6 @@ function adjustSaDoa(delta, message = "", { deferEnding = false } = {}) {
       showResolvedEnding(candidate, "Tha hóa đã vượt ngưỡng 75, khiến hồ sơ rạn vỡ từ bên trong.");
       return;
     }
-    triggerBadEnding("Thanh Tha hóa đã đầy, nhân dân quay lưng và lịch sử rơi vào bóng đen mới.");
   }
 }
 

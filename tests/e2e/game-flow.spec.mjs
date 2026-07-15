@@ -696,7 +696,7 @@ test("David remains interactable in the TVA hub", async ({ page }) => {
   await expect(page.locator("#dialogue-speaker")).toHaveText("David");
 });
 
-test("dialogue types one character at a time without keyboard-triggered blips", async ({ page }, testInfo) => {
+test("dialogue types one character at a time with voice blips but no UI-key beep", async ({ page }, testInfo) => {
   await page.addInitScript(() => {
     window.__playedDialogueSources = [];
     const originalPlay = HTMLMediaElement.prototype.play;
@@ -720,11 +720,12 @@ test("dialogue types one character at a time without keyboard-triggered blips", 
   expect(partial.typewriter.visibleCount).toBeLessThan(partial.typewriter.totalCount);
   await page.screenshot({ path: testInfo.outputPath("dialogue-typewriter-partial.png"), fullPage: true });
   await expect.poll(() => snapshot(page).then((state) => state.typewriter?.complete)).toBe(true);
-  expect(await page.evaluate(() => window.__playedDialogueSources)).toEqual([]);
+  expect(await page.evaluate(() => window.__playedDialogueSources.length)).toBeGreaterThan(0);
 
+  await page.evaluate(() => { window.__playedDialogueSources = []; });
   await advanceDialogue(page);
   await page.waitForTimeout(120);
-  expect(await page.evaluate(() => window.__playedDialogueSources)).toEqual([]);
+  expect(await page.evaluate(() => window.__playedDialogueSources.length)).toBeGreaterThan(0);
 });
 
 test("keyboard interaction stays quiet and accepts the third dialogue option", async ({ page }, testInfo) => {
@@ -1229,6 +1230,24 @@ test("Zone 2 division risk needs a separate emblem confirmation before its endin
   await page.screenshot({ path: testInfo.outputPath("zone2-fading-fires-ending.png"), fullPage: true });
 });
 
+test("high corruption before five relics warns the player without opening the Secret Bad Ending", async ({ page }, testInfo) => {
+  await openDebugSession(page);
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("village"));
+  await expect.poll(() => snapshot(page).then((state) => state.currentLevelId)).toBe("village");
+  await expect.poll(() => snapshot(page).then((state) => state.mode)).toBe("playing");
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.setSaDoa(70));
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("colonial-recruiter"));
+  const acceptChoice = await advanceDialogueToChoice(page, "accept");
+  await acceptChoice.click();
+
+  await expect.poll(() => snapshot(page).then((state) => state.saDoa)).toBe(78);
+  await expect.poll(() => snapshot(page).then((state) => state.inventory.length)).toBeLessThan(5);
+  await expect(page.locator("#end-overlay")).toBeHidden();
+  await expect.poll(() => snapshot(page).then((state) => state.endingId)).toBeNull();
+  await expect(page.locator("#corruption-warning")).toBeVisible();
+  await page.screenshot({ path: testInfo.outputPath("high-corruption-before-five-relics.png"), fullPage: true });
+});
+
 test("a Zone 2 verdict that reaches maximum corruption cannot award its relic before recovery", async ({ page }, testInfo) => {
   await openDebugSession(page);
   await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("archive"));
@@ -1246,7 +1265,7 @@ test("a Zone 2 verdict that reaches maximum corruption cannot award its relic be
   await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("unity-round-table"));
   await page.locator('[data-dialogue-choice="confirm-factionalism"]').click();
 
-  await expect.poll(() => snapshot(page).then((state) => state.endingId)).toBe("secret-corruption");
+  await expect.poll(() => snapshot(page).then((state) => state.endingId)).toBe("bad");
   await expect.poll(() => snapshot(page).then((state) => state.inventory)).not.toContain("unified-emblem");
   await expect.poll(() => snapshot(page).then((state) => state.quests.zone2RewardClaimed)).toBe(false);
   await expect.poll(

@@ -13,7 +13,7 @@ assert.match(runtime, /dialogueMale: loadSound\("assets\/audio\/sfx\/sfx-blipmal
 assert.match(runtime, /dialogueFemale: loadSound\("assets\/audio\/sfx\/sfx-blipfemale\.wav"/, "Female dialogue blip must be preloaded.");
 assert.match(runtime, /function updateTypewriter\(/, "Dialogue text must advance through a typewriter update loop.");
 assert.match(runtime, /function revealActiveTypewriter\(/, "Input must be able to finish the current line before advancing.");
-assert.match(runtime, /Dialogue typewriter blips are intentionally disabled/, "Keyboard-led dialogue must not emit typewriter blips.");
+assert.match(runtime, /function playDialogueSound\(sound, options\)\s*\{\s*audioSystem\.playDialogueSound\(sound, options\);\s*\}/, "Dialogue typewriter blips must use the dedicated dialogue audio channel.");
 assert.match(runtime, /function playUiSound\(sound\)[\s\S]{0,220}sound === uiSounds\.pixelClick/, "UI click beeps must be suppressed without muting gameplay feedback.");
 assert.match(runtime, /const choiceIndex = \/\^\[1-9\]\$\/\.test\(key\) \? Number\.parseInt\(key, 10\) - 1 : -1/, "Dialogue choice input must support every rendered choice number.");
 assert.match(runtime, /Phím 1 \/ \$\{choices\.length\}/, "Dialogue input guidance must show the actual final choice number.");
@@ -30,4 +30,4 @@ assert.match(runtime, /!\/?\[\\p\{L\}\\p\{N\}\]/, "Voice blips must ignore white
 assert.match(runtime, /typewriter\?\.kind === "dialogue" && !typewriter\.complete/, "Hidden dialogue choices must remain unavailable until the active line is fully revealed.");
 assert.match(runtime, /lineEndOffsets/, "Bad-ending recovery line changes must be scheduled from their actual reveal durations.");
 
-console.log("PASS: dialogue typewriter stays keyboard-quiet while preserving its reveal cadence.");
+console.log("PASS: dialogue typewriter uses voice blips while interaction keys stay quiet.");

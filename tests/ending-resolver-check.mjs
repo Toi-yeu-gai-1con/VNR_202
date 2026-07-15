@@ -48,5 +48,10 @@ assert.deepEqual(
   null,
   "The resolver does not select an ending before all relics are available.",
 );
+assert.deepEqual(
+  resolveEnding({ ...base, inventory: new Set(relics.slice(0, 2)), saDoa: 76 }).id,
+  null,
+  "Secret corruption cannot interrupt a run before all relics are available.",
+);
 
 console.log("PASS: ending resolution is data-driven, explainable, and prioritizes the secret corruption ending.");
