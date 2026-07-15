@@ -61,6 +61,7 @@ const pauseTitle = document.getElementById("pause-title");
 const storyBookButton = document.getElementById("story-book-button");
 const storyBookCount = document.getElementById("story-book-count");
 const storyToast = document.getElementById("story-toast");
+const soundCaption = document.getElementById("sound-caption");
 const corruptionWarning = document.getElementById("corruption-warning");
 const hud = document.getElementById("hud");
 const dialogueBox = document.getElementById("dialogue-box");
@@ -98,6 +99,7 @@ const closeSettingsButton = document.getElementById("close-settings-button");
 const musicVolumeInput = document.getElementById("music-volume-input");
 const sfxVolumeInput = document.getElementById("sfx-volume-input");
 const dialogueVolumeInput = document.getElementById("dialogue-volume-input");
+const soundCaptionsInput = document.getElementById("sound-captions-input");
 const mutedInput = document.getElementById("muted-input");
 const reducedMotionInput = document.getElementById("reduced-motion-input");
 const largeTextInput = document.getElementById("large-text-input");
@@ -290,6 +292,8 @@ const combatSfx = loadCombatSfx();
 const ambienceSounds = loadAmbienceSounds();
 const musicSounds = loadMusicSounds();
 let storyToastTimeoutId = 0;
+let soundCaptionTimeoutId = 0;
+let lastSoundCaption = { key: null, shownAt: 0 };
 let corruptionWarningTimeoutId = 0;
 let relicBookOpenTimeoutId = 0;
 let pendingAssetLoad = null;
@@ -940,7 +944,7 @@ aboutButton.addEventListener("click", withUiClickSound(() => {
   openSlide(currentLevel().aboutSlide);
 }));
 closeSlideButton.addEventListener("click", closeSlide);
-for (const settingsControl of [musicVolumeInput, sfxVolumeInput, dialogueVolumeInput, mutedInput, reducedMotionInput, largeTextInput, minimapInput]) {
+for (const settingsControl of [musicVolumeInput, sfxVolumeInput, dialogueVolumeInput, soundCaptionsInput, mutedInput, reducedMotionInput, largeTextInput, minimapInput]) {
   settingsControl.addEventListener("input", saveSettingsFromControls);
   settingsControl.addEventListener("change", saveSettingsFromControls);
 }
@@ -1002,6 +1006,7 @@ function updateSettingsControls() {
   musicVolumeInput.value = String(Math.round(state.settings.musicVolume * 100));
   sfxVolumeInput.value = String(Math.round(state.settings.sfxVolume * 100));
   dialogueVolumeInput.value = String(Math.round(state.settings.dialogueVolume * 100));
+  soundCaptionsInput.checked = state.settings.soundCaptions;
   mutedInput.checked = state.settings.soundMuted;
   reducedMotionInput.checked = state.settings.reducedMotion;
   largeTextInput.checked = state.settings.textScale === "large";
@@ -1023,6 +1028,7 @@ function saveSettingsFromControls() {
     musicVolume: Number(musicVolumeInput.value) / 100,
     sfxVolume: Number(sfxVolumeInput.value) / 100,
     dialogueVolume: Number(dialogueVolumeInput.value) / 100,
+    soundCaptions: soundCaptionsInput.checked,
     reducedMotion: reducedMotionInput.checked,
     textScale: largeTextInput.checked ? "large" : "normal",
     minimapVisible: minimapInput.checked,
@@ -1697,6 +1703,7 @@ function playDialogueSound(sound) {
 
 function playCombatSfx(key, options) {
   audioSystem.playSfx(key, options);
+  showSoundCaptionForSfx(key);
 }
 
 function withUiClickSound(action) {
@@ -3351,6 +3358,38 @@ function renderDialogue() {
   dialogueBox.classList.remove("hidden");
   dialogueBox.setAttribute("aria-hidden", "false");
   playDialogueSound(uiSounds.pixelClick);
+}
+
+function showSoundCaptionForSfx(key) {
+  const captions = {
+    strikeSwing: "[VUNG KIẾM – phía trước]",
+    rifleShot: "[TIẾNG SÚNG – kẻ địch tầm xa]",
+    lanternPulse: "[XUNG NHỊP – kẻ địch hỗ trợ]",
+    captainSlam: "[ĐẬP MẠNH – nguy hiểm gần]",
+    captainCommand: "[MỆNH LỆNH – boss tăng cường]",
+    batonHit: "[ĐÒN ĐÁNH TRÚNG]",
+    hurt: "[KẺ ĐỊCH BỊ THƯƠNG]",
+    death: "[KẺ ĐỊCH GỤC NGÃ]",
+    playerHurt: "[BẠN BỊ TRÚNG ĐÒN]",
+  };
+  const text = captions[key];
+  if (!text || !state.settings.soundCaptions || !soundCaption) {
+    return;
+  }
+
+  if (lastSoundCaption.key === key && state.lastTimestamp - lastSoundCaption.shownAt < 320) {
+    return;
+  }
+
+  lastSoundCaption = { key, shownAt: state.lastTimestamp };
+  window.clearTimeout(soundCaptionTimeoutId);
+  soundCaption.textContent = text;
+  soundCaption.classList.remove("hidden");
+  soundCaption.setAttribute("aria-hidden", "false");
+  soundCaptionTimeoutId = window.setTimeout(() => {
+    soundCaption.classList.add("hidden");
+    soundCaption.setAttribute("aria-hidden", "true");
+  }, 1050);
 }
 
 function createDialogueChoiceButton(choice, index) {

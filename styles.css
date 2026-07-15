@@ -536,6 +536,24 @@ button {
   image-rendering: crisp-edges;
 }
 
+.sound-caption {
+  position: absolute;
+  left: 50%;
+  top: 31%;
+  z-index: 5;
+  max-width: min(430px, calc(100% - 36px));
+  padding: 8px 12px;
+  border: 2px solid rgba(244, 224, 161, 0.72);
+  background: rgba(15, 21, 29, 0.9);
+  box-shadow: 0 4px 0 rgba(51, 32, 24, 0.78);
+  color: #fff0c8;
+  font-size: clamp(0.92rem, 1.55vw, 1.15rem);
+  line-height: 1.2;
+  text-align: center;
+  pointer-events: none;
+  transform: translateX(-50%);
+}
+
 .settings-card {
   width: min(540px, calc(100vw - 28px));
 }

@@ -23,6 +23,7 @@ const saved = store.save({
   musicVolume: 0.42,
   sfxVolume: 0.67,
   dialogueVolume: 0.58,
+  soundCaptions: false,
   reducedMotion: true,
   textScale: "large",
   minimapVisible: false,
@@ -33,6 +34,7 @@ assert.deepEqual(saved, {
   musicVolume: 0.42,
   sfxVolume: 0.67,
   dialogueVolume: 0.58,
+  soundCaptions: false,
   reducedMotion: true,
   textScale: "large",
   minimapVisible: false,
@@ -49,5 +51,6 @@ storage.setItem("settings-test", JSON.stringify({
   settings: { soundMuted: false, musicVolume: 0.42, sfxVolume: 0.67, reducedMotion: false, textScale: "normal", minimapVisible: true },
 }));
 assert.equal(store.load().dialogueVolume, 1, "Existing settings preserve their music and effects choices while safely gaining a dialogue-volume default.");
+assert.equal(store.load().soundCaptions, true, "Existing settings gain the accessible sound-caption default without discarding their other preferences.");
 
 console.log("PASS: persistent game settings normalize browser preferences safely.");
