@@ -141,5 +141,28 @@ export function restoreNarrativeState(saved = {}) {
   return narrative;
 }
 
+export function clearCompletedZoneBadConfirmations(narrative, { inventory = new Set(), quests = {} } = {}) {
+  if (!narrative?.branchFlags) {
+    return narrative;
+  }
+
+  const itemIds = inventory instanceof Set ? inventory : new Set(inventory ?? []);
+  const completedZones = [
+    ["zone1", itemIds.has("red-compass") || quests.zone1RewardClaimed],
+    ["zone2", itemIds.has("unified-emblem") || quests.zone2RewardClaimed],
+    ["zone3a", itemIds.has("vietminh-thread") || quests.zone3ThreadClaimed],
+    ["zone3b", itemIds.has("healed-map") || quests.zone3MapClaimed],
+    ["zone4", itemIds.has("doi-moi-gear") || quests.zone4GearClaimed],
+  ];
+
+  for (const [zoneId, completed] of completedZones) {
+    if (completed) {
+      narrative.branchFlags[`${zoneId}.badConfirmed`] = false;
+    }
+  }
+
+  return narrative;
+}
+
 export const NARRATIVE_THEME_SCORE_KEYS = THEME_SCORE_KEYS;
 export const NARRATIVE_ENDING_RISK_KEYS = ENDING_RISK_KEYS;

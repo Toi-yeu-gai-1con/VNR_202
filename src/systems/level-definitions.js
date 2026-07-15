@@ -77,7 +77,7 @@ function createHubLevel() {
       },
       {
         id: "tva-memory-archive", name: "Trạm Ký ức TVA", x: 630, y: 318, width: 56, height: 56,
-        kind: "object", variant: "tva-memory-archive", prompt: "mở kho ký ức đã thu thập",
+        kind: "object", variant: "tva-memory-archive", prompt: "mở Hồ sơ TVA",
         interactionType: "openMemoryArchive", interactionRadius: 50,
       },
       {

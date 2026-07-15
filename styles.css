@@ -1062,6 +1062,213 @@ html[data-reduced-motion="true"] *::after {
   z-index: 5;
 }
 
+.tva-dossier-modal {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  padding: clamp(12px, 2vh, 22px);
+  background: rgba(10, 16, 20, 0.74);
+  backdrop-filter: blur(5px);
+}
+
+.tva-dossier-card {
+  width: min(90vw, 820px);
+  max-height: min(84dvh, 720px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 4px solid #d5a958;
+  border-radius: 10px;
+  background:
+    linear-gradient(180deg, rgba(36, 48, 52, 0.98), rgba(19, 27, 30, 0.99)),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.025) 0 1px, transparent 1px 5px);
+  box-shadow: 0 14px 0 rgba(6, 9, 10, 0.75), 0 30px 58px rgba(0, 0, 0, 0.52);
+  color: #f8edd0;
+}
+
+.tva-dossier-header {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  padding: clamp(18px, 3vw, 26px) clamp(22px, 4vw, 34px) 16px;
+  border-bottom: 2px solid rgba(213, 169, 88, 0.44);
+  background: linear-gradient(90deg, rgba(108, 75, 39, 0.4), rgba(31, 44, 48, 0.24));
+}
+
+.tva-dossier-header h2 {
+  margin: 4px 0 6px;
+  color: #ffdc8c;
+  font-family: "VT323", monospace;
+  font-size: clamp(2rem, 4.5vw, 3.1rem);
+  line-height: 0.95;
+}
+
+.tva-dossier-kicker,
+.tva-dossier-intro,
+.tva-dossier-section-title,
+.tva-dossier-empty,
+.tva-dossier-record p,
+.tva-dossier-record h4 {
+  margin: 0;
+}
+
+.tva-dossier-kicker {
+  color: #d8ad61;
+  font-size: clamp(0.9rem, 1.5vw, 1.1rem);
+  letter-spacing: 0.12em;
+}
+
+.tva-dossier-intro {
+  max-width: 60ch;
+  color: #cdd3c8;
+  font-size: clamp(0.95rem, 1.7vw, 1.12rem);
+  line-height: 1.3;
+}
+
+.tva-dossier-close-button {
+  position: static;
+  flex: 0 0 auto;
+  margin-top: 2px;
+}
+
+.tva-dossier-tabs {
+  display: flex;
+  gap: 8px;
+  padding: 12px clamp(18px, 3vw, 28px);
+  border-bottom: 2px solid rgba(213, 169, 88, 0.28);
+  background: rgba(8, 13, 15, 0.36);
+}
+
+.tva-dossier-tab {
+  min-width: 112px;
+  padding: 9px 12px;
+  color: #f0dfb5;
+}
+
+.tva-dossier-tab.is-selected,
+.tva-dossier-monster-button.is-selected {
+  border-color: #f2ca72;
+  background-color: #7d5631;
+  color: #fff2ce;
+  box-shadow: inset 0 0 0 2px rgba(255, 224, 150, 0.24);
+}
+
+.tva-dossier-content {
+  min-height: 0;
+  overflow-y: auto;
+  padding: clamp(18px, 3vw, 28px);
+}
+
+.tva-dossier-section-title {
+  margin-bottom: 12px;
+  color: #ffda89;
+  font-family: "VT323", monospace;
+  font-size: clamp(1.6rem, 3vw, 2.1rem);
+  letter-spacing: 0.02em;
+}
+
+.tva-dossier-empty {
+  padding: 20px;
+  border: 2px dashed rgba(222, 185, 105, 0.46);
+  color: #d6d8ce;
+  line-height: 1.45;
+}
+
+.tva-dossier-list {
+  display: grid;
+  gap: 12px;
+}
+
+.tva-dossier-record {
+  display: grid;
+  gap: 14px;
+  padding: 13px;
+  border: 2px solid rgba(227, 190, 109, 0.42);
+  border-radius: 7px;
+  background: linear-gradient(135deg, rgba(235, 220, 179, 0.1), rgba(20, 34, 37, 0.48));
+}
+
+.tva-dossier-ending-record,
+.tva-dossier-monster-record {
+  grid-template-columns: minmax(150px, 0.72fr) minmax(0, 1.28fr);
+}
+
+.tva-dossier-ending-art,
+.tva-dossier-monster-preview .monster-codex-preview-canvas {
+  width: 100%;
+  min-height: 132px;
+  height: 100%;
+  object-fit: cover;
+  border: 2px solid rgba(235, 201, 128, 0.48);
+  background: #11191c;
+  image-rendering: pixelated;
+}
+
+.tva-dossier-monster-preview .slide-gallery-item {
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.tva-dossier-monster-preview .slide-gallery-caption {
+  padding-top: 5px;
+  color: #c9cfbd;
+}
+
+.tva-dossier-preview-loading {
+  display: grid;
+  min-height: 132px;
+  place-items: center;
+  margin: 0;
+  padding: 16px;
+  border: 2px solid rgba(235, 201, 128, 0.34);
+  color: #d9cfb7;
+  line-height: 1.35;
+  text-align: center;
+}
+
+.tva-dossier-record-copy {
+  display: grid;
+  align-content: start;
+  gap: 7px;
+}
+
+.tva-dossier-record-title {
+  color: #fff0c7;
+  font-family: "VT323", monospace;
+  font-size: clamp(1.45rem, 2.8vw, 1.92rem);
+  line-height: 1;
+}
+
+.tva-dossier-record-text {
+  color: #e2e4da;
+  font-size: clamp(0.92rem, 1.5vw, 1.05rem);
+  line-height: 1.35;
+}
+
+.tva-dossier-record-caption {
+  color: #d9ad65;
+  font-size: clamp(0.84rem, 1.25vw, 0.96rem);
+  line-height: 1.28;
+}
+
+.tva-dossier-monster-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tva-dossier-monster-button {
+  min-width: 142px;
+  padding: 8px 10px;
+  font-size: clamp(0.83rem, 1.35vw, 0.98rem);
+}
+
 .start-screen {
   display: grid;
   justify-items: center;
@@ -3012,6 +3219,20 @@ html[data-reduced-motion="true"] *::after {
     aspect-ratio: auto;
     max-height: none;
     min-height: min(88vh, 760px);
+  }
+
+  .tva-dossier-card {
+    width: min(94vw, 640px);
+    max-height: 88dvh;
+  }
+
+  .tva-dossier-ending-record,
+  .tva-dossier-monster-record {
+    grid-template-columns: 1fr;
+  }
+
+  .tva-dossier-ending-art {
+    max-height: 190px;
   }
 
   .slide-book-art {

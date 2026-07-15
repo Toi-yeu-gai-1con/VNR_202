@@ -1,5 +1,5 @@
 import { createQuestState } from "../data/quests.js";
-import { createNarrativeState, recordNarrativeChoice, serializeNarrativeState } from "../systems/narrative-state.js";
+import { clearCompletedZoneBadConfirmations, createNarrativeState, recordNarrativeChoice, serializeNarrativeState } from "../systems/narrative-state.js";
 import { resolveEnding } from "../systems/ending-resolver.js";
 import { NARRATIVE_CHAPTER_DEFINITIONS, NARRATIVE_CHOICE_DEFINITIONS, NARRATIVE_ENDING_DEFINITIONS, NARRATIVE_TVA_REACTION_DEFINITIONS } from "../data/narrative-definitions.js";
 import { ZONE_PROFILES } from "../data/zone-profiles.js";
@@ -16,6 +16,7 @@ import { getOptionalChallengeDefinition } from "../data/optional-challenge-defin
 import { evaluateOptionalChallenge } from "../systems/optional-challenge.js";
 import { ACHIEVEMENT_DEFINITIONS, getEarnedAchievementIds } from "../data/achievement-definitions.js";
 import { createAchievementCollection } from "../systems/achievement-collection.js";
+import { createMonsterCodexCollection } from "../systems/monster-codex-collection.js";
 import { createLevelDefinitions } from "../systems/level-definitions.js";
 import { captureInteractableRuntimeState, restoreInteractableRuntimeState } from "../systems/interactable-runtime-state.js";
 import { createFinalVerdictCheckpoint, restoreFinalVerdictCheckpoint } from "../systems/bad-ending-recovery.js";
@@ -66,6 +67,7 @@ const startScreen = document.getElementById("start-screen");
 const pauseMenu = document.getElementById("pause-menu");
 const settingsMenu = document.getElementById("settings-menu");
 const slideModal = document.getElementById("slide-modal");
+const tvaDossierModal = document.getElementById("tva-dossier-modal");
 const endOverlay = document.getElementById("end-overlay");
 const interactionPrompt = document.getElementById("interaction-prompt");
 const levelChip = document.getElementById("level-chip");
@@ -169,6 +171,9 @@ const bookControls = document.getElementById("book-controls");
 const storyPrevButton = document.getElementById("story-prev-button");
 const storyNextButton = document.getElementById("story-next-button");
 const bookPageIndicator = document.getElementById("book-page-indicator");
+const tvaDossierCloseButton = document.getElementById("tva-dossier-close-button");
+const tvaDossierContent = document.getElementById("tva-dossier-content");
+const tvaDossierTabs = Array.from(document.querySelectorAll("[data-tva-dossier-tab]"));
 const hpFill = document.getElementById("hp-fill");
 const hpValue = document.getElementById("hp-value");
 const saDoaFill = document.getElementById("sa-doa-fill");
@@ -252,6 +257,7 @@ const RELIC_TARGET_COUNT = 5;
 const SAVE_STORAGE_KEY = "crossroads-save-v1";
 const ENDING_COLLECTION_STORAGE_KEY = "crossroads-ending-collection-v1";
 const ACHIEVEMENT_COLLECTION_STORAGE_KEY = "crossroads-achievement-collection-v1";
+const MONSTER_CODEX_COLLECTION_STORAGE_KEY = "crossroads-monster-codex-collection-v1";
 const GAME_SETTINGS_STORAGE_KEY = "crossroads-settings-v1";
 const SAVE_VERSION = 2;
 const PLAYER_ATTACK_ANIMATION_MS = GAMEPLAY_BALANCE.combat.strike.animationMs;
@@ -360,6 +366,8 @@ const state = {
   openingStep: 0,
   activeStoryIds: [],
   activeStoryIndex: 0,
+  activeDossierTab: "endings",
+  activeDossierMonsterId: null,
   unlockedStoryIds: new Set(),
   activeInteractionId: null,
   aboutFromPause: false,
@@ -494,6 +502,12 @@ const achievementCollection = createAchievementCollection({
   isSupportedAchievementId: (achievementId) => ACHIEVEMENT_DEFINITIONS.some((achievement) => achievement.id === achievementId),
 });
 
+const monsterCodexCollection = createMonsterCodexCollection({
+  storage: localStorage,
+  storageKey: MONSTER_CODEX_COLLECTION_STORAGE_KEY,
+  isSupportedMonsterId: (monsterId) => Boolean(getMonsterCodexEntry(monsterId)),
+});
+
 const audioSystem = createAudioSystem({
   state,
   uiSounds,
@@ -524,12 +538,20 @@ const GAMEPLAY_BLOCKING_SCENES = new Set([
   SCENES.TRANSITION,
 ]);
 
+const AUDIO_PAUSING_SCENES = new Set([
+  SCENES.PAUSED,
+  SCENES.MODAL,
+  SCENES.TUTORIAL,
+  SCENES.SUMMARY,
+  SCENES.TRANSITION,
+]);
+
 sceneController.subscribe(({ previous, current }) => {
   const isBlockingGameplay = GAMEPLAY_BLOCKING_SCENES.has(current);
   if (isBlockingGameplay || GAMEPLAY_BLOCKING_SCENES.has(previous)) {
     clearPressedKeys();
   }
-  audioSystem.setScenePaused(isBlockingGameplay);
+  audioSystem.setScenePaused(AUDIO_PAUSING_SCENES.has(current));
 });
 
 const frameLoop = createRuntimeLoop({
@@ -911,7 +933,9 @@ function continueSavedGame() {
   restoreRuntimeSaveState(saved.runtime);
   state.runStats = createRunStats(saved.runStats);
   state.inventory = new Set(saved.inventory ?? []);
+  clearCompletedZoneBadConfirmations(state.narrative, { inventory: state.inventory, quests: state.quests });
   state.unlockedStoryIds = new Set(saved.unlockedStoryIds ?? []);
+  migrateLegacyMonsterCodexRecords();
   state.completedZones = new Set(saved.completedZones ?? []);
   setDifficulty(saved.difficulty ?? "normal");
   setOptionalChallenge(saved.activeChallengeId);
@@ -1071,6 +1095,13 @@ aboutButton.addEventListener("click", withUiClickSound(() => {
   openSlide(currentLevel().aboutSlide);
 }));
 closeSlideButton.addEventListener("click", closeSlide);
+tvaDossierCloseButton.addEventListener("click", withUiClickSound(closeTvaDossier));
+tvaDossierTabs.forEach((button) => {
+  button.addEventListener("click", withUiClickSound(() => {
+    state.activeDossierTab = button.dataset.tvaDossierTab;
+    renderTvaDossier();
+  }));
+});
 for (const settingsControl of [musicVolumeInput, sfxVolumeInput, dialogueVolumeInput, soundCaptionsInput, mutedInput, reducedMotionInput, largeTextInput, minimapInput, minimapSizeInput, minimapOpacityInput]) {
   settingsControl.addEventListener("input", saveSettingsFromControls);
   settingsControl.addEventListener("change", saveSettingsFromControls);
@@ -1352,6 +1383,10 @@ window.addEventListener("keydown", (event) => {
     }
 
     if (state.mode === "modal") {
+      if (!tvaDossierModal.classList.contains("hidden")) {
+        closeTvaDossier();
+        return;
+      }
       closeSlide();
       return;
     }
@@ -3504,19 +3539,6 @@ function getTvaEmployeeDialogue() {
     return TVA_EMPLOYEE_DIALOGUES.introduction;
   }
 
-  const epilogue = getTvaHubPresentation({
-    inventory: state.inventory,
-    corruption: state.saDoa,
-    endingId: state.hubEpilogueEndingId,
-  }).epilogue;
-  if (epilogue) {
-    return {
-      speaker: "David",
-      storyId: null,
-      lines: [{ speaker: "David", text: epilogue.davidLine }],
-    };
-  }
-
   const activeRoute = getTvaRoute(state.quests.tvaPortalTarget);
   if (activeRoute) {
     return {
@@ -3532,9 +3554,46 @@ function getTvaEmployeeDialogue() {
 
   const pendingRelicIds = getPendingTvaRelicIds();
   const nextRoute = getNextTvaRoute();
-
+  const epilogue = getTvaHubPresentation({
+    inventory: state.inventory,
+    corruption: state.saDoa,
+    endingId: state.hubEpilogueEndingId,
+  }).epilogue;
   if (pendingRelicIds.length > 0) {
-    return createTvaRelicReportDialogue(pendingRelicIds, nextRoute);
+    const reportDialogue = createTvaRelicReportDialogue(pendingRelicIds, nextRoute);
+    return epilogue
+      ? {
+          ...reportDialogue,
+          lines: [
+            { speaker: "David", text: epilogue.davidLine },
+            ...reportDialogue.lines,
+          ],
+        }
+      : reportDialogue;
+  }
+
+  if (epilogue && pendingRelicIds.length === 0 && nextRoute) {
+    return {
+      speaker: "David",
+      storyId: null,
+      lines: [
+        { speaker: "David", text: epilogue.davidLine },
+        { speaker: "David", text: `Nhưng hồ sơ chưa kết thúc. Tuyến kế tiếp là ${nextRoute.label}; cậu muốn tôi nhập tọa độ ngay chứ?` },
+      ],
+      choices: TVA_EMPLOYEE_DIALOGUES.dispatchPrompt.choices,
+      context: { routeLevelId: nextRoute.levelId },
+    };
+  }
+
+  if (epilogue) {
+    const completionDialogue = createTvaCompletionDialogue();
+    return {
+      ...completionDialogue,
+      lines: [
+        { speaker: "David", text: epilogue.davidLine },
+        ...completionDialogue.lines,
+      ],
+    };
   }
 
   if (nextRoute) {
@@ -3777,11 +3836,10 @@ function unlockStory(storyId, options = {}) {
 
 function unlockMonsterCodex(monster) {
   const entry = getMonsterCodexEntry(monster.id);
-  if (!entry || !unlockStory(entry.storyId, { silent: true })) {
+  if (!entry || !monsterCodexCollection.record(entry.monsterId)) {
     return false;
   }
 
-  saveGameProgress();
   showStoryToast(`TVA đã ghi thêm hồ sơ đối thủ: ${entry.title}.`);
   return true;
 }
@@ -3926,7 +3984,7 @@ function getZone4TvaReaction() {
   return reactions.renewal;
 }
 
-function applyNarrativeChoice(chapterId, decisionId, optionId) {
+function applyNarrativeChoice(chapterId, decisionId, optionId, { deferCorruptionEnding = false } = {}) {
   const resolved = getNarrativeChoiceOption(chapterId, decisionId, optionId);
 
   if (!resolved) {
@@ -3945,7 +4003,7 @@ function applyNarrativeChoice(chapterId, decisionId, optionId) {
   refreshAchievements();
 
   if (option.corruption) {
-    adjustSaDoa(option.corruption);
+    adjustSaDoa(option.corruption, "", { deferEnding: deferCorruptionEnding });
   } else {
     saveGameProgress();
   }
@@ -3987,6 +4045,7 @@ function applyFinalVerdictCheckpoint(checkpoint) {
   state.inventory = new Set(restored.inventory ?? []);
   restoreQuestState(restored.quests);
   restoreNarrativeSaveState(restored.narrative);
+  clearCompletedZoneBadConfirmations(state.narrative, { inventory: state.inventory, quests: state.quests });
   restoreRuntimeSaveState(restored.runtime);
   state.completedZones = new Set(restored.completedZones ?? []);
   state.respawnLevelId = levels[restored.respawnLevelId] ? restored.respawnLevelId : restored.levelId;
@@ -4051,7 +4110,7 @@ function resolveZone1RecruiterChoice(choiceId, item) {
 
 function resolveZone1CompassVerdictChoice(choiceId, item) {
   const checkpoint = captureFinalVerdictCheckpoint(item);
-  const option = applyNarrativeChoice("zone1", "compass-verdict", choiceId);
+  const option = applyNarrativeChoice("zone1", "compass-verdict", choiceId, { deferCorruptionEnding: true });
 
   if (!option) {
     return;
@@ -4062,7 +4121,7 @@ function resolveZone1CompassVerdictChoice(choiceId, item) {
   state.quests.zone1RewardClaimed = true;
   const candidate = resolveEnding({ narrative: state.narrative, inventory: state.inventory, saDoa: state.saDoa });
 
-  if (candidate.id === "zone1-lost-compass") {
+  if (candidate.id === "zone1-lost-compass" || candidate.id === "secret-corruption") {
     applyFinalVerdictCheckpoint(checkpoint);
     triggerNarrativeEnding(candidate, "Bạn đã xác nhận lợi ích cá nhân sau một chuỗi thỏa hiệp, để con đường chung bị đánh mất.", checkpoint);
     return;
@@ -4093,14 +4152,14 @@ function resolveZone2UnityChoice(choiceId, item) {
 
 function resolveZone2EmblemVerdictChoice(choiceId, item) {
   const checkpoint = captureFinalVerdictCheckpoint(item);
-  const option = applyNarrativeChoice("zone2", "emblem-verdict", choiceId);
+  const option = applyNarrativeChoice("zone2", "emblem-verdict", choiceId, { deferCorruptionEnding: true });
   if (!option) return;
 
   closeDialogueForChoice();
   item.collected = true;
   state.quests.zone2RewardClaimed = true;
   const candidate = resolveEnding({ narrative: state.narrative, inventory: state.inventory, saDoa: state.saDoa });
-  if (candidate.id === "zone2-fading-fires") {
+  if (candidate.id === "zone2-fading-fires" || candidate.id === "secret-corruption") {
     applyFinalVerdictCheckpoint(checkpoint);
     triggerNarrativeEnding(candidate, "Bạn đã xác nhận sự chia rẽ sau khi để nghi kỵ lan rộng, khiến các ngọn lửa cùng mục tiêu dần lụi tàn.", checkpoint);
     return;
@@ -4133,14 +4192,14 @@ function resolveZone3RallyChoice(choiceId, item) {
 
 function resolveZone3AugustVerdictChoice(choiceId, item) {
   const checkpoint = captureFinalVerdictCheckpoint(item);
-  const option = applyNarrativeChoice("zone3a", "august-verdict", choiceId);
+  const option = applyNarrativeChoice("zone3a", "august-verdict", choiceId, { deferCorruptionEnding: true });
   if (!option) return;
 
   closeDialogueForChoice();
   item.collected = true;
   state.quests.zone3ThreadClaimed = true;
   const candidate = resolveEnding({ narrative: state.narrative, inventory: state.inventory, saDoa: state.saDoa });
-  if (candidate.id === "zone3a-missed-moment") {
+  if (candidate.id === "zone3a-missed-moment" || candidate.id === "secret-corruption") {
     applyFinalVerdictCheckpoint(checkpoint);
     triggerNarrativeEnding(candidate, "Bạn đã xác nhận để lực lượng phân tán sau khi bỏ qua công việc chuẩn bị, khiến thời cơ Tháng Tám vụt qua.", checkpoint);
     return;
@@ -4171,14 +4230,14 @@ function resolveZone3TemporaryLineChoice(choiceId, item) {
 
 function resolveZone3BorderVerdictChoice(choiceId, item) {
   const checkpoint = captureFinalVerdictCheckpoint(item);
-  const option = applyNarrativeChoice("zone3b", "border-verdict", choiceId);
+  const option = applyNarrativeChoice("zone3b", "border-verdict", choiceId, { deferCorruptionEnding: true });
   if (!option) return;
 
   closeDialogueForChoice();
   item.collected = true;
   state.quests.zone3MapClaimed = true;
   const candidate = resolveEnding({ narrative: state.narrative, inventory: state.inventory, saDoa: state.saDoa });
-  if (candidate.id === "zone3b-divided-border") {
+  if (candidate.id === "zone3b-divided-border" || candidate.id === "secret-corruption") {
     applyFinalVerdictCheckpoint(checkpoint);
     triggerNarrativeEnding(candidate, "Bạn đã xác nhận biến giới tuyến tạm thời thành chia cắt lâu dài, làm những liên hệ của người dân hai miền bị đứt gãy.", checkpoint);
     return;
@@ -4210,14 +4269,14 @@ function resolveZone4EarlyChoice(decisionId, choiceId, item) {
 
 function resolveZone4VerdictChoice(choiceId, item) {
   const checkpoint = captureFinalVerdictCheckpoint(item);
-  const option = applyNarrativeChoice("zone4", "doi-moi-verdict", choiceId);
+  const option = applyNarrativeChoice("zone4", "doi-moi-verdict", choiceId, { deferCorruptionEnding: true });
   if (!option) return;
 
   closeDialogueForChoice();
   item.collected = true;
   state.quests.zone4GearClaimed = true;
   const candidate = resolveEnding({ narrative: state.narrative, inventory: state.inventory, saDoa: state.saDoa });
-  if (candidate.id === "zone4-stalled-machine") {
+  if (candidate.id === "zone4-stalled-machine" || candidate.id === "secret-corruption") {
     applyFinalVerdictCheckpoint(checkpoint);
     triggerNarrativeEnding(candidate, "Bạn đã xác nhận giữ đặc quyền sau khi để sản xuất bị bế tắc, khiến guồng máy đổi mới tiếp tục đứng im.", checkpoint);
     return;
@@ -4365,6 +4424,7 @@ function resolveTvaDialogueChoice(choiceId, item, dialogue) {
   }
 
   state.quests.tvaPortalTarget = route.levelId;
+  state.hubEpilogueEndingId = null;
   void assetManager.preloadGroup(getAssetGroupForLevel(route.levelId));
   saveGameProgress();
   updateQuestChip();
@@ -4425,20 +4485,204 @@ function getEndingCollectionOpenedAtLabel(slideData) {
   return `Đã mở ${day}/${month}/${openedAt.getUTCFullYear()}`;
 }
 
-function getEndingCaseFileIds() {
-  return endingCollection.getEntries()
-    .map((endingId) => `ending:${endingId}`)
-    .filter((storyId) => Boolean(storyRegistry[storyId]));
-}
-
-function getAchievementCaseFileIds() {
-  return achievementCollection.getEntries()
-    .map((achievementId) => `achievement:${achievementId}`)
-    .filter((storyId) => Boolean(storyRegistry[storyId]));
-}
-
 function getStoryBookEntryIds() {
-  return [...new Set([...state.unlockedStoryIds, ...getEndingCaseFileIds(), ...getAchievementCaseFileIds()])];
+  return [...state.unlockedStoryIds]
+    .filter((storyId) => !storyId.startsWith("monster:") && !storyId.startsWith("ending:") && !storyId.startsWith("achievement:"))
+    .filter((storyId) => Boolean(storyRegistry[storyId]));
+}
+
+function migrateLegacyMonsterCodexRecords() {
+  for (const storyId of [...state.unlockedStoryIds]) {
+    if (!storyId.startsWith("monster:")) {
+      continue;
+    }
+
+    const monsterId = storyId.slice("monster:".length);
+    if (getMonsterCodexEntry(monsterId)) {
+      monsterCodexCollection.record(monsterId);
+    }
+    state.unlockedStoryIds.delete(storyId);
+  }
+}
+
+function getTvaDossierEntries(tab) {
+  if (tab === "endings") {
+    return endingCollection.getCaseFiles()
+      .map((caseFile) => ({ caseFile, slide: storyRegistry[`ending:${caseFile.id}`] }))
+      .filter((entry) => Boolean(entry.slide));
+  }
+
+  if (tab === "monsters") {
+    return monsterCodexCollection.getEntries()
+      .map((monsterId) => getMonsterCodexEntry(monsterId))
+      .filter(Boolean);
+  }
+
+  return achievementCollection.getEntries()
+    .map((achievementId) => ACHIEVEMENT_DEFINITIONS.find((entry) => entry.id === achievementId))
+    .filter(Boolean);
+}
+
+function createTvaDossierText(tagName, className, text) {
+  const element = document.createElement(tagName);
+  element.className = className;
+  element.textContent = text;
+  return element;
+}
+
+function renderTvaDossier() {
+  stopMonsterCodexPreview();
+  const tab = state.activeDossierTab;
+  const entries = getTvaDossierEntries(tab);
+  tvaDossierTabs.forEach((button) => {
+    const selected = button.dataset.tvaDossierTab === tab;
+    button.classList.toggle("is-selected", selected);
+    button.setAttribute("aria-selected", selected ? "true" : "false");
+  });
+  tvaDossierContent.replaceChildren();
+
+  const heading = tab === "endings"
+    ? "Kết cục đã chứng kiến"
+    : tab === "monsters"
+      ? "Đối thủ đã chạm trán"
+      : "Dấu mốc TVA đã xác nhận";
+  tvaDossierContent.append(createTvaDossierText("h3", "tva-dossier-section-title", heading));
+
+  if (entries.length === 0) {
+    tvaDossierContent.append(createTvaDossierText(
+      "p",
+      "tva-dossier-empty",
+      tab === "endings"
+        ? "Chưa có kết cục nào được TVA niêm phong."
+        : tab === "monsters"
+          ? "Hãy chạm trán một đối thủ để TVA lập hồ sơ chuyển động."
+          : "Dấu mốc sẽ được ghi lại khi hành động của bạn đạt điều kiện.",
+    ));
+    return;
+  }
+
+  const list = document.createElement("div");
+  list.className = `tva-dossier-list tva-dossier-list--${tab}`;
+  tvaDossierContent.append(list);
+
+  if (tab === "endings") {
+    for (const { caseFile, slide } of entries) {
+      const card = document.createElement("article");
+      card.className = "tva-dossier-record tva-dossier-ending-record";
+      const image = document.createElement("img");
+      const galleryItem = slide.gallery?.[0];
+      image.className = "tva-dossier-ending-art";
+      image.src = galleryItem?.src ?? "";
+      image.alt = galleryItem?.alt ?? slide.title;
+      card.append(image);
+      const copy = document.createElement("div");
+      copy.className = "tva-dossier-record-copy";
+      copy.append(
+        createTvaDossierText("p", "tva-dossier-kicker", slide.kicker),
+        createTvaDossierText("h4", "tva-dossier-record-title", slide.title),
+        createTvaDossierText("p", "tva-dossier-record-text", slide.text),
+      );
+      const openedAt = createTvaDossierText("p", "tva-dossier-record-caption", `${slide.caption} • ${getEndingCollectionOpenedAtLabel(slide)}`);
+      openedAt.dataset.caseFileDate = "true";
+      copy.append(openedAt);
+      card.append(copy);
+      list.append(card);
+    }
+    return;
+  }
+
+  if (tab === "achievements") {
+    for (const achievement of entries) {
+      const card = document.createElement("article");
+      card.className = "tva-dossier-record tva-dossier-achievement-record";
+      card.append(
+        createTvaDossierText("p", "tva-dossier-kicker", "Dấu mốc hành trình"),
+        createTvaDossierText("h4", "tva-dossier-record-title", achievement.title),
+        createTvaDossierText("p", "tva-dossier-record-text", achievement.text),
+        createTvaDossierText("p", "tva-dossier-record-caption", achievement.caption),
+      );
+      list.append(card);
+    }
+    return;
+  }
+
+  if (!entries.some((entry) => entry.monsterId === state.activeDossierMonsterId)) {
+    state.activeDossierMonsterId = entries[0].monsterId;
+  }
+  const selectedEntry = entries.find((entry) => entry.monsterId === state.activeDossierMonsterId);
+  const chooser = document.createElement("div");
+  chooser.className = "tva-dossier-monster-list";
+  for (const entry of entries) {
+    const button = document.createElement("button");
+    button.className = "pixel-button tva-dossier-monster-button";
+    const selected = entry.monsterId === state.activeDossierMonsterId;
+    button.classList.toggle("is-selected", selected);
+    button.setAttribute("aria-pressed", selected ? "true" : "false");
+    button.textContent = entry.title;
+    button.addEventListener("click", withUiClickSound(() => {
+      state.activeDossierMonsterId = entry.monsterId;
+      renderTvaDossier();
+    }));
+    chooser.append(button);
+  }
+  list.append(chooser);
+
+  if (!selectedEntry) {
+    return;
+  }
+  const card = document.createElement("article");
+  card.className = "tva-dossier-record tva-dossier-monster-record";
+  const previewHost = document.createElement("div");
+  previewHost.className = "tva-dossier-monster-preview";
+  card.append(previewHost);
+  const copy = document.createElement("div");
+  copy.className = "tva-dossier-record-copy";
+  copy.append(
+    createTvaDossierText("p", "tva-dossier-kicker", selectedEntry.boss ? "Hồ sơ đối thủ trọng yếu" : "Hồ sơ đối thủ"),
+    createTvaDossierText("h4", "tva-dossier-record-title", selectedEntry.title),
+    createTvaDossierText("p", "tva-dossier-record-caption", selectedEntry.zoneLabel),
+    createTvaDossierText("p", "tva-dossier-record-text", `Nhận dạng: ${selectedEntry.silhouette}`),
+    createTvaDossierText("p", "tva-dossier-record-text", `Hành vi: ${selectedEntry.behavior}`),
+    createTvaDossierText("p", "tva-dossier-record-text", `Dấu hiệu: ${selectedEntry.telegraph}`),
+  );
+  card.append(copy);
+  list.append(card);
+  const artGroup = MONSTER_ART_DEFINITIONS[selectedEntry.artKey]?.group;
+  if (artGroup && !assetManager.getGroupStatus(artGroup).ready) {
+    previewHost.append(createTvaDossierText("p", "tva-dossier-preview-loading", "TVA đang nạp spritesheet đã lưu…"));
+    void assetManager.loadGroup(artGroup).then((result) => {
+      if (result.ready && !tvaDossierModal.classList.contains("hidden") && state.activeDossierTab === "monsters" && state.activeDossierMonsterId === selectedEntry.monsterId) {
+        renderTvaDossier();
+      }
+    });
+    return;
+  }
+  renderMonsterCodexPreview(
+    { artKey: selectedEntry.artKey, title: selectedEntry.title },
+    { container: previewHost, isActive: () => !tvaDossierModal.classList.contains("hidden") && state.activeDossierTab === "monsters" && state.activeDossierMonsterId === selectedEntry.monsterId },
+  );
+}
+
+function openTvaDossier() {
+  if (state.mode !== "playing") {
+    return;
+  }
+
+  state.activeDossierTab = "endings";
+  state.activeDossierMonsterId = null;
+  state.mode = "modal";
+  renderTvaDossier();
+  tvaDossierModal.classList.remove("hidden");
+  tvaDossierModal.setAttribute("aria-hidden", "false");
+  interactionPrompt.classList.add("hidden");
+}
+
+function closeTvaDossier() {
+  stopMonsterCodexPreview();
+  tvaDossierModal.classList.add("hidden");
+  tvaDossierModal.setAttribute("aria-hidden", "true");
+  state.mode = "playing";
+  updateInteractionPrompt();
 }
 
 function recordEndingCollection(endingId) {
@@ -4870,10 +5114,10 @@ function resolveMonsterCodexPreviewSprite(preview) {
   return { config, animation, sprite };
 }
 
-function renderMonsterCodexPreview(preview) {
+function renderMonsterCodexPreview(preview, { container = slideGallery, isActive = () => state.activeSlide?.monsterPreview === preview } = {}) {
   stopMonsterCodexPreview();
-  slideGallery.replaceChildren();
-  slideGallery.dataset.count = "1";
+  container.replaceChildren();
+  container.dataset.count = "1";
 
   const resolved = resolveMonsterCodexPreviewSprite(preview);
   if (!resolved) {
@@ -4892,7 +5136,7 @@ function renderMonsterCodexPreview(preview) {
   caption.className = "slide-gallery-caption";
   caption.textContent = "Mô phỏng idle từ spritesheet đã chạm trán.";
   figure.append(previewCanvas, caption);
-  slideGallery.append(figure);
+  container.append(figure);
 
   const previewContext = previewCanvas.getContext("2d");
   if (!previewContext) {
@@ -4901,7 +5145,7 @@ function renderMonsterCodexPreview(preview) {
   previewContext.imageSmoothingEnabled = false;
 
   const drawFrame = (timestamp) => {
-    if (state.activeSlide?.monsterPreview !== preview) {
+    if (!isActive()) {
       return;
     }
 
@@ -7091,7 +7335,7 @@ function getHubNavigationTarget() {
     corruption: state.saDoa,
     endingId: state.hubEpilogueEndingId,
   }).epilogue;
-  const label = epilogue
+  const label = epilogue && !getNextTvaRoute()
     ? "Gặp David để xem tổng kết hồ sơ"
     : !state.quests.tvaBriefingAccepted
       ? "Đi theo hành lang tới người nhân viên"
@@ -7636,11 +7880,7 @@ function handleSystemInteraction(item) {
       startDialogue(item);
       return;
     case "openMemoryArchive":
-      if (getStoryBookEntryIds().length === 0) {
-        showStoryToast("Trạm Ký ức chưa có hồ sơ nào được mở khóa.");
-        return;
-      }
-      openStoryBook();
+      openTvaDossier();
       return;
     case "colonialRecruitment":
       startDialogue(item);
@@ -7785,7 +8025,7 @@ function collectRelic(itemId, guidance = "") {
   return true;
 }
 
-function adjustSaDoa(delta, message = "") {
+function adjustSaDoa(delta, message = "", { deferEnding = false } = {}) {
   state.saDoa = clamp(state.saDoa + delta, 0, SA_DOA_MAX);
   state.runStats.maxCorruption = Math.max(state.runStats.maxCorruption, state.saDoa);
   updateProgressHud({ announceChallenge: true });
@@ -7795,7 +8035,7 @@ function adjustSaDoa(delta, message = "") {
     showStoryToast(message);
   }
 
-  if (state.saDoa >= SA_DOA_MAX) {
+  if (state.saDoa >= SA_DOA_MAX && !deferEnding) {
     triggerBadEnding("Thanh Tha hóa đã đầy, nhân dân quay lưng và lịch sử rơi vào bóng đen mới.");
   }
 }

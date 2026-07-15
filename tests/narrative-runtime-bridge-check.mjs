@@ -13,8 +13,10 @@ assert.match(runtime, /state\.narrative\s*=\s*createNarrativeState\(\)/, "New ca
 assert.match(runtime, /endingCandidate:\s*resolveEnding\(/, "Debug snapshots expose an explainable ending candidate.");
 assert.match(runtime, /createEndingCollection/, "Runtime owns a persistent ending collection outside campaign saves.");
 assert.match(runtime, /recordEndingCollection\(candidate\.id\)/, "Every resolved authored ending records a case file before its overlay.");
-assert.match(runtime, /ending:\$\{endingId\}/, "The book receives stable ending case-file IDs.");
-assert.match(runtime, /getEndingCaseFileIds\(\)/, "Book routing merges durable ending case files with normal history pages.");
+assert.match(runtime, /ending:\$\{endingId\}/, "The TVA dossier receives stable ending case-file IDs.");
+assert.match(runtime, /function getTvaDossierEntries\(tab\)/, "Durable ending case files are routed through the separate TVA dossier.");
+assert.match(runtime, /case "openMemoryArchive":\s*openTvaDossier\(\);/, "The TVA memory station opens the dossier instead of the historical book.");
+assert.doesNotMatch(runtime.slice(runtime.indexOf("function getStoryBookEntryIds"), runtime.indexOf("function getTvaDossierEntries")), /endingCollection|getEndingCaseFileIds/, "The historical book does not merge durable ending records.");
 assert.match(debugOverlay, /snapshot\.narrative/, "Debug overlay renders narrative resolver evidence.");
 
 console.log("PASS: runtime bridges narrative state, save migration, and resolver evidence without a renderer-owned source of truth.");

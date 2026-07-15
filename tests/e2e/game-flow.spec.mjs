@@ -58,10 +58,41 @@ test("ending case files show when their TVA record was first opened", async ({ p
     }));
   });
   await openDebugSession(page);
-  await page.locator("#story-book-button").click();
-  await expect(page.locator("#slide-title")).toContainText("Dòng lịch sử còn vết nứt");
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.setPlayerPosition(630, 318));
+  await page.keyboard.press("e");
+  await expect(page.locator("#tva-dossier-modal")).toBeVisible();
+  await expect(page.locator("#tva-dossier-content")).toContainText("Dòng lịch sử còn vết nứt");
   await expect(page.locator('[data-case-file-date="true"]')).toContainText("Đã mở 14/07/2026");
   await page.screenshot({ path: testInfo.outputPath("ending-case-file-date.png"), fullPage: true });
+});
+
+test("the TVA dossier keeps ending, enemy, and achievement records out of the historical book", async ({ page }, testInfo) => {
+  await page.addInitScript(() => {
+    localStorage.setItem("crossroads-ending-collection-v1", JSON.stringify({
+      version: 2,
+      endings: [{ id: "neutral", unlockedAt: "2026-07-14T12:00:00.000Z" }],
+    }));
+    localStorage.setItem("crossroads-monster-codex-collection-v1", JSON.stringify({
+      version: 1,
+      monsterIds: ["archive-raider"],
+    }));
+    localStorage.setItem("crossroads-achievement-collection-v1", JSON.stringify({
+      version: 1,
+      achievementIds: ["bridge-builder"],
+    }));
+  });
+  await openDebugSession(page);
+  await expect(page.locator("#story-book-button")).toBeHidden();
+
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.setPlayerPosition(630, 318));
+  await page.keyboard.press("e");
+  await expect(page.locator("#tva-dossier-modal")).toBeVisible();
+  await expect(page.locator("#tva-dossier-title")).toContainText("Hồ sơ TVA");
+  await page.locator('[data-tva-dossier-tab="monsters"]').click();
+  await expect(page.locator(".monster-codex-preview-canvas")).toBeVisible();
+  await page.locator('[data-tva-dossier-tab="achievements"]').click();
+  await expect(page.locator("#tva-dossier-content")).toContainText("Dấu mốc");
+  await page.screenshot({ path: testInfo.outputPath("tva-dossier-separate-from-history.png"), fullPage: true });
 });
 
 async function advanceDialogueToChoice(page, choiceId) {
@@ -77,6 +108,30 @@ async function advanceDialogueToChoice(page, choiceId) {
   await expect(choice).toBeVisible();
   return choice;
 }
+
+test("TVA dialogue freezes gameplay without pausing the hub music", async ({ page }, testInfo) => {
+  await openDebugSession(page);
+  await expect.poll(
+    () => snapshot(page).then((state) => state.audio.music.hub.readyState),
+    { timeout: 10_000 },
+  ).toBeGreaterThan(0);
+  await expect.poll(() => snapshot(page).then((state) => state.audio.music.hub.paused)).toBe(false);
+  await expect.poll(() => snapshot(page).then((state) => state.audio.music.hub.currentTime)).toBeGreaterThan(0);
+  const beforeDialogue = await snapshot(page).then((state) => state.audio.music.hub.currentTime);
+
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("tva-clerk-placeholder"));
+  await expect.poll(() => snapshot(page).then((state) => state.mode)).toBe("dialogue");
+  await expect.poll(() => snapshot(page).then((state) => state.audio.music.hub.paused)).toBe(false);
+  const dialoguePosition = await snapshot(page).then((state) => state.player);
+  await page.keyboard.down("d");
+  await page.waitForTimeout(150);
+  await page.keyboard.up("d");
+  const heldInputPosition = await snapshot(page).then((state) => state.player);
+  expect(heldInputPosition.x).toBeCloseTo(dialoguePosition.x, 1);
+  expect(heldInputPosition.y).toBeCloseTo(dialoguePosition.y, 1);
+  await expect.poll(() => snapshot(page).then((state) => state.audio.music.hub.currentTime)).toBeGreaterThan(beforeDialogue);
+  await page.screenshot({ path: testInfo.outputPath("david-dialogue-keeps-hub-music.png"), fullPage: true });
+});
 
 test("corruption HUD offers a keyboard-accessible explanation without revealing secret ending thresholds", async ({ page }, testInfo) => {
   await openDebugSession(page);
@@ -244,17 +299,20 @@ test("Zone 1 captain exposes its phase-two combat profile", async ({ page }, tes
   await page.screenshot({ path: testInfo.outputPath("zone1-captain-phase-two.png"), fullPage: true });
 });
 
-test("encountering a monster unlocks an animated TVA codex record", async ({ page }, testInfo) => {
+test("encountering a monster unlocks an animated TVA dossier record", async ({ page }, testInfo) => {
   await openDebugSession(page);
   await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("archive"));
   await expect.poll(() => snapshot(page).then((state) => state.currentLevelId)).toBe("archive");
   await page.evaluate(() => window.__CROSSROADS_DEBUG__.setPlayerPosition(270, 392));
-  await expect(page.locator("#story-book-button")).toBeVisible();
-  await page.locator("#story-book-button").click();
-  await expect(page.locator("#slide-kicker")).toContainText("Hồ sơ đối thủ");
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("hub"));
+  await expect.poll(() => snapshot(page).then((state) => state.currentLevelId)).toBe("hub");
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("tva-memory-archive"));
+  await expect(page.locator("#tva-dossier-modal")).toBeVisible();
+  await page.locator('[data-tva-dossier-tab="monsters"]').click();
+  await expect(page.locator("#tva-dossier-content")).toContainText("Hồ sơ đối thủ");
   const codexPreview = page.locator(".monster-codex-preview-canvas");
   await expect(codexPreview).toBeVisible();
-  await expect(page.locator("#slide-text")).toContainText("Telegraph:");
+  await expect(page.locator("#tva-dossier-content")).toContainText("Dấu hiệu:");
   const firstPreviewFrame = await codexPreview.evaluate((canvas) => canvas.toDataURL());
   await page.waitForTimeout(440);
   const secondPreviewFrame = await codexPreview.evaluate((canvas) => canvas.toDataURL());
@@ -262,16 +320,21 @@ test("encountering a monster unlocks an animated TVA codex record", async ({ pag
   await page.screenshot({ path: testInfo.outputPath("monster-codex-preview.png"), fullPage: true });
 });
 
-test("monster codex preview remains legible on a compact viewport", async ({ page }, testInfo) => {
+test("monster dossier preview remains legible on a compact viewport", async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 390, height: 844 });
+  await page.addInitScript(() => {
+    localStorage.setItem("crossroads-monster-codex-collection-v1", JSON.stringify({
+      version: 1,
+      monsterIds: ["archive-raider"],
+    }));
+  });
   await openDebugSession(page);
-  await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("archive"));
-  await page.evaluate(() => window.__CROSSROADS_DEBUG__.setPlayerPosition(270, 392));
-  await expect(page.locator("#story-book-button")).toBeVisible();
-  await page.locator("#story-book-button").click();
-  await expect(page.locator("#slide-kicker")).toContainText("Hồ sơ đối thủ");
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("tva-memory-archive"));
+  await expect(page.locator("#tva-dossier-modal")).toBeVisible();
+  await page.locator('[data-tva-dossier-tab="monsters"]').click();
+  await expect(page.locator("#tva-dossier-content")).toContainText("Hồ sơ đối thủ");
   await expect(page.locator(".monster-codex-preview-canvas")).toBeVisible();
-  await expect(page.locator("#close-slide-button")).toBeVisible();
+  await expect(page.locator("#tva-dossier-close-button")).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath("monster-codex-preview-mobile.png"), fullPage: true });
 });
 
@@ -459,8 +522,15 @@ test("the employee forces the TVA briefing choice and opens the first dispatch p
 
   const result = await page.evaluate(() => window.__CROSSROADS_DEBUG__.triggerExit("tva-dispatch-portal"));
   expect(result.transitioned).toBe(true);
-  expect(result.currentLevelId).toBe("village");
-  expect(result.quests.tvaPortalTarget).toBe(null);
+  expect(result.currentLevelId).toBe("hub");
+  expect(result.portalTransition?.targetLevelId).toBe("village");
+  expect(result.quests.tvaPortalTarget).toBe("village");
+  await expect.poll(() => snapshot(page).then((state) => state.currentLevelId)).toBe("village");
+  await expect.poll(() => snapshot(page).then((state) => state.portalTransition)).toBeNull();
+  await expect.poll(() => snapshot(page).then((state) => state.quests.tvaPortalTarget)).toBeNull();
+  await expect(page.locator("#zone-title-overlay")).toBeVisible();
+  await page.locator("#zone-title-continue-button").click();
+  await expect.poll(() => snapshot(page).then((state) => state.mode)).toBe("playing");
   await page.screenshot({ path: testInfo.outputPath("zone1-return-portal-locked.png"), fullPage: true });
 
   const lockedReturn = await page.evaluate(() => window.__CROSSROADS_DEBUG__.triggerExit("back-to-hub-1"));
@@ -472,7 +542,10 @@ test("the employee forces the TVA briefing choice and opens the first dispatch p
   await page.screenshot({ path: testInfo.outputPath("zone1-return-portal-open.png"), fullPage: true });
   const openReturn = await page.evaluate(() => window.__CROSSROADS_DEBUG__.triggerExit("back-to-hub-1"));
   expect(openReturn.transitioned).toBe(true);
-  expect(openReturn.currentLevelId).toBe("hub");
+  expect(openReturn.currentLevelId).toBe("village");
+  expect(openReturn.portalTransition?.targetLevelId).toBe("hub");
+  await expect.poll(() => snapshot(page).then((state) => state.currentLevelId)).toBe("hub");
+  await expect.poll(() => snapshot(page).then((state) => state.portalTransition)).toBeNull();
 });
 
 test("the TVA caseboard reveals only the authorized file and tracks it", async ({ page }, testInfo) => {
@@ -537,6 +610,10 @@ test("the TVA memory archive opens only earned history", async ({ page }, testIn
   await page.evaluate(() => window.__CROSSROADS_DEBUG__.completeTvaRoute("village"));
   await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("hub", { x: 480, y: 260, direction: "up" }));
   await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("tva-memory-archive"));
+  await expect(page.locator("#tva-dossier-modal")).toBeVisible();
+  await expect(page.locator("#tva-dossier-content")).not.toContainText("LA BÀN ĐỎ");
+  await page.locator("#tva-dossier-close-button").click();
+  await page.locator("#story-book-button").click();
   await expect(page.locator("#slide-modal")).toBeVisible();
   await expect(page.locator("#slide-title")).toContainText("LA BÀN ĐỎ");
   await page.screenshot({ path: testInfo.outputPath("tva-memory-archive.png"), fullPage: true });
@@ -554,9 +631,10 @@ test("constructive achievements persist as TVA memory records without revealing 
 
   await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("hub", { x: 630, y: 318, direction: "up" }));
   await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("tva-memory-archive"));
-  await expect(page.locator("#slide-modal")).toBeVisible();
-  await expect(page.locator("#slide-title")).toHaveText("Nhịp phản đòn");
-  await expect(page.locator("#slide-text")).not.toContainText("ending");
+  await expect(page.locator("#tva-dossier-modal")).toBeVisible();
+  await page.locator('[data-tva-dossier-tab="achievements"]').click();
+  await expect(page.locator("#tva-dossier-content")).toContainText("Nhịp phản đòn");
+  await expect(page.locator("#tva-dossier-content")).not.toContainText("ending");
   await page.screenshot({ path: testInfo.outputPath("achievement-memory-record.png"), fullPage: true });
 });
 
@@ -590,6 +668,7 @@ test("reported relics unlock each later TVA coordinate in campaign order", async
   for (let index = 0; index < routes.length; index += 1) {
     await page.evaluate((levelId) => window.__CROSSROADS_DEBUG__.completeTvaRoute(levelId), routes[index]);
     await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("hub", { x: 480, y: 260, direction: "up" }));
+    await expect.poll(() => snapshot(page).then((state) => state.mode)).toBe("playing");
     await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("tva-clerk-placeholder"));
 
     if (index < nextRoutes.length) {
@@ -599,8 +678,10 @@ test("reported relics unlock each later TVA coordinate in campaign order", async
       await page.locator("#dialogue-next-button").click();
       await page.evaluate(() => window.__CROSSROADS_DEBUG__.triggerExit("tva-dispatch-portal"));
       await expect(page.locator("#zone-title-overlay")).toBeVisible();
+      await expect.poll(() => snapshot(page).then((state) => state.portalTransition)).toBeNull();
       await page.locator("#zone-title-continue-button").click();
       await expect(page.locator("#zone-title-overlay")).toBeHidden();
+      await expect.poll(() => snapshot(page).then((state) => state.mode)).toBe("playing");
       continue;
     }
 
@@ -616,6 +697,114 @@ test("reported relics unlock each later TVA coordinate in campaign order", async
   }
 
   await expect.poll(() => snapshot(page).then((state) => state.quests.tvaReportedRelics.length)).toBe(5);
+});
+
+test("David reports the Zone 1 relic and dispatches Zone 2 after a recovered bad ending", async ({ page }, testInfo) => {
+  await page.addInitScript(() => {
+    localStorage.setItem("crossroads-save-v1", JSON.stringify({
+      version: 2,
+      currentLevelId: "hub",
+      player: { x: 384, y: 286, direction: "up" },
+      respawnLevelId: "hub",
+      respawnSpawn: { x: 384, y: 286, direction: "up" },
+      health: 36,
+      stamina: 100,
+      saDoa: 0,
+      inventory: ["red-compass"],
+      unlockedStoryIds: [],
+      completedZones: ["village"],
+      difficulty: "normal",
+      activeChallengeId: null,
+      tutorialSeen: true,
+      hubEpilogueEndingId: "zone1-lost-compass",
+      runStats: {},
+      quests: {
+        tvaBriefingAccepted: true,
+        tvaPortalTarget: null,
+        tvaTrackedChapterId: null,
+        tvaReportedRelics: [],
+        zone1Started: true,
+        zone1Delivered: ["worker-harbor-1", "worker-harbor-2", "worker-harbor-3"],
+        zone1RewardClaimed: true,
+      },
+      narrative: {},
+      runtime: {},
+    }));
+  });
+  await page.goto("/?debugTools=1");
+  await page.waitForFunction(() => Boolean(window.__CROSSROADS_DEBUG__));
+  await page.locator("#continue-button").click();
+  await expect.poll(() => snapshot(page).then((state) => state.mode)).toBe("playing");
+
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("tva-clerk-placeholder"));
+  await expect(page.locator("#dialogue-progress")).toHaveText("1 / 6");
+  await expect(page.locator("#dialogue-text")).toContainText("nhánh đứt");
+  await expect(page.locator("#dialogue-next-button")).toHaveText("Tiếp tục");
+  await expect(await advanceDialogueToChoice(page, "dispatch-ready")).toBeVisible();
+  await page.screenshot({ path: testInfo.outputPath("zone2-dispatch-after-zone1-epilogue.png"), fullPage: true });
+  await page.locator('[data-dialogue-choice="dispatch-ready"]').click();
+  await expect.poll(() => snapshot(page).then((state) => state.quests.tvaPortalTarget)).toBe("archive");
+  await expect.poll(() => snapshot(page).then((state) => state.quests.tvaReportedRelics)).toContain("red-compass");
+  await page.locator("#dialogue-next-button").click();
+  await page.locator("#dialogue-next-button").click();
+
+  const dispatch = await page.evaluate(() => window.__CROSSROADS_DEBUG__.triggerExit("tva-dispatch-portal"));
+  expect(dispatch.transitioned).toBe(true);
+  expect(dispatch.portalTransition?.targetLevelId).toBe("archive");
+  await expect.poll(() => snapshot(page).then((state) => state.currentLevelId)).toBe("archive");
+  await expect.poll(() => snapshot(page).then((state) => state.portalTransition)).toBeNull();
+  await expect.poll(() => snapshot(page).then((state) => state.quests.tvaPortalTarget)).toBeNull();
+  await expect(page.locator("#zone-title-overlay")).toBeVisible();
+  await page.screenshot({ path: testInfo.outputPath("zone2-entered-after-zone1-epilogue.png"), fullPage: true });
+});
+
+test("David offers the final return after a high-corruption reset with all five relics", async ({ page }, testInfo) => {
+  await page.addInitScript(() => {
+    localStorage.setItem("crossroads-save-v1", JSON.stringify({
+      version: 2,
+      currentLevelId: "hub",
+      player: { x: 384, y: 286, direction: "up" },
+      respawnLevelId: "hub",
+      respawnSpawn: { x: 384, y: 286, direction: "up" },
+      health: 36,
+      stamina: 100,
+      saDoa: 0,
+      inventory: ["red-compass", "unified-emblem", "vietminh-thread", "healed-map", "doi-moi-gear"],
+      unlockedStoryIds: [],
+      completedZones: ["village", "archive", "crossroads", "spring"],
+      difficulty: "normal",
+      activeChallengeId: null,
+      tutorialSeen: true,
+      hubEpilogueEndingId: "bad",
+      runStats: { maxCorruption: 75 },
+      quests: {
+        tvaBriefingAccepted: true,
+        tvaPortalTarget: null,
+        tvaTrackedChapterId: null,
+        tvaReportedRelics: ["red-compass", "unified-emblem", "vietminh-thread", "healed-map", "doi-moi-gear"],
+        zone1RewardClaimed: true,
+        zone2RewardClaimed: true,
+        zone3ThreadClaimed: true,
+        zone3MapClaimed: true,
+        zone4GearClaimed: true,
+      },
+      narrative: {},
+      runtime: {},
+    }));
+  });
+  await page.goto("/?debugTools=1");
+  await page.waitForFunction(() => Boolean(window.__CROSSROADS_DEBUG__));
+  await page.locator("#continue-button").click();
+  await expect.poll(() => snapshot(page).then((state) => state.mode)).toBe("playing");
+
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("tva-clerk-placeholder"));
+  const finishChoice = await advanceDialogueToChoice(page, "finish-history");
+  await expect(finishChoice).toBeVisible();
+  await expect(page.locator("#dialogue-text")).toContainText("Năm tín vật");
+  await page.screenshot({ path: testInfo.outputPath("final-return-after-high-corruption-reset.png"), fullPage: true });
+  await finishChoice.click();
+  await expect(page.locator("#end-overlay")).toBeVisible();
+  await expect.poll(() => snapshot(page).then((state) => state.endingId)).toBe("good");
 });
 
 test("ending recap shows an explainable run score after the cinematic", async ({ page }, testInfo) => {
@@ -853,9 +1042,56 @@ test("Zone 2 division risk needs a separate emblem confirmation before its endin
   await page.locator('[data-dialogue-choice="confirm-factionalism"]').click();
   await expect(page.locator("#end-overlay")).toBeVisible();
   await expect.poll(() => snapshot(page).then((state) => state.endingId)).toBe("zone2-fading-fires");
+  await expect.poll(() => snapshot(page).then((state) => state.inventory)).not.toContain("unified-emblem");
+  await expect.poll(() => snapshot(page).then((state) => state.quests.zone2RewardClaimed)).toBe(false);
   await page.evaluate(() => window.__CROSSROADS_DEBUG__.completeEndingCinematic());
   await expect(page.locator("#end-overlay")).toHaveAttribute("data-cinematic", "complete");
   await page.screenshot({ path: testInfo.outputPath("zone2-fading-fires-ending.png"), fullPage: true });
+});
+
+test("a Zone 2 verdict that reaches maximum corruption cannot award its relic before recovery", async ({ page }, testInfo) => {
+  await openDebugSession(page);
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("archive"));
+  await expect.poll(() => snapshot(page).then((state) => state.currentLevelId)).toBe("archive");
+  await expect.poll(() => snapshot(page).then((state) => state.mode)).toBe("playing");
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("split-blade"));
+  await expect(page.locator("#dialogue-choice-list")).toBeVisible();
+  await page.locator('[data-dialogue-choice="divide"]').click();
+
+  for (const delegateId of ["delegate-east", "delegate-west", "delegate-north"]) {
+    await page.evaluate((interactableId) => window.__CROSSROADS_DEBUG__.interactById(interactableId), delegateId);
+  }
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("archive-lens-console"));
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.setSaDoa(90));
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("unity-round-table"));
+  await page.locator('[data-dialogue-choice="confirm-factionalism"]').click();
+
+  await expect.poll(() => snapshot(page).then((state) => state.endingId)).toBe("secret-corruption");
+  await expect.poll(() => snapshot(page).then((state) => state.inventory)).not.toContain("unified-emblem");
+  await expect.poll(() => snapshot(page).then((state) => state.quests.zone2RewardClaimed)).toBe(false);
+  await expect.poll(
+    () => snapshot(page).then((state) => state.portalStates.find((portal) => portal.id === "back-to-hub-2")?.status),
+  ).toBe("sealed");
+  await page.screenshot({ path: testInfo.outputPath("zone2-max-corruption-relic-sealed.png"), fullPage: true });
+
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.completeEndingCinematic());
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.setBadEndingRecoveryElapsed(9400));
+  await expect.poll(() => snapshot(page).then((state) => state.badEndingRecovery?.phase)).toBe("reset");
+  await page.screenshot({ path: testInfo.outputPath("zone2-max-corruption-reset-wave.png"), fullPage: true });
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.setBadEndingRecoveryElapsed(11000));
+  await expect.poll(() => snapshot(page).then((state) => state.mode)).toBe("playing");
+  await expect.poll(() => snapshot(page).then((state) => state.currentLevelId)).toBe("archive");
+  await expect.poll(() => snapshot(page).then((state) => state.inventory)).not.toContain("unified-emblem");
+  await expect.poll(() => snapshot(page).then((state) => state.quests.zone2RewardClaimed)).toBe(false);
+
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("unity-round-table"));
+  await page.locator('[data-dialogue-choice="repair-division"]').click();
+  await expect.poll(() => snapshot(page).then((state) => state.inventory)).toContain("unified-emblem");
+  await expect.poll(() => snapshot(page).then((state) => state.quests.zone2RewardClaimed)).toBe(true);
+  await expect.poll(
+    () => snapshot(page).then((state) => state.portalStates.find((portal) => portal.id === "back-to-hub-2")?.status),
+  ).toBe("complete");
+  await page.screenshot({ path: testInfo.outputPath("zone2-relic-awarded-after-recovery-choice.png"), fullPage: true });
 });
 
 test("Zone 3A fragmentation needs an August confirmation before its ending", async ({ page }, testInfo) => {
@@ -879,6 +1115,100 @@ test("Zone 3A fragmentation needs an August confirmation before its ending", asy
   await expect(page.locator("#end-overlay")).toHaveAttribute("data-cinematic", "complete");
   await page.screenshot({ path: testInfo.outputPath("zone3a-missed-moment-ending.png"), fullPage: true });
 });
+
+for (const recoveryChoice of ["protect-moment", "repair-fragment"]) {
+  test(`Zone 3A recovery accepts ${recoveryChoice} after reset wave`, async ({ page }, testInfo) => {
+    await openDebugSession(page);
+    await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("crossroads"));
+    await expect.poll(() => snapshot(page).then((state) => state.currentLevelId)).toBe("crossroads");
+
+    for (const recruitId of ["recruit-farmer", "recruit-worker", "recruit-intellectual", "recruit-bourgeois"]) {
+      await page.evaluate((interactableId) => window.__CROSSROADS_DEBUG__.interactById(interactableId), recruitId);
+    }
+    await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("vietminh-cadre"));
+    await page.locator('[data-dialogue-choice="fragment-rally"]').click();
+    await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("vietminh-cadre"));
+    await page.locator('[data-dialogue-choice="confirm-delay"]').click();
+    await expect.poll(() => snapshot(page).then((state) => state.endingId)).toBe("zone3a-missed-moment");
+
+    await page.evaluate(() => window.__CROSSROADS_DEBUG__.completeEndingCinematic());
+    await page.evaluate(() => window.__CROSSROADS_DEBUG__.setBadEndingRecoveryElapsed(11000));
+    await expect.poll(() => snapshot(page).then((state) => state.mode)).toBe("playing");
+    await expect.poll(() => snapshot(page).then((state) => state.narrative.branchFlags["zone3a.badConfirmed"] ?? false)).toBe(false);
+    await expect.poll(() => snapshot(page).then((state) => state.narrative.endingRisks.zone3a)).toBe(1);
+    await expect.poll(() => snapshot(page).then((state) => state.inventory)).not.toContain("vietminh-thread");
+    await expect.poll(() => snapshot(page).then((state) => state.quests.zone3ThreadClaimed)).toBe(false);
+
+    await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("vietminh-cadre"));
+    await page.locator(`[data-dialogue-choice="${recoveryChoice}"]`).click();
+    await expect.poll(() => snapshot(page).then((state) => state.endingId)).toBeNull();
+    await expect.poll(() => snapshot(page).then((state) => state.inventory)).toContain("vietminh-thread");
+    await expect.poll(() => snapshot(page).then((state) => state.quests.zone3ThreadClaimed)).toBe(true);
+    await page.screenshot({ path: testInfo.outputPath(`zone3a-${recoveryChoice}-after-reset.png`), fullPage: true });
+  });
+}
+
+for (const recoveryChoice of ["protect-moment", "repair-fragment"]) {
+  test(`Zone 3A ${recoveryChoice} repairs a save with a stale bad-ending confirmation`, async ({ page }, testInfo) => {
+    await page.addInitScript(() => {
+      localStorage.setItem("crossroads-save-v1", JSON.stringify({
+        version: 2,
+        currentLevelId: "crossroads",
+        player: { x: 480, y: 320, direction: "up" },
+        respawnLevelId: "crossroads",
+        respawnSpawn: { x: 480, y: 320, direction: "up" },
+        health: 36,
+        stamina: 100,
+        saDoa: 0,
+        inventory: ["red-compass", "unified-emblem"],
+        unlockedStoryIds: [],
+        completedZones: ["village", "archive"],
+        difficulty: "normal",
+        activeChallengeId: null,
+        tutorialSeen: true,
+        runStats: {},
+        quests: {
+          tvaBriefingAccepted: true,
+          tvaPortalTarget: null,
+          tvaTrackedChapterId: null,
+          tvaReportedRelics: ["red-compass", "unified-emblem"],
+          zone3Recruits: ["farmer", "worker", "intellectual", "bourgeois"],
+          zone3ThreadClaimed: false,
+        },
+        narrative: {
+          choices: {},
+          choiceHistory: [],
+          branchFlags: {
+            "zone3a.fragmentedRally": true,
+            "zone3a.badConfirmed": true,
+            "zone2.badConfirmed": true,
+          },
+          endingRisks: { zone2: 3, zone3a: 3 },
+          endingsUnlocked: ["zone3a-missed-moment"],
+        },
+        runtime: {},
+      }));
+    });
+    await page.goto("/?debugTools=1");
+    await page.waitForFunction(() => Boolean(window.__CROSSROADS_DEBUG__));
+    await page.locator("#continue-button").click();
+    await expect.poll(() => snapshot(page).then((state) => state.mode)).toBe("playing");
+    await expect.poll(() => snapshot(page).then((state) => state.narrative.branchFlags["zone2.badConfirmed"] ?? false)).toBe(false);
+
+    await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("vietminh-cadre"));
+    await page.locator('[data-dialogue-choice="prepare-network"]').click();
+    await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("vietminh-cadre"));
+    await page.locator(`[data-dialogue-choice="${recoveryChoice}"]`).click();
+
+    await expect.poll(() => snapshot(page).then((state) => state.endingId)).toBeNull();
+    await expect.poll(() => snapshot(page).then((state) => state.narrative.branchFlags["zone3a.badConfirmed"] ?? false)).toBe(false);
+    await expect.poll(() => snapshot(page).then((state) => state.inventory)).toContain("vietminh-thread");
+    await expect.poll(() => snapshot(page).then((state) => state.quests.zone3ThreadClaimed)).toBe(true);
+    await expect(page.locator("#zone-summary-overlay")).toBeVisible();
+    await page.waitForTimeout(750);
+    await page.screenshot({ path: testInfo.outputPath(`zone3a-${recoveryChoice}-stale-save-repaired.png`), fullPage: true });
+  });
+}
 
 test("Zone 3B separation needs a border confirmation before its ending", async ({ page }, testInfo) => {
   await openDebugSession(page);

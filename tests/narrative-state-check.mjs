@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import {
+  clearCompletedZoneBadConfirmations,
   createNarrativeState,
   recordNarrativeChoice,
   restoreNarrativeState,
@@ -56,5 +57,27 @@ assert.equal(restored.themeScores.direction, -2, "Saved theme scores migrate ont
 assert.equal(restored.themeScores.unity, 0, "Missing future theme scores receive a safe default.");
 assert.equal(restored.endingsUnlocked.has("zone1-lost-compass"), true, "Ending collection restores as a Set.");
 assert.deepEqual(restored.choiceHistory, [], "Older saves without detailed history remain valid and do not invent past decisions.");
+
+const staleCompletedZone = restoreNarrativeState({
+  branchFlags: {
+    "zone2.badConfirmed": true,
+    "zone3a.badConfirmed": true,
+  },
+});
+
+clearCompletedZoneBadConfirmations(staleCompletedZone, {
+  inventory: new Set(["unified-emblem"]),
+});
+
+assert.equal(
+  staleCompletedZone.branchFlags["zone2.badConfirmed"],
+  false,
+  "A relic proves its zone was completed, so stale bad-ending confirmation is cleared on restore."
+);
+assert.equal(
+  staleCompletedZone.branchFlags["zone3a.badConfirmed"],
+  true,
+  "An unfinished zone keeps its own bad-ending confirmation until the player resolves that wave."
+);
 
 console.log("PASS: narrative state is isolated, serializable, and safe to restore from partial saves.");

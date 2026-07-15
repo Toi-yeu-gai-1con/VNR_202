@@ -195,6 +195,25 @@
         </div>
       </section>
 
+      <section id="tva-dossier-modal" class="tva-dossier-modal hidden" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="tva-dossier-title">
+        <div class="tva-dossier-card">
+          <div class="tva-dossier-header">
+            <div>
+              <p class="tva-dossier-kicker">TRẠM KÝ ỨC TVA</p>
+              <h2 id="tva-dossier-title">Hồ sơ TVA</h2>
+              <p class="tva-dossier-intro">Kho lưu trữ bền vững giữa các lượt hành trình. Không thay thế Sách lịch sử.</p>
+            </div>
+            <button id="tva-dossier-close-button" class="close-button tva-dossier-close-button" type="button" aria-label="Đóng Hồ sơ TVA">X</button>
+          </div>
+          <div class="tva-dossier-tabs" role="tablist" aria-label="Mục Hồ sơ TVA">
+            <button class="pixel-button tva-dossier-tab is-selected" type="button" role="tab" aria-selected="true" data-tva-dossier-tab="endings">Kết cục</button>
+            <button class="pixel-button tva-dossier-tab" type="button" role="tab" aria-selected="false" data-tva-dossier-tab="monsters">Đối thủ</button>
+            <button class="pixel-button tva-dossier-tab" type="button" role="tab" aria-selected="false" data-tva-dossier-tab="achievements">Dấu mốc</button>
+          </div>
+          <div id="tva-dossier-content" class="tva-dossier-content" role="tabpanel" tabindex="0"></div>
+        </div>
+      </section>
+
       <section id="slide-modal" class="slide-modal hidden" aria-hidden="true" role="dialog" aria-modal="true">
         <div class="slide-card">
           <img class="slide-book-art" src="assets/ui/book-open.png" alt="" aria-hidden="true">
