@@ -1,4 +1,5 @@
 import { restoreNarrativeState, serializeNarrativeState } from "./narrative-state.js";
+import { createRunStats } from "./run-summary.js";
 
 export function createSaveSystem({
   storage,
@@ -120,6 +121,7 @@ export function createSaveSystem({
         difficulty: state.difficulty,
         tutorialSeen: state.tutorialSeen,
         hubEpilogueEndingId: typeof state.hubEpilogueEndingId === "string" ? state.hubEpilogueEndingId : null,
+        runStats: createRunStats(state.runStats),
         quests: serializeQuestState(),
         narrative: serializeNarrativeState(state.narrative),
         runtime: getRuntimeState(),
@@ -146,6 +148,7 @@ export function createSaveSystem({
         ...saved,
         version,
         narrative: serializeNarrativeState(saved.narrative),
+        runStats: createRunStats(saved.runStats),
       };
     } catch {
       return null;

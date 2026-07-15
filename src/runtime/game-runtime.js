@@ -10,6 +10,7 @@ import { createSceneController, SCENES } from "../core/scene-controller.js";
 import { createDebugOverlay } from "../debug/debug-overlay.js";
 import { createAudioSystem } from "../systems/audio-system.js";
 import { createPortalTransition } from "../systems/portal-transition.js";
+import { createRunStats, createRunSummary, recordRunStat } from "../systems/run-summary.js";
 import { createLevelDefinitions } from "../systems/level-definitions.js";
 import { createTrainingSession } from "../systems/training-session.js";
 import { getPortalState } from "../systems/portal-state.js";
@@ -166,6 +167,8 @@ const inventoryValue = document.getElementById("inventory-value");
 const endTitle = document.getElementById("end-title");
 const endCopy = document.getElementById("end-copy");
 const endSummary = document.getElementById("end-summary");
+const endRunScore = document.getElementById("end-run-score");
+const endRunDetails = document.getElementById("end-run-details");
 const endArtFrame = document.getElementById("end-art-frame");
 const endArtCinematic = document.getElementById("end-art-cinematic");
 const endArtImage = document.getElementById("end-art-image");
@@ -391,6 +394,7 @@ const state = {
   respawnSpawn: null,
   blockedExitIds: new Set(),
   portalTransition: null,
+  runStats: createRunStats(),
   puzzleState: {
     archiveSequence: 0,
     archiveSolved: false,
@@ -910,6 +914,7 @@ function continueSavedGame() {
   restoreQuestState(saved.quests);
   restoreNarrativeSaveState(saved.narrative);
   restoreRuntimeSaveState(saved.runtime);
+  state.runStats = createRunStats(saved.runStats);
   state.inventory = new Set(saved.inventory ?? []);
   state.unlockedStoryIds = new Set(saved.unlockedStoryIds ?? []);
   state.completedZones = new Set(saved.completedZones ?? []);
@@ -2716,6 +2721,7 @@ function resetGameplayProgress() {
   state.puzzleState.archiveSolved = false;
   state.quests = createQuestState();
   state.narrative = createNarrativeState();
+  state.runStats = createRunStats();
   initializeLevelRuntime();
   setRespawnCheckpoint("hub");
   updateProgressHud();
@@ -3216,6 +3222,7 @@ function frame({ now: timestamp, deltaSeconds }) {
   updatePortalTransition();
 
   if (state.mode === "playing" && timestamp >= state.hitStopUntil) {
+    recordRunStat(state.runStats, "activeMilliseconds", Math.round(deltaSeconds * 1000));
     updatePlayerAnimation();
     updatePlayer(deltaSeconds);
     updateMonsters(deltaSeconds);
@@ -3887,6 +3894,7 @@ function applyNarrativeChoice(chapterId, decisionId, optionId) {
     id: `${chapterId}.${decision.id}`,
     chapterId,
   });
+  recordRunStat(state.runStats, "choicesMade");
 
   if (option.corruption) {
     adjustSaDoa(option.corruption);
@@ -4996,6 +5004,7 @@ function showEndOverlay() {
   endCopy.textContent = ending.copy;
   endSummary.textContent =
     state.endingSummary || `Tín vật: ${state.inventory.size}/${RELIC_TARGET_COUNT} • Tha hóa: ${state.saDoa}%`;
+  updateEndingRunSummary();
   updateEndingArt(ending);
   endOverlay.dataset.ending = state.endingId ?? "bad";
   returnStartButton.textContent = isBadEndingId(state.endingId) ? "David đang hiệu chỉnh" : "Về TVA";
@@ -5013,6 +5022,22 @@ function showEndOverlay() {
   updateEndingCinematicUiState();
   updateStoryBookButton();
   updateCorruptionEffects();
+}
+
+function updateEndingRunSummary() {
+  if (!endRunScore || !endRunDetails) {
+    return;
+  }
+
+  const summary = createRunSummary({
+    runStats: state.runStats,
+    inventory: state.inventory,
+    corruption: state.saDoa,
+    completedZones: state.completedZones,
+    narrative: state.narrative,
+  });
+  endRunScore.textContent = `Hồ sơ hành trình: ${summary.score} điểm`;
+  endRunDetails.textContent = `${summary.durationLabel} • ${summary.combatStyle} • ${summary.corruptionLabel}`;
 }
 
 function hideEndOverlay() {
@@ -5580,6 +5605,7 @@ function useStrikeSkill(isCharged = false) {
   }
 
   state.skillCooldowns.strikeReadyAt = state.lastTimestamp + STRIKE_COOLDOWN_MS;
+  recordRunStat(state.runStats, "strikes");
   state.skillReadySoundArmed.strike = true;
   state.comboStep = state.lastTimestamp <= state.comboExpiresAt ? (state.comboStep % 3) + 1 : 1;
   state.comboExpiresAt = state.lastTimestamp + 700;
@@ -5676,6 +5702,7 @@ function resolveParry(sourceName, sourceMonster = null, options = {}) {
   }
 
   state.parryEndsAt = 0;
+  recordRunStat(state.runStats, "successfulParries");
   state.invulnerableUntil = Math.max(state.invulnerableUntil, state.lastTimestamp + 140);
   state.stamina = Math.min(STAMINA_MAX, state.stamina + GAMEPLAY_BALANCE.combat.parry.staminaReward);
   state.activeSkillEffect = {
@@ -6106,6 +6133,9 @@ function damagePlayer(amount, sourceName = "bóng tối", sourceMonster = null) 
   state.combatFlashUntil = state.lastTimestamp + 150;
   updateProgressHud();
   playCombatSfx("playerHurt", { volume: 0.68, playbackRate: 0.96 + Math.random() * 0.08 });
+  if (!trainingActive) {
+    recordRunStat(state.runStats, "damageTaken", amount);
+  }
 
   if (state.health > 0) {
     startPlayerAnimation("hurt", { direction: player.direction });
@@ -7455,6 +7485,7 @@ function collectRelic(itemId, guidance = "") {
 
 function adjustSaDoa(delta, message = "") {
   state.saDoa = clamp(state.saDoa + delta, 0, SA_DOA_MAX);
+  state.runStats.maxCorruption = Math.max(state.runStats.maxCorruption, state.saDoa);
   updateProgressHud();
   saveGameProgress();
 
@@ -7469,6 +7500,7 @@ function adjustSaDoa(delta, message = "") {
 
 function triggerBadEnding(summary) {
   state.saDoa = SA_DOA_MAX;
+  state.runStats.maxCorruption = SA_DOA_MAX;
   state.endingId = "bad";
   state.endingSummary = summary;
   updateProgressHud();

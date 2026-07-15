@@ -534,6 +534,17 @@ test("reported relics unlock each later TVA coordinate in campaign order", async
   await expect.poll(() => snapshot(page).then((state) => state.quests.tvaReportedRelics.length)).toBe(5);
 });
 
+test("ending recap shows an explainable run score after the cinematic", async ({ page }, testInfo) => {
+  await page.goto("/?debugTools=1&debugEnding=good");
+  await page.waitForFunction(() => Boolean(window.__CROSSROADS_DEBUG__));
+  await expect(page.locator("#end-overlay")).toBeVisible();
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.completeEndingCinematic());
+  await expect(page.locator("#end-overlay")).toHaveAttribute("data-cinematic", "complete");
+  await expect(page.locator("#end-run-score")).toContainText("điểm");
+  await expect(page.locator("#end-run-details")).toContainText("Tha hóa");
+  await page.screenshot({ path: testInfo.outputPath("ending-run-summary.png"), fullPage: true });
+});
+
 test("checkpoint survives lethal damage and persisted progress survives reload", async ({ page }) => {
   await openDebugSession(page);
   await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("village"));
