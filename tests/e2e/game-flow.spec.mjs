@@ -580,6 +580,25 @@ test("pause settings persist audio, accessibility, and minimap preferences", asy
   await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem("crossroads-settings-v1")).settings.dialogueVolume)).toBe(0.31);
 });
 
+test("key binding settings reject conflicts and persist an updated combat prompt", async ({ page }, testInfo) => {
+  await openDebugSession(page);
+  await page.locator("#pause-button").click();
+  await page.locator("#settings-button").click();
+  await page.locator('[data-key-binding="attack"]').click();
+  await page.keyboard.press("k");
+  await expect(page.locator("#key-binding-status")).toContainText("đang dùng");
+  await page.keyboard.press("f");
+  await expect(page.locator('[data-key-binding="attack"]')).toContainText("F");
+  await page.screenshot({ path: testInfo.outputPath("key-bindings.png"), fullPage: true });
+  await page.locator("#close-settings-button").click();
+  await page.locator("#resume-button").click();
+  await expect.poll(() => snapshot(page).then((state) => state.mode)).toBe("playing");
+  await page.keyboard.press("f");
+  await expect.poll(() => snapshot(page).then((state) => state.player.animation)).toMatch(/attack/);
+  await page.reload();
+  await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem("crossroads-settings-v1")).settings.keyBindings.attack)).toBe("f");
+});
+
 test("Zone 2 division risk needs a separate emblem confirmation before its ending", async ({ page }, testInfo) => {
   await openDebugSession(page);
   await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("archive"));
