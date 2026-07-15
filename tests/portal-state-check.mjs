@@ -39,10 +39,4 @@ assert.deepEqual(
   "A completed zone exposes a distinct return state instead of reusing the departure treatment."
 );
 
-assert.equal(
-  getPortalState({ levelId: "training", exitId: "training-return-to-hub", targetLevelId: "hub", available: true, narrative: quietNarrative }).status,
-  "safe",
-  "The training room exit remains explicitly non-campaign and safe."
-);
-
 console.log("PASS: portal state presentation is data-driven and does not leak endings.");

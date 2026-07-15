@@ -216,7 +216,7 @@ export function createAudioSystem({
         activeMusic.push(endingMusic);
       }
     } else if (state.mode !== "start") {
-      if (state.currentLevelId === "hub" || state.currentLevelId === "training") {
+      if (state.currentLevelId === "hub") {
         const hubMusic = musicSounds.hub;
         if (hubMusic) {
           hubMusic.volume = getSourceVolume(hubMusic) * getVolumeSetting("musicVolume");

@@ -16,7 +16,6 @@ const PORTAL_STATES = Object.freeze({
   standby: Object.freeze({ status: "standby", icon: "standby", label: "ĐỢI ĐIỀU PHỐI", color: "#78909d", glow: "#5d7886", visible: false }),
   sealed: Object.freeze({ status: "sealed", icon: "lock", label: "CỔNG ĐANG NIÊM", color: "#75818b", glow: "#53616d", visible: true }),
   complete: Object.freeze({ status: "complete", icon: "return", label: "LỐI VỀ MỞ", color: "#f3d777", glow: "#b99452", visible: true }),
-  safe: Object.freeze({ status: "safe", icon: "safe", label: "RỜI MÔ PHỎNG", color: "#b9e6f0", glow: "#77c5da", visible: true }),
 });
 
 function hasUnresolvedRisk(levelId, narrative = {}) {
@@ -49,10 +48,6 @@ export function getPortalState({ levelId, exitId, targetLevelId, available, narr
       glow: "#e0b75f",
       visible: true,
     };
-  }
-
-  if (levelId === "training") {
-    return PORTAL_STATES.safe;
   }
 
   if (targetLevelId === "hub") {

@@ -11,7 +11,7 @@ const levels = createLevelDefinitions({
   getState: () => ({ quests: { zone1RewardClaimed: true, tvaPortalTarget: "village" } }),
 });
 
-assert.deepEqual(Object.keys(levels), ["hub", "training", "village", "archive", "crossroads", "spring"], "The active campaign levels include the isolated TVA training room.");
+assert.deepEqual(Object.keys(levels), ["hub", "village", "archive", "crossroads", "spring"], "The active campaign levels exclude the removed TVA training room.");
 assert.equal(levels.hub.id, "hub", "The hub keeps its stable id.");
 assert.equal(levels.hub.cameraZoom, 0.7, "The TVA office uses a wider camera without changing actor scale.");
 assert.equal(levels.hub.exits.length, 1, "The office hub exposes only the employee-controlled dispatch portal.");
@@ -32,9 +32,11 @@ assert.ok(tvaCaseboard?.interactionRadius >= 42, "The caseboard is comfortably u
 const memoryArchive = levels.hub.interactables.find((item) => item.id === "tva-memory-archive");
 assert.equal(memoryArchive?.interactionType, "openMemoryArchive", "The TVA hub includes a real interaction point for revisiting unlocked memories.");
 assert.equal(memoryArchive?.variant, "tva-memory-archive", "The memory room surface has a dedicated completed-prop renderer.");
-const trainingConsole = levels.hub.interactables.find((item) => item.id === "tva-training-console");
-assert.equal(trainingConsole?.interactionType, "enterTraining", "The TVA hub provides a dedicated entry point to the real combat training room.");
-assert.equal(trainingConsole?.variant, "tva-training-console", "The training entry routes through a dedicated completed office-prop renderer.");
+assert.equal(
+  levels.hub.interactables.some((item) => item.id === "tva-training-console"),
+  false,
+  "The obsolete training console is removed from the TVA hub."
+);
 const hubReturnees = levels.hub.interactables.filter((item) => item.hubReturnee);
 assert.equal(hubReturnees.length, 5, "Five earned TVA returnees cover the four zones with both Zone 3 chapters represented.");
 assert.ok(hubReturnees.every((item) => item.kind === "npc" && item.spriteKey && item.animation === "idle"), "Returnees use real animated NPC sprite actors.");
@@ -62,11 +64,7 @@ assert.equal(levels.village.id, "village", "Zone 1 keeps its stable id.");
 assert.equal(levels.archive.id, "archive", "Zone 2 keeps its stable id.");
 assert.equal(levels.crossroads.id, "crossroads", "Zone 3 keeps its stable id.");
 assert.equal(levels.spring.id, "spring", "Zone 4 keeps its stable id.");
-assert.equal(levels.training.id, "training", "The training room keeps a stable level id outside campaign zones.");
-assert.equal(levels.training.exits[0].target, "hub", "The training room always returns safely to the TVA hub.");
-assert.equal(levels.training.monsters[0]?.id, "tva-training-hologram", "Training uses a real combat-runtime opponent.");
-assert.equal(levels.training.monsters[0]?.artKey, "zone2CipherMarksman", "The opponent uses dedicated animated monster art, not a geometric fallback.");
-assert.equal(levels.training.interactables.find((item) => item.id === "tva-training-reset")?.interactionType, "resetTraining", "The training room offers an immediate safe reset.");
+assert.equal(levels.training, undefined, "The obsolete training map is not registered.");
 assert.equal(levels.village.exits[0].portal.x, 146, "The Zone 1 portal receives the configured portal geometry.");
 assert.equal(levels.village.exits[0].guide.visibleWhen(), true, "Exit guidance reads current quest state through its injected accessor.");
 const colonialRecruiter = levels.village.interactables.find((item) => item.id === "colonial-recruiter");
