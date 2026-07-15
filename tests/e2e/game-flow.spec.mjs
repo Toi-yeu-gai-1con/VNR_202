@@ -465,6 +465,24 @@ test("the TVA memory archive opens only earned history", async ({ page }, testIn
   await page.screenshot({ path: testInfo.outputPath("tva-memory-archive.png"), fullPage: true });
 });
 
+test("constructive achievements persist as TVA memory records without revealing endings", async ({ page }, testInfo) => {
+  await openDebugSession(page, "challenge");
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("archive"));
+  await expect.poll(() => snapshot(page).then((state) => state.currentLevelId)).toBe("archive");
+
+  for (let count = 0; count < 3; count += 1) {
+    await page.evaluate(() => window.__CROSSROADS_DEBUG__.parryIncomingProjectile("archive-marksman"));
+    await page.waitForTimeout(820);
+  }
+
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("hub", { x: 630, y: 318, direction: "up" }));
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("tva-memory-archive"));
+  await expect(page.locator("#slide-modal")).toBeVisible();
+  await expect(page.locator("#slide-title")).toHaveText("Nhịp phản đòn");
+  await expect(page.locator("#slide-text")).not.toContainText("ending");
+  await page.screenshot({ path: testInfo.outputPath("achievement-memory-record.png"), fullPage: true });
+});
+
 test("the TVA training room uses real combat while restoring the campaign on exit", async ({ page }, testInfo) => {
   await openDebugSession(page);
   await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("hub", { x: 446, y: 338, direction: "up" }));

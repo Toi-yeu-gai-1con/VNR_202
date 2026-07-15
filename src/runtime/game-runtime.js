@@ -11,6 +11,8 @@ import { createDebugOverlay } from "../debug/debug-overlay.js";
 import { createAudioSystem } from "../systems/audio-system.js";
 import { createPortalTransition } from "../systems/portal-transition.js";
 import { createRunStats, createRunSummary, recordRunStat } from "../systems/run-summary.js";
+import { ACHIEVEMENT_DEFINITIONS, getEarnedAchievementIds } from "../data/achievement-definitions.js";
+import { createAchievementCollection } from "../systems/achievement-collection.js";
 import { createLevelDefinitions } from "../systems/level-definitions.js";
 import { createTrainingSession } from "../systems/training-session.js";
 import { getPortalState } from "../systems/portal-state.js";
@@ -235,6 +237,7 @@ const RESPAWN_INVULNERABILITY_MS = GAMEPLAY_BALANCE.mob.respawnInvulnerabilityMs
 const RELIC_TARGET_COUNT = 5;
 const SAVE_STORAGE_KEY = "crossroads-save-v1";
 const ENDING_COLLECTION_STORAGE_KEY = "crossroads-ending-collection-v1";
+const ACHIEVEMENT_COLLECTION_STORAGE_KEY = "crossroads-achievement-collection-v1";
 const GAME_SETTINGS_STORAGE_KEY = "crossroads-settings-v1";
 const SAVE_VERSION = 2;
 const PLAYER_ATTACK_ANIMATION_MS = GAMEPLAY_BALANCE.combat.strike.animationMs;
@@ -465,6 +468,12 @@ const endingCollection = createEndingCollection({
   storage: localStorage,
   storageKey: ENDING_COLLECTION_STORAGE_KEY,
   isSupportedEndingId: (endingId) => Boolean(NARRATIVE_ENDING_DEFINITIONS[endingId]),
+});
+
+const achievementCollection = createAchievementCollection({
+  storage: localStorage,
+  storageKey: ACHIEVEMENT_COLLECTION_STORAGE_KEY,
+  isSupportedAchievementId: (achievementId) => ACHIEVEMENT_DEFINITIONS.some((achievement) => achievement.id === achievementId),
 });
 
 const audioSystem = createAudioSystem({
@@ -2546,6 +2555,16 @@ function createStoryRegistry(levelMap) {
     };
   }
 
+  for (const achievement of ACHIEVEMENT_DEFINITIONS) {
+    registry[`achievement:${achievement.id}`] = {
+      id: `achievement:${achievement.id}`,
+      kicker: "Dấu mốc hành trình đã xác nhận",
+      title: achievement.title,
+      text: achievement.text,
+      caption: achievement.caption,
+    };
+  }
+
   return registry;
 }
 
@@ -3738,6 +3757,8 @@ function unlockStory(storyId, options = {}) {
     showStoryToast(`Đã mở khóa: ${story.title}`);
   }
 
+  refreshAchievements({ silent: options.silent });
+
   return true;
 }
 
@@ -3895,6 +3916,7 @@ function applyNarrativeChoice(chapterId, decisionId, optionId) {
     chapterId,
   });
   recordRunStat(state.runStats, "choicesMade");
+  refreshAchievements();
 
   if (option.corruption) {
     adjustSaDoa(option.corruption);
@@ -4305,12 +4327,39 @@ function getEndingCaseFileIds() {
     .filter((storyId) => Boolean(storyRegistry[storyId]));
 }
 
+function getAchievementCaseFileIds() {
+  return achievementCollection.getEntries()
+    .map((achievementId) => `achievement:${achievementId}`)
+    .filter((storyId) => Boolean(storyRegistry[storyId]));
+}
+
 function getStoryBookEntryIds() {
-  return [...state.unlockedStoryIds, ...getEndingCaseFileIds()];
+  return [...new Set([...state.unlockedStoryIds, ...getEndingCaseFileIds(), ...getAchievementCaseFileIds()])];
 }
 
 function recordEndingCollection(endingId) {
   endingCollection.record(endingId);
+}
+
+function refreshAchievements({ silent = false } = {}) {
+  const earnedAchievementIds = getEarnedAchievementIds({
+    runStats: state.runStats,
+    unlockedStoryIds: state.unlockedStoryIds,
+    narrative: state.narrative,
+    quests: state.quests,
+    inventory: state.inventory,
+  });
+  const newlyUnlocked = earnedAchievementIds.filter((achievementId) => achievementCollection.record(achievementId));
+
+  if (newlyUnlocked.length > 0) {
+    updateStoryBookButton();
+    const achievement = ACHIEVEMENT_DEFINITIONS.find((entry) => entry.id === newlyUnlocked[0]);
+    if (!silent && achievement) {
+      showStoryToast(`Dấu mốc TVA đã xác nhận: ${achievement.title}`);
+    }
+  }
+
+  return newlyUnlocked;
 }
 
 function openStoryBook(preferredStoryId = null) {
@@ -4710,17 +4759,18 @@ function openSlide(slideData) {
   delete slideGallery.dataset.count;
 
   const hasGallery = Array.isArray(slideData.gallery) && slideData.gallery.length > 0;
+  const hasInlineArt = Boolean(slideData.art);
 
   slideGallery.classList.toggle("hidden", !hasGallery);
   slideGallery.setAttribute("aria-hidden", hasGallery ? "false" : "true");
-  slideImageFrame.classList.toggle("hidden", hasGallery);
-  slideCaption.classList.toggle("hidden", hasGallery);
+  slideImageFrame.classList.toggle("hidden", hasGallery || !hasInlineArt);
+  slideCaption.classList.toggle("hidden", hasGallery || !hasInlineArt);
 
   if (hasGallery) {
     renderSlideGallery(slideData.gallery);
   }
 
-  if (!hasGallery && slideData.art) {
+  if (!hasGallery && hasInlineArt) {
     slideImage.classList.add(`art-${slideData.art}`);
   }
 
@@ -5703,6 +5753,7 @@ function resolveParry(sourceName, sourceMonster = null, options = {}) {
 
   state.parryEndsAt = 0;
   recordRunStat(state.runStats, "successfulParries");
+  refreshAchievements();
   state.invulnerableUntil = Math.max(state.invulnerableUntil, state.lastTimestamp + 140);
   state.stamina = Math.min(STAMINA_MAX, state.stamina + GAMEPLAY_BALANCE.combat.parry.staminaReward);
   state.activeSkillEffect = {
@@ -7459,6 +7510,7 @@ function collectRelic(itemId, guidance = "") {
     ? "Đã thêm vào Sách lịch sử và sẽ mở đúng chương thuyết trình."
     : "";
   state.inventory.add(itemId);
+  refreshAchievements();
   updateProgressHud();
   saveGameProgress();
 
