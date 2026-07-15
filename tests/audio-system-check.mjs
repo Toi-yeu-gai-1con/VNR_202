@@ -78,6 +78,18 @@ assert.equal(rain.paused, false, "Resuming restores the active zone ambience.");
 assert.equal(zone.currentTime, 37.25, "Resuming does not rewind the music track.");
 assert.equal(rain.currentTime, 14.5, "Resuming does not rewind ambience.");
 
+audio.setScenePaused(true);
+assert.equal(zone.paused, true, "A gameplay-blocking scene pauses zone music without rewinding it.");
+assert.equal(rain.paused, true, "A gameplay-blocking scene also pauses ambience.");
+assert.equal(zone.currentTime, 37.25, "Pausing for UI keeps the zone music position.");
+assert.equal(rain.currentTime, 14.5, "Pausing for UI keeps the ambience position.");
+
+audio.setScenePaused(false);
+assert.equal(zone.paused, false, "Closing the gameplay-blocking scene resumes zone music.");
+assert.equal(rain.paused, false, "Closing the gameplay-blocking scene resumes ambience.");
+assert.equal(zone.currentTime, 37.25, "UI pause recovery does not rewind zone music.");
+assert.equal(rain.currentTime, 14.5, "UI pause recovery does not rewind ambience.");
+
 audio.playSfx("baton", { volume: 0.6, playbackRate: 1.08 });
 assert.equal(baton.playCalls, 1, "Combat SFX plays through the isolated audio system.");
 assert.equal(baton.volume, 0.3, "Combat SFX applies both its local mix and the persistent effects-volume preference.");

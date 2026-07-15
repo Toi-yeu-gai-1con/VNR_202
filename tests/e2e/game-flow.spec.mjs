@@ -283,6 +283,19 @@ test("held movement stops on blur and paused scenes ignore movement", async ({ p
   await page.keyboard.press("d");
   await page.waitForTimeout(180);
   expect((await snapshot(page)).player.x).toBeCloseTo(paused.player.x, 4);
+
+  await page.locator("#resume-button").click();
+  await expect.poll(() => snapshot(page).then((state) => state.mode)).toBe("playing");
+  await page.keyboard.down("d");
+  await page.waitForTimeout(100);
+  await page.locator("#pause-button").click();
+  await expect.poll(() => snapshot(page).then((state) => state.mode)).toBe("paused");
+  const pausedWithHeldKey = await snapshot(page);
+  await page.locator("#resume-button").click();
+  await expect.poll(() => snapshot(page).then((state) => state.mode)).toBe("playing");
+  await page.waitForTimeout(180);
+  expect((await snapshot(page)).player.x).toBeCloseTo(pausedWithHeldKey.player.x, 4);
+  await page.keyboard.up("d");
 });
 
 test("the employee forces the TVA briefing choice and opens the first dispatch portal", async ({ page }, testInfo) => {

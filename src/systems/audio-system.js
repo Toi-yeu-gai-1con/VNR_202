@@ -12,6 +12,7 @@ export function createAudioSystem({
 }) {
   let audioRetryQueued = false;
   let suspended = false;
+  let scenePaused = false;
   const activeSfx = new Set();
   const sourceVolumes = new WeakMap();
 
@@ -98,7 +99,7 @@ export function createAudioSystem({
   }
 
   function playLoopingSound(sound) {
-    if (suspended || !sound || !sound.paused) {
+    if (suspended || scenePaused || !sound || !sound.paused) {
       return;
     }
 
@@ -193,7 +194,7 @@ export function createAudioSystem({
   }
 
   function syncAmbienceAudio() {
-    if (suspended) {
+    if (suspended || scenePaused) {
       return;
     }
 
@@ -241,6 +242,25 @@ export function createAudioSystem({
     }
   }
 
+  function setScenePaused(paused) {
+    const nextScenePaused = Boolean(paused);
+    if (scenePaused === nextScenePaused) {
+      return;
+    }
+
+    scenePaused = nextScenePaused;
+    if (scenePaused) {
+      for (const sound of [...Object.values(ambienceSounds), ...Object.values(musicSounds)]) {
+        pauseLoopingSound(sound);
+      }
+      return;
+    }
+
+    if (!suspended && !state.soundMuted) {
+      syncAmbienceAudio();
+    }
+  }
+
   function suspend() {
     if (suspended) {
       return;
@@ -278,6 +298,7 @@ export function createAudioSystem({
     syncAmbienceAudio,
     syncZoneAmbientAudio,
     setMuted,
+    setScenePaused,
     suspend,
     resume,
   };

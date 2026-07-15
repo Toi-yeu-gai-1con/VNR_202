@@ -6,7 +6,7 @@ import { ZONE_PROFILES } from "../data/zone-profiles.js";
 import { createAssetManager } from "../core/asset-manager.js";
 import { createPageLifecycleController } from "../core/page-lifecycle.js";
 import { createRuntimeLoop } from "../core/runtime-loop.js";
-import { createSceneController } from "../core/scene-controller.js";
+import { createSceneController, SCENES } from "../core/scene-controller.js";
 import { createDebugOverlay } from "../debug/debug-overlay.js";
 import { createAudioSystem } from "../systems/audio-system.js";
 import { createLevelDefinitions } from "../systems/level-definitions.js";
@@ -457,6 +457,22 @@ const audioSystem = createAudioSystem({
   getCurrentLevel: currentLevel,
   getPlayer: () => player,
   getSettings: () => state.settings,
+});
+
+const GAMEPLAY_BLOCKING_SCENES = new Set([
+  SCENES.PAUSED,
+  SCENES.DIALOGUE,
+  SCENES.MODAL,
+  SCENES.TUTORIAL,
+  SCENES.SUMMARY,
+]);
+
+sceneController.subscribe(({ previous, current }) => {
+  const isBlockingGameplay = GAMEPLAY_BLOCKING_SCENES.has(current);
+  if (isBlockingGameplay || GAMEPLAY_BLOCKING_SCENES.has(previous)) {
+    clearPressedKeys();
+  }
+  audioSystem.setScenePaused(isBlockingGameplay);
 });
 
 const frameLoop = createRuntimeLoop({
