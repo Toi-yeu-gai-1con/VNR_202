@@ -175,6 +175,27 @@ test("Zone 1 captain exposes its phase-two combat profile", async ({ page }, tes
   await page.screenshot({ path: testInfo.outputPath("zone1-captain-phase-two.png"), fullPage: true });
 });
 
+test("boss combat panel names the threat and makes phase two legible", async ({ page }, testInfo) => {
+  await openDebugSession(page);
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("village"));
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.setPlayerPosition(748, 456));
+
+  await expect(page.locator("#boss-status")).toBeVisible();
+  await expect(page.locator("#boss-status-name")).toHaveText("Kẻ Canh Gác Tha Hóa");
+  await expect(page.locator("#boss-health-value")).toHaveText("18 / 18");
+  await expect(page.locator("#boss-phase-label")).toContainText("PHA I");
+
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.damageMonster("village-corruption-guard", 9));
+  await expect.poll(() => page.locator("#boss-phase-label").textContent()).toContain("PHA II");
+  await expect(page.locator("#boss-health-value")).toHaveText("9 / 18");
+  await page.screenshot({ path: testInfo.outputPath("boss-combat-panel-phase-two.png"), fullPage: true });
+
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.setSaDoa(70));
+  await expect(page.locator("#corruption-warning")).toBeVisible();
+  await expect(page.locator("#boss-status")).toHaveAttribute("data-corruption-warning", "true");
+  await expect(page.locator("#boss-status")).toHaveCSS("top", "72px");
+});
+
 test("Zone 2 archive preserves the curator's phase-two combat flow", async ({ page }, testInfo) => {
   await openDebugSession(page, "challenge");
   await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("archive"));

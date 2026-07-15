@@ -65,6 +65,12 @@ const soundCaption = document.getElementById("sound-caption");
 const corruptionWarning = document.getElementById("corruption-warning");
 const corruptionHelpButton = document.getElementById("corruption-help-button");
 const corruptionHelpTooltip = document.getElementById("corruption-help-tooltip");
+const bossStatus = document.getElementById("boss-status");
+const bossStatusName = document.getElementById("boss-status-name");
+const bossHealthFill = document.getElementById("boss-health-fill");
+const bossHealthValue = document.getElementById("boss-health-value");
+const bossPhaseLabel = document.getElementById("boss-phase-label");
+const bossTelegraphLabel = document.getElementById("boss-telegraph-label");
 const hud = document.getElementById("hud");
 const dialogueBox = document.getElementById("dialogue-box");
 const dialogueSpeaker = document.getElementById("dialogue-speaker");
@@ -2599,8 +2605,59 @@ function updateProgressHud() {
   saDoaValue.textContent = `${state.saDoa}%`;
   updateCorruptionHelpCopy();
   inventoryValue.textContent = `${state.inventory.size} / ${RELIC_TARGET_COUNT}`;
+  updateBossStatus();
   updateCombatStatus();
   updateCorruptionEffects();
+}
+
+function getEngagedBoss() {
+  if (state.mode !== "playing") {
+    return null;
+  }
+
+  return (currentLevel().monsters ?? []).find((monster) => {
+    if (!monster.isBoss || monster.defeated || !isMonsterActive(monster)) {
+      return false;
+    }
+
+    const maxHealth = monster.runtimeMaxHealth ?? monster.maxHealth;
+    const distanceToPlayer = Math.hypot(player.x - monster.x, player.y - monster.y);
+    return (
+      monster.health < maxHealth ||
+      (monster.telegraphEndsAt ?? 0) > state.lastTimestamp ||
+      distanceToPlayer <= (monster.aggroRadius ?? 150) + 36
+    );
+  }) ?? null;
+}
+
+function updateBossStatus() {
+  if (!bossStatus || !bossStatusName || !bossHealthFill || !bossHealthValue || !bossPhaseLabel || !bossTelegraphLabel) {
+    return;
+  }
+
+  const boss = getEngagedBoss();
+  if (!boss) {
+    bossStatus.classList.add("hidden");
+    bossStatus.setAttribute("aria-hidden", "true");
+    return;
+  }
+
+  const maxHealth = boss.runtimeMaxHealth ?? boss.maxHealth;
+  const phase = boss.bossPhase >= 2 ? 2 : 1;
+  const isTelegraphing = (boss.telegraphEndsAt ?? 0) > state.lastTimestamp;
+  const health = Math.max(0, Math.round(boss.health));
+  bossStatus.classList.remove("hidden");
+  bossStatus.setAttribute("aria-hidden", "false");
+  bossStatus.dataset.phase = String(phase);
+  bossStatus.dataset.telegraph = String(isTelegraphing);
+  bossStatus.dataset.corruptionWarning = String(Boolean(corruptionWarning && !corruptionWarning.classList.contains("hidden")));
+  bossStatusName.textContent = boss.name;
+  bossStatusName.title = boss.name;
+  bossHealthFill.style.width = `${Math.round((boss.health / maxHealth) * 100)}%`;
+  bossHealthValue.textContent = `${health} / ${maxHealth}`;
+  bossPhaseLabel.textContent = phase === 2 ? "◆ PHA II" : "◇ PHA I";
+  bossTelegraphLabel.classList.toggle("hidden", !isTelegraphing);
+  bossStatus.setAttribute("aria-label", `${boss.name}, ${bossHealthValue.textContent}, ${phase === 2 ? "pha hai" : "pha một"}${isTelegraphing ? ", đang lấy đà đòn mạnh" : ""}`);
 }
 
 function updateCombatStatus() {

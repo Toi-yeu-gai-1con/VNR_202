@@ -28,6 +28,17 @@
         <div id="corruption-warning" class="corruption-warning hidden" aria-live="assertive" aria-hidden="true">
           Mọi thứ đang dần đi chệch hướng
         </div>
+        <section id="boss-status" class="boss-status hidden" aria-label="Trạng thái thủ lĩnh" aria-hidden="true">
+          <div class="boss-status-header">
+            <span id="boss-status-name" class="boss-status-name"></span>
+            <span id="boss-phase-label" class="boss-phase-label">◆ PHA I</span>
+          </div>
+          <span class="boss-health-track"><span id="boss-health-fill" class="boss-health-fill"></span></span>
+          <div class="boss-status-footer">
+            <span id="boss-health-value" class="boss-health-value"></span>
+            <span id="boss-telegraph-label" class="boss-telegraph-label hidden">⚠ Đang lấy đà đòn mạnh</span>
+          </div>
+        </section>
         <div id="hud" class="hud" aria-live="polite">
           <div class="action-panel">
             <div class="action-overview">
