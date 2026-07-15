@@ -560,6 +560,7 @@ test("pause settings persist audio, accessibility, and minimap preferences", asy
 
   await page.locator("#music-volume-input").fill("42");
   await page.locator("#sfx-volume-input").fill("67");
+  await page.locator("#dialogue-volume-input").fill("31");
   await page.locator("#reduced-motion-input").check();
   await page.locator("#large-text-input").check();
   await page.locator("#minimap-input").uncheck();
@@ -576,6 +577,7 @@ test("pause settings persist audio, accessibility, and minimap preferences", asy
   await page.reload();
   await expect.poll(() => page.evaluate(() => document.documentElement.dataset.reducedMotion)).toBe("true");
   await expect.poll(() => page.evaluate(() => document.documentElement.dataset.textScale)).toBe("large");
+  await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem("crossroads-settings-v1")).settings.dialogueVolume)).toBe(0.31);
 });
 
 test("Zone 2 division risk needs a separate emblem confirmation before its ending", async ({ page }, testInfo) => {

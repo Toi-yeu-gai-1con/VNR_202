@@ -30,7 +30,7 @@ const rain = sound();
 const click = sound();
 const baton = sound();
 const state = { mode: "playing", currentLevelId: "hub", endingId: null, soundMuted: false };
-const settings = { musicVolume: 0.5, sfxVolume: 0.5 };
+const settings = { musicVolume: 0.5, sfxVolume: 0.5, dialogueVolume: 0.25 };
 const audio = createAudioSystem({
   state,
   uiSounds: { click },
@@ -48,6 +48,10 @@ audio.syncAmbienceAudio();
 assert.equal(hub.playCalls, 1, "Hub music plays while exploring the centre.");
 assert.equal(hub.volume, 0.5, "Hub music respects the persistent music-volume preference.");
 assert.equal(zone.playCalls, 0, "Zone music is not mixed into the hub.");
+
+audio.playDialogueSound(click);
+assert.equal(click.playCalls, 1, "Dialogue feedback uses a separately mixed audio channel.");
+assert.equal(click.volume, 0.25, "Dialogue feedback respects the persistent dialogue-volume preference rather than the effects slider.");
 
 state.currentLevelId = "village";
 audio.syncAmbienceAudio();

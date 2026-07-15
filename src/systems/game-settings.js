@@ -2,12 +2,14 @@ export const DEFAULT_GAME_SETTINGS = Object.freeze({
   soundMuted: false,
   musicVolume: 1,
   sfxVolume: 1,
+  dialogueVolume: 1,
   reducedMotion: false,
   textScale: "normal",
   minimapVisible: true,
 });
 
-const GAME_SETTINGS_VERSION = 1;
+const GAME_SETTINGS_VERSION = 2;
+const LEGACY_GAME_SETTINGS_VERSION = 1;
 const TEXT_SCALES = new Set(["normal", "large"]);
 
 function isVolume(value) {
@@ -32,6 +34,7 @@ function normalizeSettings(settings) {
     soundMuted: settings.soundMuted,
     musicVolume: settings.musicVolume,
     sfxVolume: settings.sfxVolume,
+    dialogueVolume: isVolume(settings.dialogueVolume) ? settings.dialogueVolume : DEFAULT_GAME_SETTINGS.dialogueVolume,
     reducedMotion: settings.reducedMotion,
     textScale: settings.textScale,
     minimapVisible: settings.minimapVisible,
@@ -42,7 +45,7 @@ export function createGameSettingsStore({ storage, storageKey }) {
   function load() {
     try {
       const saved = JSON.parse(storage.getItem(storageKey) ?? "null");
-      if (saved?.version !== GAME_SETTINGS_VERSION) {
+      if (saved?.version !== GAME_SETTINGS_VERSION && saved?.version !== LEGACY_GAME_SETTINGS_VERSION) {
         return { ...DEFAULT_GAME_SETTINGS };
       }
       return normalizeSettings(saved.settings);

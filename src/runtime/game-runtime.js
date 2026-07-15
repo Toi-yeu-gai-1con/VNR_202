@@ -97,6 +97,7 @@ const settingsButton = document.getElementById("settings-button");
 const closeSettingsButton = document.getElementById("close-settings-button");
 const musicVolumeInput = document.getElementById("music-volume-input");
 const sfxVolumeInput = document.getElementById("sfx-volume-input");
+const dialogueVolumeInput = document.getElementById("dialogue-volume-input");
 const mutedInput = document.getElementById("muted-input");
 const reducedMotionInput = document.getElementById("reduced-motion-input");
 const largeTextInput = document.getElementById("large-text-input");
@@ -939,7 +940,7 @@ aboutButton.addEventListener("click", withUiClickSound(() => {
   openSlide(currentLevel().aboutSlide);
 }));
 closeSlideButton.addEventListener("click", closeSlide);
-for (const settingsControl of [musicVolumeInput, sfxVolumeInput, mutedInput, reducedMotionInput, largeTextInput, minimapInput]) {
+for (const settingsControl of [musicVolumeInput, sfxVolumeInput, dialogueVolumeInput, mutedInput, reducedMotionInput, largeTextInput, minimapInput]) {
   settingsControl.addEventListener("input", saveSettingsFromControls);
   settingsControl.addEventListener("change", saveSettingsFromControls);
 }
@@ -952,7 +953,7 @@ dialogueChoiceList.addEventListener("click", (event) => {
     resolveDialogueChoice(button.dataset.dialogueChoice);
   }
 });
-openingNextButton.addEventListener("click", withUiClickSound(advanceOpeningIntro));
+openingNextButton.addEventListener("click", advanceOpeningIntro);
 storyPrevButton.addEventListener("click", withUiClickSound(() => showStoryBookEntry(-1)));
 storyNextButton.addEventListener("click", withUiClickSound(() => showStoryBookEntry(1)));
 returnStartButton.addEventListener("click", withUiClickSound(handleReturnFromEnding));
@@ -1000,6 +1001,7 @@ function toggleFullscreen() {
 function updateSettingsControls() {
   musicVolumeInput.value = String(Math.round(state.settings.musicVolume * 100));
   sfxVolumeInput.value = String(Math.round(state.settings.sfxVolume * 100));
+  dialogueVolumeInput.value = String(Math.round(state.settings.dialogueVolume * 100));
   mutedInput.checked = state.settings.soundMuted;
   reducedMotionInput.checked = state.settings.reducedMotion;
   largeTextInput.checked = state.settings.textScale === "large";
@@ -1020,6 +1022,7 @@ function saveSettingsFromControls() {
     soundMuted: mutedInput.checked,
     musicVolume: Number(musicVolumeInput.value) / 100,
     sfxVolume: Number(sfxVolumeInput.value) / 100,
+    dialogueVolume: Number(dialogueVolumeInput.value) / 100,
     reducedMotion: reducedMotionInput.checked,
     textScale: largeTextInput.checked ? "large" : "normal",
     minimapVisible: minimapInput.checked,
@@ -1686,6 +1689,10 @@ function loadSound(src, volume = 1, options = {}) {
 
 function playUiSound(sound) {
   audioSystem.playUiSound(sound);
+}
+
+function playDialogueSound(sound) {
+  audioSystem.playDialogueSound(sound);
 }
 
 function playCombatSfx(key, options) {
@@ -3131,6 +3138,7 @@ function renderOpeningIntro() {
     : "Tiếp tục";
   openingIntro.classList.remove("hidden");
   openingIntro.setAttribute("aria-hidden", "false");
+  playDialogueSound(uiSounds.pixelClick);
 }
 
 function getLegacyInteractionDialogue(item) {
@@ -3342,6 +3350,7 @@ function renderDialogue() {
   dialogueChoiceList.classList.toggle("hidden", !hasChoices);
   dialogueBox.classList.remove("hidden");
   dialogueBox.setAttribute("aria-hidden", "false");
+  playDialogueSound(uiSounds.pixelClick);
 }
 
 function createDialogueChoiceButton(choice, index) {

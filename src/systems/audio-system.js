@@ -7,7 +7,7 @@ export function createAudioSystem({
   getZoneProfile,
   getCurrentLevel,
   getPlayer,
-  getSettings = () => ({ musicVolume: 1, sfxVolume: 1 }),
+  getSettings = () => ({ musicVolume: 1, sfxVolume: 1, dialogueVolume: 1 }),
   eventTarget = window,
 }) {
   let audioRetryQueued = false;
@@ -46,19 +46,23 @@ export function createAudioSystem({
     eventTarget.addEventListener("keydown", retry, { once: true });
   }
 
-  function playUiSound(sound) {
+  function playUiSound(sound, volumeKey = "sfxVolume") {
     if (!sound) {
       return;
     }
 
     try {
-      sound.volume = getSourceVolume(sound) * getVolumeSetting("sfxVolume");
+      sound.volume = getSourceVolume(sound) * getVolumeSetting(volumeKey);
       sound.pause();
       sound.currentTime = 0;
       sound.play()?.catch(queueAudioRetry);
     } catch {
       queueAudioRetry();
     }
+  }
+
+  function playDialogueSound(sound) {
+    playUiSound(sound, "dialogueVolume");
   }
 
   function playSfx(key, options = {}) {
@@ -264,6 +268,7 @@ export function createAudioSystem({
 
   return {
     playUiSound,
+    playDialogueSound,
     playSfx,
     withUiClickSound,
     playLoopingSound,
