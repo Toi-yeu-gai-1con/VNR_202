@@ -568,6 +568,14 @@ test("the TVA hub has no obsolete training-room route", async ({ page }) => {
   expect(interaction).toBe(false);
 });
 
+test("David remains interactable in the TVA hub", async ({ page }) => {
+  await openDebugSession(page);
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("hub", { x: 384, y: 286, direction: "up" }));
+  await page.keyboard.press("e");
+  await expect(page.locator("#dialogue-box")).toBeVisible();
+  await expect(page.locator("#dialogue-speaker")).toHaveText("David");
+});
+
 test("reported relics unlock each later TVA coordinate in campaign order", async ({ page }) => {
   await openDebugSession(page);
   await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("hub", { x: 480, y: 260, direction: "up" }));

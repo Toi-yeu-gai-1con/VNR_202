@@ -7529,6 +7529,7 @@ function isInteractableAvailable(item) {
       return !item.used && !item.purified;
     case "tvaBriefing":
     case "tvaCaseboard":
+      return true;
     case "colonialRecruitment":
       return state.quests.zone1Started &&
         state.quests.zone1Delivered.size < 3 &&
