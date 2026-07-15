@@ -20,12 +20,19 @@ const collection = createEndingCollection({
   storage,
   storageKey: "ending-collection-test",
   isSupportedEndingId: (endingId) => acceptedIds.has(endingId),
+  now: () => "2026-07-15T08:30:00.000Z",
 });
 
 assert.deepEqual(collection.getEntries(), [], "A new browser profile begins with no case files.");
 assert.equal(collection.record("neutral"), true, "An authored ending is recorded.");
 assert.equal(collection.record("neutral"), true, "Recording an existing ending remains safe.");
 assert.deepEqual(collection.getEntries(), ["neutral"], "Recorded endings are deduplicated in insertion order.");
+assert.equal(typeof collection.getCaseFiles, "function", "The collection exposes dated case files separately from its legacy ID list.");
+assert.deepEqual(
+  collection.getCaseFiles(),
+  [{ id: "neutral", unlockedAt: "2026-07-15T08:30:00.000Z" }],
+  "A newly opened ending retains the time it was first recorded.",
+);
 assert.equal(collection.record("bad"), false, "The generic fallback ending is never collected.");
 assert.deepEqual(collection.getEntries(), ["neutral"], "Unsupported IDs cannot alter the collection.");
 
@@ -37,6 +44,14 @@ assert.deepEqual(
   collection.getEntries(),
   ["neutral", "zone1-lost-compass"],
   "Stale IDs and duplicate storage entries are removed safely."
+);
+assert.deepEqual(
+  collection.getCaseFiles(),
+  [
+    { id: "neutral", unlockedAt: null },
+    { id: "zone1-lost-compass", unlockedAt: null },
+  ],
+  "Version-one collections migrate safely even though they did not record a date.",
 );
 
 storage.setItem("ending-collection-test", "not-json");

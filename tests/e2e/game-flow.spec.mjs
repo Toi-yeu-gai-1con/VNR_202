@@ -50,6 +50,20 @@ test("optional challenge selection remains usable on a compact viewport", async 
   await page.screenshot({ path: testInfo.outputPath("optional-challenge-mobile-select.png"), fullPage: true });
 });
 
+test("ending case files show when their TVA record was first opened", async ({ page }, testInfo) => {
+  await page.addInitScript(() => {
+    localStorage.setItem("crossroads-ending-collection-v1", JSON.stringify({
+      version: 2,
+      endings: [{ id: "neutral", unlockedAt: "2026-07-14T12:00:00.000Z" }],
+    }));
+  });
+  await openDebugSession(page);
+  await page.locator("#story-book-button").click();
+  await expect(page.locator("#slide-title")).toContainText("Dòng lịch sử còn vết nứt");
+  await expect(page.locator('[data-case-file-date="true"]')).toContainText("Đã mở 14/07/2026");
+  await page.screenshot({ path: testInfo.outputPath("ending-case-file-date.png"), fullPage: true });
+});
+
 async function advanceDialogueToChoice(page, choiceId) {
   const choice = page.locator(`[data-dialogue-choice="${choiceId}"]`);
 

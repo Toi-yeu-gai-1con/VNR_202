@@ -2617,6 +2617,7 @@ function createStoryRegistry(levelMap) {
 
     registry[`ending:${endingId}`] = {
       id: `ending:${endingId}`,
+      collectionEndingId: endingId,
       kicker: "Hồ sơ kết cục đã chứng kiến",
       title: narrativeEnding.title,
       text: ending.copy,
@@ -4432,6 +4433,27 @@ function getActiveStorySlide() {
   return storyId ? storyRegistry[storyId] : null;
 }
 
+function getEndingCollectionOpenedAtLabel(slideData) {
+  if (!slideData?.collectionEndingId) {
+    return "";
+  }
+
+  const caseFile = endingCollection.getCaseFiles()
+    .find((entry) => entry.id === slideData.collectionEndingId);
+  if (!caseFile?.unlockedAt) {
+    return "Đã mở trước khi TVA ghi ngày";
+  }
+
+  const openedAt = new Date(caseFile.unlockedAt);
+  if (!Number.isFinite(openedAt.getTime())) {
+    return "Đã mở trước khi TVA ghi ngày";
+  }
+
+  const day = String(openedAt.getUTCDate()).padStart(2, "0");
+  const month = String(openedAt.getUTCMonth() + 1).padStart(2, "0");
+  return `Đã mở ${day}/${month}/${openedAt.getUTCFullYear()}`;
+}
+
 function getEndingCaseFileIds() {
   return endingCollection.getEntries()
     .map((endingId) => `ending:${endingId}`)
@@ -4831,7 +4853,7 @@ function updateLevelChrome() {
   canvas.setAttribute("aria-label", level.canvasLabel);
 }
 
-function renderSlideGallery(galleryItems) {
+function renderSlideGallery(galleryItems, { caseFileDate = "" } = {}) {
   slideGallery.replaceChildren();
   slideGallery.dataset.count = String(galleryItems.length);
 
@@ -4846,7 +4868,10 @@ function renderSlideGallery(galleryItems) {
 
     const caption = document.createElement("p");
     caption.className = "slide-gallery-caption";
-    caption.textContent = item.caption ?? "";
+    caption.textContent = [item.caption, caseFileDate].filter(Boolean).join(" • ");
+    if (caseFileDate) {
+      caption.dataset.caseFileDate = "true";
+    }
 
     figure.append(image, caption);
     slideGallery.append(figure);
@@ -4977,7 +5002,7 @@ function openSlide(slideData) {
   slideCaption.classList.toggle("hidden", hasMedia || !hasInlineArt);
 
   if (hasGallery) {
-    renderSlideGallery(slideData.gallery);
+    renderSlideGallery(slideData.gallery, { caseFileDate: getEndingCollectionOpenedAtLabel(slideData) });
   } else if (hasMonsterPreview) {
     renderMonsterCodexPreview(slideData.monsterPreview);
   }
