@@ -3758,6 +3758,15 @@ function getInteractionDialogue(item) {
   const scriptedDialogue = INTERACTION_DIALOGUES[item.dialogueKey ?? item.id];
 
   if (scriptedDialogue) {
+    if (item.interactionType === "lastIssueChoice") {
+      const hasCompromiseToRepair = (state.narrative.endingRisks.zone1 ?? 0) > 0;
+      return {
+        ...scriptedDialogue,
+        choices: scriptedDialogue.choices.filter(
+          (choice) => choice.id !== "return-after-compromise" || hasCompromiseToRepair
+        ),
+      };
+    }
     return scriptedDialogue;
   }
 
@@ -4265,6 +4274,12 @@ function applyNarrativeChoice(chapterId, decisionId, optionId, { deferCorruption
   return option;
 }
 
+function hasRecordedNarrativeDecision(chapterId, decisionId) {
+  return state.narrative.choiceHistory.some(
+    (entry) => entry.chapterId === chapterId && entry.decisionId === decisionId
+  );
+}
+
 function captureFinalVerdictCheckpoint(item) {
   return createFinalVerdictCheckpoint({
     levelId: state.currentLevelId,
@@ -4359,6 +4374,28 @@ function resolveZone1RecruiterChoice(choiceId, item) {
     stall: "Bạn kéo dài cuộc nói chuyện để quan sát lộ trình tuần tra, rồi giữ báo an toàn cho công nhân.",
   };
   showStoryToast(messages[choiceId] ?? "Lựa chọn của bạn đã được ghi lại.");
+  saveGameProgress();
+}
+
+function resolveZone1LastIssueChoice(choiceId, item) {
+  const option = applyNarrativeChoice("zone1", "last-issue", choiceId);
+  if (!option) {
+    return;
+  }
+
+  item.interactionType = "rewardCompass";
+  item.dialogueKey = "red-compass-reward";
+  item.prompt = "nhận Chiếc La Bàn Đỏ";
+  closeDialogueForChoice();
+  updateQuestChip();
+  updateInteractionPrompt();
+  showStoryToast(
+    choiceId === "surrender"
+      ? "Số báo cuối cùng đã bị giao nộp. La Bàn Đỏ đang chờ cậu xác nhận hậu quả của lựa chọn ấy."
+      : choiceId === "return-after-compromise"
+        ? "Cậu đã quay lại sửa phần thỏa hiệp trước đó. Hãy chốt lời hứa với La Bàn Đỏ."
+        : "Số báo cuối cùng đã vượt qua vòng vây. Hãy chốt lời hứa với La Bàn Đỏ."
+  );
   saveGameProgress();
 }
 
@@ -4548,7 +4585,7 @@ function resolveDialogueChoice(choiceId) {
   const dialogue = state.activeDialogue;
   const choice = getPendingDialogueChoices().find((entry) => entry.id === choiceId);
   const item = currentLevel().interactables.find((entry) => entry.id === dialogue?.interactionId);
-  const supportedInteraction = ["colonialRecruitment", "tvaBriefing", "tvaCaseboard", "startPapers", "compassVerdict", "splitChoice", "emblemVerdict", "rallyChoice", "augustVerdict", "temporaryLineChoice", "borderVerdict", "productionChoice", "stalledMechanismChoice", "doiMoiVerdict"].includes(item?.interactionType);
+  const supportedInteraction = ["colonialRecruitment", "tvaBriefing", "tvaCaseboard", "startPapers", "lastIssueChoice", "compassVerdict", "splitChoice", "emblemVerdict", "rallyChoice", "augustVerdict", "temporaryLineChoice", "borderVerdict", "productionChoice", "stalledMechanismChoice", "doiMoiVerdict"].includes(item?.interactionType);
 
   if (!dialogue || !choice || !item || !supportedInteraction) {
     return;
@@ -4583,6 +4620,11 @@ function resolveDialogueChoice(choiceId) {
 
   if (item.interactionType === "colonialRecruitment") {
     resolveZone1RecruiterChoice(choice.id, item);
+    return;
+  }
+
+  if (item.interactionType === "lastIssueChoice") {
+    resolveZone1LastIssueChoice(choice.id, item);
     return;
   }
 
@@ -8091,6 +8133,8 @@ function isInteractableAvailable(item) {
       return state.quests.zone1Started && !state.quests.zone1Delivered.has(item.workerId);
     case "rewardCompass":
       return state.quests.zone1Delivered.size === 3 && !state.quests.zone1RewardClaimed;
+    case "lastIssueChoice":
+      return state.quests.zone1Delivered.size === 3 && !state.quests.zone1RewardClaimed;
     case "offerBribe":
       return !item.used && !item.purified;
     case "tvaBriefing":
@@ -8185,7 +8229,18 @@ function handleSystemInteraction(item) {
         showStoryToast("Người liên lạc chỉ trao vật phẩm khi báo đã tới đủ tay người lao động.");
         return;
       }
+      if (!hasRecordedNarrativeDecision("zone1", "last-issue")) {
+        item.interactionType = "lastIssueChoice";
+        item.dialogueKey = "last-issue";
+        item.prompt = "quyết định số báo cuối cùng";
+        startDialogue(item);
+        return;
+      }
       item.interactionType = "compassVerdict";
+      item.dialogueKey = "red-compass-reward";
+      startDialogue(item);
+      return;
+    case "lastIssueChoice":
       startDialogue(item);
       return;
     case "compassVerdict":
@@ -8341,7 +8396,7 @@ function collectRelic(itemId, guidance = "") {
   }
 
   if (state.currentLevelId !== "hub") {
-    window.setTimeout(() => showZoneSummary(state.currentLevelId, itemId), 180);
+    showZoneSummary(state.currentLevelId, itemId);
   }
 
   return true;

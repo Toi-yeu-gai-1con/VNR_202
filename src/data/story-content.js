@@ -101,6 +101,18 @@ export const INTERACTION_DIALOGUES = {
       { id: "accept", label: "Nhận tiền, hứa sẽ giữ báo lại", tone: "danger" },
     ],
   },
+  "last-issue": {
+    speaker: "Người liên lạc",
+    lines: [
+      "Chỉ còn một số báo cuối cùng, trong khi lính tuần tra đang khép vòng vây. Cách cậu xử lý nó sẽ cho thấy những lựa chọn trước đó thật sự dẫn về đâu.",
+    ],
+    choices: [
+      { id: "rescue", label: "Ưu tiên đưa số báo đến tay người lao động" },
+      { id: "divert", label: "Đánh lạc hướng tuần tra để giữ đường truyền" },
+      { id: "return-after-compromise", label: "Quay lại sửa sai với người lao động" },
+      { id: "surrender", label: "Giao nộp số báo cuối cùng", tone: "danger" },
+    ],
+  },
   "red-compass-reward": {
     speaker: "Chiếc La Bàn Đỏ",
     lines: [
