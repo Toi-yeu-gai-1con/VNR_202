@@ -10,6 +10,7 @@ import { createSceneController } from "../core/scene-controller.js";
 import { createDebugOverlay } from "../debug/debug-overlay.js";
 import { createAudioSystem } from "../systems/audio-system.js";
 import { createLevelDefinitions } from "../systems/level-definitions.js";
+import { createTrainingSession } from "../systems/training-session.js";
 import { createSaveSystem } from "../systems/save-system.js";
 import { createEndingCollection } from "../systems/ending-collection.js";
 import { createGameSettingsStore, DEFAULT_GAME_SETTINGS } from "../systems/game-settings.js";
@@ -336,6 +337,7 @@ const state = {
   activeSkillEffect: null,
   activePlayerAnimation: null,
   pendingRespawn: null,
+  trainingSession: null,
   endingId: null,
   endingSummary: "",
   endingCinematic: null,
@@ -662,7 +664,92 @@ function restoreNarrativeSaveState(savedNarrative = {}) {
 }
 
 function saveGameProgress() {
+  if (state.currentLevelId === "training") {
+    return null;
+  }
   return saveSystem.save();
+}
+
+function isTrainingSessionActive() {
+  return state.currentLevelId === "training" && Boolean(state.trainingSession);
+}
+
+function applyTrainingCombatState(trainingState) {
+  state.health = trainingState.health;
+  state.stamina = trainingState.stamina;
+  state.saDoa = trainingState.saDoa;
+  state.enemyProjectiles = [];
+  state.pendingRespawn = null;
+  state.activePlayerAnimation = null;
+  state.activeSkillEffect = null;
+  state.invulnerableUntil = state.lastTimestamp + 380;
+  state.skillCooldowns.strikeReadyAt = 0;
+  state.skillCooldowns.parryReadyAt = 0;
+  state.dodgeReadyAt = 0;
+  state.dodgeEndsAt = 0;
+  state.parryEndsAt = 0;
+  state.strikeChargeStartedAt = 0;
+  state.comboStep = 0;
+  state.comboExpiresAt = 0;
+  updateProgressHud();
+}
+
+function enterTrainingSession() {
+  if (!state.trainingSession) {
+    state.trainingSession = createTrainingSession({
+      health: state.health,
+      stamina: state.stamina,
+      saDoa: state.saDoa,
+      respawnLevelId: state.respawnLevelId,
+      respawnSpawn: cloneSpawnPoint(state.respawnSpawn),
+    });
+  }
+
+  applyTrainingCombatState(state.trainingSession.enter());
+  resetLevelMonstersForRespawn("training");
+  clearPressedKeys();
+  loadLevel("training", undefined, {
+    updateRespawnCheckpoint: false,
+    save: false,
+    showTitleCard: true,
+  });
+  showStoryToast("Mô phỏng đã sẵn sàng: J tấn công, K phản đòn phát bắn, E reset bất kỳ lúc nào.");
+}
+
+function resetTrainingSession(message = "Buồng luyện tập đã khôi phục mô phỏng.") {
+  if (!state.trainingSession) {
+    return false;
+  }
+
+  applyTrainingCombatState(state.trainingSession.reset());
+  resetLevelMonstersForRespawn("training");
+  clearPressedKeys();
+  updateInteractionPrompt();
+  showStoryToast(message);
+  return true;
+}
+
+function leaveTrainingSession(spawn) {
+  const campaign = state.trainingSession?.leave();
+  state.trainingSession = null;
+
+  if (campaign) {
+    state.health = campaign.health;
+    state.stamina = campaign.stamina;
+    state.saDoa = campaign.saDoa;
+    state.respawnLevelId = campaign.respawnLevelId;
+    state.respawnSpawn = cloneSpawnPoint(campaign.respawnSpawn);
+  }
+
+  state.enemyProjectiles = [];
+  state.pendingRespawn = null;
+  state.activePlayerAnimation = null;
+  state.activeSkillEffect = null;
+  clearPressedKeys();
+  loadLevel("hub", spawn, { updateRespawnCheckpoint: false, save: false });
+  updateProgressHud();
+  saveGameProgress();
+  showStoryToast("Dữ liệu hành trình đã được khôi phục. Buồng luyện tập không làm đổi Tha hóa hay tiến trình.");
 }
 
 function loadSavedProgress() {
@@ -710,14 +797,16 @@ function continueSavedGame() {
   state.health = clamp(Number(saved.health) || PLAYER_MAX_HEALTH, 1, PLAYER_MAX_HEALTH);
   state.stamina = clamp(Number(saved.stamina) || STAMINA_MAX, 0, STAMINA_MAX);
   state.saDoa = clamp(Number(saved.saDoa) || 0, 0, SA_DOA_MAX);
-  state.respawnLevelId = levels[saved.respawnLevelId] ? saved.respawnLevelId : saved.currentLevelId;
+  const restoredLevelId = saved.currentLevelId === "training" ? "hub" : saved.currentLevelId;
+  state.trainingSession = null;
+  state.respawnLevelId = levels[saved.respawnLevelId] ? saved.respawnLevelId : restoredLevelId;
   state.respawnSpawn = cloneSpawnPoint(saved.respawnSpawn ?? levels[state.respawnLevelId].spawn);
   state.mode = "playing";
   startScreen.classList.add("hidden");
   startScreen.setAttribute("aria-hidden", "true");
   hideOpeningIntro();
   hideTutorial();
-  loadLevel(saved.currentLevelId, saved.player, { updateRespawnCheckpoint: false, save: false });
+  loadLevel(restoredLevelId, saved.player, { updateRespawnCheckpoint: false, save: false });
   showStoryToast("Đã khôi phục hành trình từ điểm lưu gần nhất.");
   syncAmbienceAudio();
 }
@@ -2270,6 +2359,7 @@ function initializeLevelRuntime() {
       monster.hurtStartedAt = 0;
       monster.deathStartedAt = 0;
       monster.deathEndsAt = 0;
+      monster.trainingResetAt = 0;
       monster.attackVariant = "sweep";
       monster.attackCount = 0;
       monster.comboFollowUpAt = 0;
@@ -2348,6 +2438,7 @@ function resetLevelMonstersForRespawn(levelId) {
     monster.hurtStartedAt = 0;
     monster.deathStartedAt = 0;
     monster.deathEndsAt = 0;
+    monster.trainingResetAt = 0;
     monster.attackVariant = "sweep";
     monster.attackCount = 0;
     monster.comboFollowUpAt = 0;
@@ -2378,6 +2469,7 @@ function resetGameplayProgress() {
   state.activeSkillEffect = null;
   state.activePlayerAnimation = null;
   state.pendingRespawn = null;
+  state.trainingSession = null;
   pendingRespawnResolve = null;
   state.endingId = null;
   state.endingSummary = "";
@@ -2486,16 +2578,23 @@ function createDebugSnapshot() {
     camera: { ...camera },
     questSummary: getZoneProgressText(state.currentLevelId),
     activeMonsterCount: (currentLevel().monsters ?? []).filter((monster) => isMonsterActive(monster)).length,
-    monsters: (currentLevel().monsters ?? []).map((monster) => ({
-      id: monster.id,
-      artKey: getMonsterArtKey(monster),
-      health: monster.health,
-      defeated: monster.defeated,
-      bossPhase: monster.bossPhase,
-      attackCount: monster.attackCount ?? 0,
-      attackVariant: monster.attackVariant,
-      comboFollowUpAt: monster.comboFollowUpAt ?? 0,
-    })),
+    monsters: (currentLevel().monsters ?? []).map((monster) => {
+      const screen = coordinateSystem.worldToScreen(monster);
+      return {
+        id: monster.id,
+        artKey: getMonsterArtKey(monster),
+        x: monster.x,
+        y: monster.y,
+        screenX: screen.x,
+        screenY: screen.y,
+        health: monster.health,
+        defeated: monster.defeated,
+        bossPhase: monster.bossPhase,
+        attackCount: monster.attackCount ?? 0,
+        attackVariant: monster.attackVariant,
+        comboFollowUpAt: monster.comboFollowUpAt ?? 0,
+      };
+    }),
     quests: {
       tvaBriefingAccepted: state.quests.tvaBriefingAccepted,
       tvaPortalTarget: state.quests.tvaPortalTarget,
@@ -5227,6 +5326,12 @@ function isTargetInRange(target, range) {
 
 function updateMonsters(deltaSeconds) {
   for (const monster of currentLevel().monsters ?? []) {
+    if (monster.trainingOpponent && monster.defeated && state.lastTimestamp >= (monster.trainingResetAt ?? Infinity)) {
+      resetLevelMonstersForRespawn("training");
+      showStoryToast("Mô phỏng đã tái lập. Hãy thử một nhịp phản đòn khác.");
+      continue;
+    }
+
     const deathStillVisible = monster.defeated && state.lastTimestamp < (monster.deathEndsAt ?? 0);
     if ((!deathStillVisible && monster.defeated) || (!monster.defeated && !isMonsterActive(monster))) {
       continue;
@@ -5252,7 +5357,7 @@ function updateMonsters(deltaSeconds) {
       monster.attackImpactAt = 0;
     }
 
-    if (distance < (monster.aggroRadius ?? 120)) {
+    if (distance < (monster.aggroRadius ?? 120) && !monster.trainingOpponent) {
       if (monster.archetype === "ranged" && distance < 104) {
         targetX = monster.x - dx;
         targetY = monster.y - dy;
@@ -5564,6 +5669,13 @@ function damageMonster(monster, amount, effects = {}) {
   const deathAnimation = MONSTER_SPRITE_CONFIG[getMonsterArtKey(monster)]?.animations?.death;
   monster.deathEndsAt = state.lastTimestamp + (deathAnimation?.frameCount ?? 6) * (deathAnimation?.frameDuration ?? 90);
   playCombatSfx("death", { volume: monster.isBoss ? 0.36 : 0.26, playbackRate: monster.isBoss ? 0.82 : 1 });
+
+  if (monster.trainingOpponent) {
+    monster.trainingResetAt = monster.deathEndsAt + 680;
+    showStoryToast("Mô phỏng đã bị vô hiệu hóa. Nó sẽ tự tái lập sau nhịp kết thúc.");
+    return;
+  }
+
   saveGameProgress();
 
   spawnMonsterDrop(monster);
@@ -5589,8 +5701,12 @@ function damagePlayer(amount, sourceName = "bóng tối", sourceMonster = null) 
     return Promise.resolve();
   }
 
+  const trainingActive = isTrainingSessionActive();
   state.invulnerableUntil = state.lastTimestamp + 820;
   state.health = Math.max(0, state.health - amount);
+  if (trainingActive) {
+    state.health = state.trainingSession.takeHit(amount)?.health ?? state.health;
+  }
   state.cameraShakeUntil = state.lastTimestamp + 180;
   state.cameraShakeStrength = 5;
   state.combatFlashUntil = state.lastTimestamp + 150;
@@ -5601,6 +5717,11 @@ function damagePlayer(amount, sourceName = "bóng tối", sourceMonster = null) 
     startPlayerAnimation("hurt", { direction: player.direction });
     playUiSound(uiSounds.hurt);
     showStoryToast(`${sourceName} gây ${amount} sát thương.`);
+    return Promise.resolve();
+  }
+
+  if (trainingActive) {
+    resetTrainingSession("Bạn đã chạm giới hạn mô phỏng. Bài tập được reset mà không ảnh hưởng hành trình.");
     return Promise.resolve();
   }
 
@@ -5826,6 +5947,10 @@ function handleLevelTransitions() {
     }
 
     if (isExitTriggered(exit)) {
+      if (state.currentLevelId === "training" && target === "hub") {
+        leaveTrainingSession(exit.spawn);
+        return true;
+      }
       loadLevel(target, exit.spawn, { showTitleCard: true });
       return true;
     }
@@ -5926,6 +6051,7 @@ function getZoneProgressText(levelId) {
       if (!getNextTvaRoute()) return `Tín vật ${state.inventory.size}/${RELIC_TARGET_COUNT}`;
       return "Chờ điều phối";
     }
+    case "training": return "Mô phỏng an toàn";
     case "village": return `Công nhân ${state.quests.zone1Delivered.size}/3`;
     case "archive": return `Mảnh ghép ${state.quests.zone2Fragments.size}/3`;
     case "crossroads": return `Lực lượng ${state.quests.zone3Recruits.size}/4`;
@@ -6361,6 +6487,13 @@ function getNavigationObjective() {
     case "hub":
       target = getHubNavigationTarget();
       break;
+    case "training": {
+      const opponent = currentLevel().monsters.find((monster) => !monster.defeated);
+      target = opponent
+        ? createMonsterNavigationTarget(opponent, "Luyện đòn và phản đòn", "#8edcf0")
+        : createInteractableNavigationTarget(getLevelInteractable("tva-training-reset"), "Reset mô phỏng", "#8edcf0");
+      break;
+    }
     case "village":
       target = getVillageNavigationTarget();
       break;
@@ -6581,6 +6714,8 @@ function isInteractableAvailable(item) {
       return !item.used && !item.purified;
     case "tvaBriefing":
     case "tvaCaseboard":
+    case "enterTraining":
+    case "resetTraining":
       return true;
     case "colonialRecruitment":
       return state.quests.zone1Started &&
@@ -6690,6 +6825,12 @@ function handleSystemInteraction(item) {
         return;
       }
       openStoryBook();
+      return;
+    case "enterTraining":
+      enterTrainingSession();
+      return;
+    case "resetTraining":
+      resetTrainingSession();
       return;
     case "colonialRecruitment":
       startDialogue(item);
@@ -7008,6 +7149,8 @@ function drawWorld() {
 
   if (state.currentLevelId === "hub") {
     drawHubWorld(currentLevel().decorations);
+  } else if (state.currentLevelId === "training") {
+    drawTrainingWorld(currentLevel().decorations);
   } else if (state.currentLevelId === "village") {
     drawPortMazeWorld(currentLevel().decorations);
   } else if (state.currentLevelId === "archive") {
@@ -7256,6 +7399,45 @@ function drawHubWorld(decorations) {
     ctx.fillStyle = `rgba(151, 190, 91, ${pulse})`;
     ctx.fillRect(signal.x - 2, signal.y - 1, 4, 3);
   }
+}
+
+function drawTrainingWorld(decorations) {
+  drawHubWorld(decorations);
+
+  const emitter = decorations.trainingEmitter;
+  if (!emitter) {
+    return;
+  }
+
+  const pulse = 0.16 + (Math.sin(state.lastTimestamp * 0.005) + 1) * 0.05;
+  ctx.save();
+  ctx.fillStyle = "rgba(26, 62, 74, 0.24)";
+  ctx.fillRect(0, 0, WORLD.width, WORLD.height);
+  ctx.restore();
+
+  const emitterGlow = ctx.createRadialGradient(emitter.x, emitter.y, 0, emitter.x, emitter.y, emitter.radius);
+  emitterGlow.addColorStop(0, "rgba(187, 240, 248, 0.22)");
+  emitterGlow.addColorStop(0.52, "rgba(84, 184, 209, 0.12)");
+  emitterGlow.addColorStop(1, "rgba(34, 91, 108, 0)");
+  ctx.save();
+  ctx.globalCompositeOperation = "screen";
+  ctx.fillStyle = emitterGlow;
+  ctx.fillRect(emitter.x - emitter.radius, emitter.y - emitter.radius, emitter.radius * 2, emitter.radius * 2);
+  ctx.restore();
+
+  ctx.save();
+  ctx.globalCompositeOperation = "screen";
+  ctx.fillStyle = `rgba(168, 235, 245, ${pulse})`;
+  for (let index = 0; index < 5; index += 1) {
+    const angle = state.lastTimestamp * 0.0022 + index * (Math.PI * 2 / 5);
+    ctx.fillRect(
+      Math.round(emitter.x + Math.cos(angle) * 48) - 1,
+      Math.round(emitter.y + Math.sin(angle) * 30) - 1,
+      3,
+      3
+    );
+  }
+  ctx.restore();
 }
 
 function drawHistoryGateSprite(gate) {
@@ -9416,6 +9598,11 @@ function drawNpc(npc) {
 }
 
 function drawObject(item) {
+  if (item.variant === "tva-training-console") {
+    drawTvaTrainingConsole(item);
+    return;
+  }
+
   if (item.variant === "tva-memory-archive") {
     drawTvaMemoryArchive(item);
     return;
@@ -9626,6 +9813,30 @@ function drawTvaMemoryArchive(item) {
   ctx.fillStyle = `rgba(127, 205, 224, ${pulse})`;
   ctx.fillRect(drawX + 27, drawY + 18, 7, 3);
   ctx.fillRect(drawX + 39, drawY + 24, 3, 3);
+  ctx.restore();
+}
+
+function drawTvaTrainingConsole(item) {
+  const desk = LIMEZU_INTERIOR_SPRITES.deskArchive;
+  const source = environmentSprites.limezu?.interiors;
+  const drawWidth = 62;
+  const drawHeight = 62;
+  const drawX = Math.round(item.x - drawWidth / 2);
+  const drawY = Math.round(item.y - drawHeight + 8);
+
+  if (!drawSpriteRect(source, desk, drawX, drawY, drawWidth, drawHeight, {
+    filter: "brightness(0.9) saturate(0.9) contrast(1.08)",
+  })) {
+    return;
+  }
+
+  const pulse = 0.32 + (Math.sin(state.lastTimestamp * 0.006 + item.x) + 1) * 0.18;
+  ctx.save();
+  ctx.globalCompositeOperation = "screen";
+  ctx.fillStyle = `rgba(139, 228, 244, ${pulse})`;
+  ctx.fillRect(drawX + 25, drawY + 17, 9, 3);
+  ctx.fillRect(drawX + 28, drawY + 23, 4, 2);
+  ctx.fillRect(drawX + 38, drawY + 25, 3, 3);
   ctx.restore();
 }
 
@@ -9930,6 +10141,21 @@ function drawMonster(monster) {
   const shadowWidth = spriteConfig?.shadowWidth ?? 20;
   const isAttacking = state.lastTimestamp < (monster.attackEndsAt ?? 0);
 
+  if (monster.trainingOpponent) {
+    const pulse = 0.72 + (Math.sin(state.lastTimestamp * 0.008) + 1) * 0.14;
+    const radius = 34;
+    const glow = ctx.createRadialGradient(monster.x, monster.y - 12, 0, monster.x, monster.y - 12, radius);
+    glow.addColorStop(0, "rgba(207, 249, 255, 0.26)");
+    glow.addColorStop(0.52, "rgba(79, 198, 220, 0.14)");
+    glow.addColorStop(1, "rgba(25, 99, 125, 0)");
+    ctx.save();
+    ctx.globalAlpha = pulse;
+    ctx.globalCompositeOperation = "screen";
+    ctx.fillStyle = glow;
+    ctx.fillRect(monster.x - radius, monster.y - 12 - radius, radius * 2, radius * 2);
+    ctx.restore();
+  }
+
   if (monster.telegraphEndsAt && state.lastTimestamp < monster.telegraphEndsAt) {
     drawMonsterTelegraph(monster);
   }
@@ -10092,6 +10318,9 @@ function drawMonsterSprite(monster, hitFlash) {
 
   const flipX = Boolean(config.flipForFacing && direction === "west");
   ctx.save();
+  if (monster.trainingOpponent) {
+    ctx.filter = "drop-shadow(0 0 5px rgba(132, 231, 245, 0.9)) brightness(1.22) saturate(0.72) hue-rotate(145deg)";
+  }
   if (flipX) {
     ctx.translate(drawX + config.drawWidth, drawY);
     ctx.scale(-1, 1);

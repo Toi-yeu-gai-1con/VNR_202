@@ -1,6 +1,6 @@
 export function createTrainingSession(campaignState) {
   const savedCampaign = { ...campaignState };
-  const safeTrainingState = { health: 36, saDoa: 0, levelId: "training" };
+  const safeTrainingState = { health: 36, stamina: 100, saDoa: 0, levelId: "training" };
   let current = null;
 
   return {
@@ -10,7 +10,7 @@ export function createTrainingSession(campaignState) {
     },
     takeHit(amount) {
       if (!current) return null;
-      current.health = Math.max(1, current.health - Math.max(0, Number(amount) || 0));
+      current.health = Math.max(0, current.health - Math.max(0, Number(amount) || 0));
       return { ...current };
     },
     addCorruption(amount) {

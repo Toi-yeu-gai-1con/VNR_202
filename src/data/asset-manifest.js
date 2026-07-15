@@ -1,5 +1,6 @@
 export const LEVEL_ASSET_GROUPS = Object.freeze({
   hub: "hub",
+  training: "zone2",
   village: "zone1",
   archive: "zone2",
   crossroads: "zone3",

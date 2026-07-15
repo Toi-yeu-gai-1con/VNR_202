@@ -350,6 +350,33 @@ test("the TVA memory archive opens only earned history", async ({ page }, testIn
   await page.screenshot({ path: testInfo.outputPath("tva-memory-archive.png"), fullPage: true });
 });
 
+test("the TVA training room uses real combat while restoring the campaign on exit", async ({ page }, testInfo) => {
+  await openDebugSession(page);
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("hub", { x: 446, y: 338, direction: "up" }));
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.damagePlayer(5, "thiết bị kiểm tra"));
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.setSaDoa(37));
+  const campaignBefore = await snapshot(page);
+
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("tva-training-console"));
+  await expect.poll(() => snapshot(page).then((state) => state.currentLevelId)).toBe("training");
+  await expect.poll(() => snapshot(page).then((state) => state.mode)).toBe("playing");
+  await expect.poll(() => snapshot(page).then((state) => state.monsters[0]?.artKey)).toBe("zone2CipherMarksman");
+  const trainingOpponent = (await snapshot(page)).monsters[0];
+  await page.evaluate((monster) => window.__CROSSROADS_DEBUG__.setPlayerPosition(monster.x - 64, monster.y + 18), trainingOpponent);
+  await page.waitForTimeout(260);
+  expect((await snapshot(page)).monsters[0]?.defeated).toBe(false);
+  await page.screenshot({ path: testInfo.outputPath("tva-training-room.png"), fullPage: true });
+
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.damagePlayer(999, "mô phỏng"));
+  await expect.poll(() => snapshot(page).then((state) => ({ health: state.health, saDoa: state.saDoa }))).toEqual({ health: 36, saDoa: 0 });
+
+  const leave = await page.evaluate(() => window.__CROSSROADS_DEBUG__.triggerExit("training-return-to-hub"));
+  expect(leave.transitioned).toBe(true);
+  expect(leave.currentLevelId).toBe("hub");
+  expect(leave.health).toBe(campaignBefore.health);
+  expect(leave.saDoa).toBe(campaignBefore.saDoa);
+});
+
 test("reported relics unlock each later TVA coordinate in campaign order", async ({ page }) => {
   await openDebugSession(page);
   await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("hub", { x: 480, y: 260, direction: "up" }));

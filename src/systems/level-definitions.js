@@ -81,6 +81,11 @@ function createHubLevel() {
         interactionType: "openMemoryArchive", interactionRadius: 50,
       },
       {
+        id: "tva-training-console", name: "Buồng luyện tập TVA", x: 446, y: 338, width: 56, height: 56,
+        kind: "object", variant: "tva-training-console", prompt: "bắt đầu mô phỏng chiến đấu",
+        interactionType: "enterTraining", interactionRadius: 50,
+      },
+      {
         id: "tva-returnee-zone1", name: "Người công nhân bến cảng", x: 334, y: 392, width: 20, height: 38,
         kind: "npc", spriteKey: "npc01", direction: "right", animation: "idle", hubReturnee: true,
         prompt: "hỏi thăm người công nhân", visibleWhen: () => Boolean(getState().quests.zone1RewardClaimed) && !getState().narrative?.branchFlags?.["zone1.lastIssueSurrendered"],
@@ -120,6 +125,83 @@ function createHubLevel() {
       { x: 710, y: 440, width: 250, height: 200 },
     ],
     decorations,
+  };
+}
+
+function createTrainingLevel() {
+  return {
+    id: "training",
+    label: "Buồng luyện tập TVA",
+    canvasLabel: "Buồng luyện tập TVA: mô phỏng phản đòn an toàn",
+    pauseTitle: "Buồng luyện tập TVA",
+    cameraZoom: 0.82,
+    spawn: { x: 184, y: 500, direction: "up" },
+    bounds: { minX: 72, maxX: 888, minY: 84, maxY: 570 },
+    aboutSlide: {
+      kicker: "Cơ quan Phương sai Thời gian",
+      title: "Buồng mô phỏng phản đòn",
+      text: "David mở một mô phỏng có kiểm soát để bạn luyện đòn thường, kỹ năng và phản đòn trước những phát bắn đã được tính nhịp. Mọi va chạm ở đây chỉ là dữ liệu tạm thời.",
+      caption: "Sức khỏe, Thể lực và Tha hóa của hành trình chính sẽ được khôi phục nguyên vẹn khi bạn rời buồng.",
+      art: "desk",
+    },
+    exits: [
+      {
+        id: "training-return-to-hub",
+        kind: "rect",
+        prompt: "rời buồng luyện tập về TVA",
+        x: 820,
+        y: 484,
+        width: 52,
+        height: 62,
+        target: "hub",
+        spawn: { x: 480, y: 430, direction: "up" },
+        portal: {
+          x: 846,
+          y: 514,
+          label: "TRỞ VỀ TVA",
+          labelWidth: 92,
+          labelOffsetY: -46,
+          drawSize: 60,
+          auraRadius: 46,
+          auraAlpha: 0.18,
+          color: "#b9e6f0",
+          glow: "#77c5da",
+        },
+      },
+    ],
+    interactables: [
+      {
+        id: "tva-training-reset", name: "Bàn điều khiển mô phỏng", x: 166, y: 172, width: 58, height: 56,
+        kind: "object", variant: "tva-training-console", prompt: "reset bài luyện tập",
+        interactionType: "resetTraining", interactionRadius: 52,
+      },
+    ],
+    monsters: [
+      {
+        id: "tva-training-hologram",
+        name: "Mô phỏng Xạ thủ Mật mã",
+        artKey: "zone2CipherMarksman",
+        archetype: "ranged",
+        x: 570,
+        y: 304,
+        width: 24,
+        height: 28,
+        maxHealth: 6,
+        damage: 2,
+        aggroRadius: 220,
+        patrolRadius: 46,
+        patrolAxis: "horizontal",
+        facing: "left",
+        attackAnimationMs: 780,
+        attackImpactDelayMs: 270,
+        trainingOpponent: true,
+      },
+    ],
+    colliders: [],
+    decorations: {
+      ...createHubDecorations(),
+      trainingEmitter: { x: 570, y: 306, radius: 78 },
+    },
   };
 }
 
@@ -1089,6 +1171,7 @@ function createDoiMoiValleyDecorations() {
 
   return {
     hub: createHubLevel(),
+    training: createTrainingLevel(),
     village: createPortMazeLevel(),
     archive: createUnityHouseLevel(),
     crossroads: createRedSquareLevel(),
