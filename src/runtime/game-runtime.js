@@ -21,6 +21,7 @@ import { INTERACTION_DIALOGUES, TVA_EMPLOYEE_DIALOGUES, RELIC_DEFINITIONS, RELIC
 import { createMiniMapRenderer } from "../rendering/minimap-renderer.js";
 import { getLoadingContent } from "../data/loading-content.js";
 import { createCoordinateSystem } from "../rendering/coordinate-system.js";
+import { drawGroundShadow } from "../rendering/ground-shadow.js";
 import { LEVEL_ASSET_GROUPS, getAssetGroupForSource, isCriticalAsset } from "../data/asset-manifest.js";
 import { BOSS_DEFINITIONS, COMBAT_DENSITY, COMBAT_ROSTER } from "../data/combat-config.js";
 import { MONSTER_ART_DEFINITIONS, MONSTER_ART_KEY_BY_ID, getMonsterStripSource, isDedicatedMonsterArtKey } from "../data/monster-art-definitions.js";
@@ -10044,8 +10045,14 @@ function drawNpc(npc) {
   const recoveredNpc = getZoneRecoveryNpcDisplay(getZoneNpcDisplay(getTvaEmployeeDisplay(npc)));
   const monsterSpriteConfig = MONSTER_SPRITE_CONFIG[recoveredNpc.artKey];
   const shadowWidth = monsterSpriteConfig?.shadowWidth ?? 14;
-  ctx.fillStyle = "rgba(11, 13, 16, 0.35)";
-  ctx.fillRect(recoveredNpc.x - shadowWidth / 2, recoveredNpc.y + 8, shadowWidth, 4);
+  drawGroundShadow(ctx, {
+    x: recoveredNpc.x,
+    y: recoveredNpc.y + 10,
+    width: shadowWidth,
+    height: 4,
+    activity: recoveredNpc.animation,
+    color: "11, 13, 16",
+  });
 
   if (monsterSpriteConfig && drawMonsterSprite({
     ...recoveredNpc,
@@ -10646,8 +10653,14 @@ function drawMonster(monster) {
     drawMonsterTelegraph(monster);
   }
 
-  ctx.fillStyle = "rgba(12, 14, 18, 0.28)";
-  ctx.fillRect(monster.x - shadowWidth / 2, monster.y + 10, shadowWidth, 4);
+  drawGroundShadow(ctx, {
+    x: monster.x,
+    y: monster.y + 12,
+    width: shadowWidth,
+    height: 4,
+    activity: monster.animationState,
+    airborne: monster.knockbackRemaining ? 0.28 : 0,
+  });
 
   const drewSprite = drawMonsterSprite(monster, hitFlash);
   if (!drewSprite && !artKey.startsWith("zone1") && !isDedicatedMonsterArtKey(artKey)) {
@@ -11170,8 +11183,15 @@ function drawPlayer() {
   ctx.translate(Math.round(playerScreen.x), Math.round(playerScreen.y));
   ctx.scale(actorScale * camera.zoom, actorScale * camera.zoom);
 
-  ctx.fillStyle = "rgba(10, 12, 16, 0.32)";
-  ctx.fillRect(-7, 9, 14, 4);
+  drawGroundShadow(ctx, {
+    x: 0,
+    y: 11,
+    width: 14,
+    height: 4,
+    activity: player.isMoving ? "walk" : "idle",
+    airborne: state.lastTimestamp < state.invulnerableUntil ? 0.12 : 0,
+    color: "10, 12, 16",
+  });
 
   const attackProgress = getPlayerAttackProgress();
 
