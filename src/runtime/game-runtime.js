@@ -7277,7 +7277,8 @@ function drawDialoguePortrait() {
 function drawCombatFeedback() {
   if (state.lastTimestamp < state.combatFlashUntil) {
     const progress = (state.combatFlashUntil - state.lastTimestamp) / 150;
-    ctx.fillStyle = `rgba(221, 73, 73, ${0.16 * clamp(progress, 0, 1)})`;
+    const flashStrength = state.settings.reducedMotion ? 0.055 : 0.16;
+    ctx.fillStyle = `rgba(221, 73, 73, ${flashStrength * clamp(progress, 0, 1)})`;
     ctx.fillRect(0, 0, VIEWPORT.width, VIEWPORT.height);
   }
 

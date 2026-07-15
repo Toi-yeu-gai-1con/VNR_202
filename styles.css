@@ -109,6 +109,24 @@ button {
   filter: contrast(1.03) saturate(0.95);
 }
 
+:root[data-reduced-motion="true"] .game-frame.glitch-active::before {
+  opacity: 0.08;
+  animation: none;
+}
+
+:root[data-reduced-motion="true"] .game-frame.glitch-active::after {
+  opacity: 0;
+  animation: none;
+}
+
+:root[data-reduced-motion="true"] .game-frame.glitch-active #game-canvas {
+  filter: none;
+}
+
+:root[data-reduced-motion="true"] .corruption-warning.is-visible {
+  animation: none;
+}
+
 #game-canvas {
   width: 100%;
   height: 100%;
