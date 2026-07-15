@@ -620,6 +620,28 @@ html[data-text-scale="large"] .tutorial-copy {
   font-size: 1.2em;
 }
 
+html[data-text-scale="large"] .level-chip,
+html[data-text-scale="large"] .quest-chip,
+html[data-text-scale="large"] .action-hint,
+html[data-text-scale="large"] .combat-status,
+html[data-text-scale="large"] .story-toast,
+html[data-text-scale="large"] .sound-caption,
+html[data-text-scale="large"] .zone-title-period,
+html[data-text-scale="large"] .zone-title-question,
+html[data-text-scale="large"] .zone-title-source,
+html[data-text-scale="large"] .slide-title,
+html[data-text-scale="large"] .end-summary {
+  font-size: 1.16em;
+  line-height: 1.35;
+}
+
+html[data-text-scale="large"] .zone-title-card,
+html[data-text-scale="large"] .slide-card,
+html[data-text-scale="large"] .end-card {
+  max-height: min(90dvh, 760px);
+  overflow-y: auto;
+}
+
 html[data-reduced-motion="true"] *,
 html[data-reduced-motion="true"] *::before,
 html[data-reduced-motion="true"] *::after {
