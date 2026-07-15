@@ -119,6 +119,7 @@ export function createSaveSystem({
         unlockedStoryIds: [...state.unlockedStoryIds],
         completedZones: [...state.completedZones],
         difficulty: state.difficulty,
+        activeChallengeId: typeof state.activeChallengeId === "string" ? state.activeChallengeId : null,
         tutorialSeen: state.tutorialSeen,
         hubEpilogueEndingId: typeof state.hubEpilogueEndingId === "string" ? state.hubEpilogueEndingId : null,
         runStats: createRunStats(state.runStats),
@@ -149,6 +150,7 @@ export function createSaveSystem({
         version,
         narrative: serializeNarrativeState(saved.narrative),
         runStats: createRunStats(saved.runStats),
+        activeChallengeId: typeof saved.activeChallengeId === "string" ? saved.activeChallengeId : null,
       };
     } catch {
       return null;

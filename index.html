@@ -50,6 +50,7 @@
                 <span class="status-label">Mục tiêu</span>
                 <div id="quest-chip" class="hud-chip quest-chip">Quest Nav: Đang xác định mục tiêu...</div>
               </div>
+              <div id="challenge-chip" class="hud-chip challenge-chip hidden" aria-live="polite" aria-hidden="true"></div>
             </div>
             <div class="action-status-grid">
               <div class="hud-chip meter-chip">
@@ -118,6 +119,17 @@
             <button class="pixel-button difficulty-button is-selected" type="button" data-difficulty="normal">Tiêu chuẩn</button>
             <button class="pixel-button difficulty-button" type="button" data-difficulty="challenge">Thử thách</button>
           </div>
+          <details id="optional-challenge-controls" class="optional-challenge-controls">
+            <summary>Thử thách tùy chọn</summary>
+            <p>Chỉ ghi nhận cách bạn chơi; không thay đổi độ khó hay chỉ số.</p>
+            <div class="optional-challenge-buttons" role="group" aria-label="Chọn một thử thách tùy chọn">
+              <button class="pixel-button optional-challenge-button is-selected" type="button" data-optional-challenge="">Không chọn</button>
+              <button class="pixel-button optional-challenge-button" type="button" data-optional-challenge="no-damage">Không một vết thương</button>
+              <button class="pixel-button optional-challenge-button" type="button" data-optional-challenge="low-corruption">Giữ hồ sơ trong sáng</button>
+              <button class="pixel-button optional-challenge-button" type="button" data-optional-challenge="restraint">Lời nói có trọng lượng</button>
+              <button class="pixel-button optional-challenge-button" type="button" data-optional-challenge="zone3a-timing">Nắm đúng thời cơ</button>
+            </div>
+          </details>
           <button id="start-button" class="pixel-button hero-button" type="button">Bắt đầu hành trình</button>
           <button id="continue-button" class="pixel-button hero-button hidden" type="button">Tiếp tục hành trình</button>
         </div>

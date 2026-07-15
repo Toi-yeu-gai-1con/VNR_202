@@ -18,6 +18,38 @@ async function snapshot(page) {
   return page.evaluate(() => window.__CROSSROADS_DEBUG__.getSnapshot());
 }
 
+test("an optional challenge is selected before the run and reports a clear failure in the HUD", async ({ page }, testInfo) => {
+  await page.goto("/?debugTools=1");
+  await page.waitForFunction(() => Boolean(window.__CROSSROADS_DEBUG__));
+  await page.locator("#optional-challenge-controls summary").click();
+  const challengeButton = page.locator('[data-optional-challenge="no-damage"]');
+  await challengeButton.click();
+  await expect(challengeButton).toHaveAttribute("aria-pressed", "true");
+
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.beginSession());
+  await expect(page.locator("#tutorial-overlay")).toBeVisible();
+  for (let step = 0; step < 3; step += 1) {
+    await page.locator("#tutorial-next-button").click();
+  }
+
+  const challengeChip = page.locator("#challenge-chip");
+  await expect(challengeChip).toBeVisible();
+  await expect(challengeChip).toContainText("Không một vết thương");
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.damagePlayer(1, "Playwright"));
+  await expect(challengeChip).toContainText("Thất bại");
+  await page.screenshot({ path: testInfo.outputPath("optional-challenge-hud.png"), fullPage: true });
+});
+
+test("optional challenge selection remains usable on a compact viewport", async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/?debugTools=1");
+  await page.waitForFunction(() => Boolean(window.__CROSSROADS_DEBUG__));
+  await page.locator("#optional-challenge-controls summary").click();
+  await page.locator('[data-optional-challenge="low-corruption"]').click();
+  await expect(page.locator('[data-optional-challenge="low-corruption"]')).toHaveAttribute("aria-pressed", "true");
+  await page.screenshot({ path: testInfo.outputPath("optional-challenge-mobile-select.png"), fullPage: true });
+});
+
 async function advanceDialogueToChoice(page, choiceId) {
   const choice = page.locator(`[data-dialogue-choice="${choiceId}"]`);
 

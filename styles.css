@@ -404,6 +404,23 @@ button {
   min-height: 30px;
 }
 
+.challenge-chip {
+  grid-column: 1 / -1;
+  min-height: 24px;
+  padding: 6px 8px;
+  background: rgba(224, 208, 158, 0.96);
+  color: #29241e;
+  font-size: clamp(0.66rem, 1vw, 0.8rem);
+}
+
+.challenge-chip[data-status="failed"] {
+  background: rgba(223, 138, 118, 0.97);
+}
+
+.challenge-chip[data-status="completed"] {
+  background: rgba(147, 207, 163, 0.97);
+}
+
 .prompt {
   min-width: min(100%, 224px);
   background: rgba(219, 194, 132, 0.96);
@@ -618,6 +635,45 @@ button {
   image-rendering: crisp-edges;
 }
 
+.optional-challenge-controls {
+  width: min(470px, 100%);
+  margin: 9px auto 0;
+  color: #ffe7b1;
+  font-size: clamp(0.68rem, 1.16vw, 0.82rem);
+  text-align: left;
+}
+
+.optional-challenge-controls summary {
+  cursor: pointer;
+  color: #f8d57e;
+  text-align: center;
+}
+
+.optional-challenge-controls p {
+  margin: 7px 0;
+  color: #eadfc4;
+  line-height: 1.35;
+  text-align: center;
+}
+
+.optional-challenge-buttons {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.optional-challenge-button {
+  min-width: 0;
+  padding: 8px 5px;
+  font-size: clamp(0.62rem, 1.08vw, 0.74rem);
+}
+
+.optional-challenge-button.is-selected {
+  filter: brightness(1.18) saturate(1.16);
+  outline: 2px solid rgba(255, 231, 166, 0.82);
+  outline-offset: 2px;
+}
+
 .boss-status {
   position: absolute;
   top: 12px;
@@ -777,6 +833,7 @@ html[data-text-scale="large"] .tutorial-copy {
 
 html[data-text-scale="large"] .level-chip,
 html[data-text-scale="large"] .quest-chip,
+html[data-text-scale="large"] .challenge-chip,
 html[data-text-scale="large"] .action-hint,
 html[data-text-scale="large"] .combat-status,
 html[data-text-scale="large"] .story-toast,

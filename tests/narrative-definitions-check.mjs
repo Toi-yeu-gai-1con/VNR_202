@@ -59,4 +59,10 @@ for (const [zoneId, confirmationFlag] of [["zone3a", "zone3a.badConfirmed"], ["z
   );
 }
 
+const zone3aPreparation = NARRATIVE_CHOICE_DEFINITIONS.zone3a
+  .find((choice) => choice.id === "rally-strategy")
+  .options.find((option) => option.id === "prepare-network");
+assert.equal(zone3aPreparation.themeScores?.timing, 1, "Zone 3A preparation records the schema-owned timing theme score.");
+assert.equal(zone3aPreparation.themeScores?.opportunity, undefined, "Zone 3A does not write an untracked opportunity score.");
+
 console.log("PASS: chronology, choice consequences, ending catalog, and source links are data-owned.");

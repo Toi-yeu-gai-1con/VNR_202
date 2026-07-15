@@ -157,8 +157,8 @@ export const NARRATIVE_CHOICE_DEFINITIONS = Object.freeze({
       id: "rally-strategy",
       title: "Chiến lược tập hợp lực lượng",
       options: Object.freeze([
-        { id: "prepare-network", label: "Củng cố liên lạc và chuẩn bị lực lượng", branchFlags: { "zone3a.preparedNetwork": true }, themeScores: { solidarity: 1, opportunity: 1 } },
-        { id: "coordinate-moment", label: "Phối hợp lực lượng để sẵn sàng nắm thời cơ", branchFlags: { "zone3a.coordinatedMoment": true }, themeScores: { solidarity: 1, opportunity: 1 } },
+        { id: "prepare-network", label: "Củng cố liên lạc và chuẩn bị lực lượng", branchFlags: { "zone3a.preparedNetwork": true }, themeScores: { solidarity: 1, timing: 1 } },
+        { id: "coordinate-moment", label: "Phối hợp lực lượng để sẵn sàng nắm thời cơ", branchFlags: { "zone3a.coordinatedMoment": true }, themeScores: { solidarity: 1, timing: 1 } },
         { id: "fragment-rally", label: "Chia nhỏ lực lượng để mỗi nhóm tự lo an toàn", branchFlags: { "zone3a.fragmentedRally": true }, endingRisks: { zone3a: 1 }, corruption: 8 },
       ]),
     },
@@ -166,7 +166,7 @@ export const NARRATIVE_CHOICE_DEFINITIONS = Object.freeze({
       id: "august-verdict",
       title: "Thời cơ Tháng Tám",
       options: Object.freeze([
-        { id: "protect-moment", label: "Giữ liên lạc và cùng hành động", branchFlags: { "zone3a.momentProtected": true }, themeScores: { opportunity: 1 } },
+        { id: "protect-moment", label: "Giữ liên lạc và cùng hành động", branchFlags: { "zone3a.momentProtected": true }, themeScores: { timing: 1 } },
         { id: "repair-fragment", label: "Hàn gắn sự phân tán trước khi thời cơ qua đi", branchFlags: { "zone3a.repairedRally": true }, endingRisks: { zone3a: -1 }, themeScores: { solidarity: 1 }, corruption: 4 },
         { id: "confirm-delay", label: "Chấp nhận để lực lượng tan tác", branchFlags: { "zone3a.badConfirmed": true }, endingRisks: { zone3a: 2 }, corruption: 10 },
       ]),

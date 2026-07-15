@@ -12,6 +12,8 @@ import { createAudioSystem } from "../systems/audio-system.js";
 import { createPortalTransition } from "../systems/portal-transition.js";
 import { createRunStats, createRunSummary, recordRunStat } from "../systems/run-summary.js";
 import { createFinalRunReport } from "../systems/final-run-report.js";
+import { getOptionalChallengeDefinition } from "../data/optional-challenge-definitions.js";
+import { evaluateOptionalChallenge } from "../systems/optional-challenge.js";
 import { ACHIEVEMENT_DEFINITIONS, getEarnedAchievementIds } from "../data/achievement-definitions.js";
 import { createAchievementCollection } from "../systems/achievement-collection.js";
 import { createLevelDefinitions } from "../systems/level-definitions.js";
@@ -66,6 +68,7 @@ const endOverlay = document.getElementById("end-overlay");
 const interactionPrompt = document.getElementById("interaction-prompt");
 const levelChip = document.getElementById("level-chip");
 const questChip = document.getElementById("quest-chip");
+const challengeChip = document.getElementById("challenge-chip");
 const pauseTitle = document.getElementById("pause-title");
 const storyBookButton = document.getElementById("story-book-button");
 const storyBookCount = document.getElementById("story-book-count");
@@ -151,6 +154,7 @@ const zoneTitleSource = document.getElementById("zone-title-source");
 const zoneTitleContinueButton = document.getElementById("zone-title-continue-button");
 const combatStatus = document.getElementById("combat-status");
 const difficultyControls = document.getElementById("difficulty-controls");
+const optionalChallengeControls = document.getElementById("optional-challenge-controls");
 
 const slideKicker = document.getElementById("slide-kicker");
 const slideTitle = document.getElementById("slide-title");
@@ -379,6 +383,8 @@ const state = {
   comboStep: 0,
   comboExpiresAt: 0,
   difficulty: "normal",
+  activeChallengeId: null,
+  challengeStatus: null,
   weakenedUntil: 0,
   enemyProjectiles: [],
   invulnerableUntil: 0,
@@ -922,6 +928,57 @@ function setDifficulty(difficulty) {
   });
 }
 
+function getActiveChallengeResult(isRunComplete = false) {
+  return evaluateOptionalChallenge(state.activeChallengeId, {
+    runStats: state.runStats,
+    narrative: state.narrative,
+    isRunComplete,
+  });
+}
+
+function updateOptionalChallengeHud({ announce = false, isRunComplete = false } = {}) {
+  if (!challengeChip) {
+    return;
+  }
+
+  const definition = getOptionalChallengeDefinition(state.activeChallengeId);
+  const result = getActiveChallengeResult(isRunComplete);
+  if (!definition || !result) {
+    challengeChip.classList.add("hidden");
+    challengeChip.setAttribute("aria-hidden", "true");
+    delete challengeChip.dataset.status;
+    state.challengeStatus = null;
+    return;
+  }
+
+  const statusLabel = {
+    tracking: "Đang theo dõi",
+    completed: "Đã hoàn thành",
+    failed: "Thất bại",
+  }[result.status] ?? "Đang theo dõi";
+  const previousStatus = state.challengeStatus;
+  state.challengeStatus = result.status;
+  challengeChip.textContent = `${definition.title}: ${statusLabel} • ${result.progressLabel}`;
+  challengeChip.dataset.status = result.status;
+  challengeChip.classList.remove("hidden");
+  challengeChip.setAttribute("aria-hidden", "false");
+
+  if (announce && result.status === "failed" && previousStatus !== "failed") {
+    showStoryToast(`${definition.title}: ${result.failure}`);
+  }
+}
+
+function setOptionalChallenge(id) {
+  state.activeChallengeId = getOptionalChallengeDefinition(id)?.id ?? null;
+  state.challengeStatus = null;
+  optionalChallengeControls?.querySelectorAll("[data-optional-challenge]").forEach((button) => {
+    const selected = button.dataset.optionalChallenge === (state.activeChallengeId ?? "");
+    button.classList.toggle("is-selected", selected);
+    button.setAttribute("aria-pressed", String(selected));
+  });
+  updateOptionalChallengeHud();
+}
+
 function continueSavedGame() {
   const saved = loadSavedProgress();
   if (!saved) {
@@ -937,6 +994,7 @@ function continueSavedGame() {
   state.unlockedStoryIds = new Set(saved.unlockedStoryIds ?? []);
   state.completedZones = new Set(saved.completedZones ?? []);
   setDifficulty(saved.difficulty ?? "normal");
+  setOptionalChallenge(saved.activeChallengeId);
   state.tutorialSeen = Boolean(saved.tutorialSeen);
   state.health = clamp(Number(saved.health) || PLAYER_MAX_HEALTH, 1, PLAYER_MAX_HEALTH);
   state.stamina = clamp(Number(saved.stamina) || STAMINA_MAX, 0, STAMINA_MAX);
@@ -1123,9 +1181,16 @@ difficultyControls.addEventListener("click", (event) => {
     setDifficulty(button.dataset.difficulty);
   }
 });
+optionalChallengeControls?.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-optional-challenge]");
+  if (button) {
+    setOptionalChallenge(button.dataset.optionalChallenge);
+  }
+});
 document.addEventListener("fullscreenchange", updateFullscreenButton);
 updateFullscreenButton();
 updateSoundButton();
+setOptionalChallenge(null);
 refreshContinueButton();
 
 assetManager.subscribe((event) => {
@@ -2766,12 +2831,13 @@ function resetGameplayProgress() {
   state.quests = createQuestState();
   state.narrative = createNarrativeState();
   state.runStats = createRunStats();
+  state.challengeStatus = null;
   initializeLevelRuntime();
   setRespawnCheckpoint("hub");
   updateProgressHud();
 }
 
-function updateProgressHud() {
+function updateProgressHud({ announceChallenge = false } = {}) {
   const hpPercent = (state.health / PLAYER_MAX_HEALTH) * 100;
   const saDoaPercent = (state.saDoa / SA_DOA_MAX) * 100;
 
@@ -2784,6 +2850,7 @@ function updateProgressHud() {
   updateBossStatus();
   updateCombatStatus();
   updateCorruptionEffects();
+  updateOptionalChallengeHud({ announce: announceChallenge });
 }
 
 function getEngagedBoss() {
@@ -2893,6 +2960,7 @@ function createDebugSnapshot() {
     health: state.health,
     saDoa: state.saDoa,
     inventory: Array.from(state.inventory),
+    optionalChallenge: getActiveChallengeResult(),
     narrative: {
       choices: { ...state.narrative.choices },
       choiceHistory: state.narrative.choiceHistory.map((entry) => ({ ...entry })),
@@ -3958,6 +4026,7 @@ function applyNarrativeChoice(chapterId, decisionId, optionId) {
     chapterId,
   });
   recordRunStat(state.runStats, "choicesMade");
+  updateOptionalChallengeHud({ announce: true });
   refreshAchievements();
 
   if (option.corruption) {
@@ -5268,7 +5337,11 @@ function updateEndingRunReport() {
     narrative: state.narrative,
     difficulty: state.difficulty,
   });
-  endRunOverview.textContent = `${report.ending.kind}: ${report.ending.label} • ${report.durationLabel} • ${report.challenge.label}`;
+  const optionalChallenge = getActiveChallengeResult(true);
+  const optionalSummary = optionalChallenge
+    ? ` • ${getOptionalChallengeDefinition(optionalChallenge.id)?.title}: ${optionalChallenge.status === "completed" ? "hoàn thành" : "chưa hoàn thành"}`
+    : "";
+  endRunOverview.textContent = `${report.ending.kind}: ${report.ending.label} • ${report.durationLabel} • ${report.challenge.label}${optionalSummary}`;
   endRunResolution.textContent = `${report.resolution.label} • ${report.corruptionLabel}`;
   replaceEndingReportList(
     endRunPeople,
@@ -5860,6 +5933,7 @@ function useStrikeSkill(isCharged = false) {
 
   state.skillCooldowns.strikeReadyAt = state.lastTimestamp + STRIKE_COOLDOWN_MS;
   recordRunStat(state.runStats, "strikes");
+  updateOptionalChallengeHud({ announce: true });
   state.skillReadySoundArmed.strike = true;
   state.comboStep = state.lastTimestamp <= state.comboExpiresAt ? (state.comboStep % 3) + 1 : 1;
   state.comboExpiresAt = state.lastTimestamp + 700;
@@ -6389,11 +6463,11 @@ function damagePlayer(amount, sourceName = "bóng tối", sourceMonster = null) 
   state.cameraShakeUntil = state.lastTimestamp + 180;
   state.cameraShakeStrength = 5;
   state.combatFlashUntil = state.lastTimestamp + 150;
-  updateProgressHud();
   playCombatSfx("playerHurt", { volume: 0.68, playbackRate: 0.96 + Math.random() * 0.08 });
   if (!trainingActive) {
     recordRunStat(state.runStats, "damageTaken", amount);
   }
+  updateProgressHud({ announceChallenge: true });
 
   if (state.health > 0) {
     startPlayerAnimation("hurt", { direction: player.direction });
@@ -7745,7 +7819,7 @@ function collectRelic(itemId, guidance = "") {
 function adjustSaDoa(delta, message = "") {
   state.saDoa = clamp(state.saDoa + delta, 0, SA_DOA_MAX);
   state.runStats.maxCorruption = Math.max(state.runStats.maxCorruption, state.saDoa);
-  updateProgressHud();
+  updateProgressHud({ announceChallenge: true });
   saveGameProgress();
 
   if (message) {
@@ -7762,7 +7836,7 @@ function triggerBadEnding(summary) {
   state.runStats.maxCorruption = SA_DOA_MAX;
   state.endingId = "bad";
   state.endingSummary = summary;
-  updateProgressHud();
+  updateProgressHud({ announceChallenge: true });
   showEndOverlay();
 }
 
