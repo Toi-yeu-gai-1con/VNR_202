@@ -119,6 +119,7 @@ export function createSaveSystem({
         completedZones: [...state.completedZones],
         difficulty: state.difficulty,
         tutorialSeen: state.tutorialSeen,
+        hubEpilogueEndingId: typeof state.hubEpilogueEndingId === "string" ? state.hubEpilogueEndingId : null,
         quests: serializeQuestState(),
         narrative: serializeNarrativeState(state.narrative),
         runtime: getRuntimeState(),

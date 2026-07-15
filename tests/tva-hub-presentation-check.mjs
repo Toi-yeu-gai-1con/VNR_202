@@ -24,4 +24,18 @@ const converged = getTvaHubPresentation({
 });
 assert.equal(converged.stability, "converged", "Five relics with controlled corruption unlock the convergence state.");
 
+const goodEpilogue = getTvaHubPresentation({
+  inventory: new Set(["red-compass", "unified-emblem", "vietminh-thread", "healed-map", "doi-moi-gear"]),
+  corruption: 18,
+  endingId: "good",
+});
+assert.equal(goodEpilogue.epilogue.kind, "good", "A completed good ending gives TVA a distinct restored epilogue state.");
+assert.equal(goodEpilogue.epilogue.davidLine.includes("trở về"), true, "David's post-ending line explains the restored hub without revealing a future route.");
+
+const neutralEpilogue = getTvaHubPresentation({ endingId: "neutral" });
+assert.equal(neutralEpilogue.epilogue.kind, "neutral", "Neutral has a separate, reflective TVA epilogue rather than reusing good-ending treatment.");
+
+const badEpilogue = getTvaHubPresentation({ endingId: "zone1-lost-compass" });
+assert.equal(badEpilogue.epilogue.kind, "fractured", "A recovered bad-ending branch remains visibly archived at TVA after checkpoint recovery.");
+
 console.log("PASS: TVA hub presentation exposes only collected relics and reflects stabilization/corruption.");

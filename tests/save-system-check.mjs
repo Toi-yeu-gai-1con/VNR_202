@@ -13,6 +13,7 @@ const state = {
   inventory: new Set(["relic"]),
   unlockedStoryIds: new Set(["story"]),
   completedZones: new Set(["hub"]),
+  hubEpilogueEndingId: "good",
   difficulty: "normal",
   tutorialSeen: true,
   quests: { tvaBriefingAccepted: true, tvaPortalTarget: "village", tvaTrackedChapterId: "zone1", tvaReportedRelics: new Set(["red-compass"]), zone1Started: true, zone1Delivered: new Set(["worker-1"]), zone1RewardClaimed: false, zone1SoldierDecision: "refused", zone2Fragments: new Set(), zone2TowerActivated: false, zone2RewardClaimed: false, zone3Recruits: new Set(), zone3ThreadClaimed: false, zone3HamletsFreed: new Set(), zone3BossDefeated: false, zone3MapClaimed: false, zone4Barriers: new Set(), zone4Farmers: new Set(), zone4GearClaimed: false },
@@ -38,6 +39,7 @@ assert.equal(loaded.quests.tvaPortalTarget, "village", "The active dispatch port
 assert.equal(loaded.quests.tvaTrackedChapterId, "zone1", "The selected TVA caseboard objective persists.");
 assert.deepEqual(loaded.quests.tvaReportedRelics, ["red-compass"], "Reported relics serialize as an array.");
 assert.equal(loaded.quests.zone1SoldierDecision, "refused", "Dialogue choices persist with quest progress.");
+assert.equal(loaded.hubEpilogueEndingId, "good", "The current campaign preserves its TVA epilogue after an ending.");
 
 state.quests.zone1Delivered = new Set();
 levels.hub.interactables[0].collected = false;

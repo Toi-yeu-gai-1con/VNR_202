@@ -684,3 +684,17 @@ for (const endingId of ["good", "neutral", "bad", "secret-corruption"]) {
     await page.screenshot({ path: testInfo.outputPath(`${endingId}-ending.png`), fullPage: true });
   });
 }
+
+test("a completed good ending returns to the TVA epilogue instead of silently resetting to the title screen", async ({ page }, testInfo) => {
+  await page.goto("/?debugTools=1&debugEnding=good");
+  await page.waitForFunction(() => Boolean(window.__CROSSROADS_DEBUG__));
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.completeEndingCinematic());
+  await expect(page.locator("#end-overlay")).toHaveAttribute("data-cinematic", "complete");
+  await expect(page.locator("#return-start-button")).toHaveText("Về TVA");
+
+  await page.locator("#return-start-button").click();
+  await expect(page.locator("#end-overlay")).toBeHidden();
+  await expect.poll(() => snapshot(page).then((state) => state.currentLevelId)).toBe("hub");
+  await expect.poll(() => snapshot(page).then((state) => state.hubEpilogue?.kind)).toBe("good");
+  await page.screenshot({ path: testInfo.outputPath("good-ending-tva-epilogue.png"), fullPage: true });
+});

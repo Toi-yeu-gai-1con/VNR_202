@@ -341,6 +341,7 @@ const state = {
   trainingSession: null,
   endingId: null,
   endingSummary: "",
+  hubEpilogueEndingId: null,
   endingCinematic: null,
   badEndingRecovery: null,
   tutorialStep: 0,
@@ -798,6 +799,7 @@ function continueSavedGame() {
   state.health = clamp(Number(saved.health) || PLAYER_MAX_HEALTH, 1, PLAYER_MAX_HEALTH);
   state.stamina = clamp(Number(saved.stamina) || STAMINA_MAX, 0, STAMINA_MAX);
   state.saDoa = clamp(Number(saved.saDoa) || 0, 0, SA_DOA_MAX);
+  state.hubEpilogueEndingId = typeof saved.hubEpilogueEndingId === "string" ? saved.hubEpilogueEndingId : null;
   const restoredLevelId = saved.currentLevelId === "training" ? "hub" : saved.currentLevelId;
   state.trainingSession = null;
   state.respawnLevelId = levels[saved.respawnLevelId] ? saved.respawnLevelId : restoredLevelId;
@@ -2474,6 +2476,7 @@ function resetGameplayProgress() {
   pendingRespawnResolve = null;
   state.endingId = null;
   state.endingSummary = "";
+  state.hubEpilogueEndingId = null;
   state.endingCinematic = null;
   state.badEndingRecovery = null;
   state.completedZones.clear();
@@ -2546,6 +2549,11 @@ function createDebugSnapshot() {
     currentLevelId: state.currentLevelId,
     respawnLevelId: state.respawnLevelId,
     endingId: state.endingId,
+    hubEpilogue: getTvaHubPresentation({
+      inventory: state.inventory,
+      corruption: state.saDoa,
+      endingId: state.hubEpilogueEndingId,
+    }).epilogue,
     badEndingRecovery: state.badEndingRecovery
       ? {
           phase: state.badEndingRecovery.phase,
@@ -2891,11 +2899,13 @@ function applyDebugEndingFromUrl() {
       : "Preview Bad Ending được mở bằng ?debugEnding=bad.";
 
   state.inventory.clear();
+  state.quests.tvaBriefingAccepted = true;
 
   if (endingId === "good" || endingId === "neutral") {
     for (const relicId of REQUIRED_RELIC_IDS) {
       state.inventory.add(relicId);
     }
+    state.completedZones = new Set(["village", "archive", "crossroads", "spring"]);
     state.saDoa = endingId === "neutral" ? 42 : 18;
   } else {
     state.saDoa = SA_DOA_MAX;
@@ -3170,6 +3180,19 @@ function getInteractionDialogue(item) {
 function getTvaEmployeeDialogue() {
   if (!state.quests.tvaBriefingAccepted) {
     return TVA_EMPLOYEE_DIALOGUES.introduction;
+  }
+
+  const epilogue = getTvaHubPresentation({
+    inventory: state.inventory,
+    corruption: state.saDoa,
+    endingId: state.hubEpilogueEndingId,
+  }).epilogue;
+  if (epilogue) {
+    return {
+      speaker: "David",
+      storyId: null,
+      lines: [{ speaker: "David", text: epilogue.davidLine }],
+    };
   }
 
   const activeRoute = getTvaRoute(state.quests.tvaPortalTarget);
@@ -4384,7 +4407,20 @@ function handleReturnFromEnding() {
     return;
   }
 
-  returnToStartScreen();
+  returnToTvaHubAfterEnding(state.endingId);
+}
+
+function returnToTvaHubAfterEnding(endingId) {
+  state.hubEpilogueEndingId = endingId;
+  state.mode = "playing";
+  state.activeInteractionId = null;
+  state.endingId = null;
+  state.endingSummary = "";
+  state.quests.tvaPortalTarget = null;
+  clearPressedKeys();
+  hideEndOverlay();
+  loadLevel("hub", undefined, { showTitleCard: false });
+  showStoryToast("TVA đã lưu hồ sơ kết thúc. David đang chờ ở phòng điều phối.");
 }
 
 function createEndingCinematicState(endingId) {
@@ -4538,6 +4574,7 @@ function restoreBadEndingCheckpoint() {
     state.respawnSpawn ?? levels[checkpointLevelId]?.spawn ?? levels.hub.spawn
   );
 
+  const recoveredEndingId = state.endingId;
   state.health = PLAYER_MAX_HEALTH;
   state.stamina = STAMINA_MAX;
   state.saDoa = Math.min(BAD_ENDING_RECOVERY.corruptionAfterReset, SA_DOA_BAD_ENDING - 1);
@@ -4559,6 +4596,7 @@ function restoreBadEndingCheckpoint() {
   clearPressedKeys();
   resetLevelMonstersForRespawn(checkpointLevelId);
   hideEndOverlay();
+  state.hubEpilogueEndingId = recoveredEndingId;
   state.endingId = null;
   state.endingSummary = "";
   state.mode = "playing";
@@ -4607,6 +4645,7 @@ function showEndOverlay() {
     state.endingSummary || `Tín vật: ${state.inventory.size}/${RELIC_TARGET_COUNT} • Tha hóa: ${state.saDoa}%`;
   updateEndingArt(ending);
   endOverlay.dataset.ending = state.endingId ?? "bad";
+  returnStartButton.textContent = isBadEndingId(state.endingId) ? "David đang hiệu chỉnh" : "Về TVA";
   endOverlay.setAttribute("aria-label", ending.title);
   endOverlay.classList.remove("hidden");
   endOverlay.setAttribute("aria-hidden", "false");
@@ -6273,9 +6312,16 @@ function getHubNavigationTarget() {
   }
 
   const pendingRelics = getPendingTvaRelicIds();
-  const label = !state.quests.tvaBriefingAccepted
-    ? "Đi theo hành lang tới người nhân viên"
-    : pendingRelics.length > 0
+  const epilogue = getTvaHubPresentation({
+    inventory: state.inventory,
+    corruption: state.saDoa,
+    endingId: state.hubEpilogueEndingId,
+  }).epilogue;
+  const label = epilogue
+    ? "Gặp David để xem tổng kết hồ sơ"
+    : !state.quests.tvaBriefingAccepted
+      ? "Đi theo hành lang tới người nhân viên"
+      : pendingRelics.length > 0
       ? "Mang tín vật cho David"
       : getNextTvaRoute()
         ? "Hỏi David về tọa độ tiếp theo"
@@ -7457,6 +7503,14 @@ function drawHubWorld(decorations) {
     ctx.fillRect(710, 0, 250, WORLD.height);
   }
 
+  drawTvaHubEpilogueAtmosphere(
+    getTvaHubPresentation({
+      inventory: state.inventory,
+      corruption: state.saDoa,
+      endingId: state.hubEpilogueEndingId,
+    }).epilogue
+  );
+
   const arrivalMark = decorations.arrivalMark;
   if (arrivalMark) {
     ctx.save();
@@ -7474,6 +7528,33 @@ function drawHubWorld(decorations) {
     ctx.fillStyle = `rgba(151, 190, 91, ${pulse})`;
     ctx.fillRect(signal.x - 2, signal.y - 1, 4, 3);
   }
+}
+
+function drawTvaHubEpilogueAtmosphere(epilogue) {
+  if (!epilogue) {
+    return;
+  }
+
+  const pulse = 0.42 + (Math.sin(state.lastTimestamp * 0.0026) + 1) * 0.14;
+  const drift = state.lastTimestamp * 0.016;
+  const glow = ctx.createRadialGradient(480, 292, 24, 480, 292, 440);
+  glow.addColorStop(0, epilogue.overlay);
+  glow.addColorStop(0.58, "rgba(20, 25, 31, 0.03)");
+  glow.addColorStop(1, "rgba(20, 25, 31, 0)");
+  ctx.save();
+  ctx.fillStyle = glow;
+  ctx.fillRect(0, 0, WORLD.width, WORLD.height);
+  ctx.globalCompositeOperation = "screen";
+  ctx.fillStyle = epilogue.glow;
+  ctx.globalAlpha = pulse;
+  for (let index = 0; index < 17; index += 1) {
+    const phase = drift + index * 1.73;
+    const x = Math.round(480 + Math.cos(phase) * (72 + (index % 4) * 38));
+    const y = Math.round(296 + Math.sin(phase * 0.72) * (48 + (index % 5) * 22));
+    const size = index % 4 === 0 ? 4 : 2;
+    ctx.fillRect(x - Math.floor(size / 2), y - Math.floor(size / 2), size, size);
+  }
+  ctx.restore();
 }
 
 function drawTrainingWorld(decorations) {
@@ -9759,7 +9840,11 @@ function drawObject(item) {
 }
 
 function drawTvaHubRelics() {
-  const presentation = getTvaHubPresentation({ inventory: state.inventory, corruption: state.saDoa });
+  const presentation = getTvaHubPresentation({
+    inventory: state.inventory,
+    corruption: state.saDoa,
+    endingId: state.hubEpilogueEndingId,
+  });
   const relicSprite = environmentSprites.generatedObjects?.storyRelic;
 
   if (!canDrawSprite(relicSprite) || presentation.relics.length === 0) {
