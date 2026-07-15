@@ -1169,6 +1169,8 @@ window.addEventListener("keydown", (event) => {
     pendingKeyBindingAction = null;
     clearPressedKeys();
     renderKeyBindings();
+    updateContextualControls("move");
+    updateCombatStatus();
     return;
   }
 
@@ -2603,7 +2605,7 @@ function updateCombatStatus() {
   }
   const charged = state.strikeChargeStartedAt ? " • Đang tích lực" : "";
   const parrying = state.lastTimestamp < state.parryEndsAt ? " • ĐỠ ĐÒN!" : "";
-  combatStatus.textContent = `Thể lực ${Math.round(state.stamina)}/${STAMINA_MAX} • L ${dodgeReady ? "sẵn sàng" : "hồi"} • J ${strikeReady ? "sẵn sàng" : "hồi"} • K ${parryReady ? "phản đòn" : "hồi"}${charged}${parrying}`;
+  combatStatus.textContent = `Thể lực ${Math.round(state.stamina)}/${STAMINA_MAX} • ${bindingLabel("dodge")} ${dodgeReady ? "sẵn sàng" : "hồi"} • ${bindingLabel("attack")} ${strikeReady ? "sẵn sàng" : "hồi"} • ${bindingLabel("parry")} ${parryReady ? "phản đòn" : "hồi"}${charged}${parrying}`;
 }
 
 function currentLevel() {
@@ -6124,7 +6126,7 @@ function updateInteractionPrompt() {
   const nearbyMonster = getNearestMonster(72);
 
   if (nearbyMonster) {
-    interactionPrompt.textContent = `J tấn công • K phản đòn ${nearbyMonster.name}`;
+    interactionPrompt.textContent = `${bindingLabel("attack")} tấn công • ${bindingLabel("parry")} phản đòn ${nearbyMonster.name}`;
     interactionPrompt.classList.remove("hidden");
     updateContextualControls("combat");
     return;
@@ -6149,10 +6151,10 @@ function updateContextualControls(context) {
   }
 
   const hints = {
-    interact: "E tương tác • J tấn công • K phản đòn • B sách",
-    combat: "J tấn công/tích lực • L lướt • K phản đòn",
-    exit: "Theo lối ra • E khi có điểm tương tác",
-    move: "WASD di chuyển • L lướt • J tấn công • K phản đòn • B sách",
+    interact: `${bindingLabel("interact")} tương tác • ${bindingLabel("attack")} tấn công • ${bindingLabel("parry")} phản đòn • ${bindingLabel("book")} sách`,
+    combat: `${bindingLabel("attack")} tấn công/tích lực • ${bindingLabel("dodge")} lướt • ${bindingLabel("parry")} phản đòn`,
+    exit: `Theo lối ra • ${bindingLabel("interact")} khi có điểm tương tác`,
+    move: `${bindingLabel("moveUp")}/${bindingLabel("moveLeft")}/${bindingLabel("moveDown")}/${bindingLabel("moveRight")} di chuyển • ${bindingLabel("dodge")} lướt • ${bindingLabel("attack")} tấn công • ${bindingLabel("parry")} phản đòn • ${bindingLabel("book")} sách`,
   };
   actionHint.textContent = hints[context] ?? hints.move;
 }
@@ -11813,6 +11815,11 @@ function getBoundKey(action) {
 
 function isBoundKey(key, action) {
   return key === getBoundKey(action);
+}
+
+function bindingLabel(action) {
+  const key = getBoundKey(action);
+  return key === "space" ? "Space" : key === "escape" ? "Esc" : key.toUpperCase();
 }
 
 function clamp(value, min, max) {
