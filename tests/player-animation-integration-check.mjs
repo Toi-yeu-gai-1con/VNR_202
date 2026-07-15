@@ -52,11 +52,11 @@ assert.doesNotMatch(runtime, /playUiSound\(uiSounds\.parry\);\s*\n}\s*\n\s*funct
 assert.match(runtime, /playUiSound\(uiSounds\.dash\)/);
 assert.match(runtime, /playUiSound\(uiSounds\.heal\)/);
 assert.match(runtime, /playUiSound\(uiSounds\.death\)/);
-assert.match(runtime, /state\.mode === "playing" && key === "l"/);
+assert.match(runtime, /state\.mode === "playing" && isBoundKey\(key, "dodge"\)/);
 assert.doesNotMatch(runtime, /state\.mode === "playing" && key === "shift"/);
 assert.doesNotMatch(skillEffectRenderer, /drawAttackSlash/);
 assert.doesNotMatch(skillEffectRenderer, /type === "dodge"/);
-assert.match(index, /L lướt/);
+assert.match(index, /key-bindings-list/);
 assert.match(pipeline, /def reduce_dash_down_vfx\(/);
 
 function readPngDimensions(buffer) {

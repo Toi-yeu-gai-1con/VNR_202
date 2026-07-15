@@ -100,6 +100,9 @@ const musicVolumeInput = document.getElementById("music-volume-input");
 const sfxVolumeInput = document.getElementById("sfx-volume-input");
 const dialogueVolumeInput = document.getElementById("dialogue-volume-input");
 const soundCaptionsInput = document.getElementById("sound-captions-input");
+const keyBindingsList = document.getElementById("key-bindings-list");
+const keyBindingStatus = document.getElementById("key-binding-status");
+const resetKeyBindingsButton = document.getElementById("reset-key-bindings-button");
 const mutedInput = document.getElementById("muted-input");
 const reducedMotionInput = document.getElementById("reduced-motion-input");
 const largeTextInput = document.getElementById("large-text-input");
@@ -294,6 +297,7 @@ const musicSounds = loadMusicSounds();
 let storyToastTimeoutId = 0;
 let soundCaptionTimeoutId = 0;
 let lastSoundCaption = { key: null, shownAt: 0 };
+let pendingKeyBindingAction = null;
 let corruptionWarningTimeoutId = 0;
 let relicBookOpenTimeoutId = 0;
 let pendingAssetLoad = null;
@@ -935,6 +939,17 @@ fullscreenButton.addEventListener("click", withUiClickSound(toggleFullscreen));
 resumeButton.addEventListener("click", withUiClickSound(resumeGame));
 settingsButton.addEventListener("click", withUiClickSound(openSettingsMenu));
 closeSettingsButton.addEventListener("click", withUiClickSound(closeSettingsMenu));
+resetKeyBindingsButton.addEventListener("click", withUiClickSound(() => {
+  state.settings = gameSettingsStore.save({ ...state.settings, keyBindings: { ...DEFAULT_GAME_SETTINGS.keyBindings } });
+  pendingKeyBindingAction = null;
+  renderKeyBindings();
+}));
+keyBindingsList.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-key-binding]");
+  if (!button) return;
+  pendingKeyBindingAction = button.dataset.keyBinding;
+  renderKeyBindings();
+});
 restartButton.addEventListener("click", withUiClickSound(restartGame));
 storyBookButton.addEventListener("click", withUiClickSound(() => openStoryBook()));
 aboutButton.addEventListener("click", withUiClickSound(() => {
@@ -1011,6 +1026,19 @@ function updateSettingsControls() {
   reducedMotionInput.checked = state.settings.reducedMotion;
   largeTextInput.checked = state.settings.textScale === "large";
   minimapInput.checked = state.settings.minimapVisible;
+  renderKeyBindings();
+}
+
+function renderKeyBindings() {
+  if (!keyBindingsList) return;
+  const labels = { moveUp: "Lên", moveDown: "Xuống", moveLeft: "Trái", moveRight: "Phải", interact: "Tương tác", attack: "Tấn công", parry: "Phản đòn", dodge: "Lướt", minimap: "Bản đồ", pause: "Tạm dừng", book: "Sách" };
+  keyBindingsList.replaceChildren(...Object.entries(labels).map(([action, label]) => {
+    const button = document.createElement("button");
+    button.type = "button"; button.className = "key-binding-button"; button.dataset.keyBinding = action;
+    button.textContent = `${label}: ${pendingKeyBindingAction === action ? "Nhấn phím..." : getBoundKey(action).toUpperCase()}`;
+    return button;
+  }));
+  keyBindingStatus.textContent = pendingKeyBindingAction ? "Nhấn một phím trống, Esc để hủy." : "";
 }
 
 function applyGameSettings() {
@@ -1029,6 +1057,7 @@ function saveSettingsFromControls() {
     sfxVolume: Number(sfxVolumeInput.value) / 100,
     dialogueVolume: Number(dialogueVolumeInput.value) / 100,
     soundCaptions: soundCaptionsInput.checked,
+    keyBindings: state.settings.keyBindings,
     reducedMotion: reducedMotionInput.checked,
     textScale: largeTextInput.checked ? "large" : "normal",
     minimapVisible: minimapInput.checked,
@@ -1124,6 +1153,37 @@ window.addEventListener("keydown", (event) => {
 
   const key = normalizeKey(event.key);
 
+  if (pendingKeyBindingAction) {
+    event.preventDefault();
+    if (key === "escape") {
+      pendingKeyBindingAction = null;
+      renderKeyBindings();
+      return;
+    }
+    const duplicate = Object.entries(state.settings.keyBindings).find(([action, boundKey]) => action !== pendingKeyBindingAction && boundKey === key);
+    if (duplicate) {
+      keyBindingStatus.textContent = `Phím ${key.toUpperCase()} đang dùng cho ${duplicate[0]}.`;
+      return;
+    }
+    state.settings = gameSettingsStore.save({ ...state.settings, keyBindings: { ...state.settings.keyBindings, [pendingKeyBindingAction]: key } });
+    pendingKeyBindingAction = null;
+    clearPressedKeys();
+    renderKeyBindings();
+    return;
+  }
+
+  if (state.mode === "playing" && isBoundKey(key, "pause")) {
+    playUiSound(uiSounds.pixelClick);
+    togglePause();
+    return;
+  }
+
+  if (state.mode === "playing" && isBoundKey(key, "minimap")) {
+    state.settings = gameSettingsStore.save({ ...state.settings, minimapVisible: !state.settings.minimapVisible });
+    applyGameSettings();
+    return;
+  }
+
   if (key === "escape") {
     if (state.mode === "opening") {
       playUiSound(uiSounds.pixelClick);
@@ -1211,7 +1271,7 @@ window.addEventListener("keydown", (event) => {
     return;
   }
 
-  if (state.mode === "playing" && key === "b") {
+  if (state.mode === "playing" && isBoundKey(key, "book")) {
     if (getStoryBookEntryIds().length > 0) {
       playUiSound(uiSounds.pixelClick);
       openStoryBook();
@@ -1219,22 +1279,22 @@ window.addEventListener("keydown", (event) => {
     return;
   }
 
-  if (state.mode === "playing" && key === "l") {
+  if (state.mode === "playing" && isBoundKey(key, "dodge")) {
     useDodge();
     return;
   }
 
-  if (state.mode === "playing" && key === "j") {
+  if (state.mode === "playing" && isBoundKey(key, "attack")) {
     startStrikeCharge();
     return;
   }
 
-  if (state.mode === "playing" && key === "k") {
+  if (state.mode === "playing" && isBoundKey(key, "parry")) {
     useParrySkill();
     return;
   }
 
-  if (state.mode === "playing" && (key === "e" || key === "space")) {
+  if (state.mode === "playing" && isBoundKey(key, "interact")) {
     handleInteraction();
     return;
   }
@@ -1246,7 +1306,7 @@ window.addEventListener("keyup", (event) => {
   const key = normalizeKey(event.key);
   keys.delete(key);
 
-  if (state.mode === "playing" && key === "j") {
+  if (state.mode === "playing" && isBoundKey(key, "attack")) {
     releaseStrikeCharge();
   }
 });
@@ -5877,16 +5937,16 @@ function updatePlayer(deltaSeconds) {
   let moveX = 0;
   let moveY = 0;
 
-  if (keys.has("w") || keys.has("arrowup")) {
+  if (keys.has(getBoundKey("moveUp"))) {
     moveY -= 1;
   }
-  if (keys.has("s") || keys.has("arrowdown")) {
+  if (keys.has(getBoundKey("moveDown"))) {
     moveY += 1;
   }
-  if (keys.has("a") || keys.has("arrowleft")) {
+  if (keys.has(getBoundKey("moveLeft"))) {
     moveX -= 1;
   }
-  if (keys.has("d") || keys.has("arrowright")) {
+  if (keys.has(getBoundKey("moveRight"))) {
     moveX += 1;
   }
 
@@ -11745,6 +11805,14 @@ function normalizeKey(key) {
   }
 
   return key.toLowerCase();
+}
+
+function getBoundKey(action) {
+  return state.settings.keyBindings?.[action] ?? DEFAULT_GAME_SETTINGS.keyBindings[action];
+}
+
+function isBoundKey(key, action) {
+  return key === getBoundKey(action);
 }
 
 function clamp(value, min, max) {

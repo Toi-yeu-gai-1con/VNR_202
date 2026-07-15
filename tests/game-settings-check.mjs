@@ -38,6 +38,7 @@ assert.deepEqual(saved, {
   reducedMotion: true,
   textScale: "large",
   minimapVisible: false,
+  keyBindings: { ...DEFAULT_GAME_SETTINGS.keyBindings },
 }, "Supported settings persist with their intended values.");
 
 storage.setItem("settings-test", JSON.stringify({
