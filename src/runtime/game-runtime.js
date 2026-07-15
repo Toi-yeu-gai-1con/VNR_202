@@ -4004,6 +4004,8 @@ function toggleCorruptionHelp() {
 
 function showSoundCaptionForSfx(key) {
   const captions = {
+    attack1: "[VUNG KIẾM – phía trước]",
+    attack2: "[VUNG KIẾM – phía trước]",
     strikeSwing: "[VUNG KIẾM – phía trước]",
     rifleShot: "[TIẾNG SÚNG – kẻ địch tầm xa]",
     lanternPulse: "[XUNG NHỊP – kẻ địch hỗ trợ]",
@@ -6355,6 +6357,7 @@ function renderBadEndingRecoveryScene(context, width, height, scene) {
 
 function drawM90ResetSequence(context, x, y, scale, phaseProgress, opacity) {
   const elapsed = phaseProgress * BAD_ENDING_RECOVERY.resetDuration;
+  const reducedMotion = state.settings.reducedMotion;
   const actionDuration = M90_RESET_ANIMATION.frameDurations.reduce((total, duration) => total + duration, 0);
   let frameIndex = M90_RESET_ANIMATION.frameDurations.length - 1;
   let cursor = 0;
@@ -6364,6 +6367,9 @@ function drawM90ResetSequence(context, x, y, scale, phaseProgress, opacity) {
       frameIndex = index;
       break;
     }
+  }
+  if (reducedMotion) {
+    frameIndex = M90_RESET_ANIMATION.frameDurations.length - 1;
   }
 
   if (canDrawSprite(effectSprites.m90ResetActivate)) {
@@ -6390,13 +6396,15 @@ function drawM90ResetSequence(context, x, y, scale, phaseProgress, opacity) {
   if (waveElapsed < 0 || !canDrawSprite(effectSprites.m90ResetWave)) {
     return;
   }
-  const waveFrame = Math.min(
-    M90_RESET_ANIMATION.effectFrameCount - 1,
-    Math.floor(waveElapsed / M90_RESET_ANIMATION.effectFrameDuration)
-  );
+  const waveFrame = reducedMotion
+    ? M90_RESET_ANIMATION.effectFrameCount - 1
+    : Math.min(
+        M90_RESET_ANIMATION.effectFrameCount - 1,
+        Math.floor(waveElapsed / M90_RESET_ANIMATION.effectFrameDuration)
+      );
   const waveDuration = M90_RESET_ANIMATION.effectFrameCount * M90_RESET_ANIMATION.effectFrameDuration;
   const waveProgress = clamp(waveElapsed / waveDuration, 0, 1);
-  const easedWaveProgress = easeOutQuad(waveProgress);
+  const easedWaveProgress = reducedMotion ? 0.62 : easeOutQuad(waveProgress);
   const canvasDiagonal = Math.hypot(context.canvas.width, context.canvas.height);
   const waveSize = Math.round(canvasDiagonal * (0.28 + easedWaveProgress * 1.18));
   const waveOriginY = y - scale * M90_RESET_ANIMATION.drawHeight * 0.62;
@@ -6417,7 +6425,7 @@ function drawM90ResetSequence(context, x, y, scale, phaseProgress, opacity) {
   );
   context.restore();
 
-  const flashAlpha = Math.sin(waveProgress * Math.PI) * 0.22;
+  const flashAlpha = reducedMotion ? 0.045 : Math.sin(waveProgress * Math.PI) * 0.22;
   if (flashAlpha > 0) {
     const glowRadius = canvasDiagonal * (0.16 + easedWaveProgress * 0.72);
     const glow = context.createRadialGradient(
@@ -9580,7 +9588,9 @@ function drawAnimatedVietnamFlags(flags = []) {
   const animation = SMALL_GAME_ASSET_ANIMATIONS.vietnamFlag;
   if (!canDrawSprite(sprite)) return;
 
-  const frameIndex = Math.floor(state.lastTimestamp / animation.frameDuration) % animation.frameCount;
+  const frameIndex = state.settings.reducedMotion
+    ? 0
+    : Math.floor(state.lastTimestamp / animation.frameDuration) % animation.frameCount;
   for (const flag of flags) {
     if (flag.hamletId && !state.quests.zone3HamletsFreed.has(flag.hamletId)) {
       continue;
@@ -10896,13 +10906,17 @@ function drawInteractables() {
 
 function drawWorldDrops() {
   for (const drop of currentLevel().drops ?? []) {
-    const bob = Math.sin((state.lastTimestamp + drop.x * 13) / 180) * 2;
+    const bob = state.settings.reducedMotion
+      ? 0
+      : Math.sin((state.lastTimestamp + drop.x * 13) / 180) * 2;
     const animation = drop.type === "health"
       ? SMALL_GAME_ASSET_ANIMATIONS.healthTonic
       : SMALL_GAME_ASSET_ANIMATIONS.staminaTonic;
     const sprite = effectSprites.pickups?.[drop.type];
     if (!canDrawSprite(sprite)) continue;
-    const frameIndex = Math.floor((state.lastTimestamp + drop.x * 13) / animation.frameDuration) % animation.frameCount;
+    const frameIndex = state.settings.reducedMotion
+      ? 0
+      : Math.floor((state.lastTimestamp + drop.x * 13) / animation.frameDuration) % animation.frameCount;
     ctx.drawImage(
       sprite,
       frameIndex * animation.frameWidth,
@@ -10941,7 +10955,9 @@ function drawBreakables() {
       continue;
     }
     const frameIndex = breakable.destroyed
-      ? Math.min(animation.frameCount - 1, 2 + Math.floor(Math.max(0, elapsed) / animation.frameDuration))
+      ? state.settings.reducedMotion
+        ? animation.frameCount - 1
+        : Math.min(animation.frameCount - 1, 2 + Math.floor(Math.max(0, elapsed) / animation.frameDuration))
       : breakable.health < (breakable.maxHealth ?? 2) ? 1 : 0;
     drawBreakableSprite(breakable, animationKey, animation, frameIndex);
   }
@@ -10969,7 +10985,9 @@ function drawEnemyProjectiles() {
     const animation = SMALL_GAME_ASSET_ANIMATIONS.projectile;
     const sprite = projectile.reflected ? effectSprites.projectiles?.reflected : effectSprites.projectiles?.normal;
     if (!canDrawSprite(sprite)) continue;
-    const frameIndex = Math.floor((state.lastTimestamp + projectile.x * 7) / animation.frameDuration) % animation.frameCount;
+    const frameIndex = state.settings.reducedMotion
+      ? 0
+      : Math.floor((state.lastTimestamp + projectile.x * 7) / animation.frameDuration) % animation.frameCount;
     ctx.save();
     ctx.translate(Math.round(projectile.x), Math.round(projectile.y));
     ctx.rotate(Math.atan2(projectile.velocityY, projectile.velocityX));

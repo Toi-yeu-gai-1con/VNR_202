@@ -41,5 +41,9 @@ assert.match(runtime, /breakable\.destroyedAt = state\.lastTimestamp/, "Breakabl
 assert.doesNotMatch(runtime, /function drawBreakableSprite[\s\S]*?drawKenneyRoguelikeSprite/, "Breakables cannot fall back to the generic Kenney crate renderer.");
 assert.doesNotMatch(runtime, /function drawWorldDrops\(\)[\s\S]*?ctx\.fillRect\(drop\.x - 4/, "World drops cannot remain rectangle placeholders.");
 assert.doesNotMatch(runtime, /function drawEnemyProjectiles\(\)[\s\S]*?ctx\.fillRect\(projectile\.x - 3/, "Projectiles cannot remain rectangle placeholders.");
+assert.match(runtime, /function drawAnimatedVietnamFlags[\s\S]*?state\.settings\.reducedMotion\s*\?\s*0/, "Animated flags must stop cycling when reduced motion is enabled.");
+assert.match(runtime, /function drawWorldDrops[\s\S]*?state\.settings\.reducedMotion\s*\?\s*0/, "Pickup animation and bobbing must stop when reduced motion is enabled.");
+assert.match(runtime, /function drawEnemyProjectiles[\s\S]*?state\.settings\.reducedMotion\s*\?\s*0/, "Projectile texture animation must stop when reduced motion is enabled.");
+assert.match(runtime, /function drawBreakables[\s\S]*?state\.settings\.reducedMotion/, "Breakable destruction must snap to a stable authored frame when reduced motion is enabled.");
 
 console.log("PASS: flags, recovery tonics, arcade bullets, and breakables use normalized animated pixel art.");

@@ -29,5 +29,6 @@ assert.match(resetRenderer, /M90_RESET_ANIMATION\.cropWidth/, "M-90 reset render
 assert.match(recoveryRenderer, /const recoveryCenterX = width \* 0\.5/, "David's recovery walk targets the horizontal center of the ending frame.");
 assert.match(resetRenderer, /const canvasDiagonal = Math\.hypot\(context\.canvas\.width, context\.canvas\.height\)/, "Reset VFX expands against the full ending canvas diagonal.");
 assert.match(resetRenderer, /const glowRadius = canvasDiagonal/, "Reset VFX adds a fullscreen radial energy bloom.");
+assert.match(resetRenderer, /state\.settings\.reducedMotion/, "Reset VFX must provide a reduced-motion rendering path.");
 
 console.log("PASS: M-90 reset and wave rendering are isolated from David's sprite dimensions.");

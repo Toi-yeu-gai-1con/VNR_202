@@ -12,6 +12,8 @@ assert.match(mediaSources, /assets\/audio\/combat\/player-hurt\.ogg/, "Player hu
 assert.match(game, /attack1:\s*uiSounds\.attack1/, "The runtime must route attack 1 through its authored sword SFX.");
 assert.match(game, /attack2:\s*uiSounds\.attack2/, "The runtime must route attack 2 through its authored sword SFX.");
 assert.match(game, /strikeSwing:\s*loadSound\(COMBAT_SFX\.strikeSwing/, "The runtime must retain the generic player swing SFX.");
+assert.match(game, /attack1:\s*"\[VUNG KIẾM/, "Attack 1 keeps the accessible sword-swing caption.");
+assert.match(game, /attack2:\s*"\[VUNG KIẾM/, "Attack 2 keeps the accessible sword-swing caption.");
 assert.match(game, /playerHurt:\s*loadSound\(COMBAT_SFX\.playerHurt/, "The runtime must preload the player hurt SFX.");
 assert.match(game, /function useStrikeSkill[\s\S]{0,1500}playCombatSfx\(strikeAnimation/, "Every committed player strike must play its animation-specific sword SFX.");
 assert.match(game, /function damagePlayer[\s\S]{0,760}playCombatSfx\("playerHurt"/, "Taking damage must play a player hurt SFX.");
