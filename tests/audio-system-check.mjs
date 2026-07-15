@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { createAudioSystem } from "../src/systems/audio-system.js";
+import { getEndingAudioKey } from "../src/data/ending-audio-definitions.js";
 
 function sound() {
   return {
@@ -26,6 +27,7 @@ const hub = sound();
 const zone = sound();
 const badEnding = sound();
 const goodEnding = sound();
+const zone1LostCompass = sound();
 const rain = sound();
 const click = sound();
 const baton = sound();
@@ -36,7 +38,8 @@ const audio = createAudioSystem({
   uiSounds: { click },
   sfxSounds: { baton },
   ambienceSounds: { rain },
-  musicSounds: { hub, portMaze: zone, badEnding, goodEnding },
+  musicSounds: { hub, portMaze: zone, badEnding, goodEnding, zone1LostCompass },
+  getEndingMusicKey: getEndingAudioKey,
   getZoneProfile: () => ({ ambience: ["rain"], music: "portMaze" }),
   getCurrentLevel: () => ({ monsters: [] }),
   getPlayer: () => ({ x: 0, y: 0 }),
@@ -99,6 +102,11 @@ state.endingId = "good";
 audio.syncAmbienceAudio();
 goodEnding.currentTime = 28.5;
 badEnding.currentTime = 16.25;
+
+state.endingId = "zone1-lost-compass";
+audio.syncAmbienceAudio();
+assert.equal(zone1LostCompass.paused, false, "A named Zone Bad Ending starts its dedicated music track.");
+assert.equal(goodEnding.paused, true, "Named Bad Endings do not keep Good Ending music mixed in.");
 
 state.mode = "playing";
 state.currentLevelId = "hub";

@@ -37,6 +37,7 @@ import { MONSTER_ART_DEFINITIONS, MONSTER_ART_KEY_BY_ID, getMonsterStripSource, 
 import { MONSTER_CODEX_DEFINITIONS, getMonsterCodexEntry } from "../data/monster-codex-definitions.js";
 import { GAMEPLAY_BALANCE, getDifficultySettings } from "../data/gameplay-balance.js";
 import { AUDIO_TRACKS, COMBAT_SFX, getAudioSourceCandidates, resolveAudioSource } from "../data/media-sources.js";
+import { ENDING_AUDIO_KEYS, getEndingAudioKey } from "../data/ending-audio-definitions.js";
 import { BUILD_VERSION, withAssetVersion } from "../data/build-info.js";
 import { PLAYER_FOOTPRINT, PLAYER_SPRITE, PLAYER_ANIMATIONS, NPC_SPRITE, TVA_EMPLOYEE_SPRITE, M90_RESET_ANIMATION, ENVIRONMENT_SPRITES, TILECRAFT_TERRAIN, PIXEL_CRAWLER_TERRAIN, VILLAGE_SKYLINE_Y, VILLAGE_PROP_SPRITES, PIXEL_CRAWLER_BUILDING_SPRITES, HUB_PORTAL_SPRITE, SWORD_SLASH_SPRITE, PIXEL_CRAWLER_TREE_SPRITE, KENNEY_ROGUELIKE_TILE, KENNEY_ROGUELIKE_SPRITES, PIXEL_CRAWLER_VEGETATION_SPRITES, PIXEL_CRAWLER_TOOL_CLUSTER_SPRITES, CAINOS_PROP_SPRITES, LIMEZU_INTERIOR_SPRITES, HOUSE_INTERIOR_A_SPRITES, MONSTER_SPRITE_CONFIG } from "../data/render-config.js";
 
@@ -499,6 +500,8 @@ const audioSystem = createAudioSystem({
   sfxSounds: combatSfx,
   ambienceSounds,
   musicSounds,
+  getEndingMusicKey: getEndingAudioKey,
+  endingMusicKeys: ENDING_AUDIO_KEYS,
   getZoneProfile,
   getCurrentLevel: currentLevel,
   getPlayer: () => player,
@@ -1835,6 +1838,13 @@ function loadMusicSounds() {
     spring: loadSound(AUDIO_TRACKS.spring, 0.26, { loop: true }),
     badEnding: loadSound(AUDIO_TRACKS.badEnding, 0.28, { loop: true }),
     goodEnding: loadSound(AUDIO_TRACKS.goodEnding, 0.3, { loop: true }),
+    neutralEnding: loadSound(AUDIO_TRACKS.neutralEnding, 0.28, { loop: true }),
+    zone1LostCompass: loadSound(AUDIO_TRACKS.zone1LostCompass, 0.28, { loop: true }),
+    zone2FadingFires: loadSound(AUDIO_TRACKS.zone2FadingFires, 0.28, { loop: true }),
+    zone3aMissedMoment: loadSound(AUDIO_TRACKS.zone3aMissedMoment, 0.28, { loop: true }),
+    zone3bDividedBorder: loadSound(AUDIO_TRACKS.zone3bDividedBorder, 0.28, { loop: true }),
+    zone4StalledMachine: loadSound(AUDIO_TRACKS.zone4StalledMachine, 0.28, { loop: true }),
+    secretCorruption: loadSound(AUDIO_TRACKS.secretCorruption, 0.28, { loop: true }),
   };
 }
 
@@ -5242,10 +5252,10 @@ function updateEndingCinematicUiState() {
 
 function showEndOverlay() {
   const endingId = state.endingId ?? "bad";
-  const musicEndingId = endingId === "good" || endingId === "neutral" ? "good" : "bad";
+  const endingMusicKey = getEndingAudioKey(endingId);
   const endingAssetsReady = assetManager.loadGroup("ending");
   const ending = ENDING_DEFINITIONS[state.endingId] ?? ENDING_DEFINITIONS.bad;
-  resetSound(musicSounds[musicEndingId === "good" ? "goodEnding" : "badEnding"]);
+  resetSound(musicSounds[endingMusicKey]);
 
   state.mode = "ending";
   state.endingCinematic = createEndingCinematicState(state.endingId ?? "bad");

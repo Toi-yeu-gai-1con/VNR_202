@@ -19,6 +19,13 @@ export const AUDIO_TRACKS = Object.freeze({
   spring: "spring",
   badEnding: "bad-ending",
   goodEnding: "good-ending",
+  neutralEnding: "neutral-ending",
+  zone1LostCompass: "zone1-lost-compass-ending",
+  zone2FadingFires: "zone2-fading-fires-ending",
+  zone3aMissedMoment: "zone3a-missed-moment-ending",
+  zone3bDividedBorder: "zone3b-divided-border-ending",
+  zone4StalledMachine: "zone4-stalled-machine-ending",
+  secretCorruption: "secret-corruption-ending",
 });
 
 export const COMBAT_SFX = Object.freeze({
@@ -44,6 +51,13 @@ export const AUDIO_SOURCE_CANDIDATES = Object.freeze({
   [AUDIO_TRACKS.spring]: optimizedAudio("spring-town-theme"),
   [AUDIO_TRACKS.badEnding]: optimizedAudio("bad-ending"),
   [AUDIO_TRACKS.goodEnding]: optimizedAudio("good-ending"),
+  [AUDIO_TRACKS.neutralEnding]: optimizedAudio("neutral-ending"),
+  [AUDIO_TRACKS.zone1LostCompass]: optimizedAudio("zone1-lost-compass-ending"),
+  [AUDIO_TRACKS.zone2FadingFires]: optimizedAudio("zone2-fading-fires-ending"),
+  [AUDIO_TRACKS.zone3aMissedMoment]: optimizedAudio("zone3a-missed-moment-ending"),
+  [AUDIO_TRACKS.zone3bDividedBorder]: optimizedAudio("zone3b-divided-border-ending"),
+  [AUDIO_TRACKS.zone4StalledMachine]: optimizedAudio("zone4-stalled-machine-ending"),
+  [AUDIO_TRACKS.secretCorruption]: optimizedAudio("secret-corruption-ending"),
   [COMBAT_SFX.strikeSwing]: freezeSources([
     { src: "assets/audio/combat/strike-swing.ogg", type: 'audio/ogg; codecs="opus"' },
     { src: "assets/audio/combat/strike-swing.mp3", type: "audio/mpeg" },

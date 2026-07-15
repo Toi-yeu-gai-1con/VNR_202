@@ -8,6 +8,8 @@ export function createAudioSystem({
   getCurrentLevel,
   getPlayer,
   getSettings = () => ({ musicVolume: 1, sfxVolume: 1, dialogueVolume: 1 }),
+  getEndingMusicKey = (endingId) => ({ good: "goodEnding", bad: "badEnding" }[endingId] ?? null),
+  endingMusicKeys = ["badEnding", "goodEnding"],
   eventTarget = window,
   onPlaybackBlocked = () => {},
 }) {
@@ -203,14 +205,8 @@ export function createAudioSystem({
     const activeAmbience = [];
     const activeMusic = [];
 
-    if (state.mode === "ending" && state.endingId === "bad") {
-      const endingMusic = musicSounds.badEnding;
-      if (endingMusic) {
-        endingMusic.volume = getSourceVolume(endingMusic) * getVolumeSetting("musicVolume");
-        activeMusic.push(endingMusic);
-      }
-    } else if (state.mode === "ending" && state.endingId === "good") {
-      const endingMusic = musicSounds.goodEnding;
+    if (state.mode === "ending") {
+      const endingMusic = musicSounds[getEndingMusicKey(state.endingId)];
       if (endingMusic) {
         endingMusic.volume = getSourceVolume(endingMusic) * getVolumeSetting("musicVolume");
         activeMusic.push(endingMusic);
@@ -231,7 +227,7 @@ export function createAudioSystem({
 
     syncLoopingSoundGroup(ambienceSounds, activeAmbience);
     syncLoopingSoundGroup(musicSounds, activeMusic);
-    resetInactiveSounds(activeMusic, [musicSounds.badEnding, musicSounds.goodEnding]);
+    resetInactiveSounds(activeMusic, endingMusicKeys.map((key) => musicSounds[key]));
   }
 
   function setMuted(muted) {
