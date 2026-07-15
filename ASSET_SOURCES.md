@@ -63,6 +63,13 @@ This project uses a small subset of free game assets:
   - Each source has four separately posed frames tagged as `walk` or `attack`; exports are 64x64 bottom-center anchored strips. They replace only Zone 1's ranged, melee, support, and boss adversaries respectively.
   - Captain directional seed: `assets/monsters/zone1-enforcer-captain/enforcer-captain-directional-source.png`, generated with the built-in image-generation workflow on a magenta chroma key; alpha-cleaned and normalized into south/north/east strips by `scripts/prepare-captain-directional-strips.mjs`. West is deliberately mirrored at runtime from east.
   - Raider, patrol rifleman, and signalman directional seeds are stored next to their respective sprite strips as `*-directional-source.png`; each was generated with the same built-in workflow, alpha-cleaned, and normalized by `scripts/prepare-captain-directional-strips.mjs`. Their west-facing animation intentionally mirrors the corresponding east strip at runtime.
+- Original small gameplay prop and effect strips
+  - Created for this project with the built-in image-generation workflow; no third-party pixels were used.
+  - `assets/props/animated/vietnam-flag-small.png` preserves the Vietnamese red field and centered yellow five-pointed star in a four-frame cloth animation.
+  - `assets/items/pickups/health-tonic.png` and `assets/items/pickups/stamina-tonic.png` are distinct ceramic recovery tonics with red/teal visual language for health versus stamina.
+  - `assets/effects/combat/timeline-projectile.png` and `assets/effects/combat/timeline-projectile-reflected.png` are original horizontal arcade bullet strips (warm reflected variant); they use a run-and-gun silhouette without copying Contra artwork.
+  - `assets/props/breakables/wooden-supply-crate.png` and `assets/props/breakables/bamboo-provisions-basket.png` are Vietnamese-period-appropriate supply containers with intact, cracked, burst, and debris frames.
+  - Generation outputs were chroma-key cleaned and normalized to fixed nearest-neighbour strips by `scripts/prepare-small-game-assets.mjs`.
 - Original zone landmarks
   - Created for this project with the built-in image generation workflow, then background-keyed to transparent PNG.
   - Used for the four persistent zone landmarks in `assets/landmarks/`: storm shelter beacon, archive lens tower, faction standard, and restoration engine.

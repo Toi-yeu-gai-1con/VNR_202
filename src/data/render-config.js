@@ -187,6 +187,14 @@ export const SWORD_SLASH_SPRITE = {
     { x: 205, y: 42, width: 35, height: 24, anchorX: 10, anchorY: 10, scale: 0.74 },
   ],
 };
+export const SMALL_GAME_ASSET_ANIMATIONS = Object.freeze({
+  vietnamFlag: Object.freeze({ frameWidth: 64, frameHeight: 64, frameCount: 4, frameDuration: 180 }),
+  healthTonic: Object.freeze({ frameWidth: 24, frameHeight: 24, frameCount: 4, frameDuration: 150, drawSize: 24 }),
+  staminaTonic: Object.freeze({ frameWidth: 24, frameHeight: 24, frameCount: 4, frameDuration: 150, drawSize: 24 }),
+  projectile: Object.freeze({ frameWidth: 16, frameHeight: 16, frameCount: 4, frameDuration: 70, drawSize: 16 }),
+  woodenCrate: Object.freeze({ frameWidth: 32, frameHeight: 32, frameCount: 4, frameDuration: 105, drawSize: 32, debrisHoldMs: 420 }),
+  bambooBasket: Object.freeze({ frameWidth: 32, frameHeight: 32, frameCount: 4, frameDuration: 105, drawSize: 32, debrisHoldMs: 420 }),
+});
 export const PIXEL_CRAWLER_TREE_SPRITE = {
   frameWidth: 64,
   frameHeight: 96,
