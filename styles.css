@@ -337,6 +337,20 @@ button {
   background: rgba(239, 222, 191, 0.96);
 }
 
+:root[data-minimap-size="small"] .minimap { width: clamp(110px, 10vw, 140px); }
+:root[data-minimap-size="large"] .minimap { bottom: 142px; width: clamp(160px, 17vw, 220px); }
+:root[data-minimap-opacity="soft"] .minimap { opacity: 0.72; }
+
+.settings-row select {
+  min-height: 34px;
+  border: 2px solid rgba(85, 58, 40, 0.94);
+  border-radius: 5px;
+  background: #f3e7c8;
+  color: #2f2124;
+  font: inherit;
+  padding: 3px 6px;
+}
+
 .corruption-title {
   display: inline-flex;
   align-items: center;
@@ -2721,6 +2735,10 @@ html[data-reduced-motion="true"] *::after {
     right: 10px;
     width: 120px;
     padding: 4px;
+  }
+
+  :root[data-minimap-size="large"] .minimap {
+    bottom: 210px;
   }
 
   .story-book-button {

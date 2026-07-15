@@ -27,6 +27,8 @@ const saved = store.save({
   reducedMotion: true,
   textScale: "large",
   minimapVisible: false,
+  minimapSize: "large",
+  minimapOpacity: "soft",
 });
 
 assert.deepEqual(saved, {
@@ -38,6 +40,8 @@ assert.deepEqual(saved, {
   reducedMotion: true,
   textScale: "large",
   minimapVisible: false,
+  minimapSize: "large",
+  minimapOpacity: "soft",
   keyBindings: { ...DEFAULT_GAME_SETTINGS.keyBindings },
 }, "Supported settings persist with their intended values.");
 

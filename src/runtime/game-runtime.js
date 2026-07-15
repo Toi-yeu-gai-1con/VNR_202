@@ -120,6 +120,8 @@ const mutedInput = document.getElementById("muted-input");
 const reducedMotionInput = document.getElementById("reduced-motion-input");
 const largeTextInput = document.getElementById("large-text-input");
 const minimapInput = document.getElementById("minimap-input");
+const minimapSizeInput = document.getElementById("minimap-size-input");
+const minimapOpacityInput = document.getElementById("minimap-opacity-input");
 const aboutButton = document.getElementById("about-button");
 const closeSlideButton = document.getElementById("close-slide-button");
 const returnStartButton = document.getElementById("return-start-button");
@@ -1053,7 +1055,7 @@ aboutButton.addEventListener("click", withUiClickSound(() => {
   openSlide(currentLevel().aboutSlide);
 }));
 closeSlideButton.addEventListener("click", closeSlide);
-for (const settingsControl of [musicVolumeInput, sfxVolumeInput, dialogueVolumeInput, soundCaptionsInput, mutedInput, reducedMotionInput, largeTextInput, minimapInput]) {
+for (const settingsControl of [musicVolumeInput, sfxVolumeInput, dialogueVolumeInput, soundCaptionsInput, mutedInput, reducedMotionInput, largeTextInput, minimapInput, minimapSizeInput, minimapOpacityInput]) {
   settingsControl.addEventListener("input", saveSettingsFromControls);
   settingsControl.addEventListener("change", saveSettingsFromControls);
 }
@@ -1121,6 +1123,8 @@ function updateSettingsControls() {
   reducedMotionInput.checked = state.settings.reducedMotion;
   largeTextInput.checked = state.settings.textScale === "large";
   minimapInput.checked = state.settings.minimapVisible;
+  minimapSizeInput.value = state.settings.minimapSize;
+  minimapOpacityInput.value = state.settings.minimapOpacity;
   renderKeyBindings();
 }
 
@@ -1140,6 +1144,8 @@ function applyGameSettings() {
   state.soundMuted = state.settings.soundMuted;
   document.documentElement.dataset.reducedMotion = String(state.settings.reducedMotion);
   document.documentElement.dataset.textScale = state.settings.textScale;
+  document.documentElement.dataset.minimapSize = state.settings.minimapSize;
+  document.documentElement.dataset.minimapOpacity = state.settings.minimapOpacity;
   audioSystem.setMuted(state.soundMuted);
   updateSoundButton();
   updateSettingsControls();
@@ -1156,6 +1162,8 @@ function saveSettingsFromControls() {
     reducedMotion: reducedMotionInput.checked,
     textScale: largeTextInput.checked ? "large" : "normal",
     minimapVisible: minimapInput.checked,
+    minimapSize: minimapSizeInput.value,
+    minimapOpacity: minimapOpacityInput.value,
   });
   applyGameSettings();
   syncAmbienceAudio();

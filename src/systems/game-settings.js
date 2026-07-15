@@ -7,12 +7,16 @@ export const DEFAULT_GAME_SETTINGS = Object.freeze({
   reducedMotion: false,
   textScale: "normal",
   minimapVisible: true,
+  minimapSize: "normal",
+  minimapOpacity: "full",
   keyBindings: Object.freeze({ moveUp: "w", moveDown: "s", moveLeft: "a", moveRight: "d", interact: "e", attack: "j", parry: "k", dodge: "l", minimap: "m", pause: "escape", book: "b" }),
 });
 
 const GAME_SETTINGS_VERSION = 2;
 const LEGACY_GAME_SETTINGS_VERSION = 1;
 const TEXT_SCALES = new Set(["normal", "large"]);
+const MINIMAP_SIZES = new Set(["small", "normal", "large"]);
+const MINIMAP_OPACITIES = new Set(["full", "soft"]);
 const BINDING_ACTIONS = Object.freeze(Object.keys(DEFAULT_GAME_SETTINGS.keyBindings));
 
 function isVolume(value) {
@@ -42,6 +46,8 @@ function normalizeSettings(settings) {
     reducedMotion: settings.reducedMotion,
     textScale: settings.textScale,
     minimapVisible: settings.minimapVisible,
+    minimapSize: MINIMAP_SIZES.has(settings.minimapSize) ? settings.minimapSize : DEFAULT_GAME_SETTINGS.minimapSize,
+    minimapOpacity: MINIMAP_OPACITIES.has(settings.minimapOpacity) ? settings.minimapOpacity : DEFAULT_GAME_SETTINGS.minimapOpacity,
     keyBindings: normalizeKeyBindings(settings.keyBindings),
   };
 }

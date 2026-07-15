@@ -641,8 +641,12 @@ test("pause settings persist audio, accessibility, and minimap preferences", asy
   await page.locator("#reduced-motion-input").check();
   await page.locator("#large-text-input").check();
   await page.locator("#minimap-input").uncheck();
+  await page.locator("#minimap-size-input").selectOption("large");
+  await page.locator("#minimap-opacity-input").selectOption("soft");
   await expect.poll(() => page.evaluate(() => document.documentElement.dataset.reducedMotion)).toBe("true");
   await expect.poll(() => page.evaluate(() => document.documentElement.dataset.textScale)).toBe("large");
+  await expect.poll(() => page.evaluate(() => document.documentElement.dataset.minimapSize)).toBe("large");
+  await expect.poll(() => page.evaluate(() => document.documentElement.dataset.minimapOpacity)).toBe("soft");
   await page.screenshot({ path: testInfo.outputPath("pause-settings.png"), fullPage: true });
 
   await page.locator("#close-settings-button").click();
@@ -654,7 +658,27 @@ test("pause settings persist audio, accessibility, and minimap preferences", asy
   await page.reload();
   await expect.poll(() => page.evaluate(() => document.documentElement.dataset.reducedMotion)).toBe("true");
   await expect.poll(() => page.evaluate(() => document.documentElement.dataset.textScale)).toBe("large");
+  await expect(page.locator("#minimap-size-input")).toHaveValue("large");
+  await expect(page.locator("#minimap-opacity-input")).toHaveValue("soft");
   await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem("crossroads-settings-v1")).settings.dialogueVolume)).toBe(0.31);
+});
+
+test("minimap appearance preferences resize the live panel without taking gameplay input", async ({ page }, testInfo) => {
+  await openDebugSession(page);
+  await page.locator("#pause-button").click();
+  await page.locator("#settings-button").click();
+  await page.locator("#minimap-size-input").selectOption("large");
+  await page.locator("#minimap-opacity-input").selectOption("soft");
+  await page.locator("#close-settings-button").click();
+  await page.locator("#resume-button").click();
+
+  await expect(page.locator("#minimap")).toBeVisible();
+  const minimapBox = await page.locator("#minimap").boundingBox();
+  const hudBox = await page.locator("#hud").boundingBox();
+  expect(minimapBox?.width).toBeGreaterThan(160);
+  expect((minimapBox?.y ?? 0) + (minimapBox?.height ?? 0)).toBeLessThan(hudBox?.y ?? 0);
+  await expect(page.locator("#minimap")).toHaveCSS("opacity", "0.72");
+  await page.screenshot({ path: testInfo.outputPath("large-soft-minimap.png"), fullPage: true });
 });
 
 test("key binding settings reject conflicts and persist an updated combat prompt", async ({ page }, testInfo) => {
