@@ -23,6 +23,7 @@ import { createMiniMapRenderer } from "../rendering/minimap-renderer.js";
 import { getLoadingContent } from "../data/loading-content.js";
 import { createCoordinateSystem } from "../rendering/coordinate-system.js";
 import { drawGroundShadow } from "../rendering/ground-shadow.js";
+import { getParallaxOffset } from "../rendering/parallax.js";
 import { LEVEL_ASSET_GROUPS, getAssetGroupForSource, isCriticalAsset } from "../data/asset-manifest.js";
 import { BOSS_DEFINITIONS, COMBAT_DENSITY, COMBAT_ROSTER } from "../data/combat-config.js";
 import { MONSTER_ART_DEFINITIONS, MONSTER_ART_KEY_BY_ID, getMonsterStripSource, isDedicatedMonsterArtKey } from "../data/monster-art-definitions.js";
@@ -11757,13 +11758,14 @@ function drawHubAtmosphere(decorations) {
 function drawFogDrift(fogBands) {
   ctx.save();
   ctx.globalCompositeOperation = "screen";
+  const parallaxCamera = getParallaxOffset(camera, 0.72, { reducedMotion: state.settings.reducedMotion });
 
   for (let index = 0; index < fogBands.length; index += 1) {
     const fog = fogBands[index];
     const sway = Math.sin(state.lastTimestamp * 0.00045 + index * 0.9) * (10 + (index % 3) * 4);
     const drift = Math.cos(state.lastTimestamp * 0.0003 + index * 0.6) * 3;
-    const x = fog.x - camera.x + sway;
-    const y = fog.y - camera.y + drift;
+    const x = fog.x - parallaxCamera.x + sway;
+    const y = fog.y - parallaxCamera.y + drift;
     const width = fog.width + 24;
     const height = fog.height;
 
@@ -11782,13 +11784,14 @@ function drawFogDrift(fogBands) {
 
 function drawUnityHouseAtmosphere(decorations) {
   const shafts = [208, 480, 748];
+  const parallaxCamera = getParallaxOffset(camera, 0.84, { reducedMotion: state.settings.reducedMotion });
 
   ctx.save();
   ctx.globalCompositeOperation = "screen";
 
   for (const shaftX of shafts) {
-    const x = shaftX - camera.x;
-    const y = decorations.house.y - camera.y;
+    const x = shaftX - parallaxCamera.x;
+    const y = decorations.house.y - parallaxCamera.y;
     const height = decorations.house.height;
     const gradient = ctx.createLinearGradient(x, y, x, y + height);
     gradient.addColorStop(0, "rgba(244, 221, 159, 0.18)");
@@ -11810,8 +11813,8 @@ function drawUnityHouseAtmosphere(decorations) {
 
   for (let index = 0; index < 24; index += 1) {
     const travel = state.lastTimestamp * 0.02 + index * 13;
-    const x = decorations.house.x + 40 + ((index * 67) % (decorations.house.width - 80)) - camera.x;
-    const y = decorations.house.y + 40 + ((travel * 0.45 + index * 17) % (decorations.house.height - 80)) - camera.y;
+    const x = decorations.house.x + 40 + ((index * 67) % (decorations.house.width - 80)) - parallaxCamera.x;
+    const y = decorations.house.y + 40 + ((travel * 0.45 + index * 17) % (decorations.house.height - 80)) - parallaxCamera.y;
     ctx.fillStyle = `rgba(255, 231, 190, ${0.08 + (index % 3) * 0.04})`;
     ctx.fillRect(Math.round(x), Math.round(y), 2, 2);
   }
@@ -11869,6 +11872,7 @@ function drawDoiMoiAtmosphere(decorations) {
   );
 
   ctx.save();
+  const parallaxCamera = getParallaxOffset(camera, 0.82, { reducedMotion: state.settings.reducedMotion });
 
   for (const factory of decorations.factories) {
     const chimneys = [
@@ -11882,8 +11886,8 @@ function drawDoiMoiAtmosphere(decorations) {
       for (let puff = 0; puff < 5; puff += 1) {
         const lift = (state.lastTimestamp * 0.026 + puff * 18 + smokeIndex * 12) % 74;
         const sway = Math.sin(state.lastTimestamp * 0.0014 + puff + smokeIndex) * 8;
-        const x = chimney.x + sway - camera.x;
-        const y = chimney.y - lift - camera.y;
+        const x = chimney.x + sway - parallaxCamera.x;
+        const y = chimney.y - lift - parallaxCamera.y;
         const size = 10 + puff * 3;
         ctx.fillStyle = `rgba(239, 246, 249, ${0.12 - puff * 0.018})`;
         ctx.fillRect(Math.round(x), Math.round(y), size, Math.max(4, size - 2));
