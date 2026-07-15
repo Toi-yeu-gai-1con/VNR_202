@@ -47,9 +47,13 @@
                 <span id="hp-value" class="meter-value">36 / 36</span>
               </div>
               <div class="hud-chip meter-chip corruption-chip">
-                <span class="status-label">Tha hóa</span>
+                <span class="corruption-title">
+                  <span class="status-label">Tha hóa</span>
+                  <button id="corruption-help-button" class="corruption-help-button" type="button" aria-label="Giải thích thanh Tha hóa" aria-expanded="false" aria-controls="corruption-help-tooltip">?</button>
+                </span>
                 <span class="meter-track corruption-meter"><span id="sa-doa-fill" class="meter-fill corruption-fill"></span></span>
                 <span id="sa-doa-value" class="meter-value">0%</span>
+                <div id="corruption-help-tooltip" class="corruption-help-tooltip hidden" role="tooltip" aria-hidden="true"></div>
               </div>
               <div class="hud-chip status-chip">
                 <span class="status-label">Tín vật</span>

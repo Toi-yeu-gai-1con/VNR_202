@@ -63,6 +63,8 @@ const storyBookCount = document.getElementById("story-book-count");
 const storyToast = document.getElementById("story-toast");
 const soundCaption = document.getElementById("sound-caption");
 const corruptionWarning = document.getElementById("corruption-warning");
+const corruptionHelpButton = document.getElementById("corruption-help-button");
+const corruptionHelpTooltip = document.getElementById("corruption-help-tooltip");
 const hud = document.getElementById("hud");
 const dialogueBox = document.getElementById("dialogue-box");
 const dialogueSpeaker = document.getElementById("dialogue-speaker");
@@ -981,6 +983,7 @@ zoneSummaryCloseButton.addEventListener("click", withUiClickSound(closeZoneSumma
 zoneTitleContinueButton.addEventListener("click", withUiClickSound(closeZoneTitleCard));
 assetRetryButton.addEventListener("click", withUiClickSound(retryPendingAssetLoad));
 assetReturnButton.addEventListener("click", withUiClickSound(returnFromAssetFailure));
+corruptionHelpButton?.addEventListener("click", withUiClickSound(toggleCorruptionHelp));
 difficultyControls.addEventListener("click", (event) => {
   const button = event.target.closest("[data-difficulty]");
   if (button) {
@@ -1143,7 +1146,8 @@ function clearPressedKeys() {
 }
 
 window.addEventListener("keydown", (event) => {
-  if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " "].includes(event.key)) {
+  const isCorruptionHelpControl = event.target === corruptionHelpButton;
+  if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(event.key) || (event.key === " " && !isCorruptionHelpControl)) {
     event.preventDefault();
   }
 
@@ -1152,6 +1156,16 @@ window.addEventListener("keydown", (event) => {
   }
 
   const key = normalizeKey(event.key);
+
+  if (isCorruptionHelpControl && (key === "enter" || key === "space")) {
+    return;
+  }
+
+  if (key === "escape" && corruptionHelpButton?.getAttribute("aria-expanded") === "true") {
+    event.preventDefault();
+    setCorruptionHelpVisible(false);
+    return;
+  }
 
   if (pendingKeyBindingAction) {
     event.preventDefault();
@@ -2583,6 +2597,7 @@ function updateProgressHud() {
   hpValue.textContent = `${state.health} / ${PLAYER_MAX_HEALTH}`;
   saDoaFill.style.width = `${saDoaPercent}%`;
   saDoaValue.textContent = `${state.saDoa}%`;
+  updateCorruptionHelpCopy();
   inventoryValue.textContent = `${state.inventory.size} / ${RELIC_TARGET_COUNT}`;
   updateCombatStatus();
   updateCorruptionEffects();
@@ -3420,6 +3435,39 @@ function renderDialogue() {
   dialogueBox.classList.remove("hidden");
   dialogueBox.setAttribute("aria-hidden", "false");
   playDialogueSound(uiSounds.pixelClick);
+}
+
+function updateCorruptionHelpCopy() {
+  if (!corruptionHelpTooltip) {
+    return;
+  }
+
+  const hasUnlockedSources = getStoryBookEntryIds().length > 0;
+  const status = state.saDoa >= CORRUPTION_GLITCH_THRESHOLD
+    ? "Dòng thời gian đang có dấu hiệu chệch hướng."
+    : "Dòng thời gian hiện vẫn ổn định.";
+  const sourceHint = hasUnlockedSources
+    ? " Tư liệu đã mở trong Sách lịch sử giúp bạn đối chiếu từng ngã rẽ."
+    : "";
+  const copy = `${status} Tha hóa ghi lại những lựa chọn làm hành trình lệch khỏi lợi ích chung. Nó tăng khi bạn hành động vụ lợi, bỏ qua cảnh báo quan trọng hoặc gục ngã. Giữ mức thấp để hạn chế hệ quả nặng nề về sau.${sourceHint}`;
+  if (corruptionHelpTooltip.textContent !== copy) {
+    corruptionHelpTooltip.textContent = copy;
+  }
+}
+
+function setCorruptionHelpVisible(visible) {
+  if (!corruptionHelpButton || !corruptionHelpTooltip) {
+    return;
+  }
+
+  corruptionHelpButton.setAttribute("aria-expanded", String(visible));
+  corruptionHelpTooltip.classList.toggle("hidden", !visible);
+  corruptionHelpTooltip.setAttribute("aria-hidden", String(!visible));
+}
+
+function toggleCorruptionHelp() {
+  const isVisible = corruptionHelpButton?.getAttribute("aria-expanded") === "true";
+  setCorruptionHelpVisible(!isVisible);
 }
 
 function showSoundCaptionForSfx(key) {

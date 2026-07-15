@@ -32,6 +32,26 @@ async function advanceDialogueToChoice(page, choiceId) {
   return choice;
 }
 
+test("corruption HUD offers a keyboard-accessible explanation without revealing secret ending thresholds", async ({ page }, testInfo) => {
+  await openDebugSession(page);
+
+  const helpButton = page.locator("#corruption-help-button");
+  const helpTooltip = page.locator("#corruption-help-tooltip");
+
+  await expect(helpButton).toBeVisible();
+  await helpButton.focus();
+  await page.keyboard.press("Enter");
+  await expect(helpButton).toHaveAttribute("aria-expanded", "true");
+  await expect(helpTooltip).toBeVisible();
+  await expect(helpTooltip).toContainText("Tha hóa");
+  await expect(helpTooltip).not.toContainText("100%");
+  await page.screenshot({ path: testInfo.outputPath("corruption-help-tooltip.png"), fullPage: true });
+
+  await page.keyboard.press("Space");
+  await expect(helpButton).toHaveAttribute("aria-expanded", "false");
+  await expect(helpTooltip).toBeHidden();
+});
+
 test("F3 reveals debug geometry only in an explicit debug session", async ({ page }, testInfo) => {
   await page.goto("/");
   await expect(page.locator("#start-screen")).toBeVisible();
