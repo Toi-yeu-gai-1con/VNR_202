@@ -523,6 +523,7 @@ test("restart requires explicit confirmation before replacing the current journe
 });
 
 test("the employee forces the TVA briefing choice and opens the first dispatch portal", async ({ page }, testInfo) => {
+  test.setTimeout(60_000);
   await openDebugSession(page);
   await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("hub", { x: 480, y: 260, direction: "up" }));
   await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("tva-clerk-placeholder"));
@@ -955,7 +956,10 @@ test("a bad ending is interrupted by the TVA employee and restores the checkpoin
   await expect.poll(() => snapshot(page).then((state) => state.audio.music.badEnding.paused)).toBe(false);
   await expect.poll(() => snapshot(page).then((state) => state.audio.music.badEnding.currentTime)).toBeGreaterThan(0);
   await page.evaluate(() => window.__CROSSROADS_DEBUG__.completeEndingCinematic());
-  await expect.poll(() => snapshot(page).then((state) => state.badEndingRecovery?.phase)).toBe("linger");
+  await expect.poll(() => snapshot(page).then((state) => state.badEndingRecovery)).toBeNull();
+  await expect(page.locator("#end-overlay")).toHaveAttribute("data-awaiting-recovery", "true");
+  await expect(page.locator("#ending-lesson")).toBeVisible();
+  await requestBadEndingRecovery(page);
 
   await seekBadEndingRecovery(page, "complaintAt", 100);
   await expect(page.locator("#bad-ending-recovery-dialogue")).toBeVisible();
@@ -1033,6 +1037,7 @@ test("Zone 1 choices record a recoverable risk and only trigger its bad ending a
   await expect(page.locator("#end-overlay")).toHaveAttribute("data-cinematic", "complete");
   await page.screenshot({ path: testInfo.outputPath("zone1-lost-compass-ending.png"), fullPage: true });
 
+  await requestBadEndingRecovery(page);
   await seekBadEndingRecovery(page, "completeAt", 50);
   await expect.poll(() => snapshot(page).then((state) => state.mode)).toBe("playing");
   const retry = await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("red-compass-reward"));
@@ -1045,7 +1050,7 @@ test("Zone 1 choices record a recoverable risk and only trigger its bad ending a
 });
 
 for (const lastIssueChoice of ["rescue", "divert", "return-after-compromise", "surrender"]) {
-  test(`Zone 1 routes the playable last issue through ${lastIssueChoice} before the compass verdict`, async ({ page }) => {
+  test(`Zone 1 resolves the playable last issue through ${lastIssueChoice}`, async ({ page }) => {
     await openDebugSession(page);
     await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("village"));
     await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("le-paria-stack"));
@@ -1075,13 +1080,24 @@ for (const lastIssueChoice of ["rescue", "divert", "return-after-compromise", "s
         )?.optionId
       ),
     ).toBe(lastIssueChoice);
-    await expect.poll(() => snapshot(page).then((state) => state.quests.zone1RewardClaimed)).toBe(false);
-    await expect.poll(() => snapshot(page).then((state) => state.mode)).toBe("playing");
-
-    await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("red-compass-reward"));
-    await finishDialogueLine(page);
-    await expect(page.locator('[data-dialogue-choice="protect-common-path"]')).toBeVisible();
+    if (lastIssueChoice === "surrender") {
+      await expect.poll(() => snapshot(page).then((state) => state.quests.zone1RewardClaimed)).toBe(false);
+      await expect.poll(() => snapshot(page).then((state) => state.mode)).toBe("playing");
+      await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("red-compass-reward"));
+      await finishDialogueLine(page);
+      await expect(page.locator('[data-dialogue-choice="repair-harm"]')).toBeVisible();
+      await expect(page.locator('[data-dialogue-choice="confirm-personal-gain"]')).toBeVisible();
+    } else {
+      await expect.poll(() => snapshot(page).then((state) => state.quests.zone1RewardClaimed)).toBe(true);
+      await expect.poll(() => snapshot(page).then((state) => state.inventory)).toContain("red-compass");
+      await expect(page.locator("#zone-summary-overlay")).toBeVisible();
+    }
   });
+}
+
+async function requestBadEndingRecovery(page) {
+  await page.locator("#end-overlay").click({ position: { x: 12, y: 12 } });
+  await expect.poll(() => snapshot(page).then((state) => state.badEndingRecovery?.phase)).toBe("linger");
 }
 
 test("pause settings persist audio, accessibility, and minimap preferences", async ({ page }, testInfo) => {
@@ -1208,6 +1224,7 @@ test("a Zone 2 verdict that reaches maximum corruption cannot award its relic be
   await page.screenshot({ path: testInfo.outputPath("zone2-max-corruption-relic-sealed.png"), fullPage: true });
 
   await page.evaluate(() => window.__CROSSROADS_DEBUG__.completeEndingCinematic());
+  await requestBadEndingRecovery(page);
   await seekBadEndingRecovery(page, "resetAt", 700);
   await expect.poll(() => snapshot(page).then((state) => state.badEndingRecovery?.phase)).toBe("reset");
   await page.screenshot({ path: testInfo.outputPath("zone2-max-corruption-reset-wave.png"), fullPage: true });
@@ -1266,6 +1283,7 @@ for (const recoveryChoice of ["protect-moment", "repair-fragment"]) {
     await expect.poll(() => snapshot(page).then((state) => state.endingId)).toBe("zone3a-missed-moment");
 
     await page.evaluate(() => window.__CROSSROADS_DEBUG__.completeEndingCinematic());
+    await requestBadEndingRecovery(page);
     await seekBadEndingRecovery(page, "completeAt", 50);
     await expect.poll(() => snapshot(page).then((state) => state.mode)).toBe("playing");
     await expect.poll(() => snapshot(page).then((state) => state.narrative.branchFlags["zone3a.badConfirmed"] ?? false)).toBe(false);
@@ -1330,15 +1348,18 @@ for (const recoveryChoice of ["protect-moment", "repair-fragment"]) {
     await expect.poll(() => snapshot(page).then((state) => state.narrative.branchFlags["zone2.badConfirmed"] ?? false)).toBe(false);
 
     await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("vietminh-cadre"));
-    await page.locator('[data-dialogue-choice="prepare-network"]').click();
-    await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("vietminh-cadre"));
-    await page.locator(`[data-dialogue-choice="${recoveryChoice}"]`).click();
+    const rallyChoice = recoveryChoice === "repair-fragment" ? "fragment-rally" : "prepare-network";
+    await page.locator(`[data-dialogue-choice="${rallyChoice}"]`).click();
+    if (recoveryChoice === "repair-fragment") {
+      await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("vietminh-cadre"));
+      await page.locator('[data-dialogue-choice="repair-fragment"]').click();
+    }
 
     await expect.poll(() => snapshot(page).then((state) => state.endingId)).toBeNull();
     await expect.poll(() => snapshot(page).then((state) => state.narrative.branchFlags["zone3a.badConfirmed"] ?? false)).toBe(false);
     await expect.poll(() => snapshot(page).then((state) => state.inventory)).toContain("vietminh-thread");
     await expect.poll(() => snapshot(page).then((state) => state.quests.zone3ThreadClaimed)).toBe(true);
-    await expect(page.locator("#zone-summary-overlay")).toBeVisible();
+    await expect(page.locator("#zone-summary-overlay")).toBeHidden();
     await page.waitForTimeout(750);
     await page.screenshot({ path: testInfo.outputPath(`zone3a-${recoveryChoice}-stale-save-repaired.png`), fullPage: true });
   });

@@ -71,7 +71,7 @@ async function prepareDecision(page, entry) {
     case "zone1/compass-verdict":
       await prepareZone1Deliveries(page);
       await interact(page, "red-compass-reward");
-      await chooseDialogueOption(page, "rescue");
+      await chooseDialogueOption(page, "surrender");
       await interact(page, "red-compass-reward");
       return;
     case "zone2/archive-unity-choice":
@@ -90,7 +90,7 @@ async function prepareDecision(page, entry) {
       for (const id of ["recruit-farmer", "recruit-worker", "recruit-intellectual", "recruit-bourgeois"]) await interact(page, id);
       await interact(page, "vietminh-cadre");
       if (entry.decisionId === "august-verdict") {
-        await chooseDialogueOption(page, "prepare-network");
+        await chooseDialogueOption(page, "fragment-rally");
         await interact(page, "vietminh-cadre");
       }
       return;
@@ -130,6 +130,15 @@ for (const entry of CHOICE_COVERAGE) {
     await openDebugSession(page);
     await prepareDecision(page, entry);
     await chooseDialogueOption(page, entry.optionId);
+
+    const expectedEnding = {
+      "zone1/compass-verdict/confirm-personal-gain": "zone1-lost-compass",
+      "zone3a/august-verdict/confirm-delay": "zone3a-missed-moment",
+    }[coverageKey];
+    if (expectedEnding) {
+      await expect.poll(() => snapshot(page).then((state) => state.endingId)).toBe(expectedEnding);
+      return;
+    }
 
     await expect.poll(() => snapshot(page).then((state) =>
       state.narrative.choiceHistory.find(

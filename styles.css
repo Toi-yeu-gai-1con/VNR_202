@@ -2180,6 +2180,74 @@ html[data-reduced-motion="true"] *::after {
   border: 0;
 }
 
+.ending-lesson {
+  position: absolute;
+  z-index: 2;
+  left: clamp(18px, 5vw, 84px);
+  bottom: clamp(22px, 4vh, 58px);
+  width: min(620px, calc(100% - 36px));
+  padding: clamp(14px, 2.1vw, 22px);
+  border: 2px solid rgba(205, 159, 88, 0.82);
+  background:
+    linear-gradient(140deg, rgba(30, 23, 18, 0.96), rgba(17, 14, 13, 0.94)),
+    rgba(19, 14, 12, 0.94);
+  box-shadow: 0 8px 0 rgba(8, 6, 6, 0.76), 0 18px 36px rgba(0, 0, 0, 0.48);
+  color: #fff1ca;
+  text-align: left;
+  transition: opacity 320ms ease, transform 320ms ease;
+}
+
+.ending-lesson-label,
+.ending-lesson-text,
+.ending-lesson-quote {
+  margin: 0;
+}
+
+.ending-lesson-label {
+  margin-bottom: 10px;
+  color: #f5cb73;
+  font-family: "Press Start 2P", cursive;
+  font-size: clamp(0.62rem, 1.25vw, 0.82rem);
+  line-height: 1.55;
+}
+
+.ending-lesson-text {
+  font-size: clamp(0.85rem, 1.7vw, 1.06rem);
+  line-height: 1.55;
+}
+
+.ending-lesson-quote {
+  margin-top: 12px;
+  color: #f8d77f;
+  font-size: clamp(0.78rem, 1.5vw, 0.96rem);
+  font-style: italic;
+  line-height: 1.45;
+}
+
+.end-overlay[data-cinematic="running"] .ending-lesson,
+.end-overlay[data-recovery-phase] .ending-lesson {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(14px);
+}
+
+.end-overlay[data-awaiting-recovery="true"] .end-art-frame::after {
+  content: "Nhấp chuột để David can thiệp";
+  position: absolute;
+  z-index: 4;
+  right: clamp(18px, 4vw, 60px);
+  bottom: clamp(20px, 4vh, 54px);
+  padding: 11px 14px;
+  border: 1px solid rgba(239, 191, 98, 0.7);
+  background: rgba(13, 10, 10, 0.82);
+  color: #ffe3a4;
+  font-family: "Press Start 2P", cursive;
+  font-size: clamp(0.55rem, 1vw, 0.72rem);
+  line-height: 1.55;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.7);
+  pointer-events: none;
+}
+
 .end-art-frame {
   position: relative;
   z-index: 0;

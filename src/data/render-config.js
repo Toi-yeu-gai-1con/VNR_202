@@ -1,6 +1,9 @@
 import { MONSTER_ART_DEFINITIONS } from "./monster-art-definitions.js";
 
 export const PLAYER_FOOTPRINT = { width: 8, height: 6, offsetY: 7 };
+export function getTvaActorScale(viewportWidth) {
+  return viewportWidth <= 820 ? 1.5 : 1.85;
+}
 export const PLAYER_SPRITE = {
   frameWidth: 96,
   frameHeight: 80,

@@ -485,6 +485,11 @@ export const ENDING_DEFINITIONS = {
     title: "GOOD ENDING: ĐẠI THẮNG & PHÁT TRIỂN",
     copy:
       "Dưới sự lãnh đạo của Đảng Cộng sản Việt Nam, dân tộc ta đã giành lại độc lập, thống nhất và đang vững bước trên con đường dân giàu, nước mạnh. Sự lãnh đạo của Đảng là nhân tố hàng đầu bảo đảm mọi thắng lợi.",
+    lesson: {
+      label: "HỒ SƠ KẾT • ĐƯỜNG HƯỚNG CHUNG",
+      text: "Năm tín vật cùng sáng khi đường lối, tổ chức, đại đoàn kết, khát vọng thống nhất và năng lực đổi mới được nối thành một hành trình chung.",
+      quote: "Một con đường bền vững được tạo nên từ trách nhiệm với nhân dân, và từ khả năng cùng nhau sửa những điều chưa trọn vẹn.",
+    },
     artSrc: "assets/environment/generated-worlds/good-ending-hero.webp",
     artAlt: "Khung cảnh kết thúc tốt với quảng trường đoàn kết, ngọn đuốc rực sáng, ruộng lúa và công trình hiện đại.",
   },
@@ -492,6 +497,11 @@ export const ENDING_DEFINITIONS = {
     title: "BAD ENDING: MẤT NƯỚC / CHỆCH HƯỚNG",
     copy:
       "Không có ngọn cờ dẫn đường đúng đắn và bản lĩnh kiên định, lịch sử dân tộc đã rẽ sang một bóng đen nô lệ và chia cắt mới. Đất nước tiếp tục bị các thế lực thù địch thao túng hoặc chệch khỏi con đường xã hội chủ nghĩa.",
+    lesson: {
+      label: "HỒ SƠ KẾT • DÒNG THỜI GIAN CHỆCH HƯỚNG",
+      text: "Tha hóa đã vượt ngưỡng trước khi lịch sử kịp được mở khóa. Khi lợi ích riêng lấn át trách nhiệm chung, mọi tín hiệu dẫn đường đều bị kéo lệch khỏi mục tiêu vì nhân dân.",
+      quote: "Một sai lầm có thể sửa; điều nguy hiểm là ngừng nhận ra nó.",
+    },
     artSrc: "assets/environment/generated-worlds/bad-ending-hero.webp",
     artAlt: "Khung cảnh kết thúc xấu với xã hội đen tối hiện đại, trụ Tha hóa, chia rẽ và lệ thuộc.",
   },
@@ -499,6 +509,11 @@ export const ENDING_DEFINITIONS = {
     title: "KẾT CỤC: DÒNG LỊCH SỬ CÒN VẾT NỨT",
     copy:
       "Năm tín vật đã được đưa về, nhưng những hệ quả của các lựa chọn chưa được sửa trọn vẹn. Hành trình chứng minh rằng giữ được hướng chung không chỉ là chạm tới đích, mà còn là trách nhiệm tiếp tục hàn gắn các vết nứt đã tạo ra.",
+    lesson: {
+      label: "HỒ SƠ KẾT • VẾT NỨT CÒN LẠI",
+      text: "Các tín vật đã hội tụ, nhưng những lựa chọn chưa được hàn gắn vẫn để lại hệ quả. Lịch sử không chỉ là chạm đến đích, mà là giữ trách nhiệm với từng mối nối đã tạo nên con đường ấy.",
+      quote: "Đi tiếp là cần thiết; quay lại sửa điều chưa trọn vẹn cũng là một phần của hành trình.",
+    },
     artSrc: "assets/environment/generated-worlds/neutral-history-fracture-ending.png",
     artAlt: "Kết cục trung tính với năm tín vật trên bàn hồ sơ và một vết nứt thời gian còn sáng trên nền gạch.",
   },
@@ -506,6 +521,11 @@ export const ENDING_DEFINITIONS = {
     title: "NHÁNH GIẢ ĐỊNH: CÓ NGỌN CỜ NHƯNG MẤT LÒNG DÂN",
     copy:
       "Khi Tha hóa vượt mọi ngưỡng cảnh báo, hồ sơ không còn được dẫn lối bởi trách nhiệm với nhân dân. Đây là nhánh giả định: bộ máy vẫn còn đó, nhưng niềm tin bị bào mòn và dòng thời gian rạn vỡ từ bên trong.",
+    lesson: {
+      label: "HỒ SƠ KẾT • LÒNG DÂN",
+      text: "Năm tín vật vẫn được thu thập, nhưng ánh sáng của chúng chuyển đen khi quyền lực xa rời nhân dân. Một tổ chức có thể tồn tại về hình thức, nhưng sẽ tự đánh mất nguồn sức mạnh làm nên thắng lợi nếu để quan liêu và tham nhũng bào mòn niềm tin.",
+      quote: "Có ngọn cờ chưa đủ; điều giữ ngọn cờ đứng vững là lòng dân.",
+    },
     artSrc: "assets/environment/generated-worlds/secret-corruption-ending.png",
     artAlt: "Nhánh giả định về một kho hồ sơ tối, sổ công vụ bỏ ngỏ và vết nứt thời gian xanh lạnh trên nền nhà.",
   },
@@ -513,35 +533,60 @@ export const ENDING_DEFINITIONS = {
     title: "NHÁNH GIẢ ĐỊNH: CON TÀU KHÔNG LA BÀN",
     copy:
       "Khi những lời thức tỉnh bị đổi lấy lợi ích riêng, phong trào phản kháng vẫn tồn tại nhưng khó tìm được một đường hướng chung. Đây là nhánh giả định: đất nước không ngừng đấu tranh, song con đường cứu nước bị kéo dài trong bế tắc.",
-    artSrc: "assets/environment/generated-worlds/zone1-lost-compass-ending.png",
+    lesson: {
+      label: "HỒ SƠ KẾT • MẮT XÍCH BỊ MẤT: ĐƯỜNG LỐI CỨU NƯỚC",
+      text: "Các phong trào yêu nước vẫn tiếp tục, nhưng thiếu một đường lối đủ sức xác định mục tiêu, lực lượng và phương pháp đấu tranh thống nhất. Những nỗ lực rời rạc có nguy cơ tiếp tục bị đàn áp, khiến con đường giải phóng dân tộc kéo dài trong bế tắc.",
+      quote: "Lòng yêu nước là ngọn lửa, nhưng ngọn lửa không có phương hướng vẫn có thể tắt giữa màn đêm.",
+    },
+    artSrc: "assets/environment/generated-worlds/zone1-lost-compass-ending-user.png",
     artAlt: "Nhánh giả định về phong trào bị mất phương hướng, với người lao động tản mác trước một cổng thời gian tối.",
   },
   "zone2-fading-fires": {
     title: "NHÁNH GIẢ ĐỊNH: BA NGỌN LỬA LỤI TÀN",
     copy:
       "Khi nghi kỵ được nuôi lớn thay vì được hóa giải, những tổ chức cùng hướng về độc lập không tìm được tiếng nói chung. Đây là nhánh giả định: khát vọng giải phóng vẫn còn, nhưng sức mạnh liên kết bị phân tán, khiến con đường thành lập một tổ chức thống nhất bị chậm lại.",
-    artSrc: "assets/environment/generated-worlds/zone2-fading-fires-ending.png",
+    lesson: {
+      label: "HỒ SƠ KẾT • MẮT XÍCH BỊ MẤT: TỔ CHỨC LÃNH ĐẠO THỐNG NHẤT",
+      text: "Ba tổ chức cùng hướng tới cách mạng nhưng tiếp tục hoạt động biệt lập và cạnh tranh ảnh hưởng. Khi không hình thành được một đội tiên phong thống nhất, lực lượng bị phân tán, phong trào suy yếu và khủng hoảng lãnh đạo chưa được giải quyết.",
+      quote: "Ba ngọn lửa cháy riêng có thể bị dập tắt từng ngọn; chỉ khi hợp lại, chúng mới trở thành một ngọn đuốc.",
+    },
+    artSrc: "assets/environment/generated-worlds/zone2-fading-fires-ending-user.png",
     artAlt: "Nhánh giả định về một cuộc hội họp tan vỡ trong đêm mưa, với ba ngọn đèn dầu tách rời trên bàn tròn.",
   },
   "zone3a-missed-moment": {
     title: "NHÁNH GIẢ ĐỊNH: THỜI CƠ THÁNG TÁM VỤT QUA",
     copy:
       "Khi sự chuẩn bị bị phân tán và liên lạc bị bỏ mặc, một thời cơ có thể đi qua trước khi các lực lượng kịp cùng hành động. Đây là nhánh giả định: khát vọng độc lập không biến mất, nhưng con đường giành chính quyền bị kéo dài bởi sự rời rạc và chậm trễ.",
-    artSrc: "assets/environment/generated-worlds/zone3a-missed-moment-ending.png",
+    lesson: {
+      label: "HỒ SƠ KẾT • MẮT XÍCH BỊ MẤT: ĐẠI ĐOÀN KẾT VÀ THỜI CƠ",
+      text: "Thời cơ lịch sử chỉ có thể biến thành thắng lợi khi lực lượng quần chúng đã được tổ chức và có sự chỉ đạo thống nhất. Khi các tầng lớp còn phân tán, cuộc nổi dậy có nguy cơ chỉ diễn ra cục bộ hoặc không kịp giành chính quyền trên phạm vi cả nước.",
+      quote: "Thời cơ có thể xuất hiện trong một khoảnh khắc, nhưng sức mạnh để nắm lấy nó phải được chuẩn bị trong nhiều năm.",
+    },
+    artSrc: "assets/environment/generated-worlds/zone3a-missed-moment-ending-user.png",
     artAlt: "Nhánh giả định về một cuộc chuẩn bị bị bỏ dở trong căn nhà cộng đồng nông thôn giữa cơn mưa, với sợi chỉ đỏ tháo rời trên bản đồ.",
   },
   "zone3b-divided-border": {
     title: "NHÁNH GIẢ ĐỊNH: VĨ TUYẾN THÀNH BIÊN GIỚI",
     copy:
       "Khi một giới tuyến quân sự tạm thời bị coi như ranh giới cố định, những mối liên hệ giữa đồng bào hai miền bị đặt trước nguy cơ đứt đoạn. Đây là nhánh giả định: sự chia cắt bị kéo dài trong đời sống thường ngày, thay vì được nhìn nhận là một tình thế cần vượt qua.",
-    artSrc: "assets/environment/generated-worlds/zone3b-divided-border-ending.png",
+    lesson: {
+      label: "HỒ SƠ KẾT • MẮT XÍCH BỊ MẤT: MỤC TIÊU THỐNG NHẤT",
+      text: "Giới tuyến vốn mang tính tạm thời dần trở thành một sự chia cắt kéo dài. Khi thiếu một mục tiêu chung và sự phối hợp trên phạm vi cả nước, sức mạnh đấu tranh thống nhất suy yếu, còn sự lệ thuộc vào các lực lượng bên ngoài ngày càng sâu sắc.",
+      quote: "Một dân tộc bị chia đôi không chỉ mất lãnh thổ; mỗi ngày trôi qua còn làm vết cắt sâu thêm trong lòng con người.",
+    },
+    artSrc: "assets/environment/generated-worlds/zone3b-divided-border-ending-user.png",
     artAlt: "Nhánh giả định về hai mái nhà bên một con sông và cây cầu gãy ở giữa, với sợi chỉ đỏ đứt trên bản đồ.",
   },
   "zone4-stalled-machine": {
     title: "NHÁNH GIẢ ĐỊNH: CỖ MÁY ĐỨNG IM",
     copy:
       "Khi đặc quyền được bảo vệ và những nút thắt cũ không được tháo gỡ, sức sản xuất không thể tự mở đường. Đây là nhánh giả định: người dân vẫn lao động, nhưng cơ hội đổi mới bị trì hoãn bởi một guồng máy không chịu sửa mình.",
-    artSrc: "assets/environment/generated-worlds/zone4-stalled-machine-ending.png",
+    lesson: {
+      label: "HỒ SƠ KẾT • MẮT XÍCH BỊ MẤT: KHẢ NĂNG TỰ ĐỔI MỚI",
+      text: "Khi những yếu kém không được nhìn nhận và cơ chế cũ không được thay đổi, sức sản xuất tiếp tục bị kìm hãm. Khủng hoảng, lạm phát, thiếu thốn và tình trạng cô lập có nguy cơ kéo dài, khiến đất nước bỏ lỡ cơ hội phát triển và hội nhập.",
+      quote: "Người cầm lái không chỉ cần giữ đúng hướng; còn phải biết sửa con tàu trước khi nó ngừng chuyển động.",
+    },
+    artSrc: "assets/environment/generated-worlds/zone4-stalled-machine-ending-user.png",
     artAlt: "Nhánh giả định về một trạm nước và bánh răng ngừng quay bên ruộng đồng, với sổ phân phối còn bỏ ngỏ trên bàn.",
   },
 };

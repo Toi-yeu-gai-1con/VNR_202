@@ -40,7 +40,7 @@ import { GAMEPLAY_BALANCE, getDifficultySettings } from "../data/gameplay-balanc
 import { AUDIO_TRACKS, COMBAT_SFX, getAudioSourceCandidates, resolveAudioSource } from "../data/media-sources.js";
 import { ENDING_AUDIO_KEYS, getEndingAudioKey } from "../data/ending-audio-definitions.js";
 import { BUILD_VERSION, withAssetVersion } from "../data/build-info.js";
-import { PLAYER_FOOTPRINT, PLAYER_SPRITE, PLAYER_ANIMATIONS, NPC_SPRITE, TVA_EMPLOYEE_SPRITE, M90_RESET_ANIMATION, ENVIRONMENT_SPRITES, TILECRAFT_TERRAIN, PIXEL_CRAWLER_TERRAIN, VILLAGE_SKYLINE_Y, VILLAGE_PROP_SPRITES, PIXEL_CRAWLER_BUILDING_SPRITES, HUB_PORTAL_SPRITE, SWORD_SLASH_SPRITE, SMALL_GAME_ASSET_ANIMATIONS, PIXEL_CRAWLER_TREE_SPRITE, KENNEY_ROGUELIKE_TILE, KENNEY_ROGUELIKE_SPRITES, PIXEL_CRAWLER_VEGETATION_SPRITES, PIXEL_CRAWLER_TOOL_CLUSTER_SPRITES, CAINOS_PROP_SPRITES, LIMEZU_INTERIOR_SPRITES, HOUSE_INTERIOR_A_SPRITES, MONSTER_SPRITE_CONFIG } from "../data/render-config.js";
+import { PLAYER_FOOTPRINT, PLAYER_SPRITE, PLAYER_ANIMATIONS, NPC_SPRITE, TVA_EMPLOYEE_SPRITE, M90_RESET_ANIMATION, ENVIRONMENT_SPRITES, TILECRAFT_TERRAIN, PIXEL_CRAWLER_TERRAIN, VILLAGE_SKYLINE_Y, VILLAGE_PROP_SPRITES, PIXEL_CRAWLER_BUILDING_SPRITES, HUB_PORTAL_SPRITE, SWORD_SLASH_SPRITE, SMALL_GAME_ASSET_ANIMATIONS, PIXEL_CRAWLER_TREE_SPRITE, KENNEY_ROGUELIKE_TILE, KENNEY_ROGUELIKE_SPRITES, PIXEL_CRAWLER_VEGETATION_SPRITES, PIXEL_CRAWLER_TOOL_CLUSTER_SPRITES, CAINOS_PROP_SPRITES, LIMEZU_INTERIOR_SPRITES, HOUSE_INTERIOR_A_SPRITES, MONSTER_SPRITE_CONFIG, getTvaActorScale } from "../data/render-config.js";
 
 const canvas = document.getElementById("game-canvas");
 const ctx = canvas.getContext("2d");
@@ -182,6 +182,10 @@ const inventoryValue = document.getElementById("inventory-value");
 const endTitle = document.getElementById("end-title");
 const endCopy = document.getElementById("end-copy");
 const endSummary = document.getElementById("end-summary");
+const endingLesson = document.getElementById("ending-lesson");
+const endingLessonLabel = document.getElementById("ending-lesson-label");
+const endingLessonText = document.getElementById("ending-lesson-text");
+const endingLessonQuote = document.getElementById("ending-lesson-quote");
 const endRunScore = document.getElementById("end-run-score");
 const endRunDetails = document.getElementById("end-run-details");
 const endRunReport = document.getElementById("end-run-report");
@@ -329,8 +333,6 @@ const TVA_DISPATCH_ROUTES = [
     relicIds: ["doi-moi-gear"],
   },
 ];
-const TVA_ACTOR_SCALE = 1.85;
-const TVA_ACTOR_SCALE_COMPACT = 1.5;
 function configureOpeningCopy() {
   buildVersionLabel.textContent = `Phiên bản ${BUILD_VERSION}`;
   startQuestion.textContent = "HỒ SƠ THẤT LẠC NGOÀI DÒNG THỜI GIAN";
@@ -429,6 +431,7 @@ const state = {
   hubEpilogueEndingId: null,
   endingCinematic: null,
   badEndingRecovery: null,
+  badEndingRecoveryRequested: false,
   finalVerdictCheckpoint: null,
   tutorialStep: 0,
   tutorialSeen: false,
@@ -1030,7 +1033,7 @@ function hideTutorial() {
 
 function showZoneSummary(levelId, relicId) {
   const level = levels[levelId];
-  if (!level || state.completedZones.has(levelId)) {
+  if (!level || state.completedZones.has(levelId) || !isLevelReadyToReturn(levelId)) {
     return;
   }
 
@@ -1152,6 +1155,18 @@ openingNextButton.addEventListener("click", advanceOpeningIntro);
 storyPrevButton.addEventListener("click", withUiClickSound(() => showStoryBookEntry(-1)));
 storyNextButton.addEventListener("click", withUiClickSound(() => showStoryBookEntry(1)));
 returnStartButton.addEventListener("click", withUiClickSound(handleReturnFromEnding));
+endOverlay.addEventListener("click", () => {
+  if (
+    state.mode === "ending" &&
+    isBadEndingId(state.endingId) &&
+    isEndingCinematicComplete() &&
+    !state.badEndingRecovery
+  ) {
+    state.badEndingRecoveryRequested = true;
+    beginBadEndingRecovery();
+    updateEndingCinematicUiState();
+  }
+});
 tutorialNextButton.addEventListener("click", withUiClickSound(advanceTutorial));
 zoneSummaryCloseButton.addEventListener("click", withUiClickSound(closeZoneSummary));
 zoneTitleContinueButton.addEventListener("click", withUiClickSound(closeZoneTitleCard));
@@ -1392,7 +1407,6 @@ window.addEventListener("keydown", (event) => {
   }
 
   if (state.mode === "playing" && isBoundKey(key, "pause")) {
-    playUiSound(uiSounds.pixelClick);
     togglePause();
     return;
   }
@@ -1405,7 +1419,6 @@ window.addEventListener("keydown", (event) => {
 
   if (key === "escape") {
     if (state.mode === "opening") {
-      playUiSound(uiSounds.pixelClick);
       returnToStartScreen();
       return;
     }
@@ -1426,24 +1439,20 @@ window.addEventListener("keydown", (event) => {
 
     if (state.mode === "playing" || state.mode === "paused") {
       if (state.mode === "paused" && !settingsMenu.classList.contains("hidden")) {
-        playUiSound(uiSounds.pixelClick);
         closeSettingsMenu();
         return;
       }
-      playUiSound(uiSounds.pixelClick);
       togglePause();
       return;
     }
   }
 
   if (state.mode === "start" && (key === "enter" || key === "space")) {
-    playUiSound(uiSounds.pixelClick);
     requestStartGame();
     return;
   }
 
   if (state.mode === "opening" && (key === "enter" || key === "e" || key === "space")) {
-    playUiSound(uiSounds.pixelClick);
     advanceOpeningIntro();
     return;
   }
@@ -1453,7 +1462,6 @@ window.addEventListener("keydown", (event) => {
       return;
     }
 
-    playUiSound(uiSounds.pixelClick);
     handleReturnFromEnding();
     return;
   }
@@ -1465,22 +1473,33 @@ window.addEventListener("keydown", (event) => {
       const choiceIndex = key === "1" ? 0 : key === "2" ? 1 : -1;
 
       if (choiceIndex >= 0 && choices[choiceIndex]) {
-        playUiSound(uiSounds.pixelClick);
         resolveDialogueChoice(choices[choiceIndex].id);
       }
       return;
     }
 
     if (key === "enter" || key === "e" || key === "space") {
-      playUiSound(uiSounds.pixelClick);
       advanceDialogue();
     }
     return;
   }
 
+  if (state.mode === "summary" && (key === "enter" || key === "e" || key === "space")) {
+    closeZoneSummary();
+    return;
+  }
+
+  if (
+    state.mode === "modal" &&
+    !zoneTitleOverlay.classList.contains("hidden") &&
+    (key === "enter" || key === "e" || key === "space")
+  ) {
+    closeZoneTitleCard();
+    return;
+  }
+
   if (state.mode === "modal" && key === "arrowleft") {
     if (state.activeStoryIds.length > 0) {
-      playUiSound(uiSounds.pixelClick);
       showStoryBookEntry(-1);
     }
     return;
@@ -1488,7 +1507,6 @@ window.addEventListener("keydown", (event) => {
 
   if (state.mode === "modal" && key === "arrowright") {
     if (state.activeStoryIds.length > 0) {
-      playUiSound(uiSounds.pixelClick);
       showStoryBookEntry(1);
     }
     return;
@@ -1496,7 +1514,6 @@ window.addEventListener("keydown", (event) => {
 
   if (state.mode === "playing" && isBoundKey(key, "book")) {
     if (getStoryBookEntryIds().length > 0) {
-      playUiSound(uiSounds.pixelClick);
       openStoryBook();
     }
     return;
@@ -2978,6 +2995,7 @@ function createDebugSnapshot() {
     health: state.health,
     saDoa: state.saDoa,
     inventory: Array.from(state.inventory),
+    completedZones: Array.from(state.completedZones),
     optionalChallenge: getActiveChallengeResult(),
     narrative: {
       choices: { ...state.narrative.choices },
@@ -3729,7 +3747,6 @@ function renderOpeningIntro() {
     : "Tiếp tục";
   openingIntro.classList.remove("hidden");
   openingIntro.setAttribute("aria-hidden", "false");
-  playDialogueSound(uiSounds.pixelClick);
 }
 
 function getLegacyInteractionDialogue(item) {
@@ -3975,7 +3992,6 @@ function renderDialogue() {
   dialogueChoiceList.classList.toggle("hidden", !hasChoices);
   dialogueBox.classList.remove("hidden");
   dialogueBox.setAttribute("aria-hidden", "false");
-  playDialogueSound(uiSounds.pixelClick);
 }
 
 function updateCorruptionHelpCopy() {
@@ -4383,9 +4399,20 @@ function resolveZone1LastIssueChoice(choiceId, item) {
     return;
   }
 
-  item.interactionType = "rewardCompass";
+  const automaticVerdict = {
+    rescue: "protect-common-path",
+    divert: "protect-common-path",
+    "return-after-compromise": "repair-harm",
+  }[choiceId];
+
+  if (automaticVerdict) {
+    resolveZone1CompassVerdictChoice(automaticVerdict, item);
+    return;
+  }
+
+  item.interactionType = "compassVerdict";
   item.dialogueKey = "red-compass-reward";
-  item.prompt = "nhận Chiếc La Bàn Đỏ";
+  item.prompt = "xác nhận hậu quả với Chiếc La Bàn Đỏ";
   closeDialogueForChoice();
   updateQuestChip();
   updateInteractionPrompt();
@@ -4468,9 +4495,19 @@ function resolveZone3RallyChoice(choiceId, item) {
   const option = applyNarrativeChoice("zone3a", "rally-strategy", choiceId);
   if (!option) return;
 
+  const automaticVerdict = {
+    "prepare-network": "protect-moment",
+    "coordinate-moment": "protect-moment",
+  }[choiceId];
+
+  if (automaticVerdict) {
+    resolveZone3AugustVerdictChoice(automaticVerdict, item);
+    return;
+  }
+
   item.interactionType = "augustVerdict";
   item.dialogueKey = "august-verdict";
-  item.prompt = "chốt cách gìn giữ thời cơ Tháng Tám";
+  item.prompt = "xác nhận hậu quả với Sợi Chỉ Đỏ Việt Minh";
   closeDialogueForChoice();
   updateInteractionPrompt();
   showStoryToast(
@@ -5727,6 +5764,7 @@ function beginBadEndingRecovery() {
     state.mode !== "ending" ||
     !isBadEndingId(state.endingId) ||
     !isEndingCinematicComplete() ||
+    !state.badEndingRecoveryRequested ||
     state.badEndingRecovery
   ) {
     return;
@@ -5743,6 +5781,10 @@ function beginBadEndingRecovery() {
 
 function updateBadEndingRecovery() {
   if (state.mode !== "ending" || !isBadEndingId(state.endingId) || !isEndingCinematicComplete()) {
+    return;
+  }
+
+  if (!state.badEndingRecoveryRequested) {
     return;
   }
 
@@ -5813,11 +5855,14 @@ function updateEndingCinematicUiState() {
   if (state.mode !== "ending") {
     returnStartButton.disabled = false;
     delete endOverlay.dataset.cinematic;
+    delete endOverlay.dataset.awaitingRecovery;
     return;
   }
 
   const cinematicState = isEndingCinematicComplete() ? "complete" : "running";
   endOverlay.dataset.cinematic = cinematicState;
+  const awaitingRecovery = cinematicState === "complete" && isBadEndingId(state.endingId) && !state.badEndingRecoveryRequested;
+  endOverlay.dataset.awaitingRecovery = awaitingRecovery ? "true" : "false";
   returnStartButton.disabled = cinematicState === "running" || isBadEndingId(state.endingId);
 }
 
@@ -5831,6 +5876,7 @@ function showEndOverlay() {
   state.mode = "ending";
   state.endingCinematic = createEndingCinematicState(state.endingId ?? "bad");
   state.badEndingRecovery = null;
+  state.badEndingRecoveryRequested = false;
   syncBadEndingRecoveryUi();
   hideDialogue();
   hideStoryToast();
@@ -5844,6 +5890,7 @@ function showEndOverlay() {
   endCopy.textContent = ending.copy;
   endSummary.textContent =
     state.endingSummary || `Tín vật: ${state.inventory.size}/${RELIC_TARGET_COUNT} • Tha hóa: ${state.saDoa}%`;
+  updateEndingLesson(ending);
   updateEndingRunSummary();
   updateEndingArt(ending);
   endOverlay.dataset.ending = state.endingId ?? "bad";
@@ -5862,6 +5909,19 @@ function showEndOverlay() {
   updateEndingCinematicUiState();
   updateStoryBookButton();
   updateCorruptionEffects();
+}
+
+function updateEndingLesson(ending) {
+  const lesson = ending?.lesson;
+  const hasLesson = Boolean(lesson && endingLesson && endingLessonLabel && endingLessonText && endingLessonQuote);
+  endingLesson?.classList.toggle("hidden", !hasLesson);
+  if (!hasLesson) {
+    return;
+  }
+
+  endingLessonLabel.textContent = lesson.label;
+  endingLessonText.textContent = lesson.text;
+  endingLessonQuote.textContent = lesson.quote;
 }
 
 function updateEndingRunSummary() {
@@ -8296,8 +8356,13 @@ function handleSystemInteraction(item) {
         showStoryToast("Quảng trường Đỏ cần đủ nông dân, công nhân, trí thức và tư sản dân tộc.");
         return;
       }
-      item.interactionType = "rallyChoice";
-      item.dialogueKey = "vietminh-rally";
+      if (hasRecordedNarrativeDecision("zone3a", "rally-strategy")) {
+        item.interactionType = "augustVerdict";
+        item.dialogueKey = "august-verdict";
+      } else {
+        item.interactionType = "rallyChoice";
+        item.dialogueKey = "vietminh-rally";
+      }
       startDialogue(item);
       return;
     case "rallyChoice":
@@ -11082,11 +11147,15 @@ function shouldDrawInteractable(item) {
 }
 
 function getTvaEmployeeDisplay(npc) {
+  const scale = getTvaActorScale(window.innerWidth);
+
+  if (npc.hubReturnee) {
+    return { ...npc, scale };
+  }
+
   if (npc.id !== "tva-clerk-placeholder") {
     return npc;
   }
-
-  const scale = getTvaActorScale();
 
   if (state.quests.tvaBriefingAccepted) {
     return { ...npc, scale };
@@ -11103,10 +11172,6 @@ function getTvaEmployeeDisplay(npc) {
     frameOffset: 0.42,
     scale,
   };
-}
-
-function getTvaActorScale() {
-  return window.innerWidth <= 820 ? TVA_ACTOR_SCALE_COMPACT : TVA_ACTOR_SCALE;
 }
 
 function drawNpc(npc) {
@@ -12198,7 +12263,7 @@ function getPlayerAttackProgress() {
 function drawPlayer() {
   ctx.save();
   const playerScreen = coordinateSystem.worldToScreen(player, { includeRenderOffset: true });
-  const actorScale = state.currentLevelId === "hub" ? getTvaActorScale() : 1;
+  const actorScale = state.currentLevelId === "hub" ? getTvaActorScale(window.innerWidth) : 1;
   const isInvulnerable = state.lastTimestamp < state.invulnerableUntil;
   ctx.globalAlpha = isInvulnerable && Math.floor(state.lastTimestamp / 80) % 2 === 0 ? 0.48 : 1;
   ctx.translate(Math.round(playerScreen.x), Math.round(playerScreen.y));

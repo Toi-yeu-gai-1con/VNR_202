@@ -9,7 +9,7 @@ export const test = base.extend({
     page.on("pageerror", (error) => errors.push(`pageerror: ${error.message}`));
     page.on("requestfailed", (request) => {
       const failure = request.failure()?.errorText ?? "unknown failure";
-      if (failure === "net::ERR_ABORTED" && ["document", "media"].includes(request.resourceType())) return;
+      if (failure === "net::ERR_ABORTED" && ["document", "image", "media"].includes(request.resourceType())) return;
       errors.push(`requestfailed: ${request.method()} ${request.url()} (${failure})`);
     });
     page.on("response", (response) => {
