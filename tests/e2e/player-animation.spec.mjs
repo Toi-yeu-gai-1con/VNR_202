@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./support/game-fixture.mjs";
 
 async function openDebugSession(page) {
   await page.goto("/?debugTools=1");

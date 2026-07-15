@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./support/game-fixture.mjs";
 
 async function openDebugSession(page, difficulty = null) {
   await page.goto("/?debugTools=1");
@@ -737,7 +737,9 @@ test("number keys cannot select a hidden choice while its dialogue line is still
   await page.keyboard.press("1");
 
   await expect.poll(() => snapshot(page).then((state) => state.mode)).toBe("dialogue");
-  await expect.poll(() => snapshot(page).then((state) => state.narrative.choices.zone1?.["paper-plan"] ?? null)).toBeNull();
+  await expect.poll(() => snapshot(page).then((state) =>
+    state.narrative.choiceHistory.find((entry) => entry.chapterId === "zone1" && entry.decisionId === "dock-workers") ?? null
+  )).toBeNull();
   await expect(page.locator("#dialogue-choice-list")).toBeHidden();
 });
 
@@ -1017,6 +1019,10 @@ test("Zone 1 choices record a recoverable risk and only trigger its bad ending a
     await page.evaluate((interactableId) => window.__CROSSROADS_DEBUG__.interactById(interactableId), workerId);
   }
   await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("red-compass-reward"));
+  await finishDialogueLine(page);
+  await page.locator('[data-dialogue-choice="surrender"]').click();
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("red-compass-reward"));
+  await finishDialogueLine(page);
   await expect(page.locator("#dialogue-choice-list")).toBeVisible();
   await page.locator('[data-dialogue-choice="confirm-personal-gain"]').click();
   await expect(page.locator("#end-overlay")).toBeVisible();
@@ -1038,6 +1044,46 @@ test("Zone 1 choices record a recoverable risk and only trigger its bad ending a
   await expect(page.locator("#dialogue-choice-list")).toBeVisible();
 
 });
+
+for (const lastIssueChoice of ["rescue", "divert", "return-after-compromise", "surrender"]) {
+  test(`Zone 1 routes the playable last issue through ${lastIssueChoice} before the compass verdict`, async ({ page }) => {
+    await openDebugSession(page);
+    await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("village"));
+    await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("le-paria-stack"));
+    await finishDialogueLine(page);
+    await page.locator(
+      `[data-dialogue-choice="${lastIssueChoice === "return-after-compromise" ? "abandon" : "protect"}"]`
+    ).click();
+
+    for (const workerId of ["worker-harbor-1", "worker-harbor-2", "worker-harbor-3"]) {
+      await page.evaluate((id) => window.__CROSSROADS_DEBUG__.interactById(id), workerId);
+    }
+
+    await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("red-compass-reward"));
+    await finishDialogueLine(page);
+    const repairChoice = page.locator('[data-dialogue-choice="return-after-compromise"]');
+    if (lastIssueChoice === "return-after-compromise") {
+      await expect(repairChoice).toBeVisible();
+    } else {
+      await expect(repairChoice).toBeHidden();
+    }
+    await page.locator(`[data-dialogue-choice="${lastIssueChoice}"]`).click();
+
+    await expect.poll(
+      () => snapshot(page).then((state) =>
+        state.narrative.choiceHistory.find(
+          (entry) => entry.chapterId === "zone1" && entry.decisionId === "last-issue"
+        )?.optionId
+      ),
+    ).toBe(lastIssueChoice);
+    await expect.poll(() => snapshot(page).then((state) => state.quests.zone1RewardClaimed)).toBe(false);
+    await expect.poll(() => snapshot(page).then((state) => state.mode)).toBe("playing");
+
+    await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("red-compass-reward"));
+    await finishDialogueLine(page);
+    await expect(page.locator('[data-dialogue-choice="protect-common-path"]')).toBeVisible();
+  });
+}
 
 test("pause settings persist audio, accessibility, and minimap preferences", async ({ page }, testInfo) => {
   await openDebugSession(page);
@@ -1176,6 +1222,7 @@ test("a Zone 2 verdict that reaches maximum corruption cannot award its relic be
   await page.locator('[data-dialogue-choice="repair-division"]').click();
   await expect.poll(() => snapshot(page).then((state) => state.inventory)).toContain("unified-emblem");
   await expect.poll(() => snapshot(page).then((state) => state.quests.zone2RewardClaimed)).toBe(true);
+  await expect(page.locator("#zone-summary-overlay")).toBeVisible();
   await expect.poll(
     () => snapshot(page).then((state) => state.portalStates.find((portal) => portal.id === "back-to-hub-2")?.status),
   ).toBe("complete");
