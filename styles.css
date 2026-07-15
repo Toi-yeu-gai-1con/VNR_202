@@ -1192,6 +1192,16 @@ html[data-reduced-motion="true"] *::after {
   margin: 0;
 }
 
+.asset-loading-tip,
+.asset-loading-history {
+  max-width: 48ch;
+  color: #f3dfb5;
+  font-size: clamp(1rem, 1.7vw, 1.2rem);
+  line-height: 1.3;
+}
+
+.asset-loading-history { color: #b8d6e8; }
+
 .asset-loading-card h2 {
   font-size: clamp(1.7rem, 4vw, 2.5rem);
 }

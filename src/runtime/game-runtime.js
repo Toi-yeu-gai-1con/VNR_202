@@ -19,6 +19,7 @@ import { buildTvaCaseboard, createTvaCaseboardDialogue } from "../data/tva-caseb
 import { getTvaHubPresentation } from "../data/tva-hub-presentation.js";
 import { INTERACTION_DIALOGUES, TVA_EMPLOYEE_DIALOGUES, RELIC_DEFINITIONS, RELIC_STORY_SLIDES, ENDING_DEFINITIONS, ENDING_OVERLAY_SCENES, ENDING_CINEMATIC_DEFINITIONS, BAD_ENDING_RECOVERY, OPENING_DIALOGUE } from "../data/story-content.js";
 import { createMiniMapRenderer } from "../rendering/minimap-renderer.js";
+import { getLoadingContent } from "../data/loading-content.js";
 import { createCoordinateSystem } from "../rendering/coordinate-system.js";
 import { LEVEL_ASSET_GROUPS, getAssetGroupForSource, isCriticalAsset } from "../data/asset-manifest.js";
 import { BOSS_DEFINITIONS, COMBAT_DENSITY, COMBAT_ROSTER } from "../data/combat-config.js";
@@ -174,6 +175,8 @@ const badEndingRecoveryText = document.getElementById("bad-ending-recovery-text"
 const assetLoadingOverlay = document.getElementById("asset-loading-overlay");
 const assetLoadingTitle = document.getElementById("asset-loading-title");
 const assetLoadingCopy = document.getElementById("asset-loading-copy");
+const assetLoadingTip = document.getElementById("asset-loading-tip");
+const assetLoadingHistory = document.getElementById("asset-loading-history");
 const assetRetryButton = document.getElementById("asset-retry-button");
 const assetReturnButton = document.getElementById("asset-return-button");
 
@@ -4477,9 +4480,13 @@ function getAssetGroupLabel(groupId) {
   }[groupId] ?? "cảnh quan";
 }
 
-function showAssetLoading(title, copy, failed = false) {
+function showAssetLoading(title, copy, failed = false, groupId = pendingAssetLoad?.groupId) {
   assetLoadingTitle.textContent = title;
   assetLoadingCopy.textContent = copy;
+  const content = getLoadingContent(groupId);
+  assetLoadingTip.textContent = content.tip;
+  assetLoadingHistory.textContent = content.history;
+  assetLoadingHistory.classList.toggle("hidden", !content.history || failed);
   assetRetryButton.classList.toggle("hidden", !failed);
   assetReturnButton.classList.toggle("hidden", !failed || pendingAssetLoad?.groupId === "hub" || pendingAssetLoad?.groupId === "core");
   assetLoadingOverlay.classList.remove("hidden");
@@ -4563,7 +4570,7 @@ function loadLevel(levelId, spawnOverride, options = {}) {
     };
     state.mode = "loading";
     clearPressedKeys();
-    showAssetLoading(`Đang tải ${getAssetGroupLabel(groupId)}`, "Đang chuẩn bị các sprite, âm thanh và hiệu ứng của khu vực này.");
+    showAssetLoading(`Đang tải ${getAssetGroupLabel(groupId)}`, "Đang chuẩn bị các sprite, âm thanh và hiệu ứng của khu vực này.", false, groupId);
     void ensureLevelAssets(levelId, spawnOverride, options);
     return false;
   }
