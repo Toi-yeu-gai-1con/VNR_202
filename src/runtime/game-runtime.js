@@ -38,6 +38,7 @@ import { MONSTER_CODEX_DEFINITIONS, getMonsterCodexEntry } from "../data/monster
 import { GAMEPLAY_BALANCE, getDifficultySettings } from "../data/gameplay-balance.js";
 import { AUDIO_TRACKS, COMBAT_SFX, getAudioSourceCandidates, resolveAudioSource } from "../data/media-sources.js";
 import { ENDING_AUDIO_KEYS, getEndingAudioKey } from "../data/ending-audio-definitions.js";
+import { AFTER_CREDITS, supportsAfterCredits } from "../data/after-credits.js";
 import { BUILD_VERSION, withAssetVersion } from "../data/build-info.js";
 import { PLAYER_FOOTPRINT, PLAYER_SPRITE, PLAYER_ANIMATIONS, NPC_SPRITE, TVA_EMPLOYEE_SPRITE, M90_RESET_ANIMATION, ENVIRONMENT_SPRITES, TILECRAFT_TERRAIN, PIXEL_CRAWLER_TERRAIN, VILLAGE_SKYLINE_Y, VILLAGE_PROP_SPRITES, PIXEL_CRAWLER_BUILDING_SPRITES, HUB_PORTAL_SPRITE, SWORD_SLASH_SPRITE, SMALL_GAME_ASSET_ANIMATIONS, PIXEL_CRAWLER_TREE_SPRITE, KENNEY_ROGUELIKE_TILE, KENNEY_ROGUELIKE_SPRITES, PIXEL_CRAWLER_VEGETATION_SPRITES, PIXEL_CRAWLER_TOOL_CLUSTER_SPRITES, CAINOS_PROP_SPRITES, LIMEZU_INTERIOR_SPRITES, HOUSE_INTERIOR_A_SPRITES, MONSTER_SPRITE_CONFIG, getTvaActorScale } from "../data/render-config.js";
 
@@ -185,6 +186,15 @@ const endingLesson = document.getElementById("ending-lesson");
 const endingLessonLabel = document.getElementById("ending-lesson-label");
 const endingLessonText = document.getElementById("ending-lesson-text");
 const endingLessonQuote = document.getElementById("ending-lesson-quote");
+const afterCredits = document.getElementById("after-credits");
+const afterCreditsRollViewport = document.getElementById("after-credits-roll-viewport");
+const afterCreditsKicker = document.getElementById("after-credits-kicker");
+const afterCreditsTitle = document.getElementById("after-credits-title");
+const afterCreditsTeam = document.getElementById("after-credits-team");
+const afterCreditsSourcesIntro = document.getElementById("after-credits-sources-intro");
+const afterCreditsSources = document.getElementById("after-credits-sources");
+const afterCreditsHint = document.getElementById("after-credits-hint");
+const afterCreditsContinueButton = document.getElementById("after-credits-continue-button");
 const endArtFrame = document.getElementById("end-art-frame");
 const endArtCinematic = document.getElementById("end-art-cinematic");
 const endArtImage = document.getElementById("end-art-image");
@@ -419,6 +429,8 @@ const state = {
   pendingRespawn: null,
   endingId: null,
   endingSummary: "",
+  afterCreditsVisible: false,
+  afterCreditsRoll: null,
   hubEpilogueEndingId: null,
   endingCinematic: null,
   badEndingRecovery: null,
@@ -1146,6 +1158,16 @@ openingNextButton.addEventListener("click", advanceOpeningIntro);
 storyPrevButton.addEventListener("click", withUiClickSound(() => showStoryBookEntry(-1)));
 storyNextButton.addEventListener("click", withUiClickSound(() => showStoryBookEntry(1)));
 returnStartButton.addEventListener("click", withUiClickSound(handleReturnFromEnding));
+afterCreditsContinueButton?.addEventListener("click", withUiClickSound((event) => {
+  event.stopPropagation();
+  handleReturnFromEnding();
+}));
+afterCredits?.addEventListener("click", (event) => {
+  if (event.target.closest("a, button")) {
+    return;
+  }
+  completeAfterCreditsRoll();
+});
 endOverlay.addEventListener("click", () => {
   if (
     state.mode === "ending" &&
@@ -1444,12 +1466,19 @@ window.addEventListener("keydown", (event) => {
   }
 
   if (state.mode === "opening" && (key === "enter" || key === "e" || key === "space")) {
+    event.preventDefault();
     advanceOpeningIntro();
     return;
   }
 
   if (state.mode === "ending" && (key === "enter" || key === "space")) {
     if (!isEndingCinematicComplete()) {
+      return;
+    }
+
+    if (state.afterCreditsVisible && !isAfterCreditsRollComplete()) {
+      event.preventDefault();
+      completeAfterCreditsRoll();
       return;
     }
 
@@ -1461,15 +1490,17 @@ window.addEventListener("keydown", (event) => {
     const choices = getPendingDialogueChoices();
 
     if (choices.length > 0) {
-      const choiceIndex = key === "1" ? 0 : key === "2" ? 1 : -1;
+      const choiceIndex = /^[1-9]$/.test(key) ? Number.parseInt(key, 10) - 1 : -1;
 
       if (choiceIndex >= 0 && choices[choiceIndex]) {
+        event.preventDefault();
         resolveDialogueChoice(choices[choiceIndex].id);
       }
       return;
     }
 
     if (key === "enter" || key === "e" || key === "space") {
+      event.preventDefault();
       advanceDialogue();
     }
     return;
@@ -1526,6 +1557,7 @@ window.addEventListener("keydown", (event) => {
   }
 
   if (state.mode === "playing" && isBoundKey(key, "interact")) {
+    event.preventDefault();
     handleInteraction();
     return;
   }
@@ -1676,9 +1708,6 @@ function loadEnvironmentSprites() {
         loadSprite("assets/landmarks/frames/restoration-engine/03.png"),
         loadSprite("assets/landmarks/frames/restoration-engine/04.png"),
       ],
-    },
-    recovery: {
-      doiMoiIrrigationStation: loadSprite("assets/recovery/doi-moi-irrigation-station.png"),
     },
     ruinedVillageBuildings: Array.from({ length: 7 }, (_, index) =>
       loadSprite(`assets/environment/mutterpixel-ruined-village/spr_old_building_${index + 1}.png`)
@@ -2013,6 +2042,11 @@ function loadSound(src, volume = 1, options = {}) {
 }
 
 function playUiSound(sound) {
+  // Interaction and dialogue keys must never sound like a system alert.
+  // Keep authored gameplay feedback (dash, parry, hurt, etc.) intact.
+  if (sound === uiSounds.pixelClick) {
+    return;
+  }
   audioSystem.playUiSound(sound);
 }
 
@@ -3332,7 +3366,7 @@ function applyDebugEndingFromUrl() {
       state.inventory.add(relicId);
     }
     state.completedZones = new Set(["village", "archive", "crossroads", "spring"]);
-    state.saDoa = endingId === "neutral" ? 42 : 18;
+    state.saDoa = endingId === "neutral" ? 50 : 18;
   } else {
     state.saDoa = SA_DOA_MAX;
   }
@@ -3378,6 +3412,7 @@ function frame({ now: timestamp, deltaSeconds }) {
   }
 
   updateProgressHud();
+  updateAfterCreditsRoll(timestamp);
   render();
   renderEndingArtCinematic();
   updateBadEndingRecovery();
@@ -3818,6 +3853,18 @@ function getTvaEmployeeDialogue() {
     corruption: state.saDoa,
     endingId: state.hubEpilogueEndingId,
   }).epilogue;
+  // A completed Good/Neutral record is terminal even if an older save never
+  // marked its relics as reported. Do this before the report queue so David
+  // cannot rebuild the final-ending prompt on the return visit to TVA.
+  if (epilogue && !isBadEndingId(state.hubEpilogueEndingId)) {
+    return {
+      speaker: "David",
+      storyId: null,
+      closeLabel: "Đóng",
+      lines: [{ speaker: "David", text: epilogue.davidLine }],
+    };
+  }
+
   if (pendingRelicIds.length > 0) {
     const reportDialogue = createTvaRelicReportDialogue(pendingRelicIds, nextRoute);
     return epilogue
@@ -3974,9 +4021,9 @@ function renderDialogue() {
     ? (dialogue.closeLabel ?? (dialogue.storyId ? (storySeen ? "Đóng" : "Mở khóa chuyện") : "Đóng"))
     : "Tiếp tục";
   dialogueHint.textContent = dialogueBox.dataset.context === "tva"
-    ? (hasChoices ? "Chọn phương án xử lý" : "Tiếp tục biên bản")
+    ? (hasChoices ? `Chọn phương án xử lý • Phím 1 / ${choices.length}` : "Tiếp tục biên bản")
     : hasChoices
-      ? "Chọn một câu trả lời • Phím 1 / 2"
+      ? `Chọn một câu trả lời • Phím 1 / ${choices.length}`
       : "E / Phím cách để tiếp tục";
   dialogueNextButton.classList.toggle("hidden", hasChoices);
   dialogueChoiceList.replaceChildren(...choices.map(createDialogueChoiceButton));
@@ -4430,7 +4477,7 @@ function resolveZone1CompassVerdictChoice(choiceId, item) {
   state.quests.zone1RewardClaimed = true;
   const candidate = resolveEnding({ narrative: state.narrative, inventory: state.inventory, saDoa: state.saDoa });
 
-  if (candidate.id === "zone1-lost-compass" || candidate.id === "secret-corruption") {
+  if (candidate.id === "zone1-lost-compass" || candidate.id === "secret-corruption" || candidate.id === "bad") {
     applyFinalVerdictCheckpoint(checkpoint);
     triggerNarrativeEnding(candidate, "Bạn đã xác nhận lợi ích cá nhân sau một chuỗi thỏa hiệp, để con đường chung bị đánh mất.", checkpoint);
     return;
@@ -4468,7 +4515,7 @@ function resolveZone2EmblemVerdictChoice(choiceId, item) {
   item.collected = true;
   state.quests.zone2RewardClaimed = true;
   const candidate = resolveEnding({ narrative: state.narrative, inventory: state.inventory, saDoa: state.saDoa });
-  if (candidate.id === "zone2-fading-fires" || candidate.id === "secret-corruption") {
+  if (candidate.id === "zone2-fading-fires" || candidate.id === "secret-corruption" || candidate.id === "bad") {
     applyFinalVerdictCheckpoint(checkpoint);
     triggerNarrativeEnding(candidate, "Bạn đã xác nhận sự chia rẽ sau khi để nghi kỵ lan rộng, khiến các ngọn lửa cùng mục tiêu dần lụi tàn.", checkpoint);
     return;
@@ -4518,7 +4565,7 @@ function resolveZone3AugustVerdictChoice(choiceId, item) {
   item.collected = true;
   state.quests.zone3ThreadClaimed = true;
   const candidate = resolveEnding({ narrative: state.narrative, inventory: state.inventory, saDoa: state.saDoa });
-  if (candidate.id === "zone3a-missed-moment" || candidate.id === "secret-corruption") {
+  if (candidate.id === "zone3a-missed-moment" || candidate.id === "secret-corruption" || candidate.id === "bad") {
     applyFinalVerdictCheckpoint(checkpoint);
     triggerNarrativeEnding(candidate, "Bạn đã xác nhận để lực lượng phân tán sau khi bỏ qua công việc chuẩn bị, khiến thời cơ Tháng Tám vụt qua.", checkpoint);
     return;
@@ -4556,7 +4603,7 @@ function resolveZone3BorderVerdictChoice(choiceId, item) {
   item.collected = true;
   state.quests.zone3MapClaimed = true;
   const candidate = resolveEnding({ narrative: state.narrative, inventory: state.inventory, saDoa: state.saDoa });
-  if (candidate.id === "zone3b-divided-border" || candidate.id === "secret-corruption") {
+  if (candidate.id === "zone3b-divided-border" || candidate.id === "secret-corruption" || candidate.id === "bad") {
     applyFinalVerdictCheckpoint(checkpoint);
     triggerNarrativeEnding(candidate, "Bạn đã xác nhận biến giới tuyến tạm thời thành chia cắt lâu dài, làm những liên hệ của người dân hai miền bị đứt gãy.", checkpoint);
     return;
@@ -4595,7 +4642,7 @@ function resolveZone4VerdictChoice(choiceId, item) {
   item.collected = true;
   state.quests.zone4GearClaimed = true;
   const candidate = resolveEnding({ narrative: state.narrative, inventory: state.inventory, saDoa: state.saDoa });
-  if (candidate.id === "zone4-stalled-machine" || candidate.id === "secret-corruption") {
+  if (candidate.id === "zone4-stalled-machine" || candidate.id === "secret-corruption" || candidate.id === "bad") {
     applyFinalVerdictCheckpoint(checkpoint);
     triggerNarrativeEnding(candidate, "Bạn đã xác nhận giữ đặc quyền sau khi để sản xuất bị bế tắc, khiến guồng máy đổi mới tiếp tục đứng im.", checkpoint);
     return;
@@ -5599,6 +5646,11 @@ function handleReturnFromEnding() {
     return;
   }
 
+  if (supportsAfterCredits(state.endingId) && !state.afterCreditsVisible) {
+    setAfterCreditsVisible(true);
+    return;
+  }
+
   returnToTvaHubAfterEnding(state.endingId);
 }
 
@@ -5823,6 +5875,13 @@ function restoreBadEndingCheckpoint() {
   state.highCorruptionWarningShown = false;
   clearPressedKeys();
   if (!restoredVerdict) {
+    // A global corruption collapse has no local verdict checkpoint to restore.
+    // Completed relic waves must not keep a prior confirmation armed and replay
+    // a zone Bad Ending after M-90 has reset corruption.
+    clearCompletedZoneBadConfirmations(state.narrative, {
+      inventory: state.inventory,
+      quests: state.quests,
+    });
     resetLevelMonstersForRespawn(checkpointLevelId);
   }
   hideEndOverlay();
@@ -5855,6 +5914,13 @@ function updateEndingCinematicUiState() {
   const awaitingRecovery = cinematicState === "complete" && isBadEndingId(state.endingId) && !state.badEndingRecoveryRequested;
   endOverlay.dataset.awaitingRecovery = awaitingRecovery ? "true" : "false";
   returnStartButton.disabled = cinematicState === "running" || isBadEndingId(state.endingId);
+  if (cinematicState === "complete" && !isBadEndingId(state.endingId)) {
+    returnStartButton.textContent = state.afterCreditsVisible
+      ? "Về TVA"
+      : supportsAfterCredits(state.endingId)
+        ? "Xem hậu danh đề"
+        : "Về TVA";
+  }
 }
 
 function showEndOverlay() {
@@ -5866,6 +5932,7 @@ function showEndOverlay() {
 
   state.mode = "ending";
   state.endingCinematic = createEndingCinematicState(state.endingId ?? "bad");
+  state.afterCreditsVisible = false;
   state.badEndingRecovery = null;
   state.badEndingRecoveryRequested = false;
   syncBadEndingRecoveryUi();
@@ -5882,6 +5949,8 @@ function showEndOverlay() {
   endSummary.textContent =
     state.endingSummary || `Tín vật: ${state.inventory.size}/${RELIC_TARGET_COUNT} • Tha hóa: ${state.saDoa}%`;
   updateEndingLesson(ending);
+  renderAfterCredits();
+  setAfterCreditsVisible(false);
   updateEndingArt(ending);
   endOverlay.dataset.ending = state.endingId ?? "bad";
   returnStartButton.textContent = isBadEndingId(state.endingId) ? "David đang hiệu chỉnh" : "Về TVA";
@@ -5899,6 +5968,131 @@ function showEndOverlay() {
   updateEndingCinematicUiState();
   updateStoryBookButton();
   updateCorruptionEffects();
+}
+
+function renderAfterCredits() {
+  if (!afterCredits || !afterCreditsKicker || !afterCreditsTitle || !afterCreditsTeam || !afterCreditsSourcesIntro || !afterCreditsSources) {
+    return;
+  }
+
+  afterCreditsKicker.textContent = AFTER_CREDITS.kicker;
+  afterCreditsTitle.textContent = AFTER_CREDITS.title;
+  afterCreditsSourcesIntro.textContent = AFTER_CREDITS.sourcesIntro;
+  afterCreditsTeam.replaceChildren(...AFTER_CREDITS.team.map((member) => {
+    const item = document.createElement("li");
+    item.textContent = member;
+    return item;
+  }));
+  afterCreditsSources.replaceChildren(...AFTER_CREDITS.sources.map((source) => {
+    const item = document.createElement("li");
+    const chapter = document.createElement("span");
+    const link = document.createElement("a");
+    chapter.className = "after-credits-source-chapter";
+    chapter.textContent = source.chapter;
+    link.href = source.href;
+    link.target = "_blank";
+    link.rel = "noreferrer";
+    link.textContent = source.label;
+    item.append(chapter, link);
+    return item;
+  }));
+}
+
+function setAfterCreditsVisible(visible) {
+  const canShow = supportsAfterCredits(state.endingId);
+  state.afterCreditsVisible = Boolean(visible && canShow);
+  const isVisible = state.afterCreditsVisible;
+  afterCredits?.classList.toggle("hidden", !isVisible);
+  afterCredits?.setAttribute("aria-hidden", String(!isVisible));
+  endOverlay.dataset.afterCredits = isVisible ? "true" : "false";
+
+  if (isVisible) {
+    endOverlay.setAttribute("aria-label", AFTER_CREDITS.title);
+    startAfterCreditsRoll();
+    afterCredits?.focus({ preventScroll: true });
+    return;
+  }
+
+  state.afterCreditsRoll = null;
+  if (afterCreditsRollViewport) {
+    afterCreditsRollViewport.scrollTop = 0;
+  }
+  afterCredits?.removeAttribute("data-roll-state");
+  afterCreditsContinueButton?.classList.add("hidden");
+  afterCreditsContinueButton?.setAttribute("aria-hidden", "true");
+  const ending = ENDING_DEFINITIONS[state.endingId] ?? ENDING_DEFINITIONS.bad;
+  endOverlay.setAttribute("aria-label", ending.title);
+  if (isEndingCinematicComplete() && !isBadEndingId(state.endingId)) {
+    returnStartButton.textContent = supportsAfterCredits(state.endingId) ? "Xem hậu danh đề" : "Về TVA";
+  }
+}
+
+function startAfterCreditsRoll() {
+  if (!afterCredits || !afterCreditsRollViewport) {
+    return;
+  }
+
+  afterCreditsRollViewport.scrollTop = 0;
+  state.afterCreditsRoll = {
+    startedAt: null,
+    scrollDistance: 0,
+    duration: 0,
+    completed: false,
+  };
+  afterCredits.dataset.rollState = "running";
+  afterCreditsHint?.classList.remove("hidden");
+  afterCreditsContinueButton?.classList.add("hidden");
+  afterCreditsContinueButton?.setAttribute("aria-hidden", "true");
+  if (state.settings.reducedMotion) {
+    completeAfterCreditsRoll();
+  }
+}
+
+function isAfterCreditsRollComplete() {
+  return Boolean(state.afterCreditsRoll?.completed);
+}
+
+function completeAfterCreditsRoll() {
+  if (!state.afterCreditsVisible || !state.afterCreditsRoll || state.afterCreditsRoll.completed) {
+    return;
+  }
+
+  const scrollDistance = Math.max(
+    state.afterCreditsRoll.scrollDistance,
+    (afterCreditsRollViewport?.scrollHeight ?? 0) - (afterCreditsRollViewport?.clientHeight ?? 0),
+  );
+  state.afterCreditsRoll.scrollDistance = scrollDistance;
+  state.afterCreditsRoll.completed = true;
+  if (afterCreditsRollViewport) {
+    afterCreditsRollViewport.scrollTop = scrollDistance;
+  }
+  afterCredits?.setAttribute("data-roll-state", "complete");
+  afterCreditsHint?.classList.add("hidden");
+  afterCreditsContinueButton?.classList.remove("hidden");
+  afterCreditsContinueButton?.setAttribute("aria-hidden", "false");
+}
+
+function updateAfterCreditsRoll(timestamp) {
+  const roll = state.afterCreditsRoll;
+  if (!state.afterCreditsVisible || !roll || roll.completed || !afterCreditsRollViewport) {
+    return;
+  }
+
+  if (roll.startedAt === null) {
+    roll.startedAt = timestamp;
+    roll.scrollDistance = Math.max(0, afterCreditsRollViewport.scrollHeight - afterCreditsRollViewport.clientHeight);
+    roll.duration = clamp(
+      AFTER_CREDITS.roll.minDuration + roll.scrollDistance * AFTER_CREDITS.roll.millisecondsPerPixel,
+      AFTER_CREDITS.roll.minDuration,
+      AFTER_CREDITS.roll.maxDuration,
+    );
+  }
+
+  const progress = clamp((timestamp - roll.startedAt) / roll.duration, 0, 1);
+  afterCreditsRollViewport.scrollTop = Math.round(roll.scrollDistance * progress);
+  if (progress >= 1) {
+    completeAfterCreditsRoll();
+  }
 }
 
 function updateEndingLesson(ending) {
@@ -6002,12 +6196,23 @@ function hideEndOverlay() {
     endArtImage.alt = "";
   }
   state.endingCinematic = null;
+  state.afterCreditsVisible = false;
+  state.afterCreditsRoll = null;
+  afterCredits?.classList.add("hidden");
+  afterCredits?.setAttribute("aria-hidden", "true");
+  afterCredits?.removeAttribute("data-roll-state");
+  if (afterCreditsRollViewport) {
+    afterCreditsRollViewport.scrollTop = 0;
+  }
+  afterCreditsContinueButton?.classList.add("hidden");
+  afterCreditsContinueButton?.setAttribute("aria-hidden", "true");
   state.badEndingRecovery = null;
   syncBadEndingRecoveryUi();
   clearEndingArtCinematic();
   clearEndingSceneOverlay();
   updateEndingCinematicUiState();
   delete endOverlay.dataset.ending;
+  delete endOverlay.dataset.afterCredits;
   endOverlay.removeAttribute("aria-label");
   endOverlay.classList.add("hidden");
   endOverlay.setAttribute("aria-hidden", "true");
@@ -6333,7 +6538,6 @@ function renderGoodEndingSceneOverlay(context, width, height, scene) {
     context.restore();
   }
 
-  drawEndingSceneFigures(context, width, height, scene.figures);
 }
 
 function renderBadEndingSceneOverlay(context, width, height, scene) {
@@ -6386,7 +6590,6 @@ function renderBadEndingSceneOverlay(context, width, height, scene) {
     context.restore();
   }
 
-  drawEndingSceneFigures(context, width, height, scene.figures);
 }
 
 function renderBadEndingRecoveryScene(context, width, height, scene) {
@@ -8467,7 +8670,16 @@ function adjustSaDoa(delta, message = "", { deferEnding = false } = {}) {
     showStoryToast(message);
   }
 
-  if (state.saDoa >= SA_DOA_MAX && !deferEnding) {
+  if (state.saDoa >= SA_DOA_BAD_ENDING && !deferEnding) {
+    if (state.saDoa >= SA_DOA_MAX) {
+      triggerBadEnding("Thanh Tha hóa đã đầy, nhân dân quay lưng và lịch sử rơi vào bóng đen mới.");
+      return;
+    }
+    const candidate = resolveEnding({ narrative: state.narrative, inventory: state.inventory, saDoa: state.saDoa });
+    if (candidate.id === "secret-corruption") {
+      showResolvedEnding(candidate, "Tha hóa đã vượt ngưỡng 75, khiến hồ sơ rạn vỡ từ bên trong.");
+      return;
+    }
     triggerBadEnding("Thanh Tha hóa đã đầy, nhân dân quay lưng và lịch sử rơi vào bóng đen mới.");
   }
 }
@@ -8520,12 +8732,17 @@ function showResolvedEnding(candidate, summary) {
 function attemptEndingInteraction() {
   const candidate = resolveEnding({ narrative: state.narrative, inventory: state.inventory, saDoa: state.saDoa });
 
+  if (candidate.id === "bad") {
+    triggerBadEnding("Thanh Tha hóa đã đầy, nhân dân quay lưng và lịch sử rơi vào bóng đen mới.");
+    return;
+  }
+
   if (candidate.id === "secret-corruption") {
     showResolvedEnding(candidate, "Tha hóa đã vượt mọi ngưỡng cảnh báo, khiến hồ sơ rạn vỡ từ bên trong.");
     return;
   }
 
-  if (state.saDoa >= SA_DOA_BAD_ENDING) {
+  if (state.saDoa >= SA_DOA_BAD_ENDING && !candidate.id) {
     state.endingId = "bad";
     state.endingSummary = "Tha hóa đã vượt ngưỡng an toàn trước khi lịch sử kịp được mở khóa.";
     showEndOverlay();
@@ -12597,74 +12814,10 @@ function drawCrossroadsRecoveryScene(profile, stage) {
 }
 
 function drawSpringRecoveryScene(profile, stage) {
-  drawDoiMoiStation(profile);
-}
-
-function drawDoiMoiStation(profile) {
-  const station = profile.progress.irrigationStation;
-  const asset = environmentSprites.recovery?.doiMoiIrrigationStation;
-  const restored = state.quests.zone4GearClaimed;
-
-  if (canDrawSprite(asset)) {
-    ctx.save();
-    ctx.globalAlpha = restored ? 0.92 : 0.74;
-    ctx.filter = restored
-      ? "brightness(1.03) saturate(1.04)"
-      : "grayscale(0.62) brightness(0.68) saturate(0.5) contrast(1.04)";
-    ctx.drawImage(asset, station.x - station.width / 2, station.y - station.height, station.width, station.height);
-    ctx.restore();
-
-    if (!restored) {
-      ctx.save();
-      ctx.strokeStyle = "rgba(42, 27, 21, 0.72)";
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(station.x - 44, station.y - 72);
-      ctx.lineTo(station.x - 20, station.y - 46);
-      ctx.lineTo(station.x - 4, station.y - 64);
-      ctx.moveTo(station.x + 16, station.y - 82);
-      ctx.lineTo(station.x + 34, station.y - 55);
-      ctx.stroke();
-      ctx.restore();
-      return;
-    }
-
-    drawDoiMoiWaterwheel(station);
+  if (stage > 0) {
+    const landmark = profile.landmarkPosition;
+    drawWorldWarmGlow(landmark.x, landmark.y - 34, 34 + stage * 10, 0.1 + stage * 0.035);
   }
-}
-
-function drawDoiMoiWaterwheel(station) {
-  const wheelX = station.x - station.width * 0.28;
-  const wheelY = station.y - station.height * 0.45;
-  const radius = station.width * 0.11;
-  const rotation = state.lastTimestamp * 0.006;
-
-  ctx.save();
-  ctx.translate(wheelX, wheelY);
-  ctx.rotate(rotation);
-  ctx.strokeStyle = "rgba(246, 214, 142, 0.74)";
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.arc(0, 0, radius, 0, Math.PI * 2);
-  ctx.stroke();
-  for (let spoke = 0; spoke < 4; spoke += 1) {
-    ctx.rotate(Math.PI / 2);
-    ctx.beginPath();
-    ctx.moveTo(0, -radius);
-    ctx.lineTo(0, radius);
-    ctx.stroke();
-  }
-  ctx.restore();
-
-  ctx.save();
-  ctx.globalCompositeOperation = "screen";
-  ctx.fillStyle = "rgba(147, 219, 242, 0.6)";
-  for (let drop = 0; drop < 3; drop += 1) {
-    const x = wheelX + 8 + drop * 4;
-    const y = wheelY + radius + ((state.lastTimestamp * 0.05 + drop * 9) % 12);
-    ctx.fillRect(Math.round(x), Math.round(y), 2, 5);
-  }
-  ctx.restore();
 }
 
 function drawZoneAtmosphere(profile) {

@@ -21,8 +21,8 @@ assert.match(game, /function clearPressedKeys\(\) \{\s*keys\.clear\(\);/s, "Inpu
 assert.match(game, /createPageLifecycleController\(\{[\s\S]*?clearInput: clearPressedKeys,[\s\S]*?suspendRuntime: \(\) => frameLoop\.suspend\(\),[\s\S]*?resumeRuntime: \(\) => frameLoop\.resume\(\),/s, "Input, visibility, and runtime suspension must share the lifecycle controller.");
 assert.match(game, /pageLifecycle\.install\(\);/, "The live runtime must install lifecycle protection after boot.");
 assert.doesNotMatch(game, /drawZoneProgressPlaque/, "World-state labels must not cover the map.");
-assert.match(game, /doi-moi-irrigation-station\.png/, "Zone 4 needs its restoration landmark art.");
-assert.match(game, /function drawDoiMoiStation\(profile\)/, "Zone 4 needs a staged restoration renderer.");
+assert.doesNotMatch(game, /doi-moi-irrigation-station\.png/, "Zone 4 must not render the retired irrigation-house/waterwheel prop.");
+assert.doesNotMatch(game, /function drawDoiMoiStation\(profile\)/, "Zone 4 uses the animated restoration engine landmark instead of the old prop.");
 assert.match(game, /state\.quests\.zone4GearClaimed/, "The station can only become fully restored after the Đổi Mới gear is claimed.");
 assert.doesNotMatch(game, /drawClearedBarrierPath/, "Cleared barriers should reveal the existing map without decorative grass blocks.");
 assert.doesNotMatch(game, /function drawCrossroadsRecoveryScene[\s\S]*?ctx\.fillRect\(member\.x - 5/, "Zone 3 recovery cannot use rectangle people.");

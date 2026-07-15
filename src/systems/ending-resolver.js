@@ -34,6 +34,15 @@ export function resolveEnding(input = {}) {
   const corruption = Math.max(0, Number(input.saDoa) || 0);
   const risks = narrative.endingRisks ?? {};
   const flags = narrative.branchFlags ?? {};
+  const inventory = getInventory(input);
+  const missingRelics = REQUIRED_RELIC_IDS.filter((relicId) => !inventory.has(relicId));
+
+  // 100 corruption is the generic Bad Ending. The dedicated Secret Bad Ending
+  // covers 76–99; the completed-campaign split is Good below 50 and Neutral
+  // from 50–75.
+  if (corruption >= GAMEPLAY_BALANCE.corruption.max) {
+    return createResult("bad", "total-corruption", { corruption });
+  }
 
   if (corruption >= endingRules.secretCorruption || risks.secret >= endingRules.secretRiskThreshold) {
     return createResult("secret-corruption", "extreme-corruption", { corruption, risk: risks.secret ?? 0 });
@@ -46,8 +55,6 @@ export function resolveEnding(input = {}) {
     }
   }
 
-  const inventory = getInventory(input);
-  const missingRelics = REQUIRED_RELIC_IDS.filter((relicId) => !inventory.has(relicId));
   if (missingRelics.length > 0) {
     return createResult(null, "missing-relics", { missingRelics });
   }

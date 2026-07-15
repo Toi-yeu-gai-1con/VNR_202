@@ -14,6 +14,9 @@ assert.match(runtime, /dialogueFemale: loadSound\("assets\/audio\/sfx\/sfx-blipf
 assert.match(runtime, /function updateTypewriter\(/, "Dialogue text must advance through a typewriter update loop.");
 assert.match(runtime, /function revealActiveTypewriter\(/, "Input must be able to finish the current line before advancing.");
 assert.match(runtime, /Dialogue typewriter blips are intentionally disabled/, "Keyboard-led dialogue must not emit typewriter blips.");
+assert.match(runtime, /function playUiSound\(sound\)[\s\S]{0,220}sound === uiSounds\.pixelClick/, "UI click beeps must be suppressed without muting gameplay feedback.");
+assert.match(runtime, /const choiceIndex = \/\^\[1-9\]\$\/\.test\(key\) \? Number\.parseInt\(key, 10\) - 1 : -1/, "Dialogue choice input must support every rendered choice number.");
+assert.match(runtime, /Phím 1 \/ \$\{choices\.length\}/, "Dialogue input guidance must show the actual final choice number.");
 assert.match(runtime, /DIALOGUE_VOICE_BY_SPEAKER/, "Dialogue voices must use an explicit speaker map instead of treating every non-David speaker as female.");
 assert.doesNotMatch(runtime, /speaker === "David" \? "dialogueMale" : "dialogueFemale"/, "Unknown, narrator, and object speakers must not silently receive the female voice.");
 assert.match(runtime, /endingRecovery.*intervalMs|intervalMs.*endingRecovery/s, "Bad-ending recovery must use its own slower typewriter timing.");

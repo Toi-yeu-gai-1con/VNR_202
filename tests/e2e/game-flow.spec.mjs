@@ -727,6 +727,40 @@ test("dialogue types one character at a time without keyboard-triggered blips", 
   expect(await page.evaluate(() => window.__playedDialogueSources)).toEqual([]);
 });
 
+test("keyboard interaction stays quiet and accepts the third dialogue option", async ({ page }, testInfo) => {
+  await page.addInitScript(() => {
+    window.__playedUiClickSources = [];
+    const originalPlay = HTMLMediaElement.prototype.play;
+    HTMLMediaElement.prototype.play = function trackedUiClickPlay(...args) {
+      const source = this.currentSrc || this.src;
+      if (source.includes("ui-pixel-click")) {
+        window.__playedUiClickSources.push(source);
+      }
+      return originalPlay.apply(this, args);
+    };
+  });
+  await openDebugSession(page);
+  await page.evaluate(() => { window.__playedUiClickSources = []; });
+
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("hub", { x: 384, y: 286, direction: "up" }));
+  await page.keyboard.press("e");
+  await expect(page.locator("#dialogue-speaker")).toHaveText("David");
+  expect(await page.evaluate(() => window.__playedUiClickSources)).toEqual([]);
+
+  await page.keyboard.press("Escape");
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("village"));
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("colonial-recruiter"));
+  await advanceDialogueToChoice(page, "accept");
+  await expect(page.locator(".dialogue-choice-button")).toHaveCount(3);
+  await expect(page.locator("#dialogue-hint")).toContainText("Phím 1 / 3");
+  await page.screenshot({ path: testInfo.outputPath("third-dialogue-choice-keyboard.png"), fullPage: true });
+
+  await page.evaluate(() => { window.__playedUiClickSources = []; });
+  await page.keyboard.press("3");
+  await expect.poll(() => snapshot(page).then((state) => state.quests.zone1SoldierDecision)).toBe("accept");
+  expect(await page.evaluate(() => window.__playedUiClickSources)).toEqual([]);
+});
+
 test("number keys cannot select a hidden choice while its dialogue line is still typing", async ({ page }) => {
   await openDebugSession(page);
   await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("village"));
@@ -1362,7 +1396,7 @@ for (const recoveryChoice of ["protect-moment", "repair-fragment"]) {
   });
 }
 
-test("Zone 3B separation needs a border confirmation before its ending", async ({ page }, testInfo) => {
+test("Zone 3B keeps the advisor-to-commander route before its border ending", async ({ page }, testInfo) => {
   await openDebugSession(page);
   await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("crossroads"));
   await expect.poll(() => snapshot(page).then((state) => state.currentLevelId)).toBe("crossroads");
@@ -1408,13 +1442,30 @@ test("Zone 4 stagnation needs a Doi Moi confirmation before its ending", async (
   await page.screenshot({ path: testInfo.outputPath("zone4-stalled-machine-ending.png"), fullPage: true });
 });
 
-for (const endingId of ["good", "neutral", "bad", "secret-corruption"]) {
+const ENDING_MUSIC_BY_ID = Object.freeze({
+  good: "goodEnding",
+  neutral: "neutralEnding",
+  bad: "badEnding",
+  "zone1-lost-compass": "zone1LostCompass",
+  "zone2-fading-fires": "zone2FadingFires",
+  "zone3a-missed-moment": "zone3aMissedMoment",
+  "zone3b-divided-border": "zone3bDividedBorder",
+  "zone4-stalled-machine": "zone4StalledMachine",
+  "secret-corruption": "secretCorruption",
+});
+
+for (const [endingId, musicKey] of Object.entries(ENDING_MUSIC_BY_ID)) {
   test(`${endingId} ending renders from its explicit debug route`, async ({ page }, testInfo) => {
     await page.goto(`/?debugTools=1&debugEnding=${endingId}`);
     await page.waitForFunction(() => Boolean(window.__CROSSROADS_DEBUG__));
     await expect(page.locator("#end-overlay")).toBeVisible();
     expect((await snapshot(page)).mode).toBe("ending");
     expect((await snapshot(page)).endingId).toBe(endingId);
+    await expect.poll(
+      () => snapshot(page).then((state) => state.audio.music[musicKey].readyState),
+      { timeout: 10_000 },
+    ).toBeGreaterThan(0);
+    await expect.poll(() => snapshot(page).then((state) => state.audio.music[musicKey].paused)).toBe(false);
     if (endingId === "neutral") {
       await page.evaluate(() => window.__CROSSROADS_DEBUG__.completeEndingCinematic());
       await expect(page.locator("#end-overlay")).toHaveAttribute("data-cinematic", "complete");
@@ -1423,16 +1474,82 @@ for (const endingId of ["good", "neutral", "bad", "secret-corruption"]) {
   });
 }
 
-test("a completed good ending returns to the TVA epilogue instead of silently resetting to the title screen", async ({ page }, testInfo) => {
+test("a completed good ending shows after-credit before returning to the TVA epilogue", async ({ page }, testInfo) => {
   await page.goto("/?debugTools=1&debugEnding=good");
   await page.waitForFunction(() => Boolean(window.__CROSSROADS_DEBUG__));
   await page.evaluate(() => window.__CROSSROADS_DEBUG__.completeEndingCinematic());
   await expect(page.locator("#end-overlay")).toHaveAttribute("data-cinematic", "complete");
-  await expect(page.locator("#return-start-button")).toHaveText("Về TVA");
+  await expect(page.locator("#return-start-button")).toHaveText("Xem hậu danh đề");
 
   await page.locator("#return-start-button").click();
+  await expect(page.locator("#after-credits")).toBeVisible();
+  await expect(page.locator("#after-credits-team")).toContainText("Nguyễn Hoàng Viết Đô");
+  await expect(page.locator("#after-credits-team")).toContainText("Võ Nam Sang");
+  await expect(page.locator("#after-credits-team")).toContainText("Đặng Thành Đạt");
+  await expect(page.locator("#after-credits-team")).toContainText("Thạch Nhân");
+  await expect(page.locator("#after-credits-sources a")).toHaveCount(7);
+  await expect(page.locator("#after-credits")).toHaveAttribute("data-roll-state", "running");
+  await page.waitForTimeout(900);
+  await expect.poll(() => page.locator("#after-credits-roll-viewport").evaluate((viewport) => viewport.scrollTop)).toBeGreaterThan(0);
+  await page.screenshot({ path: testInfo.outputPath("good-ending-after-credits.png"), fullPage: true });
+  await page.locator("#after-credits-roll-viewport").evaluate((viewport) => viewport.dispatchEvent(new MouseEvent("click", { bubbles: true })));
+  await expect(page.locator("#after-credits")).toHaveAttribute("data-roll-state", "complete");
+  await expect(page.locator("#after-credits-continue-button")).toBeVisible();
+  await expect(page.locator("#after-credits-sources a").last()).toBeInViewport();
+  await page.screenshot({ path: testInfo.outputPath("good-ending-after-credits-sources.png"), fullPage: true });
+
+  await page.locator("#after-credits-continue-button").click();
   await expect(page.locator("#end-overlay")).toBeHidden();
   await expect.poll(() => snapshot(page).then((state) => state.currentLevelId)).toBe("hub");
   await expect.poll(() => snapshot(page).then((state) => state.hubEpilogue?.kind)).toBe("good");
   await page.screenshot({ path: testInfo.outputPath("good-ending-tva-epilogue.png"), fullPage: true });
+});
+
+test("a returned Neutral ending remains a TVA summary and cannot reopen the ending", async ({ page }) => {
+  await page.goto("/?debugTools=1&debugEnding=neutral");
+  await page.waitForFunction(() => Boolean(window.__CROSSROADS_DEBUG__));
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.completeEndingCinematic());
+  await page.locator("#return-start-button").click();
+  await expect(page.locator("#after-credits")).toBeVisible();
+  await expect(page.locator("#after-credits-sources a")).toHaveCount(7);
+  await page.keyboard.press("Enter");
+  await expect(page.locator("#after-credits-continue-button")).toBeVisible();
+  await page.locator("#after-credits-continue-button").click();
+  await expect(page.locator("#end-overlay")).toBeHidden();
+  await expect.poll(() => snapshot(page).then((state) => state.currentLevelId)).toBe("hub");
+  await expect.poll(() => snapshot(page).then((state) => state.saDoa)).toBe(50);
+
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("tva-clerk-placeholder"));
+  await expect.poll(() => snapshot(page).then((state) => state.mode)).toBe("dialogue");
+  await expect(page.locator("#dialogue-choice-list")).toBeHidden();
+  await advanceDialogue(page);
+  await expect.poll(() => snapshot(page).then((state) => state.mode)).toBe("playing");
+  await expect.poll(() => snapshot(page).then((state) => state.endingId)).toBeNull();
+  await expect(page.locator("#end-overlay")).toBeHidden();
+});
+
+test("after-credit respects reduced-motion preferences", async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem("crossroads-settings-v1", JSON.stringify({
+      version: 2,
+      settings: {
+        soundMuted: false,
+        musicVolume: 1,
+        sfxVolume: 1,
+        dialogueVolume: 1,
+        soundCaptions: true,
+        reducedMotion: true,
+        textScale: "normal",
+        minimapVisible: true,
+        minimapSize: "normal",
+        minimapOpacity: "full",
+      },
+    }));
+  });
+  await page.goto("/?debugTools=1&debugEnding=good");
+  await page.waitForFunction(() => Boolean(window.__CROSSROADS_DEBUG__));
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.completeEndingCinematic());
+  await page.locator("#return-start-button").click();
+  await expect(page.locator("#after-credits")).toHaveAttribute("data-roll-state", "complete");
+  await expect(page.locator("#after-credits-continue-button")).toBeVisible();
 });

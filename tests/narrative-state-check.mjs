@@ -80,4 +80,24 @@ assert.equal(
   "An unfinished zone keeps its own bad-ending confirmation until the player resolves that wave."
 );
 
+const resetAfterGlobalCorruption = restoreNarrativeState({
+  branchFlags: {
+    "zone1.badConfirmed": true,
+    "zone2.badConfirmed": true,
+    "zone3a.badConfirmed": true,
+    "zone3b.badConfirmed": true,
+    "zone4.badConfirmed": true,
+  },
+});
+clearCompletedZoneBadConfirmations(resetAfterGlobalCorruption, {
+  inventory: new Set(["red-compass", "unified-emblem", "vietminh-thread", "healed-map", "doi-moi-gear"]),
+});
+assert.equal(
+  Object.keys(resetAfterGlobalCorruption.branchFlags)
+    .filter((flag) => flag.endsWith(".badConfirmed"))
+    .every((flag) => resetAfterGlobalCorruption.branchFlags[flag] === false),
+  true,
+  "A global corruption reset clears all completed-wave confirmations so a stale zone ending cannot replay."
+);
+
 console.log("PASS: narrative state is isolated, serializable, and safe to restore from partial saves.");

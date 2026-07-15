@@ -12,6 +12,7 @@ assert.match(runtime, /restoreNarrativeSaveState\(saved\.narrative\)/, "Continue
 assert.match(runtime, /state\.narrative\s*=\s*createNarrativeState\(\)/, "New campaigns clear narrative flags without sharing state.");
 assert.match(runtime, /endingCandidate:\s*resolveEnding\(/, "Debug snapshots expose an explainable ending candidate.");
 assert.match(runtime, /createEndingCollection/, "Runtime owns a persistent ending collection outside campaign saves.");
+assert.match(runtime, /function restoreBadEndingCheckpoint\(\)[\s\S]{0,2600}if \(!restoredVerdict\) \{[\s\S]{0,520}clearCompletedZoneBadConfirmations/, "A global corruption recovery clears completed-zone confirmations before returning to play.");
 assert.match(runtime, /recordEndingCollection\(candidate\.id\)/, "Every resolved authored ending records a case file before its overlay.");
 assert.match(runtime, /ending:\$\{endingId\}/, "The TVA dossier receives stable ending case-file IDs.");
 assert.match(runtime, /function getTvaDossierEntries\(tab\)/, "Durable ending case files are routed through the separate TVA dossier.");

@@ -62,12 +62,12 @@ async function openFinalVerdict(page, corruption) {
 }
 
 for (const [corruption, expectedEnding] of [
-  [24, "good"],
-  [25, "neutral"],
-  [59, "neutral"],
-  [60, "bad"],
-  [99, "bad"],
-  [100, "secret-corruption"],
+  [49, "good"],
+  [50, "neutral"],
+  [75, "neutral"],
+  [76, "secret-corruption"],
+  [99, "secret-corruption"],
+  [100, "bad"],
 ]) {
   test(`final ending boundary: corruption ${corruption} resolves to ${expectedEnding}`, async ({ page }, testInfo) => {
     await openFinalVerdict(page, corruption);

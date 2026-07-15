@@ -16,16 +16,16 @@ export const GAMEPLAY_BALANCE = freezeBalance({
   },
   corruption: {
     max: 100,
-    badEndingThreshold: 60,
+    badEndingThreshold: 76,
     glitchThreshold: 50,
     deathPenalty: 12,
   },
   narrative: {
     ending: {
-      goodMaxCorruption: 24,
+      goodMaxCorruption: 49,
       zoneRiskThreshold: 3,
       secretRiskThreshold: 1,
-      secretCorruption: 100,
+      secretCorruption: 76,
     },
   },
   combat: {

@@ -14,9 +14,24 @@ const base = {
 
 assert.deepEqual(resolveEnding(base).id, "good", "A complete low-corruption campaign resolves to good.");
 assert.deepEqual(
-  resolveEnding({ ...base, saDoa: 42 }).id,
+  resolveEnding({ ...base, saDoa: 49 }).id,
+  "good",
+  "A complete campaign remains Good below 50 corruption.",
+);
+assert.deepEqual(
+  resolveEnding({ ...base, saDoa: 50 }).id,
   "neutral",
-  "A complete campaign with recoverable negative consequences resolves to neutral.",
+  "A complete campaign resolves to Neutral from 50 corruption onward.",
+);
+assert.deepEqual(
+  resolveEnding({ ...base, saDoa: 75 }).id,
+  "neutral",
+  "A complete campaign remains Neutral through 75 corruption.",
+);
+assert.deepEqual(
+  resolveEnding({ ...base, saDoa: 76 }).id,
+  "secret-corruption",
+  "Corruption above 75 resolves to the Secret Bad Ending.",
 );
 assert.deepEqual(
   resolveEnding({ ...base, narrative: { ...base.narrative, endingRisks: { ...base.narrative.endingRisks, zone1: 3 }, branchFlags: { "zone1.badConfirmed": true } } }).id,
@@ -25,8 +40,8 @@ assert.deepEqual(
 );
 assert.deepEqual(
   resolveEnding({ ...base, saDoa: 100 }).id,
-  "secret-corruption",
-  "Extreme corruption has priority over zone-specific ending risks.",
+  "bad",
+  "Total corruption resolves to the generic Bad Ending.",
 );
 assert.deepEqual(
   resolveEnding({ ...base, inventory: new Set(relics.slice(0, 2)) }).id,

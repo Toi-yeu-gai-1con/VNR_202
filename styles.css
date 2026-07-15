@@ -2231,6 +2231,158 @@ html[data-reduced-motion="true"] *::after {
   transform: translateY(14px);
 }
 
+.end-overlay[data-after-credits="true"] .ending-lesson {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(14px);
+}
+
+.end-overlay[data-after-credits="true"] .end-actions {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(14px);
+}
+
+.after-credits {
+  position: absolute;
+  z-index: 5;
+  inset: 0;
+  overflow: hidden;
+  background: #000;
+  color: #fff1ca;
+  text-align: center;
+}
+
+.after-credits-roll-viewport {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  scrollbar-width: none;
+}
+
+.after-credits-roll-viewport::-webkit-scrollbar {
+  display: none;
+}
+
+.after-credits-panel {
+  width: min(900px, calc(100% - 36px));
+  margin: 0 auto;
+  padding: 28vh 0 32vh;
+}
+
+.after-credits-kicker,
+.after-credits-panel h2,
+.after-credits-panel h3,
+.after-credits-intro,
+.after-credits-list {
+  margin: 0;
+}
+
+.after-credits-kicker {
+  color: #d9d9d9;
+  font-family: "Press Start 2P", cursive;
+  font-size: clamp(0.58rem, 1.15vw, 0.72rem);
+  line-height: 1.55;
+  text-transform: uppercase;
+}
+
+.after-credits-panel h2 {
+  margin-top: 11px;
+  color: #ffffff;
+  font-family: "Press Start 2P", cursive;
+  font-size: clamp(0.94rem, 2.1vw, 1.42rem);
+  line-height: 1.48;
+}
+
+.after-credits-section {
+  margin-top: clamp(18px, 3vw, 28px);
+  padding-top: clamp(15px, 2.4vw, 22px);
+  border-top: 1px solid rgba(255, 255, 255, 0.28);
+}
+
+.after-credits-panel h3 {
+  color: #f2f2f2;
+  font-family: "Press Start 2P", cursive;
+  font-size: clamp(0.62rem, 1.25vw, 0.8rem);
+  line-height: 1.65;
+}
+
+.after-credits-intro {
+  margin-top: 10px;
+  color: #dedede;
+  font-size: clamp(0.82rem, 1.45vw, 0.98rem);
+  line-height: 1.55;
+}
+
+.after-credits-list {
+  display: grid;
+  gap: 9px;
+  margin-top: 12px;
+  padding-left: 0;
+  list-style-position: inside;
+  font-size: clamp(0.84rem, 1.55vw, 1rem);
+  line-height: 1.5;
+}
+
+.after-credits-sources li {
+  display: grid;
+  gap: 3px;
+}
+
+.after-credits-source-chapter {
+  color: #d8d8d8;
+  font-weight: 700;
+}
+
+.after-credits-sources a {
+  color: #ffffff;
+  overflow-wrap: anywhere;
+  text-decoration-color: rgba(255, 255, 255, 0.72);
+  text-underline-offset: 3px;
+}
+
+.after-credits-sources a:hover,
+.after-credits-sources a:focus-visible {
+  color: #fff2b0;
+  outline: 1px solid #fff2b0;
+  text-decoration-thickness: 2px;
+}
+
+.after-credits-hint,
+.after-credits-continue {
+  position: absolute;
+  z-index: 1;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.after-credits-hint {
+  bottom: clamp(18px, 4vh, 36px);
+  width: max-content;
+  max-width: calc(100% - 36px);
+  margin: 0;
+  color: rgba(255, 255, 255, 0.68);
+  font-family: "Press Start 2P", cursive;
+  font-size: clamp(0.5rem, 1vw, 0.66rem);
+  line-height: 1.6;
+}
+
+.after-credits-continue {
+  bottom: clamp(18px, 4vh, 36px);
+  min-width: clamp(210px, 26vw, 300px);
+}
+
+@media (max-width: 620px) {
+  .after-credits-panel {
+    width: min(92vw, 560px);
+    padding: 20vh 0 25vh;
+  }
+
+  .after-credits-list {
+    font-size: clamp(0.76rem, 3vw, 0.92rem);
+  }
+}
+
 .end-overlay[data-awaiting-recovery="true"] .end-art-frame::after {
   content: "Nhấp chuột để David can thiệp";
   position: absolute;
