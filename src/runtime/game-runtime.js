@@ -40,7 +40,7 @@ import { GAMEPLAY_BALANCE, getDifficultySettings } from "../data/gameplay-balanc
 import { AUDIO_TRACKS, COMBAT_SFX, getAudioSourceCandidates, resolveAudioSource } from "../data/media-sources.js";
 import { ENDING_AUDIO_KEYS, getEndingAudioKey } from "../data/ending-audio-definitions.js";
 import { BUILD_VERSION, withAssetVersion } from "../data/build-info.js";
-import { PLAYER_FOOTPRINT, PLAYER_SPRITE, PLAYER_ANIMATIONS, NPC_SPRITE, TVA_EMPLOYEE_SPRITE, M90_RESET_ANIMATION, ENVIRONMENT_SPRITES, TILECRAFT_TERRAIN, PIXEL_CRAWLER_TERRAIN, VILLAGE_SKYLINE_Y, VILLAGE_PROP_SPRITES, PIXEL_CRAWLER_BUILDING_SPRITES, HUB_PORTAL_SPRITE, SWORD_SLASH_SPRITE, PIXEL_CRAWLER_TREE_SPRITE, KENNEY_ROGUELIKE_TILE, KENNEY_ROGUELIKE_SPRITES, PIXEL_CRAWLER_VEGETATION_SPRITES, PIXEL_CRAWLER_TOOL_CLUSTER_SPRITES, CAINOS_PROP_SPRITES, LIMEZU_INTERIOR_SPRITES, HOUSE_INTERIOR_A_SPRITES, MONSTER_SPRITE_CONFIG } from "../data/render-config.js";
+import { PLAYER_FOOTPRINT, PLAYER_SPRITE, PLAYER_ANIMATIONS, NPC_SPRITE, TVA_EMPLOYEE_SPRITE, M90_RESET_ANIMATION, ENVIRONMENT_SPRITES, TILECRAFT_TERRAIN, PIXEL_CRAWLER_TERRAIN, VILLAGE_SKYLINE_Y, VILLAGE_PROP_SPRITES, PIXEL_CRAWLER_BUILDING_SPRITES, HUB_PORTAL_SPRITE, SWORD_SLASH_SPRITE, SMALL_GAME_ASSET_ANIMATIONS, PIXEL_CRAWLER_TREE_SPRITE, KENNEY_ROGUELIKE_TILE, KENNEY_ROGUELIKE_SPRITES, PIXEL_CRAWLER_VEGETATION_SPRITES, PIXEL_CRAWLER_TOOL_CLUSTER_SPRITES, CAINOS_PROP_SPRITES, LIMEZU_INTERIOR_SPRITES, HOUSE_INTERIOR_A_SPRITES, MONSTER_SPRITE_CONFIG } from "../data/render-config.js";
 
 const canvas = document.getElementById("game-canvas");
 const ctx = canvas.getContext("2d");
@@ -765,7 +765,17 @@ function ensureCombatRoster() {
 
     level.drops ??= [];
     level.traps ??= [{ id: `${levelId}-trap`, x: 470, y: 372, radius: 22, cooldownUntil: 0 }];
-    level.breakables ??= [{ id: `${levelId}-crate`, x: 430, y: 446, width: 24, height: 22, health: 3, maxHealth: 3, destroyed: false }];
+    level.breakables ??= [{
+      id: `${levelId}-crate`,
+      x: 430,
+      y: 446,
+      width: 24,
+      height: 22,
+      health: 3,
+      maxHealth: 3,
+      destroyed: false,
+      variant: levelId === "archive" || levelId === "spring" ? "bambooBasket" : "woodenCrate",
+    }];
   }
 }
 
@@ -1620,6 +1630,13 @@ function loadEnvironmentSprites() {
       bureaucracyWall: loadSprite("assets/environment/generated-objects/bureaucracy-wall.png"),
       rationMarket: loadSprite("assets/environment/generated-objects/ration-market.png"),
     },
+    animatedProps: {
+      vietnamFlag: loadSprite("assets/props/animated/vietnam-flag-small.png"),
+    },
+    breakables: {
+      woodenCrate: loadSprite("assets/props/breakables/wooden-supply-crate.png"),
+      bambooBasket: loadSprite("assets/props/breakables/bamboo-provisions-basket.png"),
+    },
     landmarks: {
       stormShelterBeacon: loadSprite("assets/landmarks/storm-shelter-beacon.png"),
       archiveLensTower: loadSprite("assets/landmarks/archive-lens-tower.png"),
@@ -1848,6 +1865,14 @@ function loadEffectSprites() {
     sparkle: loadSprite("assets/effects/kenney-particles/star_04.png"),
     petal: loadSprite("assets/effects/petal-pink.png"),
     swordSlashSheet: loadSprite("assets/effects/combat/sword-slash-sheet.png"),
+    pickups: {
+      health: loadSprite("assets/items/pickups/health-tonic.png"),
+      stamina: loadSprite("assets/items/pickups/stamina-tonic.png"),
+    },
+    projectiles: {
+      normal: loadSprite("assets/effects/combat/timeline-projectile.png"),
+      reflected: loadSprite("assets/effects/combat/timeline-projectile-reflected.png"),
+    },
   };
 }
 
@@ -2660,6 +2685,7 @@ function initializeLevelRuntime() {
     for (const breakable of level.breakables ?? []) {
       breakable.health = breakable.maxHealth;
       breakable.destroyed = false;
+      breakable.destroyedAt = 0;
     }
     for (const monster of level.monsters ?? []) {
       monster.homeX = monster.x;
@@ -6908,6 +6934,7 @@ function damageBreakable(breakable, amount) {
     return;
   }
   breakable.destroyed = true;
+  breakable.destroyedAt = state.lastTimestamp;
   currentLevel().drops.push({ x: breakable.x, y: breakable.y, type: "stamina", expiresAt: state.lastTimestamp + 12000 });
   showStoryToast("Chướng ngại đã vỡ, để lại năng lượng chiến đấu.");
 }
@@ -9546,13 +9573,38 @@ function drawRedSquareWorld(decorations) {
   drawPixelCrawlerTrees(decorations.crawlerTrees);
   drawPixelCrawlerToolClusters(decorations.crawlerTools);
 
-  for (const flag of decorations.flags) {
-    ctx.fillStyle = "#684f35";
-    ctx.fillRect(flag.x, flag.y, 4, flag.height);
-    ctx.fillStyle = "#cf3c37";
-    ctx.fillRect(flag.x + 4, flag.y + 4, 28, 14);
-    ctx.fillStyle = "#f7d96f";
-    ctx.fillRect(flag.x + 15, flag.y + 8, 6, 6);
+}
+
+function drawAnimatedVietnamFlags(flags = []) {
+  const sprite = environmentSprites.animatedProps?.vietnamFlag;
+  const animation = SMALL_GAME_ASSET_ANIMATIONS.vietnamFlag;
+  if (!canDrawSprite(sprite)) return;
+
+  const frameIndex = Math.floor(state.lastTimestamp / animation.frameDuration) % animation.frameCount;
+  for (const flag of flags) {
+    if (flag.hamletId && !state.quests.zone3HamletsFreed.has(flag.hamletId)) {
+      continue;
+    }
+    const poleX = Math.round(flag.x);
+    const poleY = Math.round(flag.y);
+    const poleHeight = Math.round(flag.height ?? 48);
+    ctx.fillStyle = "#d9ba5c";
+    ctx.fillRect(poleX, poleY, 2, poleHeight);
+    const drawWidth = Math.round(Math.max(24, Math.min(40, poleHeight * 0.56)));
+    const drawHeight = Math.round(drawWidth * 0.72);
+    const drawX = poleX + 2;
+    const drawY = poleY + 2;
+    ctx.drawImage(
+      sprite,
+      frameIndex * animation.frameWidth + 14,
+      14,
+      48,
+      34,
+      drawX,
+      drawY,
+      drawWidth,
+      drawHeight,
+    );
   }
 }
 
@@ -10845,10 +10897,23 @@ function drawInteractables() {
 function drawWorldDrops() {
   for (const drop of currentLevel().drops ?? []) {
     const bob = Math.sin((state.lastTimestamp + drop.x * 13) / 180) * 2;
-    ctx.fillStyle = drop.type === "health" ? "#ef7c6d" : "#8fd8d0";
-    ctx.fillRect(drop.x - 4, drop.y - 8 + bob, 8, 8);
-    ctx.fillStyle = "rgba(255,255,235,0.78)";
-    ctx.fillRect(drop.x - 2, drop.y - 10 + bob, 4, 3);
+    const animation = drop.type === "health"
+      ? SMALL_GAME_ASSET_ANIMATIONS.healthTonic
+      : SMALL_GAME_ASSET_ANIMATIONS.staminaTonic;
+    const sprite = effectSprites.pickups?.[drop.type];
+    if (!canDrawSprite(sprite)) continue;
+    const frameIndex = Math.floor((state.lastTimestamp + drop.x * 13) / animation.frameDuration) % animation.frameCount;
+    ctx.drawImage(
+      sprite,
+      frameIndex * animation.frameWidth,
+      0,
+      animation.frameWidth,
+      animation.frameHeight,
+      Math.round(drop.x - animation.drawSize / 2),
+      Math.round(drop.y - animation.drawSize + bob),
+      animation.drawSize,
+      animation.drawSize,
+    );
   }
 }
 
@@ -10868,48 +10933,58 @@ function drawLevelHazards() {
 
 function drawBreakables() {
   for (const [index, breakable] of (currentLevel().breakables ?? []).entries()) {
-    if (breakable.destroyed) {
+    const animationKey = breakable.variant ?? (index % 2 === 1 ? "bambooBasket" : "woodenCrate");
+    const animation = SMALL_GAME_ASSET_ANIMATIONS[animationKey] ?? SMALL_GAME_ASSET_ANIMATIONS.woodenCrate;
+    const destroyedAt = breakable.destroyedAt ?? state.lastTimestamp;
+    const elapsed = state.lastTimestamp - destroyedAt;
+    if (breakable.destroyed && elapsed >= animation.frameDuration * 2 + animation.debrisHoldMs) {
       continue;
     }
-    drawBreakableSprite(breakable, index);
+    const frameIndex = breakable.destroyed
+      ? Math.min(animation.frameCount - 1, 2 + Math.floor(Math.max(0, elapsed) / animation.frameDuration))
+      : breakable.health < (breakable.maxHealth ?? 2) ? 1 : 0;
+    drawBreakableSprite(breakable, animationKey, animation, frameIndex);
   }
 }
 
-function drawBreakableSprite(breakable, index) {
-  const width = Math.max(18, breakable.width + 6);
-  const height = Math.max(18, breakable.height + 6);
-  const left = Math.round(breakable.x - width / 2);
-  const top = Math.round(breakable.y - height / 2);
-  const sprite = index % 3 === 1 ? KENNEY_ROGUELIKE_SPRITES.barrel : KENNEY_ROGUELIKE_SPRITES.crate;
-  const damaged = breakable.health < (breakable.maxHealth ?? 2);
-
-  ctx.fillStyle = "rgba(12, 14, 18, 0.28)";
-  ctx.fillRect(left + 3, top + height - 3, width - 6, 3);
-
-  if (!drawKenneyRoguelikeSprite(sprite, left, top, width, height, { filter: damaged ? "brightness(0.82) saturate(0.76)" : "brightness(1.05) saturate(1.02)" })) {
-    ctx.fillStyle = "#76523b";
-    ctx.fillRect(left, top, width, height);
-    ctx.strokeStyle = "#cf9f62";
-    ctx.strokeRect(left + 1, top + 1, width - 2, height - 2);
-  }
-
-  if (damaged) {
-    ctx.strokeStyle = "rgba(55, 28, 24, 0.86)";
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(left + 5, top + 4);
-    ctx.lineTo(left + width / 2, top + height - 5);
-    ctx.lineTo(left + width - 5, top + 6);
-    ctx.stroke();
-  }
+function drawBreakableSprite(breakable, animationKey, animation, frameIndex) {
+  const sprite = environmentSprites.breakables?.[animationKey];
+  if (!canDrawSprite(sprite)) return;
+  const drawSize = animation.drawSize;
+  ctx.drawImage(
+    sprite,
+    frameIndex * animation.frameWidth,
+    0,
+    animation.frameWidth,
+    animation.frameHeight,
+    Math.round(breakable.x - drawSize / 2),
+    Math.round(breakable.y - drawSize / 2),
+    drawSize,
+    drawSize,
+  );
 }
 
 function drawEnemyProjectiles() {
   for (const projectile of state.enemyProjectiles) {
-    ctx.fillStyle = projectile.reflected ? "#ffe39a" : "#d9e9ff";
-    ctx.fillRect(projectile.x - 3, projectile.y - 3, 6, 6);
-    ctx.fillStyle = projectile.reflected ? "#e58d42" : "#6b85d5";
-    ctx.fillRect(projectile.x - 1, projectile.y - 5, 2, 10);
+    const animation = SMALL_GAME_ASSET_ANIMATIONS.projectile;
+    const sprite = projectile.reflected ? effectSprites.projectiles?.reflected : effectSprites.projectiles?.normal;
+    if (!canDrawSprite(sprite)) continue;
+    const frameIndex = Math.floor((state.lastTimestamp + projectile.x * 7) / animation.frameDuration) % animation.frameCount;
+    ctx.save();
+    ctx.translate(Math.round(projectile.x), Math.round(projectile.y));
+    ctx.rotate(Math.atan2(projectile.velocityY, projectile.velocityX));
+    ctx.drawImage(
+      sprite,
+      frameIndex * animation.frameWidth,
+      0,
+      animation.frameWidth,
+      animation.frameHeight,
+      Math.round(-animation.drawSize / 2),
+      Math.round(-animation.drawSize / 2),
+      animation.drawSize,
+      animation.drawSize,
+    );
+    ctx.restore();
   }
 }
 
@@ -12371,17 +12446,21 @@ function drawArchiveRecoveryScene(profile, stage) {
 }
 
 function drawCrossroadsRecoveryScene(profile, stage) {
-  const freedHamlets = state.quests.zone3HamletsFreed.size;
+  const hamletFlags = profile.progress.hamletPositions.map((hamlet, index) => ({
+    x: hamlet.x - 18,
+    y: hamlet.y - 46,
+    height: 44,
+    hamletId: `hamlet-${index + 1}`,
+  }));
 
-  for (let index = 0; index < freedHamlets; index += 1) {
-    const hamlet = profile.progress.hamletPositions[index];
+  for (const [index, hamlet] of profile.progress.hamletPositions.entries()) {
+    if (!state.quests.zone3HamletsFreed.has(`hamlet-${index + 1}`)) {
+      continue;
+    }
     ctx.fillStyle = "rgba(244, 210, 111, 0.18)";
     ctx.fillRect(hamlet.x - 20, hamlet.y - 16, 40, 22);
-    ctx.fillStyle = "#d9ba5c";
-    ctx.fillRect(hamlet.x - 1, hamlet.y - 21, 2, 20);
-    ctx.fillStyle = "#d94d42";
-    ctx.fillRect(hamlet.x + 1, hamlet.y - 21, 11, 6);
   }
+  drawAnimatedVietnamFlags(hamletFlags);
 
   if (stage === 3) {
     ctx.fillStyle = "rgba(236, 196, 86, 0.24)";

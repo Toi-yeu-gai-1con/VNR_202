@@ -1013,11 +1013,6 @@ function createRedSquareDecorations() {
     bridge: { x: 452, y: 236, width: 56, height: 176 },
     northSquare: { x: 96, y: 48, width: 768, height: 214 },
     southTown: { x: 72, y: 392, width: 816, height: 188 },
-    flags: [
-      { x: 226, y: 102, height: 50 },
-      { x: 480, y: 90, height: 68 },
-      { x: 732, y: 110, height: 46 },
-    ],
     crawlerBushes: [
       { x: 166, y: 438, variant: 5, scale: 0.82 },
       { x: 296, y: 554, variant: 8, scale: 0.76 },
