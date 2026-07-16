@@ -1551,6 +1551,31 @@ test("a returned Neutral ending remains a TVA summary and cannot reopen the endi
   await expect(page.locator("#end-overlay")).toBeHidden();
 });
 
+test("the TVA memory archive displays a completed Good ending's full after-credit details", async ({ page }, testInfo) => {
+  await page.goto("/?debugTools=1&debugEnding=good");
+  await page.waitForFunction(() => Boolean(window.__CROSSROADS_DEBUG__));
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.completeEndingCinematic());
+  await page.locator("#return-start-button").click();
+  await page.keyboard.press("Enter");
+  await page.locator("#after-credits-continue-button").click();
+  await expect.poll(() => snapshot(page).then((state) => state.currentLevelId)).toBe("hub");
+
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("tva-memory-archive"));
+  await expect(page.locator("#tva-dossier-modal")).toBeVisible();
+  await page.locator('[data-tva-dossier-tab="after-credits"]').click();
+  await expect(page.locator("#tva-dossier-content")).toContainText("Hậu danh đề đã lưu");
+  await expect(page.locator("#tva-dossier-content")).toContainText("Nguyễn Hoàng Viết Đô");
+  await expect(page.locator("#tva-dossier-content")).toContainText("Nguồn tư liệu & kiểm chứng lịch sử");
+  await expect(page.locator("#tva-dossier-content a")).toHaveCount(7);
+  await expect(page.locator("#tva-dossier-content")).toContainText("OpenAI Codex");
+  await expect(page.locator("#tva-dossier-content")).toContainText("Cam kết của nhóm");
+  await expect(page.locator("#tva-dossier-content")).toHaveCSS("scrollbar-width", "none");
+  await page.screenshot({ path: testInfo.outputPath("tva-after-credits-archive.png"), fullPage: true });
+  await page.locator("#tva-dossier-content").evaluate((content) => content.scrollTop = content.scrollHeight);
+  await expect(page.locator("#tva-dossier-content")).toContainText("không được dùng làm nguồn sử liệu");
+  await page.screenshot({ path: testInfo.outputPath("tva-after-credits-ai-archive.png"), fullPage: true });
+});
+
 test("after-credit respects reduced-motion preferences", async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem("crossroads-settings-v1", JSON.stringify({

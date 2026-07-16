@@ -4912,6 +4912,10 @@ function getTvaDossierEntries(tab) {
     .filter(Boolean);
 }
 
+function hasTvaAfterCreditsArchive() {
+  return supportsAfterCredits(state.hubEpilogueEndingId);
+}
+
 function createTvaDossierText(tagName, className, text) {
   const element = document.createElement(tagName);
   element.className = className;
@@ -4929,6 +4933,77 @@ function renderTvaDossier() {
     button.setAttribute("aria-selected", selected ? "true" : "false");
   });
   tvaDossierContent.replaceChildren();
+
+  if (tab === "after-credits") {
+    tvaDossierContent.append(createTvaDossierText("h3", "tva-dossier-section-title", "Hậu danh đề đã lưu"));
+    if (!hasTvaAfterCreditsArchive()) {
+      tvaDossierContent.append(createTvaDossierText(
+        "p",
+        "tva-dossier-empty",
+        "Hoàn thành Good Ending hoặc Neutral Ending để TVA niêm phong hậu danh đề tại đây.",
+      ));
+      return;
+    }
+
+    const record = document.createElement("article");
+    record.className = "tva-dossier-record tva-dossier-after-credits-record";
+    const ending = ENDING_DEFINITIONS[state.hubEpilogueEndingId];
+    const copy = document.createElement("div");
+    copy.className = "tva-dossier-record-copy";
+    copy.append(
+      createTvaDossierText("p", "tva-dossier-kicker", "HỒ SƠ TVA ĐÃ NIÊM PHONG"),
+      createTvaDossierText("h4", "tva-dossier-record-title", ending?.title ?? "Hậu danh đề"),
+      createTvaDossierText(
+        "p",
+        "tva-dossier-record-text",
+        "Danh sách thực hiện, nguồn kiểm chứng lịch sử, thông tin minh bạch AI và cam kết của nhóm được lưu tại đây để xem lại bất cứ lúc nào.",
+      ),
+    );
+
+    const createSection = (title, entries, { intro = "", linkEntries = false } = {}) => {
+      const section = document.createElement("section");
+      section.className = "tva-dossier-after-credits-section";
+      section.append(createTvaDossierText("h5", "tva-dossier-after-credits-heading", title));
+      if (intro) {
+        section.append(createTvaDossierText("p", "tva-dossier-record-caption", intro));
+      }
+      const list = document.createElement("ul");
+      list.className = "tva-dossier-after-credits-list";
+      list.replaceChildren(...entries.map((entry) => {
+        const item = document.createElement("li");
+        if (linkEntries) {
+          const chapter = document.createElement("strong");
+          const link = document.createElement("a");
+          chapter.textContent = entry.chapter;
+          link.href = entry.href;
+          link.target = "_blank";
+          link.rel = "noreferrer";
+          link.textContent = entry.label;
+          item.append(chapter, link);
+        } else {
+          item.textContent = entry;
+        }
+        return item;
+      }));
+      section.append(list);
+      return section;
+    };
+
+    copy.append(
+      createSection(AFTER_CREDITS.teamLabel, AFTER_CREDITS.team),
+      createSection(AFTER_CREDITS.sourcesLabel, AFTER_CREDITS.sources, {
+        intro: AFTER_CREDITS.sourcesIntro,
+        linkEntries: true,
+      }),
+      createSection(AFTER_CREDITS.aiDisclosure.label, AFTER_CREDITS.aiDisclosure.usage, {
+        intro: `${AFTER_CREDITS.aiDisclosure.tool} ${AFTER_CREDITS.aiDisclosure.usageLabel}`,
+      }),
+      createSection(AFTER_CREDITS.aiDisclosure.commitmentLabel, AFTER_CREDITS.aiDisclosure.commitments),
+    );
+    record.append(copy);
+    tvaDossierContent.append(record);
+    return;
+  }
 
   const heading = tab === "endings"
     ? "Kết cục đã chứng kiến"
