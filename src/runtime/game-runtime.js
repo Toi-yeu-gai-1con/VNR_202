@@ -4390,7 +4390,8 @@ function closeDialogueForChoice() {
 }
 
 function resolveZone1PaperPlanChoice(choiceId, item) {
-  const option = applyNarrativeChoice("zone1", "dock-workers", choiceId);
+  const checkpoint = captureFinalVerdictCheckpoint(item);
+  const option = applyNarrativeChoice("zone1", "dock-workers", choiceId, { deferCorruptionEnding: choiceId === "abandon" });
 
   if (!option) {
     return;
@@ -4402,10 +4403,22 @@ function resolveZone1PaperPlanChoice(choiceId, item) {
   closeDialogueForChoice();
   updateQuestChip();
   updateInteractionPrompt();
+
+  if (choiceId === "abandon") {
+    const candidate = resolveEnding({ narrative: state.narrative, inventory: state.inventory, saDoa: state.saDoa });
+    applyFinalVerdictCheckpoint(checkpoint);
+    triggerNarrativeEnding(
+      candidate.id === "zone1-lost-compass"
+        ? candidate
+        : { id: "zone1-lost-compass", reason: "papers-destroyed-or-hidden", chapter: "zone1", risk: 3 },
+      "Những tờ Le Paria bị đốt hoặc bị giấu ngay khi vừa nhận, khiến tiếng nói của người lao động không còn đường đi tiếp.",
+      checkpoint,
+    );
+    return;
+  }
+
   showStoryToast(
-    choiceId === "abandon"
-      ? "Bạn giữ báo lại vì an toàn cá nhân. Vẫn còn thời gian để sửa sai và đưa tiếng nói ấy đến người lao động."
-      : "Bạn đã chọn một cách đưa báo phù hợp. Hãy đem Le Paria tới ba người lao động ở bến cảng."
+    "Bạn đã chọn một cách đưa báo phù hợp. Hãy đem Le Paria tới ba người lao động ở bến cảng."
   );
   saveGameProgress();
 }

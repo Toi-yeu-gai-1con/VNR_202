@@ -109,7 +109,7 @@ export const NARRATIVE_CHOICE_DEFINITIONS = Object.freeze({
         { id: "protect", label: "Bảo vệ đường truyền cùng công nhân", npcRelations: { "dock-workers": 1 }, themeScores: { solidarity: 1 }, corruption: 2 },
         { id: "evidence", label: "Dùng lời kể và tư liệu để thuyết phục", branchFlags: { "zone1.usedEvidence": true }, npcRelations: { "dock-workers": 1 }, themeScores: { direction: 1 } },
         { id: "cargo-route", label: "Giấu báo trong tuyến hàng hóa", branchFlags: { "zone1.usedCargoRoute": true }, npcRelations: { "dock-workers": 1 }, themeScores: { solidarity: 1 } },
-        { id: "abandon", label: "Giữ báo lại để tránh rủi ro", npcRelations: { "dock-workers": -1 }, endingRisks: { zone1: 1 }, corruption: 6 },
+        { id: "abandon", label: "Đốt báo hoặc giấu báo đi", branchFlags: { "zone1.papersDestroyedOrHidden": true, "zone1.badConfirmed": true }, npcRelations: { "dock-workers": -2 }, endingRisks: { zone1: 3 }, corruption: 12 },
       ]),
     },
     {

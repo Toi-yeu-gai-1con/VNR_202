@@ -45,7 +45,12 @@ async function loadLevel(page, levelId) {
 async function prepareZone1Deliveries(page, plan = "protect") {
   await loadLevel(page, "village");
   await interact(page, "le-paria-stack");
-  await chooseDialogueOption(page, plan);
+  const firstPlan = plan === "recruiter-accept" ? "protect" : plan;
+  await chooseDialogueOption(page, firstPlan);
+  if (plan === "recruiter-accept") {
+    await interact(page, "colonial-recruiter");
+    await chooseDialogueOption(page, "accept");
+  }
   for (const workerId of ["worker-harbor-1", "worker-harbor-2", "worker-harbor-3"]) {
     await interact(page, workerId);
   }
@@ -65,7 +70,7 @@ async function prepareDecision(page, entry) {
       await interact(page, "colonial-recruiter");
       return;
     case "zone1/last-issue":
-      await prepareZone1Deliveries(page, entry.optionId === "return-after-compromise" ? "abandon" : "protect");
+      await prepareZone1Deliveries(page, entry.optionId === "return-after-compromise" ? "recruiter-accept" : "protect");
       await interact(page, "red-compass-reward");
       return;
     case "zone1/compass-verdict":
@@ -132,6 +137,7 @@ for (const entry of CHOICE_COVERAGE) {
     await chooseDialogueOption(page, entry.optionId);
 
     const expectedEnding = {
+      "zone1/dock-workers/abandon": "zone1-lost-compass",
       "zone1/compass-verdict/confirm-personal-gain": "zone1-lost-compass",
       "zone3a/august-verdict/confirm-delay": "zone3a-missed-moment",
     }[coverageKey];

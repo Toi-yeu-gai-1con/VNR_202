@@ -39,6 +39,11 @@ assert.deepEqual(
   "A confirmed Zone 1 risk resolves to its dedicated bad ending.",
 );
 assert.deepEqual(
+  resolveEnding({ ...base, inventory: new Set(), narrative: { ...base.narrative, endingRisks: { ...base.narrative.endingRisks, zone1: 3 }, branchFlags: { "zone1.badConfirmed": true } } }).id,
+  "zone1-lost-compass",
+  "A confirmed Zone 1 paper failure can resolve before the relic is collected.",
+);
+assert.deepEqual(
   resolveEnding({ ...base, saDoa: 100 }).id,
   "bad",
   "Total corruption resolves to the generic Bad Ending.",

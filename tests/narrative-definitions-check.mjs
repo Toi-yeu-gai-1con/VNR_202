@@ -23,7 +23,11 @@ assert.equal(Object.keys(NARRATIVE_ENDING_DEFINITIONS).length, 8, "Narrative dat
 assert.equal(NARRATIVE_ENDING_DEFINITIONS["zone1-lost-compass"].branchLabel, "Nhánh giả định", "Bad endings are clearly labeled as hypothetical branches.");
 
 const zone1Verdict = NARRATIVE_CHOICE_DEFINITIONS.zone1.find((choice) => choice.id === "compass-verdict");
-assert.equal(zone1Verdict.options.some((option) => option.branchFlags?.["zone1.badConfirmed"]), true, "Zone 1 bad ending needs an explicit final confirmation.");
+const zone1PaperPlan = NARRATIVE_CHOICE_DEFINITIONS.zone1.find((choice) => choice.id === "dock-workers");
+const burnOrHidePapers = zone1PaperPlan.options.find((option) => option.id === "abandon");
+assert.equal(burnOrHidePapers.branchFlags?.["zone1.badConfirmed"], true, "Burning or hiding the papers immediately confirms Zone 1's bad ending.");
+assert.equal(burnOrHidePapers.endingRisks?.zone1 >= 3, true, "Burning or hiding the papers reaches the Zone 1 bad-ending risk threshold immediately.");
+assert.equal(zone1Verdict.options.some((option) => option.branchFlags?.["zone1.badConfirmed"]), true, "Zone 1 still keeps its final-verdict confirmation route for later compromises.");
 assert.equal(
   NARRATIVE_CHOICE_DEFINITIONS.zone1.find((choice) => choice.id === "recruiter-offer").options.some((option) => option.endingRisks?.zone1 > 0),
   true,

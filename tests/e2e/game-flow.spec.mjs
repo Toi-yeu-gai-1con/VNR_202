@@ -1017,7 +1017,7 @@ test("a bad ending is interrupted by the TVA employee and restores the checkpoin
   expect(restored.saDoa).toBe(0);
 });
 
-test("Zone 1 choices record a recoverable risk and only trigger its bad ending after explicit confirmation", async ({ page }, testInfo) => {
+test("Zone 1 burns or hides the papers into its bad ending immediately", async ({ page }, testInfo) => {
   test.setTimeout(60_000);
   await openDebugSession(page);
   await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("village", { x: 832, y: 244, direction: "up" }));
@@ -1050,16 +1050,12 @@ test("Zone 1 choices record a recoverable risk and only trigger its bad ending a
   await expect.poll(() => snapshot(page).then((state) => state.narrative.endingRisks.zone1)).toBe(1);
   await expect.poll(() => snapshot(page).then((state) => state.endingId)).toBeNull();
 
-  for (const workerId of ["worker-harbor-1", "worker-harbor-2", "worker-harbor-3"]) {
-    await page.evaluate((interactableId) => window.__CROSSROADS_DEBUG__.interactById(interactableId), workerId);
-  }
-  await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("red-compass-reward"));
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.beginSession());
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("village", { x: 490, y: 548, direction: "up" }));
+  await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("le-paria-stack"));
   await finishDialogueLine(page);
-  await page.locator('[data-dialogue-choice="surrender"]').click();
-  await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("red-compass-reward"));
-  await finishDialogueLine(page);
-  await expect(page.locator("#dialogue-choice-list")).toBeVisible();
-  await page.locator('[data-dialogue-choice="confirm-personal-gain"]').click();
+  await expect(page.locator('[data-dialogue-choice="abandon"]')).toContainText("Đốt báo");
+  await page.locator('[data-dialogue-choice="abandon"]').click();
   await expect(page.locator("#end-overlay")).toBeVisible();
   await expect(page.locator("#end-title")).toContainText("CON TÀU KHÔNG LA BÀN");
   await expect.poll(() => snapshot(page).then((state) => state.endingId)).toBe("zone1-lost-compass");
@@ -1072,9 +1068,9 @@ test("Zone 1 choices record a recoverable risk and only trigger its bad ending a
   await requestBadEndingRecovery(page);
   await seekBadEndingRecovery(page, "completeAt", 50);
   await expect.poll(() => snapshot(page).then((state) => state.mode)).toBe("playing");
-  const retry = await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("red-compass-reward"));
+  const retry = await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("le-paria-stack"));
   expect(retry.currentLevelId).toBe("village");
-  expect(retry.quests.zone1RewardClaimed).toBe(false);
+  expect(retry.quests.zone1Started).toBe(false);
   expect(retry.saDoa).toBe(0);
   expect(retry.mode).toBe("dialogue");
   await expect(page.locator("#dialogue-choice-list")).toBeVisible();
@@ -1087,9 +1083,14 @@ for (const lastIssueChoice of ["rescue", "divert", "return-after-compromise", "s
     await page.evaluate(() => window.__CROSSROADS_DEBUG__.loadLevel("village"));
     await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("le-paria-stack"));
     await finishDialogueLine(page);
-    await page.locator(
-      `[data-dialogue-choice="${lastIssueChoice === "return-after-compromise" ? "abandon" : "protect"}"]`
-    ).click();
+    await page.locator('[data-dialogue-choice="protect"]').click();
+
+    if (lastIssueChoice === "return-after-compromise") {
+      await page.evaluate(() => window.__CROSSROADS_DEBUG__.interactById("colonial-recruiter"));
+      await advanceDialogue(page);
+      await advanceDialogue(page);
+      await page.locator('[data-dialogue-choice="accept"]').click();
+    }
 
     for (const workerId of ["worker-harbor-1", "worker-harbor-2", "worker-harbor-3"]) {
       await page.evaluate((id) => window.__CROSSROADS_DEBUG__.interactById(id), workerId);

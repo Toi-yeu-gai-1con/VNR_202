@@ -96,7 +96,7 @@ export const ENDING_COVERAGE = Object.freeze([
   { id: "bad", triggerKind: "runtime-threshold", recoverable: true },
   { id: "neutral", triggerKind: "final-runtime", recoverable: false },
   { id: "secret-corruption", triggerKind: "runtime-threshold", recoverable: true },
-  { id: "zone1-lost-compass", triggerKind: "zone-verdict", recoverable: true },
+  { id: "zone1-lost-compass", triggerKind: "paper-choice", recoverable: true },
   { id: "zone2-fading-fires", triggerKind: "zone-verdict", recoverable: true },
   { id: "zone3a-missed-moment", triggerKind: "zone-verdict", recoverable: true },
   { id: "zone3b-divided-border", triggerKind: "zone-verdict", recoverable: true },

@@ -60,7 +60,7 @@ export const INTERACTION_DIALOGUES = {
       { id: "protect", label: "Đi cùng công nhân, bảo vệ đường truyền" },
       { id: "evidence", label: "Dùng lời kể và tư liệu để thuyết phục" },
       { id: "cargo-route", label: "Giấu báo trong tuyến hàng hóa của bến cảng" },
-      { id: "abandon", label: "Giữ báo lại để tránh rủi ro", tone: "danger" },
+      { id: "abandon", label: "Đốt báo hoặc giấu báo đi", tone: "danger" },
     ],
   },
   "tva-clerk-placeholder": TVA_EMPLOYEE_DIALOGUES.introduction,
