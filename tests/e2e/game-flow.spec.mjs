@@ -1508,6 +1508,9 @@ test("a completed good ending shows after-credit before returning to the TVA epi
   await expect(page.locator("#after-credits-team")).toContainText("Đặng Thành Đạt");
   await expect(page.locator("#after-credits-team")).toContainText("Thạch Nhân");
   await expect(page.locator("#after-credits-sources a")).toHaveCount(7);
+  await expect(page.locator("#after-credits-ai-tool")).toContainText("OpenAI Codex");
+  await expect(page.locator("#after-credits-ai-usage")).toContainText("kiểm thử hồi quy");
+  await expect(page.locator("#after-credits-ai-commitments")).toContainText("không được dùng làm nguồn sử liệu");
   await expect(page.locator("#after-credits")).toHaveAttribute("data-roll-state", "running");
   await page.waitForTimeout(900);
   await expect.poll(() => page.locator("#after-credits-roll-viewport").evaluate((viewport) => viewport.scrollTop)).toBeGreaterThan(0);
@@ -1515,7 +1518,7 @@ test("a completed good ending shows after-credit before returning to the TVA epi
   await page.locator("#after-credits-roll-viewport").evaluate((viewport) => viewport.dispatchEvent(new MouseEvent("click", { bubbles: true })));
   await expect(page.locator("#after-credits")).toHaveAttribute("data-roll-state", "complete");
   await expect(page.locator("#after-credits-continue-button")).toBeVisible();
-  await expect(page.locator("#after-credits-sources a").last()).toBeInViewport();
+  await expect(page.locator("#after-credits-ai-commitments li").last()).toBeInViewport();
   await page.screenshot({ path: testInfo.outputPath("good-ending-after-credits-sources.png"), fullPage: true });
 
   await page.locator("#after-credits-continue-button").click();

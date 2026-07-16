@@ -193,6 +193,11 @@ const afterCreditsTitle = document.getElementById("after-credits-title");
 const afterCreditsTeam = document.getElementById("after-credits-team");
 const afterCreditsSourcesIntro = document.getElementById("after-credits-sources-intro");
 const afterCreditsSources = document.getElementById("after-credits-sources");
+const afterCreditsAiTool = document.getElementById("after-credits-ai-tool");
+const afterCreditsAiUsageLabel = document.getElementById("after-credits-ai-usage-label");
+const afterCreditsAiUsage = document.getElementById("after-credits-ai-usage");
+const afterCreditsAiCommitmentLabel = document.getElementById("after-credits-ai-commitment-label");
+const afterCreditsAiCommitments = document.getElementById("after-credits-ai-commitments");
 const afterCreditsHint = document.getElementById("after-credits-hint");
 const afterCreditsContinueButton = document.getElementById("after-credits-continue-button");
 const endArtFrame = document.getElementById("end-art-frame");
@@ -5984,7 +5989,7 @@ function showEndOverlay() {
 }
 
 function renderAfterCredits() {
-  if (!afterCredits || !afterCreditsKicker || !afterCreditsTitle || !afterCreditsTeam || !afterCreditsSourcesIntro || !afterCreditsSources) {
+  if (!afterCredits || !afterCreditsKicker || !afterCreditsTitle || !afterCreditsTeam || !afterCreditsSourcesIntro || !afterCreditsSources || !afterCreditsAiTool || !afterCreditsAiUsageLabel || !afterCreditsAiUsage || !afterCreditsAiCommitmentLabel || !afterCreditsAiCommitments) {
     return;
   }
 
@@ -6007,6 +6012,19 @@ function renderAfterCredits() {
     link.rel = "noreferrer";
     link.textContent = source.label;
     item.append(chapter, link);
+    return item;
+  }));
+  afterCreditsAiTool.textContent = AFTER_CREDITS.aiDisclosure.tool;
+  afterCreditsAiUsageLabel.textContent = AFTER_CREDITS.aiDisclosure.usageLabel;
+  afterCreditsAiUsage.replaceChildren(...AFTER_CREDITS.aiDisclosure.usage.map((entry) => {
+    const item = document.createElement("li");
+    item.textContent = entry;
+    return item;
+  }));
+  afterCreditsAiCommitmentLabel.textContent = AFTER_CREDITS.aiDisclosure.commitmentLabel;
+  afterCreditsAiCommitments.replaceChildren(...AFTER_CREDITS.aiDisclosure.commitments.map((entry) => {
+    const item = document.createElement("li");
+    item.textContent = entry;
     return item;
   }));
 }

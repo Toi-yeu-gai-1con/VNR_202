@@ -10,6 +10,22 @@ export const AFTER_CREDITS = Object.freeze({
   ]),
   sourcesLabel: "Nguồn tư liệu & kiểm chứng lịch sử",
   sourcesIntro: "Các mốc và diễn giải lịch sử trong hành trình được đối chiếu từ những tư liệu sau.",
+  aiDisclosure: Object.freeze({
+    label: "Minh bạch sử dụng AI",
+    tool: "Công cụ hỗ trợ: OpenAI Codex, sử dụng mô hình GPT-5.",
+    usageLabel: "AI đã hỗ trợ nhóm:",
+    usage: Object.freeze([
+      "Phân tích mã nguồn, rà soát luồng chơi và đề xuất cách sửa lỗi.",
+      "Hỗ trợ lập trình, kiểm thử hồi quy, cải thiện giao diện và âm thanh.",
+      "Hỗ trợ soạn thảo tài liệu kỹ thuật và kịch bản thuyết trình; nhóm tự rà soát trước khi sử dụng.",
+    ]),
+    commitmentLabel: "Cam kết của nhóm:",
+    commitments: Object.freeze([
+      "AI là công cụ hỗ trợ, không thay thế quyết định thiết kế, lập trình và trách nhiệm của các thành viên.",
+      "AI không được dùng làm nguồn sử liệu. Mốc lịch sử và nội dung giáo dục được đối chiếu với các tài liệu đã liệt kê.",
+      "Nhóm chịu trách nhiệm kiểm tra kết quả, không bịa nguồn trích dẫn, và tôn trọng bản quyền cùng dữ liệu cá nhân.",
+    ]),
+  }),
   roll: Object.freeze({
     minDuration: 18_000,
     maxDuration: 42_000,

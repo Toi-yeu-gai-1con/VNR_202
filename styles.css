@@ -2314,6 +2314,14 @@ html[data-reduced-motion="true"] *::after {
   line-height: 1.55;
 }
 
+.after-credits-subheading {
+  margin: 16px 0 0;
+  color: #f2f2f2;
+  font-weight: 700;
+  font-size: clamp(0.8rem, 1.45vw, 0.96rem);
+  line-height: 1.5;
+}
+
 .after-credits-list {
   display: grid;
   gap: 9px;
