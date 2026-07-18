@@ -7,6 +7,14 @@ export const LEVEL_ASSET_GROUPS = Object.freeze({
 });
 
 export function getAssetGroupForSource(src) {
+  // The five relics can converge in the TVA hub before Zone 4 has been
+  // visited. Keep their entire shared visual set in core; otherwise the
+  // `doi-moi` filename rule below incorrectly defers the gear sprite to the
+  // Zone 4 group and the cinematic renders only four relics.
+  if (/assets\/story\/relics\//i.test(src)) {
+    return "core";
+  }
+
   if (/good-ending|bad-ending|neutral-history-fracture-ending|secret-corruption-ending|lost-compass-ending|fading-fires-ending|missed-moment-ending|divided-border-ending|stalled-machine-ending/i.test(src)) {
     return "ending";
   }

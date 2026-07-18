@@ -1323,6 +1323,148 @@ html[data-reduced-motion="true"] *::after {
   font-size: clamp(0.83rem, 1.35vw, 0.98rem);
 }
 
+.tva-memory-chooser,
+.tva-memory-fragments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.tva-memory-relic-button,
+.tva-memory-fragment {
+  text-align: left;
+}
+
+.tva-memory-record {
+  display: grid;
+  grid-template-columns: minmax(90px, 150px) 1fr;
+  gap: 1rem;
+}
+
+.tva-memory-relic-art {
+  width: min(100%, 150px);
+  image-rendering: pixelated;
+  align-self: start;
+  background: radial-gradient(circle, rgba(227, 187, 93, 0.17), transparent 66%);
+}
+
+.tva-memory-sequence {
+  margin: 0.65rem 0;
+  padding-left: 1.3rem;
+}
+
+.tva-memory-selected {
+  margin: 0.3rem 0;
+}
+
+.tva-memory-selected.is-empty {
+  color: var(--ink-muted, #b8ae94);
+}
+
+.tva-memory-fragment {
+  flex: 1 1 12rem;
+  min-height: 3.8rem;
+  font-size: 0.76rem;
+  line-height: 1.35;
+}
+
+.tva-causality-map {
+  position: relative;
+  min-height: 17rem;
+  overflow: hidden;
+  border: 1px solid rgba(218, 180, 89, 0.62);
+  background:
+    repeating-linear-gradient(90deg, rgba(223, 194, 110, 0.05) 0 1px, transparent 1px 26px),
+    repeating-linear-gradient(0deg, rgba(223, 194, 110, 0.04) 0 1px, transparent 1px 26px),
+    radial-gradient(circle at 50% 50%, rgba(61, 91, 87, 0.42), rgba(12, 22, 24, 0.93) 72%);
+}
+
+.tva-causality-links {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.tva-causality-link,
+.tva-causality-reset-link {
+  fill: none;
+  stroke-width: 1.2;
+  vector-effect: non-scaling-stroke;
+}
+
+.tva-causality-link.is-locked { stroke: rgba(154, 156, 152, 0.3); }
+.tva-causality-link.is-collected { stroke: rgba(229, 188, 97, 0.82); }
+.tva-causality-link.is-reconstructed { stroke: rgba(111, 211, 166, 0.94); filter: drop-shadow(0 0 0.25rem rgba(111, 211, 166, 0.45)); }
+.tva-causality-link.is-fractured { stroke: rgba(217, 90, 83, 0.92); stroke-dasharray: 4 2; }
+.tva-causality-link.is-reset,
+.tva-causality-reset-link { stroke: rgba(213, 184, 110, 0.92); stroke-dasharray: 3 2; }
+
+.tva-causality-node {
+  position: absolute;
+  left: var(--node-x);
+  top: var(--node-y);
+  transform: translate(-50%, -50%);
+  max-width: 9rem;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid #8a7c5e;
+  color: #e6dcc2;
+  background: rgba(19, 29, 30, 0.94);
+  font: inherit;
+  font-size: 0.7rem;
+  cursor: pointer;
+}
+
+.tva-causality-node.is-collected { border-color: #d6ad63; color: #ffd97e; }
+.tva-causality-node.is-reconstructed { border-color: #88cfb2; color: #d8ffe8; box-shadow: 0 0 0.8rem rgba(108, 211, 168, 0.25); }
+.tva-causality-node.is-fractured { border-color: #c56562; color: #ffc0b3; }
+.tva-causality-node.is-selected { outline: 2px solid rgba(255, 232, 150, 0.92); outline-offset: 0.18rem; }
+.tva-causality-node.has-reset::after {
+  content: "↶ reset";
+  position: absolute;
+  top: calc(100% + 0.24rem);
+  left: 50%;
+  transform: translateX(-50%);
+  color: #f1d488;
+  font-size: 0.58rem;
+  white-space: nowrap;
+}
+
+.tva-causality-detail {
+  margin-top: 0.85rem;
+  border-color: rgba(215, 183, 99, 0.78);
+}
+
+.relic-convergence-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 50;
+  overflow: hidden;
+  background: #030608;
+}
+
+.relic-convergence-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  image-rendering: pixelated;
+}
+
+.relic-convergence-caption {
+  position: absolute;
+  right: 5%;
+  bottom: 6%;
+  max-width: min(32rem, 76%);
+  margin: 0;
+  color: #fff0bd;
+  font-size: clamp(0.72rem, 1.25vw, 1rem);
+  line-height: 1.5;
+  text-align: right;
+  text-shadow: 0 2px 0 #1b120c;
+}
+
 .start-screen {
   display: grid;
   justify-items: center;

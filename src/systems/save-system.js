@@ -18,6 +18,9 @@ export function createSaveSystem({
       tvaPortalTarget: quests.tvaPortalTarget,
       tvaTrackedChapterId: quests.tvaTrackedChapterId ?? null,
       tvaReportedRelics: [...quests.tvaReportedRelics],
+      tvaMemoryReconstructed: [...(quests.tvaMemoryReconstructed ?? [])],
+      tvaCausalityViewed: Boolean(quests.tvaCausalityViewed),
+      tvaResetTraces: Array.isArray(quests.tvaResetTraces) ? quests.tvaResetTraces.map((trace) => ({ ...trace })) : [],
       zone1Started: quests.zone1Started,
       zone1Delivered: [...quests.zone1Delivered],
       zone1RewardClaimed: quests.zone1RewardClaimed,
@@ -44,6 +47,14 @@ export function createSaveSystem({
         ? savedQuests.tvaTrackedChapterId
         : null,
       tvaReportedRelics: new Set(savedQuests.tvaReportedRelics ?? []),
+      tvaMemoryReconstructed: new Set(savedQuests.tvaMemoryReconstructed ?? []),
+      tvaCausalityViewed: Boolean(savedQuests.tvaCausalityViewed),
+      tvaResetTraces: Array.isArray(savedQuests.tvaResetTraces)
+        ? savedQuests.tvaResetTraces
+          .filter((trace) => trace && typeof trace.zoneId === "string" && typeof trace.endingId === "string")
+          .slice(-12)
+          .map((trace) => ({ zoneId: trace.zoneId, endingId: trace.endingId }))
+        : [],
       zone1Started: Boolean(savedQuests.zone1Started),
       zone1Delivered: new Set(savedQuests.zone1Delivered ?? []),
       zone1RewardClaimed: Boolean(savedQuests.zone1RewardClaimed),

@@ -6,4 +6,6 @@ reports/
 dist/
 output/
 .codex-run/
+.playwright-cli/
+tmp/
 debug.log

@@ -1,5 +1,21 @@
 # Asset Sources
 
+## TVA relic archive and unified-map cinematic
+
+- `assets/story/relics/red-compass.png`, `unified-emblem.png`, `vietminh-thread.png`, `healed-map.png`, and `doi-moi-gear.png`
+  - Original pixel-art relic animation strips generated for this project with OpenAI image generation on 2026-07-18, then alpha-cleaned and normalized by `scripts/build-relic-sprites.py`.
+  - Each file is a four-frame 256x64 sheet (idle, glow, resonance, burst), with a shared bottom-center anchor. They are used for the five collectible relics in the world, TVA archive, causal map, and convergence cinematic.
+  - No third-party art, logos, or stock images were imported.
+- `assets/story/relics/vietnam-unified-map-cinematic.png`
+  - Original pixel-art archival artifact generated for this project with OpenAI image generation on 2026-07-18. It uses the same paper, bronze, red-thread, and gear visual language as the five relics.
+  - Used only in the five-relic convergence cinematic. Hoàng Sa and Trường Sa are represented directly within the central map; the cinematic deliberately has no external callout labels.
+  - Geographic presentation follows the official requirement that a Vietnamese administrative map show land, sea, islands and archipelagos; it is a symbolic educational composition rather than a navigational chart. Reference: Cổng Thông tin điện tử Chính phủ, https://chinhphu.vn/dia-ly-68387 (accessed 2026-07-18).
+- `assets/audio/sfx/relic-convergence.wav`, `relic-convergence-neutral.wav`, `relic-convergence-fractured.wav`, and `relic-fracture.wav`
+  - Original convergence audio generated deterministically by `scripts/generate-skill-sfx.py` on 2026-07-18. No third-party music or SFX was imported.
+  - Good uses warm wood strikes, soft chimes and a resolved pad; Neutral reuses the five-note identity in a restrained register and closes on a suspended harmony without horror noise; Secret/Bad uses descending low metal, restrained gear rhythm, low drum and increasing dissonance.
+  - `relic-fracture.wav` is a separate one-shot layered from dry wood, torn masonry/paper noise, a metallic snap and a short low tail. It plays once at the Secret/Bad map split rather than being baked into the score.
+  - All four files follow the SFX volume/mute setting and are never keyboard, menu or dialogue input sounds.
+
 This project uses a small subset of free game assets:
 
 - Adventurer 2D Top-Down by Mattz Art: https://xzany.itch.io/top-down-adventurer-character

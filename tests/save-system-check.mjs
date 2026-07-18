@@ -19,7 +19,7 @@ const state = {
   tutorialSeen: true,
   runStats: { activeMilliseconds: 3456, strikes: 4, successfulParries: 2, damageTaken: 3, choicesMade: 1, maxCorruption: 12 },
   narrative: { choices: { "zone1.dock-workers": "zone1" }, choiceHistory: [{ chapterId: "zone1", decisionId: "dock-workers", optionId: "protect" }] },
-  quests: { tvaBriefingAccepted: true, tvaPortalTarget: "village", tvaTrackedChapterId: "zone1", tvaReportedRelics: new Set(["red-compass"]), zone1Started: true, zone1Delivered: new Set(["worker-1"]), zone1RewardClaimed: false, zone1SoldierDecision: "refused", zone2Fragments: new Set(), zone2TowerActivated: false, zone2RewardClaimed: false, zone3Recruits: new Set(), zone3ThreadClaimed: false, zone3HamletsFreed: new Set(), zone3BossDefeated: false, zone3MapClaimed: false, zone4Barriers: new Set(), zone4Farmers: new Set(), zone4GearClaimed: false },
+  quests: { tvaBriefingAccepted: true, tvaPortalTarget: "village", tvaTrackedChapterId: "zone1", tvaReportedRelics: new Set(["red-compass"]), tvaMemoryReconstructed: new Set(["red-compass"]), tvaCausalityViewed: true, tvaResetTraces: [{ zoneId: "zone1", endingId: "zone1-lost-compass" }], zone1Started: true, zone1Delivered: new Set(["worker-1"]), zone1RewardClaimed: false, zone1SoldierDecision: "refused", zone2Fragments: new Set(), zone2TowerActivated: false, zone2RewardClaimed: false, zone3Recruits: new Set(), zone3ThreadClaimed: false, zone3HamletsFreed: new Set(), zone3BossDefeated: false, zone3MapClaimed: false, zone4Barriers: new Set(), zone4Farmers: new Set(), zone4GearClaimed: false },
 };
 const levels = { hub: { interactables: [{ id: "item", collected: true }], monsters: [{ id: "monster", health: 3, maxHealth: 5, defeated: false }] } };
 const saves = createSaveSystem({
@@ -41,6 +41,9 @@ assert.equal(loaded.quests.tvaBriefingAccepted, true, "The office briefing persi
 assert.equal(loaded.quests.tvaPortalTarget, "village", "The active dispatch portal persists.");
 assert.equal(loaded.quests.tvaTrackedChapterId, "zone1", "The selected TVA caseboard objective persists.");
 assert.deepEqual(loaded.quests.tvaReportedRelics, ["red-compass"], "Reported relics serialize as an array.");
+assert.deepEqual(loaded.quests.tvaMemoryReconstructed, ["red-compass"], "Completed memory reconstructions serialize as an array.");
+assert.equal(loaded.quests.tvaCausalityViewed, true, "Causal-map review persists with the run.");
+assert.deepEqual(loaded.quests.tvaResetTraces, state.quests.tvaResetTraces, "Reset-wave traces serialize with the run.");
 assert.equal(loaded.quests.zone1SoldierDecision, "refused", "Dialogue choices persist with quest progress.");
 assert.equal(loaded.hubEpilogueEndingId, "good", "The current campaign preserves its TVA epilogue after an ending.");
 assert.deepEqual(loaded.runStats, state.runStats, "Run summary counters survive save/load without becoming a second progress source.");
@@ -56,6 +59,9 @@ assert.equal(state.quests.tvaBriefingAccepted, true, "The office briefing restor
 assert.equal(state.quests.tvaPortalTarget, "village", "The active dispatch portal restores from save data.");
 assert.equal(state.quests.tvaTrackedChapterId, "zone1", "The selected TVA caseboard objective restores from save data.");
 assert.equal(state.quests.tvaReportedRelics.has("red-compass"), true, "Reported relics restore from save data.");
+assert.equal(state.quests.tvaMemoryReconstructed.has("red-compass"), true, "Memory reconstructions restore from save data.");
+assert.equal(state.quests.tvaCausalityViewed, true, "Causal-map review restores from save data.");
+assert.deepEqual(state.quests.tvaResetTraces, [{ zoneId: "zone1", endingId: "zone1-lost-compass" }], "Reset-wave traces restore from save data.");
 assert.equal(state.quests.zone1Delivered.has("worker-1"), true, "Quest Sets restore from save data.");
 assert.equal(levels.hub.interactables[0].collected, true, "Interactable state restores from save data.");
 assert.equal(levels.hub.monsters[0].health, 3, "Monster health restores from save data.");

@@ -14,6 +14,7 @@ export function createAudioSystem({
   onPlaybackBlocked = () => {},
 }) {
   let audioRetryQueued = false;
+  const pendingAudioRetries = new Set();
   let suspended = false;
   let scenePaused = false;
   const activeSfx = new Set();
@@ -31,7 +32,10 @@ export function createAudioSystem({
     return typeof value === "number" && value >= 0 && value <= 1 ? value : 1;
   }
 
-  function queueAudioRetry() {
+  function queueAudioRetry(retryAction = null) {
+    if (typeof retryAction === "function") {
+      pendingAudioRetries.add(retryAction);
+    }
     if (audioRetryQueued || state.soundMuted) {
       return;
     }
@@ -42,8 +46,11 @@ export function createAudioSystem({
       eventTarget.removeEventListener("pointerdown", retry);
       eventTarget.removeEventListener("keydown", retry);
       audioRetryQueued = false;
+      const retryActions = [...pendingAudioRetries];
+      pendingAudioRetries.clear();
       if (!state.soundMuted) {
         syncAmbienceAudio();
+        retryActions.forEach((action) => action());
       }
     };
 
@@ -114,10 +121,17 @@ export function createAudioSystem({
     }
     try {
       sound.currentTime = 0;
-      sound.play()?.catch(queueAudioRetry);
+      sound.play()?.catch(() => {
+        release();
+        queueAudioRetry(options.retryOnUserGesture
+          ? () => playSfx(key, { ...options, retryOnUserGesture: false })
+          : null);
+      });
     } catch {
       release();
-      queueAudioRetry();
+      queueAudioRetry(options.retryOnUserGesture
+        ? () => playSfx(key, { ...options, retryOnUserGesture: false })
+        : null);
     }
   }
 

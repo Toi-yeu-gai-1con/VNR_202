@@ -39,6 +39,7 @@ import { GAMEPLAY_BALANCE, getDifficultySettings } from "../data/gameplay-balanc
 import { AUDIO_TRACKS, COMBAT_SFX, getAudioSourceCandidates, resolveAudioSource } from "../data/media-sources.js";
 import { ENDING_AUDIO_KEYS, getEndingAudioKey } from "../data/ending-audio-definitions.js";
 import { AFTER_CREDITS, supportsAfterCredits } from "../data/after-credits.js";
+import { CAUSALITY_MAP_LINKS, CAUSALITY_MAP_NODES, MEMORY_RECONSTRUCTIONS, RELIC_CONVERGENCE, RELIC_VISUALS } from "../data/relic-experience.js";
 import { BUILD_VERSION, withAssetVersion } from "../data/build-info.js";
 import { PLAYER_FOOTPRINT, PLAYER_SPRITE, PLAYER_ANIMATIONS, NPC_SPRITE, TVA_EMPLOYEE_SPRITE, M90_RESET_ANIMATION, ENVIRONMENT_SPRITES, TILECRAFT_TERRAIN, PIXEL_CRAWLER_TERRAIN, VILLAGE_SKYLINE_Y, VILLAGE_PROP_SPRITES, PIXEL_CRAWLER_BUILDING_SPRITES, HUB_PORTAL_SPRITE, SWORD_SLASH_SPRITE, SMALL_GAME_ASSET_ANIMATIONS, PIXEL_CRAWLER_TREE_SPRITE, KENNEY_ROGUELIKE_TILE, KENNEY_ROGUELIKE_SPRITES, PIXEL_CRAWLER_VEGETATION_SPRITES, PIXEL_CRAWLER_TOOL_CLUSTER_SPRITES, CAINOS_PROP_SPRITES, LIMEZU_INTERIOR_SPRITES, HOUSE_INTERIOR_A_SPRITES, MONSTER_SPRITE_CONFIG, getTvaActorScale } from "../data/render-config.js";
 
@@ -206,6 +207,10 @@ const endArtImage = document.getElementById("end-art-image");
 const endArtCinematicCtx = endArtCinematic?.getContext("2d") ?? null;
 const endArtOverlay = document.getElementById("end-art-overlay");
 const endArtOverlayCtx = endArtOverlay?.getContext("2d") ?? null;
+const relicConvergenceOverlay = document.getElementById("relic-convergence-overlay");
+const relicConvergenceCanvas = document.getElementById("relic-convergence-canvas");
+const relicConvergenceCtx = relicConvergenceCanvas?.getContext("2d") ?? null;
+const relicConvergenceCaption = document.getElementById("relic-convergence-caption");
 const badEndingRecoveryDialogue = document.getElementById("bad-ending-recovery-dialogue");
 const badEndingRecoverySpeaker = document.getElementById("bad-ending-recovery-speaker");
 const badEndingRecoveryText = document.getElementById("bad-ending-recovery-text");
@@ -223,6 +228,10 @@ if (endArtCinematicCtx) {
 
 if (endArtOverlayCtx) {
   endArtOverlayCtx.imageSmoothingEnabled = false;
+}
+
+if (relicConvergenceCtx) {
+  relicConvergenceCtx.imageSmoothingEnabled = false;
 }
 
 const VIEWPORT = { width: canvas.width, height: canvas.height };
@@ -365,10 +374,13 @@ const assetManager = createAssetManager({});
 const playerSprites = loadPlayerSprites();
 const npcSprites = loadVillageNpcSprites();
 const environmentSprites = loadEnvironmentSprites();
+const relicSprites = Object.fromEntries(Object.entries(RELIC_VISUALS).map(([id, visual]) => [id, loadSprite(visual.src)]));
+const relicConvergenceMap = loadSprite(RELIC_CONVERGENCE.mapArt);
 const effectSprites = loadEffectSprites();
 const monsterSprites = loadMonsterSprites();
 const uiSounds = loadUiSounds();
 const combatSfx = loadCombatSfx();
+const cinematicSfx = loadCinematicSfx();
 const ambienceSounds = loadAmbienceSounds();
 const musicSounds = loadMusicSounds();
 let storyToastTimeoutId = 0;
@@ -399,6 +411,11 @@ const state = {
   activeStoryIndex: 0,
   activeDossierTab: "endings",
   activeDossierMonsterId: null,
+  activeMemoryRelicId: null,
+  activeCausalityRelicId: null,
+  memoryAttempt: null,
+  relicReceipt: null,
+  relicConvergence: null,
   unlockedStoryIds: new Set(),
   activeInteractionId: null,
   aboutFromPause: false,
@@ -545,7 +562,7 @@ const monsterCodexCollection = createMonsterCodexCollection({
 const audioSystem = createAudioSystem({
   state,
   uiSounds,
-  sfxSounds: combatSfx,
+  sfxSounds: { ...combatSfx, ...cinematicSfx },
   ambienceSounds,
   musicSounds,
   getEndingMusicKey: getEndingAudioKey,
@@ -1602,6 +1619,8 @@ async function bootGame() {
   loadLevel("hub", undefined, { assetsReady: true });
   applyDebugLevelFromUrl();
   applyDebugEndingFromUrl();
+  applyDebugConvergenceFromUrl();
+  applyDebugTvaDossierFromUrl();
   installDebugTools();
   frameLoop.start();
   pageLifecycle.install();
@@ -1666,7 +1685,6 @@ function loadEnvironmentSprites() {
       finalHistoryGate: loadSprite("assets/environment/generated-objects/final-history-gate.png"),
       paperBundle: loadSprite("assets/environment/generated-objects/paper-bundle.png"),
       unityTable: loadSprite("assets/environment/generated-objects/unity-table.png"),
-      storyRelic: loadSprite("assets/environment/generated-objects/story-relic.png"),
       memorySeal: loadSprite("assets/environment/generated-objects/memory-seal.png"),
       corruptObelisk: loadSprite("assets/environment/generated-objects/corrupt-obelisk.png"),
       fragmentTable: loadSprite("assets/environment/generated-objects/fragment-table.png"),
@@ -1953,6 +1971,15 @@ function loadCombatSfx() {
   };
 }
 
+function loadCinematicSfx() {
+  return {
+    relicConvergenceGood: loadSound("assets/audio/sfx/relic-convergence.wav", 0.58),
+    relicConvergenceNeutral: loadSound("assets/audio/sfx/relic-convergence-neutral.wav", 0.52),
+    relicConvergenceFractured: loadSound("assets/audio/sfx/relic-convergence-fractured.wav", 0.5),
+    relicFracture: loadSound("assets/audio/sfx/relic-fracture.wav", 0.72),
+  };
+}
+
 function loadAmbienceSounds() {
   return {
     rain: loadSound(AUDIO_TRACKS.rain, 0.18, { loop: true }),
@@ -2062,6 +2089,10 @@ function playDialogueSound(sound, options) {
 function playCombatSfx(key, options) {
   audioSystem.playSfx(key, options);
   showSoundCaptionForSfx(key);
+}
+
+function playCinematicSfx(key, options) {
+  audioSystem.playSfx(key, options);
 }
 
 function withUiClickSound(action) {
@@ -3201,6 +3232,14 @@ function installDebugTools() {
       updateProgressHud();
       return createDebugSnapshot();
     },
+    recordCausalityReset(endingId = "zone1-lost-compass", checkpointLevelId = "village") {
+      recordCausalityResetTrace(endingId, checkpointLevelId);
+      return createDebugSnapshot();
+    },
+    openTvaDossier() {
+      openTvaDossier();
+      return createDebugSnapshot();
+    },
     completeTvaRoute(levelId) {
       const route = getTvaRoute(levelId);
       if (!route) {
@@ -3246,6 +3285,23 @@ function installDebugTools() {
     triggerBadEnding(summary = "Nhánh thời gian thử nghiệm đã sụp đổ.") {
       triggerBadEnding(summary);
       return createDebugSnapshot();
+    },
+    previewRelicConvergence(endingId = "good", elapsed = 0) {
+      const corruptionByEnding = { good: 18, neutral: 50, "secret-corruption": 76, bad: 100 };
+      if (!(endingId in corruptionByEnding)) {
+        return { started: false, reason: "unsupported-ending", ...createDebugSnapshot() };
+      }
+      for (const relicId of REQUIRED_RELIC_IDS) {
+        state.inventory.add(relicId);
+      }
+      state.saDoa = corruptionByEnding[endingId];
+      state.mode = "playing";
+      hideEndOverlay();
+      attemptEndingInteraction();
+      if (state.relicConvergence && Number.isFinite(Number(elapsed))) {
+        state.relicConvergence.startedAt = state.lastTimestamp - Math.max(0, Number(elapsed));
+      }
+      return { started: Boolean(state.relicConvergence), ...createDebugSnapshot() };
     },
     completeEndingCinematic() {
       if (!state.endingCinematic) {
@@ -3322,6 +3378,42 @@ function getDebugLevelIdFromUrl() {
   return requestedLevel && levels[requestedLevel] ? requestedLevel : null;
 }
 
+function getDebugConvergenceIdFromUrl() {
+  const endingId = new URLSearchParams(window.location.search).get("debugConvergence");
+  return ["good", "neutral", "secret-corruption", "bad"].includes(endingId) ? endingId : null;
+}
+
+function getDebugConvergenceElapsedFromUrl() {
+  const requested = Number(new URLSearchParams(window.location.search).get("debugConvergenceElapsed"));
+  return Number.isFinite(requested) ? clamp(requested, 0, RELIC_CONVERGENCE.duration - 200) : 0;
+}
+
+function shouldHoldDebugConvergence() {
+  return new URLSearchParams(window.location.search).get("debugConvergenceHold") === "1";
+}
+
+function getDebugConvergenceFrozenElapsed() {
+  const requested = new URLSearchParams(window.location.search).get("debugConvergenceFreezeElapsed");
+  if (requested === null) return null;
+  const elapsed = Number(requested);
+  return Number.isFinite(elapsed) ? clamp(elapsed, 0, RELIC_CONVERGENCE.duration - 200) : null;
+}
+
+function getDebugTvaDossierTabFromUrl() {
+  const tab = new URLSearchParams(window.location.search).get("debugTva");
+  return ["memory", "causality"].includes(tab) ? tab : null;
+}
+
+function getDebugTvaRelicCountFromUrl() {
+  const value = Number(new URLSearchParams(window.location.search).get("debugTvaRelics"));
+  return Number.isFinite(value) ? clamp(Math.round(value), 1, REQUIRED_RELIC_IDS.length) : REQUIRED_RELIC_IDS.length;
+}
+
+function getDebugTvaResetZoneFromUrl() {
+  const zoneId = new URLSearchParams(window.location.search).get("debugTvaReset");
+  return ["zone1", "zone2", "zone3a", "zone3b", "zone4"].includes(zoneId) ? zoneId : null;
+}
+
 function applyDebugLevelFromUrl() {
   const levelId = getDebugLevelIdFromUrl();
 
@@ -3391,6 +3483,76 @@ function applyDebugEndingFromUrl() {
   showEndOverlay();
 }
 
+function applyDebugConvergenceFromUrl() {
+  const endingId = getDebugConvergenceIdFromUrl();
+  if (!endingId || getDebugEndingIdFromUrl()) {
+    return;
+  }
+
+  const corruptionByEnding = { good: 18, neutral: 50, "secret-corruption": 76, bad: 100 };
+  for (const relicId of REQUIRED_RELIC_IDS) {
+    state.inventory.add(relicId);
+  }
+  state.saDoa = corruptionByEnding[endingId];
+  state.mode = "playing";
+  state.aboutFromPause = false;
+  state.openingStep = 0;
+  keys.clear();
+  hideEndOverlay();
+  hideDialogue();
+  hideOpeningIntro();
+  hideStoryToast();
+  startScreen.classList.add("hidden");
+  startScreen.setAttribute("aria-hidden", "true");
+  pauseMenu.classList.add("hidden");
+  slideModal.classList.add("hidden");
+  interactionPrompt.classList.add("hidden");
+  pauseMenu.setAttribute("aria-hidden", "true");
+  slideModal.setAttribute("aria-hidden", "true");
+  updateProgressHud();
+  attemptEndingInteraction();
+  if (state.relicConvergence) {
+    state.relicConvergence.startedAt = state.lastTimestamp - getDebugConvergenceElapsedFromUrl();
+  }
+}
+
+function applyDebugTvaDossierFromUrl() {
+  const tab = getDebugTvaDossierTabFromUrl();
+  if (!tab || getDebugEndingIdFromUrl() || getDebugConvergenceIdFromUrl()) {
+    return;
+  }
+
+  state.mode = "playing";
+  state.aboutFromPause = false;
+  state.openingStep = 0;
+  keys.clear();
+  hideEndOverlay();
+  hideDialogue();
+  hideOpeningIntro();
+  hideStoryToast();
+  startScreen.classList.add("hidden");
+  startScreen.setAttribute("aria-hidden", "true");
+  pauseMenu.classList.add("hidden");
+  slideModal.classList.add("hidden");
+  interactionPrompt.classList.add("hidden");
+  pauseMenu.setAttribute("aria-hidden", "true");
+  slideModal.setAttribute("aria-hidden", "true");
+  resetStoryProgress();
+  loadLevel("hub");
+  state.inventory.clear();
+  for (const relicId of REQUIRED_RELIC_IDS.slice(0, getDebugTvaRelicCountFromUrl())) {
+    state.inventory.add(relicId);
+  }
+  const resetZone = getDebugTvaResetZoneFromUrl();
+  state.quests.tvaResetTraces = resetZone ? [{ zoneId: resetZone, endingId: "debug-reset" }] : [];
+  state.activeMemoryRelicId = null;
+  state.activeCausalityRelicId = resetZone === "zone1" ? "red-compass" : null;
+  updateProgressHud();
+  openTvaDossier();
+  state.activeDossierTab = tab;
+  renderTvaDossier();
+}
+
 function frame({ now: timestamp, deltaSeconds }) {
   state.lastTimestamp = timestamp;
   if (deltaSeconds > 0) {
@@ -3419,6 +3581,7 @@ function frame({ now: timestamp, deltaSeconds }) {
   updateProgressHud();
   updateAfterCreditsRoll(timestamp);
   render();
+  renderRelicConvergence();
   renderEndingArtCinematic();
   updateBadEndingRecovery();
   renderEndingSceneOverlay();
@@ -4923,6 +5086,264 @@ function createTvaDossierText(tagName, className, text) {
   return element;
 }
 
+function getAvailableMemoryRelicIds() {
+  return REQUIRED_RELIC_IDS.filter((relicId) => state.inventory.has(relicId));
+}
+
+function getMemoryFragmentOrder(relicId) {
+  const seed = relicId.split("").reduce((sum, character) => sum + character.charCodeAt(0), 0);
+  return [0, 1, 2].sort((left, right) => ((left + seed) % 3) - ((right + seed) % 3));
+}
+
+function renderTvaMemoryArchive() {
+  const availableRelicIds = getAvailableMemoryRelicIds();
+  tvaDossierContent.append(createTvaDossierText("h3", "tva-dossier-section-title", "Máy tái dựng ký ức"));
+  tvaDossierContent.append(createTvaDossierText(
+    "p",
+    "tva-dossier-record-caption",
+    "Chọn một tín vật đã thu thập, rồi ghép ba mảnh theo nguyên nhân → lựa chọn → hệ quả. Sai không bị phạt và có thể thử lại.",
+  ));
+
+  if (availableRelicIds.length === 0) {
+    tvaDossierContent.append(createTvaDossierText("p", "tva-dossier-empty", "TVA chưa có tín vật nào để tái dựng. Hoàn thành một khu rồi quay lại đây."));
+    return;
+  }
+
+  if (!availableRelicIds.includes(state.activeMemoryRelicId)) {
+    state.activeMemoryRelicId = availableRelicIds[0];
+    state.memoryAttempt = null;
+  }
+
+  const chooser = document.createElement("div");
+  chooser.className = "tva-memory-chooser";
+  for (const relicId of availableRelicIds) {
+    const relic = RELIC_DEFINITIONS[relicId];
+    const button = document.createElement("button");
+    button.className = "pixel-button tva-memory-relic-button";
+    const selected = relicId === state.activeMemoryRelicId;
+    const reconstructed = state.quests.tvaMemoryReconstructed.has(relicId);
+    button.classList.toggle("is-selected", selected);
+    button.textContent = `${reconstructed ? "◆ " : ""}${relic?.label ?? relicId}`;
+    button.addEventListener("click", withUiClickSound(() => {
+      state.activeMemoryRelicId = relicId;
+      state.memoryAttempt = null;
+      renderTvaDossier();
+    }));
+    chooser.append(button);
+  }
+  tvaDossierContent.append(chooser);
+
+  const relicId = state.activeMemoryRelicId;
+  const memory = MEMORY_RECONSTRUCTIONS[relicId];
+  if (!memory) return;
+  const reconstructed = state.quests.tvaMemoryReconstructed.has(relicId);
+  const card = document.createElement("article");
+  card.className = "tva-dossier-record tva-memory-record";
+  const image = document.createElement("img");
+  image.className = "tva-memory-relic-art";
+  image.src = RELIC_VISUALS[relicId]?.src ?? "";
+  image.alt = RELIC_DEFINITIONS[relicId]?.label ?? "Tín vật";
+  const copy = document.createElement("div");
+  copy.className = "tva-dossier-record-copy";
+  copy.append(
+    createTvaDossierText("p", "tva-dossier-kicker", memory.zone),
+    createTvaDossierText("h4", "tva-dossier-record-title", memory.title),
+  );
+
+  if (reconstructed) {
+    const verifiedSequence = document.createElement("ol");
+    verifiedSequence.className = "tva-memory-sequence";
+    memory.fragments.forEach((fragment) => verifiedSequence.append(createTvaDossierText("li", "tva-memory-selected", fragment)));
+    copy.append(
+      createTvaDossierText("p", "tva-dossier-record-text", memory.briefing),
+      verifiedSequence,
+      createTvaDossierText("p", "tva-dossier-record-text", memory.lesson),
+      createTvaDossierText("p", "tva-dossier-record-caption", memory.reflection),
+      createTvaDossierText("p", "tva-dossier-record-caption", "Mạch nhân quả đã được TVA xác thực và đánh dấu trên Bản đồ Nhân quả."),
+    );
+  } else {
+    const attempt = state.memoryAttempt?.relicId === relicId
+      ? state.memoryAttempt
+      : { relicId, selected: [], order: getMemoryFragmentOrder(relicId), notice: "" };
+    state.memoryAttempt = attempt;
+    copy.append(
+      createTvaDossierText("p", "tva-dossier-record-text", memory.briefing),
+      createTvaDossierText("p", "tva-dossier-record-caption", "Đọc bản ghi, rồi ghép ba mảnh theo nguyên nhân → lựa chọn → hệ quả. Sai không bị phạt và có thể thử lại."),
+    );
+    const sequence = document.createElement("ol");
+    sequence.className = "tva-memory-sequence";
+    for (const index of attempt.selected) {
+      sequence.append(createTvaDossierText("li", "tva-memory-selected", memory.fragments[index]));
+    }
+    if (attempt.selected.length === 0) {
+      sequence.append(createTvaDossierText("li", "tva-memory-selected is-empty", "Chuỗi đang chờ mảnh đầu tiên."));
+    }
+    copy.append(sequence);
+    const fragmentList = document.createElement("div");
+    fragmentList.className = "tva-memory-fragments";
+    for (const index of attempt.order) {
+      if (attempt.selected.includes(index)) continue;
+      const button = document.createElement("button");
+      button.className = "pixel-button tva-memory-fragment";
+      button.textContent = memory.fragments[index];
+      button.addEventListener("click", withUiClickSound(() => {
+        attempt.selected.push(index);
+        if (attempt.selected.length === 3) {
+          if (attempt.selected.every((entry, position) => entry === position)) {
+            state.quests.tvaMemoryReconstructed.add(relicId);
+            attempt.notice = "Khớp hoàn chỉnh. TVA đã xác thực mạch nhân quả.";
+            saveGameProgress();
+          } else {
+            attempt.selected = [];
+            attempt.notice = "Các mảnh chưa nối đúng chiều. TVA đã trả chúng về để bạn thử lại.";
+          }
+        }
+        renderTvaDossier();
+      }));
+      fragmentList.append(button);
+    }
+    copy.append(fragmentList);
+    if (attempt.notice) copy.append(createTvaDossierText("p", "tva-dossier-record-caption", attempt.notice));
+  }
+  card.append(image, copy);
+  tvaDossierContent.append(card);
+}
+
+function getCausalityZoneId(relicId) {
+  if (relicId === "red-compass") return "zone1";
+  if (relicId === "unified-emblem") return "zone2";
+  if (relicId === "vietminh-thread") return "zone3a";
+  if (relicId === "healed-map") return "zone3b";
+  return "zone4";
+}
+
+function getCausalityNodeStatus(relicId) {
+  if (state.quests.tvaMemoryReconstructed.has(relicId)) return "reconstructed";
+  if (state.inventory.has(relicId)) return "collected";
+  const risk = state.narrative.endingRisks?.[getCausalityZoneId(relicId)] ?? 0;
+  return risk > 0 ? "fractured" : "locked";
+}
+
+function getCausalityChoiceLabels(relicId) {
+  const zoneId = getCausalityZoneId(relicId);
+  return state.narrative.choiceHistory
+    .filter((entry) => entry.chapterId === zoneId)
+    .map((entry) => getNarrativeChoiceOption(entry.chapterId, entry.decisionId, entry.optionId)?.option.label)
+    .filter(Boolean);
+}
+
+function getCausalityLinkStatus(link, resetZones) {
+  const fromStatus = getCausalityNodeStatus(link.from);
+  const toStatus = getCausalityNodeStatus(link.to);
+  if (resetZones.has(getCausalityZoneId(link.from)) || resetZones.has(getCausalityZoneId(link.to))) return "reset";
+  if (fromStatus === "fractured" || toStatus === "fractured") return "fractured";
+  if (fromStatus === "reconstructed" && toStatus === "reconstructed") return "reconstructed";
+  if (fromStatus !== "locked" || toStatus !== "locked") return "collected";
+  return "locked";
+}
+
+function createCausalityLinkElement(link, nodeByRelic, resetZones) {
+  const from = nodeByRelic.get(link.from);
+  const to = nodeByRelic.get(link.to);
+  if (!from || !to) return null;
+  const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  const controlX = Math.round((from.x + to.x) / 2);
+  path.setAttribute("d", `M ${from.x} ${from.y} Q ${controlX} ${Math.min(from.y, to.y) - 13} ${to.x} ${to.y}`);
+  path.setAttribute("class", `tva-causality-link is-${getCausalityLinkStatus(link, resetZones)}`);
+  return path;
+}
+
+function createCausalityResetElement(node) {
+  const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  const loop = 8;
+  path.setAttribute("d", `M ${node.x - 3} ${node.y + 5} C ${node.x - loop} ${node.y + 13}, ${node.x + loop} ${node.y + 13}, ${node.x + 3} ${node.y + 5}`);
+  path.setAttribute("class", "tva-causality-reset-link");
+  return path;
+}
+
+function renderTvaCausalityMap() {
+  state.quests.tvaCausalityViewed = true;
+  tvaDossierContent.append(createTvaDossierText("h3", "tva-dossier-section-title", "Bản đồ Nhân quả"));
+  tvaDossierContent.append(createTvaDossierText("p", "tva-dossier-record-caption", "Đây là hồ sơ của vòng chơi hiện tại: đường sáng là mạch đã hiểu, đường đỏ là hệ quả cần nhìn lại, nét đứt là reset wave đưa bạn quay về điểm lựa chọn."));
+  const map = document.createElement("div");
+  map.className = "tva-causality-map";
+  const nodeByRelic = new Map(CAUSALITY_MAP_NODES.map((node) => [node.relicId, node]));
+  if (!nodeByRelic.has(state.activeCausalityRelicId)) {
+    state.activeCausalityRelicId = CAUSALITY_MAP_NODES.find((node) => getCausalityNodeStatus(node.relicId) !== "locked")?.relicId
+      ?? CAUSALITY_MAP_NODES[0]?.relicId
+      ?? null;
+  }
+  const resetZones = new Set((state.quests.tvaResetTraces ?? []).map((trace) => trace.zoneId));
+  const links = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  links.classList.add("tva-causality-links");
+  links.setAttribute("viewBox", "0 0 100 100");
+  links.setAttribute("preserveAspectRatio", "none");
+  links.setAttribute("aria-hidden", "true");
+  for (const link of CAUSALITY_MAP_LINKS) {
+    const path = createCausalityLinkElement(link, nodeByRelic, resetZones);
+    if (path) links.append(path);
+  }
+  for (const node of CAUSALITY_MAP_NODES) {
+    if (resetZones.has(getCausalityZoneId(node.relicId))) {
+      links.append(createCausalityResetElement(node));
+    }
+  }
+  map.append(links);
+  for (const node of CAUSALITY_MAP_NODES) {
+    const status = getCausalityNodeStatus(node.relicId);
+    const button = document.createElement("button");
+    button.className = `tva-causality-node is-${status}`;
+    button.style.setProperty("--node-x", `${node.x}%`);
+    button.style.setProperty("--node-y", `${node.y}%`);
+    button.textContent = `${node.title} · ${node.subtitle}`;
+    button.classList.toggle("is-selected", node.relicId === state.activeCausalityRelicId);
+    button.classList.toggle("has-reset", resetZones.has(getCausalityZoneId(node.relicId)));
+    button.addEventListener("click", withUiClickSound(() => {
+      state.activeCausalityRelicId = node.relicId;
+      renderTvaDossier();
+    }));
+    map.append(button);
+  }
+  tvaDossierContent.append(map);
+
+  const selectedNode = nodeByRelic.get(state.activeCausalityRelicId);
+  if (!selectedNode) return;
+  const selectedStatus = getCausalityNodeStatus(selectedNode.relicId);
+  const selectedMemory = MEMORY_RECONSTRUCTIONS[selectedNode.relicId];
+  const selectedRelic = RELIC_DEFINITIONS[selectedNode.relicId];
+  const selectedChoices = getCausalityChoiceLabels(selectedNode.relicId);
+  const selectedReset = resetZones.has(getCausalityZoneId(selectedNode.relicId));
+  const detail = document.createElement("article");
+  detail.className = "tva-dossier-record tva-causality-detail";
+  detail.append(
+    createTvaDossierText("p", "tva-dossier-kicker", `${selectedNode.subtitle} · ${selectedRelic?.label ?? "Tín vật"}`),
+    createTvaDossierText("h4", "tva-dossier-record-title", selectedNode.title),
+    createTvaDossierText("p", "tva-dossier-record-text", selectedNode.gameplay),
+    createTvaDossierText(
+      "p",
+      "tva-dossier-record-text",
+      selectedStatus === "reconstructed"
+        ? selectedMemory.lesson
+        : selectedStatus === "fractured"
+          ? "Nhánh lựa chọn rủi ro đã tạo vết nứt trong hồ sơ. TVA lưu nó để giải thích vì sao reset wave xuất hiện."
+          : selectedStatus === "collected"
+            ? "Tín vật đã được thu thập. Hoàn thành Máy tái dựng ký ức để mở bài học lịch sử đầy đủ."
+            : "Hồ sơ chưa mở trong vòng chơi hiện tại.",
+    ),
+    createTvaDossierText(
+      "p",
+      "tva-dossier-record-caption",
+      selectedChoices.length > 0
+        ? `Lựa chọn đã ghi: ${selectedChoices.join(" → ")}.`
+        : "Chưa có lựa chọn nào được TVA ghi vào nút này.",
+    ),
+  );
+  if (selectedReset) {
+    detail.append(createTvaDossierText("p", "tva-dossier-record-caption", "↶ Reset wave: mạch đứt đã quay về điểm lựa chọn nhưng hồ sơ và bài học vẫn được giữ lại."));
+  }
+  tvaDossierContent.append(detail);
+}
+
 function renderTvaDossier() {
   stopMonsterCodexPreview();
   const tab = state.activeDossierTab;
@@ -4933,6 +5354,16 @@ function renderTvaDossier() {
     button.setAttribute("aria-selected", selected ? "true" : "false");
   });
   tvaDossierContent.replaceChildren();
+
+  if (tab === "memory") {
+    renderTvaMemoryArchive();
+    return;
+  }
+
+  if (tab === "causality") {
+    renderTvaCausalityMap();
+    return;
+  }
 
   if (tab === "after-credits") {
     tvaDossierContent.append(createTvaDossierText("h3", "tva-dossier-section-title", "Hậu danh đề đã lưu"));
@@ -5146,6 +5577,7 @@ function closeTvaDossier() {
   tvaDossierModal.classList.add("hidden");
   tvaDossierModal.setAttribute("aria-hidden", "true");
   state.mode = "playing";
+  saveGameProgress();
   updateInteractionPrompt();
 }
 
@@ -5938,6 +6370,31 @@ function updateBadEndingRecovery() {
   }
 }
 
+function getResetTraceZoneId(endingId, checkpointLevelId) {
+  const endingZone = {
+    "zone1-lost-compass": "zone1",
+    "zone2-fading-fires": "zone2",
+    "zone3a-missed-moment": "zone3a",
+    "zone3b-divided-border": "zone3b",
+    "zone4-stalled-machine": "zone4",
+  }[endingId];
+  if (endingZone) return endingZone;
+  if (checkpointLevelId === "village") return "zone1";
+  if (checkpointLevelId === "archive") return "zone2";
+  if (checkpointLevelId === "spring") return "zone4";
+  if (checkpointLevelId === "crossroads") {
+    return state.quests.zone3MapClaimed ? "zone3b" : "zone3a";
+  }
+  return "global";
+}
+
+function recordCausalityResetTrace(endingId, checkpointLevelId) {
+  const zoneId = getResetTraceZoneId(endingId, checkpointLevelId);
+  if (zoneId === "global") return;
+  const traces = Array.isArray(state.quests.tvaResetTraces) ? state.quests.tvaResetTraces : [];
+  state.quests.tvaResetTraces = [...traces, { zoneId, endingId }].slice(-12);
+}
+
 function restoreBadEndingCheckpoint() {
   const restoredVerdict = state.badEndingRecovery?.checkpoint
     ? applyFinalVerdictCheckpoint(state.badEndingRecovery.checkpoint)
@@ -5948,6 +6405,7 @@ function restoreBadEndingCheckpoint() {
   );
 
   const recoveredEndingId = state.endingId;
+  recordCausalityResetTrace(recoveredEndingId, checkpointLevelId);
   state.health = PLAYER_MAX_HEALTH;
   state.stamina = STAMINA_MAX;
   state.saDoa = Math.min(BAD_ENDING_RECOVERY.corruptionAfterReset, SA_DOA_BAD_ENDING - 1);
@@ -8741,6 +9199,10 @@ function collectRelic(itemId, guidance = "") {
     ? "Đã thêm vào Sách lịch sử và sẽ mở đúng chương thuyết trình."
     : "";
   state.inventory.add(itemId);
+  state.relicReceipt = {
+    itemId,
+    expiresAt: state.lastTimestamp + 3000,
+  };
   refreshAchievements();
   updateProgressHud();
   saveGameProgress();
@@ -8764,6 +9226,45 @@ function collectRelic(itemId, guidance = "") {
   }
 
   return true;
+}
+
+function drawRelicReceipt() {
+  const receipt = state.relicReceipt;
+  if (!receipt) return;
+  const remaining = receipt.expiresAt - state.lastTimestamp;
+  if (remaining <= 0) {
+    state.relicReceipt = null;
+    return;
+  }
+  const relic = RELIC_DEFINITIONS[receipt.itemId];
+  const fade = Math.min(1, remaining / 360, (3000 - remaining) / 220);
+  const panelWidth = 218;
+  const panelHeight = 50;
+  const panelX = Math.round((VIEWPORT.width - panelWidth) / 2);
+  const panelY = VIEWPORT.height - 108;
+  ctx.save();
+  ctx.globalAlpha = fade;
+  ctx.fillStyle = "rgba(15, 22, 25, .92)";
+  ctx.fillRect(panelX, panelY, panelWidth, panelHeight);
+  ctx.strokeStyle = RELIC_VISUALS[receipt.itemId]?.color ?? "#e7c573";
+  ctx.lineWidth = 2;
+  ctx.strokeRect(panelX + 1, panelY + 1, panelWidth - 2, panelHeight - 2);
+  drawRelicFrame(
+    receipt.itemId,
+    panelX + 28,
+    panelY + 27,
+    38,
+    getRelicFrameIndex("resonance"),
+    fade,
+  );
+  ctx.fillStyle = "#fff0bc";
+  ctx.font = "700 11px PixelVN, monospace";
+  ctx.textAlign = "left";
+  ctx.fillText("TÍN VẬT ĐÃ GHI NHẬN", panelX + 54, panelY + 20);
+  ctx.fillStyle = "#d8d8ca";
+  ctx.font = "10px PixelVN, monospace";
+  ctx.fillText(relic?.label ?? "Tín vật", panelX + 54, panelY + 36);
+  ctx.restore();
 }
 
 function adjustSaDoa(delta, message = "", { deferEnding = false } = {}) {
@@ -8836,14 +9337,20 @@ function showResolvedEnding(candidate, summary) {
 
 function attemptEndingInteraction() {
   const candidate = resolveEnding({ narrative: state.narrative, inventory: state.inventory, saDoa: state.saDoa });
+  const hasAllRelics = REQUIRED_RELIC_IDS.every((relicId) => state.inventory.has(relicId));
 
   if (candidate.id === "bad") {
-    triggerBadEnding("Thanh Tha hóa đã đầy, nhân dân quay lưng và lịch sử rơi vào bóng đen mới.");
+    const summary = "Thanh Tha hóa đã đầy, nhân dân quay lưng và lịch sử rơi vào bóng đen mới.";
+    if (hasAllRelics) {
+      beginRelicConvergence(candidate, summary);
+    } else {
+      triggerBadEnding(summary);
+    }
     return;
   }
 
   if (candidate.id === "secret-corruption") {
-    showResolvedEnding(candidate, "Tha hóa đã vượt mọi ngưỡng cảnh báo, khiến hồ sơ rạn vỡ từ bên trong.");
+    beginRelicConvergence(candidate, "Tha hóa đã vượt mọi ngưỡng cảnh báo, khiến hồ sơ rạn vỡ từ bên trong.");
     return;
   }
 
@@ -8862,7 +9369,238 @@ function attemptEndingInteraction() {
   const summary = candidate.id === "neutral"
     ? "Năm vật phẩm đã hội tụ, nhưng những lựa chọn chưa được hàn gắn vẫn để lại vết nứt trong hồ sơ."
     : "Năm vật phẩm hội tụ và thanh Tha hóa vẫn được giữ ở mức thấp.";
-  showResolvedEnding(candidate, summary);
+  beginRelicConvergence(candidate, summary);
+}
+
+function syncRelicConvergenceCanvas() {
+  if (!relicConvergenceOverlay || !relicConvergenceCanvas || !relicConvergenceCtx) return null;
+  const bounds = relicConvergenceOverlay.getBoundingClientRect();
+  const width = Math.max(1, Math.round(bounds.width));
+  const height = Math.max(1, Math.round(bounds.height));
+  if (relicConvergenceCanvas.width !== width || relicConvergenceCanvas.height !== height) {
+    relicConvergenceCanvas.width = width;
+    relicConvergenceCanvas.height = height;
+    relicConvergenceCtx.imageSmoothingEnabled = false;
+  }
+  return { context: relicConvergenceCtx, width, height };
+}
+
+function beginRelicConvergence(candidate, summary) {
+  if (state.relicConvergence || !candidate?.id) return;
+  state.relicConvergence = {
+    candidate,
+    summary,
+    startedAt: null,
+    completed: false,
+    motifPlayed: true,
+    fractureSoundPlayed: false,
+  };
+  const fractured = candidate.id === "bad" || candidate.id === "secret-corruption";
+  // Start while the E/click interaction still owns browser audio activation.
+  // Delaying this until a later animation frame causes Chromium to block it.
+  playCinematicSfx(getRelicConvergenceSoundKey(candidate.id), {
+    volume: fractured ? 0.62 : 0.66,
+    retryOnUserGesture: true,
+  });
+  state.mode = "modal";
+  clearPressedKeys();
+  hideDialogue();
+  interactionPrompt.classList.add("hidden");
+  relicConvergenceCaption.textContent = "Năm tín vật đang tìm về cùng một mạch thời gian…";
+  relicConvergenceOverlay.classList.remove("hidden");
+  relicConvergenceOverlay.setAttribute("aria-hidden", "false");
+}
+
+function endRelicConvergence() {
+  const sequence = state.relicConvergence;
+  if (!sequence) return;
+  relicConvergenceOverlay.classList.add("hidden");
+  relicConvergenceOverlay.setAttribute("aria-hidden", "true");
+  state.relicConvergence = null;
+  if (sequence.candidate.id === "bad") {
+    triggerBadEnding(sequence.summary);
+    return;
+  }
+  showResolvedEnding(sequence.candidate, sequence.summary);
+}
+
+function getRelicConvergenceSoundKey(endingId) {
+  if (endingId === "bad" || endingId === "secret-corruption") return "relicConvergenceFractured";
+  if (endingId === "neutral") return "relicConvergenceNeutral";
+  return "relicConvergenceGood";
+}
+
+function drawRelicFusionCore(context, centerX, centerY, size, amount, color) {
+  if (amount <= 0) return;
+  const radius = size * (.24 + amount * .48);
+  const aura = context.createRadialGradient(centerX, centerY, 0, centerX, centerY, radius);
+  aura.addColorStop(0, "rgba(255, 250, 205, .96)");
+  aura.addColorStop(.22, `${color}cc`);
+  aura.addColorStop(.58, `${color}44`);
+  aura.addColorStop(1, "rgba(0,0,0,0)");
+  context.save();
+  context.globalCompositeOperation = "screen";
+  context.globalAlpha = amount;
+  context.fillStyle = aura;
+  context.fillRect(centerX - radius, centerY - radius, radius * 2, radius * 2);
+  context.restore();
+}
+
+function drawFracturedConvergenceMap(context, image, x, y, width, height, split) {
+  if (split <= 0.001) {
+    context.drawImage(image, x, y, width, height);
+    return;
+  }
+
+  // Treat the framed map as one physical relic. Both the mask and the pixels
+  // move together, so the split cannot expose polygon-shaped image artifacts.
+  const faultPath = [
+    [.5, 0],
+    [.505, .16],
+    [.488, .25],
+    [.510, .35],
+    [.486, .45],
+    [.505, .55],
+    [.482, .66],
+    [.500, .75],
+    [.492, .84],
+    [.5, 1],
+  ];
+  const pieces = [
+    {
+      points: [[0, 0], ...faultPath, [0, 1]],
+      offsetX: -.007,
+      offsetY: 0,
+      rotation: -.003,
+    },
+    {
+      points: [[.5, 0], [1, 0], [1, 1], [.5, 1], ...[...faultPath].reverse()],
+      offsetX: .007,
+      offsetY: 0,
+      rotation: .003,
+    },
+  ];
+
+  const mapCenterX = x + width * .5;
+  const mapCenterY = y + height * .5;
+
+  for (const piece of pieces) {
+    context.save();
+    context.translate(mapCenterX, mapCenterY);
+    context.rotate(piece.rotation * split);
+    context.translate(
+      -mapCenterX + width * piece.offsetX * split,
+      -mapCenterY + height * piece.offsetY * split,
+    );
+    context.beginPath();
+    piece.points.forEach(([pointX, pointY], index) => {
+      const targetX = x + width * pointX;
+      const targetY = y + height * pointY;
+      if (index === 0) context.moveTo(targetX, targetY);
+      else context.lineTo(targetX, targetY);
+    });
+    context.closePath();
+    context.clip();
+    context.drawImage(image, x, y, width, height);
+    context.restore();
+  }
+}
+
+function renderRelicConvergence() {
+  const sequence = state.relicConvergence;
+  if (!sequence) return;
+  const surface = syncRelicConvergenceCanvas();
+  if (!surface) return;
+  if (sequence.startedAt === null) sequence.startedAt = state.lastTimestamp;
+  let elapsed = state.lastTimestamp - sequence.startedAt;
+  const frozenElapsed = getDebugConvergenceFrozenElapsed();
+  if (frozenElapsed !== null) {
+    elapsed = frozenElapsed;
+  }
+  const progress = clamp(elapsed / RELIC_CONVERGENCE.duration, 0, 1);
+  const { context, width, height } = surface;
+  const fractured = sequence.candidate.id === "bad" || sequence.candidate.id === "secret-corruption";
+  const glow = fractured ? "#df7468" : sequence.candidate.id === "neutral" ? "#e6bb78" : "#ffe49c";
+  context.clearRect(0, 0, width, height);
+  context.fillStyle = "#030608";
+  context.fillRect(0, 0, width, height);
+  const centerX = width * 0.5;
+  const centerY = height * 0.47;
+  const gather = easeInOutCubic(clamp(elapsed / 4800, 0, 1));
+  const fusion = easeInOutCubic(clamp((elapsed - 3400) / 2200, 0, 1));
+  const reveal = easeInOutCubic(clamp((elapsed - 6000) / 3200, 0, 1));
+  const corruptionBloom = fractured ? easeInOutCubic(clamp((elapsed - 8000) / 1500, 0, 1)) : 0;
+  const fractureSplit = fractured ? easeInOutCubic(clamp((elapsed - 10000) / 3000, 0, 1)) : 0;
+  if (fractured && elapsed >= 10000 && !sequence.fractureSoundPlayed) {
+    sequence.fractureSoundPlayed = true;
+    playCinematicSfx("relicFracture", { volume: 0.78, retryOnUserGesture: true });
+  }
+  // Keep the convergence legible at projector resolution: the five relics
+  // become one luminous medallion, rather than a tiny point of light.
+  const relicSize = Math.round(Math.min(width, height) * .21);
+  drawRelicFusionCore(context, centerX, centerY, relicSize, fusion, glow);
+  context.save();
+  if (fusion > .1) context.globalCompositeOperation = "screen";
+  for (const [index, relicId] of REQUIRED_RELIC_IDS.entries()) {
+    const angle = -Math.PI / 2 + index * Math.PI * 2 / 5;
+    // All five lanes collapse into one tight shared core. Their outlines
+    // overlap in additive light before the map expands out of the fusion.
+    const radius = (1 - gather) * .4 * Math.min(width, height) + fusion * relicSize * .22;
+    const x = centerX + Math.cos(angle) * radius;
+    const y = centerY + Math.sin(angle) * radius;
+    const size = Math.round(relicSize * (1 - fusion * .42));
+    const aura = context.createRadialGradient(x, y, 0, x, y, size * 1.1);
+    aura.addColorStop(0, `${glow}35`);
+    aura.addColorStop(1, "rgba(0,0,0,0)");
+    context.fillStyle = aura;
+    context.fillRect(x - size * 1.5, y - size * 1.5, size * 3, size * 3);
+    drawRelicFrame(
+      relicId,
+      x,
+      y,
+      size,
+      gather > .72 ? getRelicFrameIndex("resonance") : getRelicFrameIndex("idle"),
+      (.84 - fusion * .18) * (1 - reveal * .8),
+      context,
+    );
+  }
+  context.restore();
+  if (reveal > 0 && canDrawSprite(relicConvergenceMap)) {
+    const aspect = relicConvergenceMap.naturalWidth / relicConvergenceMap.naturalHeight;
+    const fullDrawWidth = Math.min(width * .94, height * .76 * aspect);
+    const mapScale = .48 + reveal * .52;
+    const drawWidth = fullDrawWidth * mapScale;
+    const drawHeight = drawWidth / aspect;
+    const x = (width - drawWidth) / 2;
+    const y = (height - drawHeight) / 2;
+    context.save();
+    context.globalAlpha = reveal;
+    context.filter = fractured
+      ? `sepia(${.08 + corruptionBloom * .45}) saturate(${1.04 + corruptionBloom * .62}) hue-rotate(${350 - corruptionBloom * 30}deg)`
+      : "none";
+    if (fractured) {
+      drawFracturedConvergenceMap(context, relicConvergenceMap, x, y, drawWidth, drawHeight, fractureSplit);
+    } else {
+      context.drawImage(relicConvergenceMap, x, y, drawWidth, drawHeight);
+    }
+    context.filter = "none";
+    context.restore();
+  }
+  relicConvergenceCaption.textContent = elapsed < 6000
+    ? fusion > .15
+      ? "Năm tín vật đã nhập thành một lõi ký ức…"
+      : "Năm tín vật đang tìm về cùng một mạch thời gian…"
+    : elapsed < 8000
+      ? "Từ lõi hợp nhất, bản đồ Việt Nam đang mở ra — đất liền, biển, đảo và quần đảo."
+      : fractured && elapsed < 10000
+        ? "Một màu đỏ đang lan qua bản đồ: ký ức bị tha hóa từ bên trong."
+        : fractured
+          ? "Bản đồ từng nguyên vẹn nay đứt gãy thành những mảnh thời gian rời rạc."
+          : sequence.candidate.id === "neutral" ? "Bản đồ đã thành hình, nhưng những vết hàn vẫn cần được ghi nhớ." : "Một dải non sông được nối lại bằng ký ức, lựa chọn và trách nhiệm.";
+  if (progress >= 1 && !sequence.completed && !shouldHoldDebugConvergence()) {
+    sequence.completed = true;
+    endRelicConvergence();
+  }
 }
 
 function render() {
@@ -8879,6 +9617,7 @@ function render() {
     drawMiniMap();
   }
   drawDialoguePortrait();
+  drawRelicReceipt();
 }
 
 function drawDialoguePortrait() {
@@ -11315,6 +12054,8 @@ function drawInteractables() {
       drawObject(item);
     }
 
+    drawPendingRelicForInteractable(item);
+
     if (item.id === state.activeInteractionId && state.mode === "playing") {
       drawInteractionMarker(item);
     }
@@ -11334,6 +12075,29 @@ function drawInteractables() {
   drawEnemyProjectiles();
 
   ctx.restore();
+}
+
+function getPendingRelicId(item) {
+  const interactionType = item.interactionType;
+  if (interactionType === "rewardCompass" || interactionType === "compassVerdict") return "red-compass";
+  if (interactionType === "rewardEmblem" || interactionType === "emblemVerdict") return "unified-emblem";
+  if (interactionType === "augustVerdict") return "vietminh-thread";
+  if (interactionType === "borderVerdict") return "healed-map";
+  if (interactionType === "doiMoiVerdict") return "doi-moi-gear";
+  return null;
+}
+
+function drawPendingRelicForInteractable(item) {
+  if (item.variant === "story-relic") return;
+  const relicId = getPendingRelicId(item);
+  if (!relicId || state.inventory.has(relicId)) return;
+  const bob = state.settings.reducedMotion ? 0 : Math.sin(state.lastTimestamp * .004 + item.x) * 2;
+  const x = item.x;
+  const y = item.kind === "npc"
+    ? item.y - 35 + bob
+    : item.y - Math.min(item.height ?? 28, 36) + bob;
+  drawWorldWarmGlow(x, y + 4, 12, 0.13);
+  drawRelicFrame(relicId, x, y, 28, getRelicFrameIndex("idle"), 0.9);
 }
 
 function drawWorldDrops() {
@@ -11633,9 +12397,7 @@ function drawTvaHubRelics() {
     corruption: state.saDoa,
     endingId: state.hubEpilogueEndingId,
   });
-  const relicSprite = environmentSprites.generatedObjects?.storyRelic;
-
-  if (!canDrawSprite(relicSprite) || presentation.relics.length === 0) {
+  if (presentation.relics.length === 0) {
     return;
   }
 
@@ -11665,10 +12427,7 @@ function drawTvaHubRelics() {
     const y = portal.y + relic.y + bob;
 
     drawWorldWarmGlow(x, y - 8, 18, pulse + presentation.portalIntensity * 0.08);
-    drawLooseSprite(relicSprite, x, y, 32, 32, {
-      filter: `drop-shadow(0 0 3px ${relic.color}) saturate(1.08) brightness(1.08)`,
-      alpha: 0.94,
-    });
+    drawRelicFrame(relic.id, x, y, 32, getRelicFrameIndex("idle"), 0.94);
   }
 
   if (presentation.stability === "converged") {
@@ -11942,26 +12701,36 @@ function drawRationMarket(item) {
 
 function drawStoryRelic(item) {
   const glow = 0.42 + Math.sin(state.lastTimestamp * 0.008) * 0.14;
-  const relicSprite = environmentSprites.generatedObjects?.storyRelic;
+  drawWorldWarmGlow(item.x, item.y - 4, 24, glow * 0.2);
+  drawRelicFrame("red-compass", item.x, item.y + 16, 42, getRelicFrameIndex("idle"));
+}
 
-  if (canDrawSprite(relicSprite)) {
-    drawWorldWarmGlow(item.x, item.y - 4, 24, glow * 0.2);
-    drawLooseSprite(relicSprite, item.x, item.y + 16, 42, 42, {
-      filter: `brightness(${1.02 + glow * 0.08}) saturate(1.02)`,
-    });
-    return;
-  }
+function getRelicFrameIndex(mode = "idle") {
+  if (state.settings.reducedMotion) return mode === "burst" ? 2 : 0;
+  if (mode === "burst") return 3;
+  if (mode === "resonance") return 2;
+  return Math.floor(state.lastTimestamp / 360) % 2;
+}
 
-  ctx.fillStyle = `rgba(255, 218, 121, ${glow})`;
-  ctx.fillRect(item.x - 10, item.y - 14, 20, 20);
-  ctx.fillStyle = "#704631";
-  ctx.fillRect(item.x - 6, item.y + 4, 12, 5);
-  ctx.fillStyle = "#f0d17b";
-  ctx.fillRect(item.x - 4, item.y - 10, 8, 12);
-  ctx.fillStyle = "#fff5cf";
-  ctx.fillRect(item.x - 2, item.y - 12, 4, 4);
-  ctx.fillStyle = "#d44b3b";
-  ctx.fillRect(item.x - 1, item.y - 6, 2, 6);
+function drawRelicFrame(relicId, x, y, drawSize, frameIndex = 0, alpha = 1, context = ctx) {
+  const sprite = relicSprites[relicId];
+  if (!canDrawSprite(sprite)) return false;
+  context.save();
+  context.globalAlpha = alpha;
+  context.imageSmoothingEnabled = false;
+  context.drawImage(
+    sprite,
+    Math.max(0, Math.min(3, frameIndex)) * 64,
+    0,
+    64,
+    64,
+    Math.round(x - drawSize / 2),
+    Math.round(y - drawSize / 2),
+    drawSize,
+    drawSize,
+  );
+  context.restore();
+  return true;
 }
 
 function drawMemorySeal(item) {

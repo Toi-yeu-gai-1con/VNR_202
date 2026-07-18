@@ -206,6 +206,8 @@
             <button class="pixel-button tva-dossier-tab is-selected" type="button" role="tab" aria-selected="true" data-tva-dossier-tab="endings">Kết cục</button>
             <button class="pixel-button tva-dossier-tab" type="button" role="tab" aria-selected="false" data-tva-dossier-tab="monsters">Đối thủ</button>
             <button class="pixel-button tva-dossier-tab" type="button" role="tab" aria-selected="false" data-tva-dossier-tab="achievements">Dấu mốc</button>
+            <button class="pixel-button tva-dossier-tab" type="button" role="tab" aria-selected="false" data-tva-dossier-tab="memory">Tái dựng ký ức</button>
+            <button class="pixel-button tva-dossier-tab" type="button" role="tab" aria-selected="false" data-tva-dossier-tab="causality">Bản đồ Nhân quả</button>
             <button class="pixel-button tva-dossier-tab" type="button" role="tab" aria-selected="false" data-tva-dossier-tab="after-credits">Hậu danh đề</button>
           </div>
           <div id="tva-dossier-content" class="tva-dossier-content" role="tabpanel" tabindex="0"></div>
@@ -243,6 +245,11 @@
             </div>
           </div>
         </div>
+      </section>
+
+      <section id="relic-convergence-overlay" class="relic-convergence-overlay hidden" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Năm tín vật hội tụ">
+        <canvas id="relic-convergence-canvas" class="relic-convergence-canvas" aria-hidden="true"></canvas>
+        <p id="relic-convergence-caption" class="relic-convergence-caption">Năm tín vật đang hội tụ.</p>
       </section>
 
       <section id="end-overlay" class="overlay end-overlay hidden" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="end-title" aria-describedby="end-copy end-summary">

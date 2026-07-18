@@ -647,6 +647,38 @@ test("five relics activate the TVA convergence state without reopening the porta
   expect((await snapshot(page)).quests.tvaPortalTarget).toBeNull();
 });
 
+for (const [endingId, expectedCue, expectsFracture] of [
+  ["good", "relic-convergence.wav", false],
+  ["neutral", "relic-convergence-neutral.wav", false],
+  ["secret-corruption", "relic-convergence-fractured.wav", true],
+]) {
+  test(`${endingId} convergence routes its authored cue and fracture policy`, async ({ page }) => {
+    await page.addInitScript(() => {
+      window.__convergenceAudioAttempts = [];
+      HTMLMediaElement.prototype.play = function () {
+        window.__convergenceAudioAttempts.push({
+          src: this.src,
+          userActive: navigator.userActivation?.isActive ?? false,
+        });
+        return Promise.resolve();
+      };
+    });
+    await openDebugSession(page);
+    await page.evaluate(({ ending }) => {
+      const probe = document.createElement("button");
+      probe.id = "convergence-audio-probe";
+      probe.addEventListener("click", () => window.__CROSSROADS_DEBUG__.previewRelicConvergence(ending, 9900));
+      document.body.append(probe);
+    }, { ending: endingId });
+    await page.locator("#convergence-audio-probe").click();
+    await page.waitForTimeout(450);
+    const attempts = await page.evaluate(() => window.__convergenceAudioAttempts.filter(({ src }) => src.includes("relic-")));
+    expect(attempts.filter(({ src }) => src.includes(expectedCue))).toHaveLength(1);
+    expect(attempts.find(({ src }) => src.includes(expectedCue))?.userActive).toBe(true);
+    expect(attempts.filter(({ src }) => src.includes("relic-fracture.wav"))).toHaveLength(expectsFracture ? 1 : 0);
+  });
+}
+
 test("the TVA memory archive opens only earned history", async ({ page }, testInfo) => {
   await openDebugSession(page);
   await page.evaluate(() => window.__CROSSROADS_DEBUG__.completeTvaRoute("village"));
@@ -659,6 +691,35 @@ test("the TVA memory archive opens only earned history", async ({ page }, testIn
   await expect(page.locator("#slide-modal")).toBeVisible();
   await expect(page.locator("#slide-title")).toContainText("LA BÀN ĐỎ");
   await page.screenshot({ path: testInfo.outputPath("tva-memory-archive.png"), fullPage: true });
+});
+
+test("the TVA causality map preserves a reset trace and explains the selected historical node", async ({ page }, testInfo) => {
+  await openDebugSession(page);
+  await page.evaluate(() => {
+    window.__CROSSROADS_DEBUG__.completeTvaRoute("village");
+    window.__CROSSROADS_DEBUG__.completeTvaRoute("archive");
+    window.__CROSSROADS_DEBUG__.recordCausalityReset("zone1-lost-compass", "village");
+    window.__CROSSROADS_DEBUG__.loadLevel("hub", { x: 630, y: 318, direction: "up" });
+    window.__CROSSROADS_DEBUG__.interactById("tva-memory-archive");
+  });
+  await expect(page.locator("#tva-dossier-modal")).toBeVisible();
+  await page.locator('[data-tva-dossier-tab="causality"]').click();
+  await expect(page.locator(".tva-causality-node.has-reset")).toContainText("Đường lối");
+  await expect(page.locator("#tva-dossier-content")).toContainText("Reset wave");
+  await page.getByRole("button", { name: /Đường lối/ }).click();
+  await expect(page.locator(".tva-causality-detail")).toContainText("Giữ được La Bàn Đỏ");
+  await page.screenshot({ path: testInfo.outputPath("tva-causality-reset-trace.png"), fullPage: true });
+});
+
+test("TVA debug links open the requested completed archive without the tutorial", async ({ page }) => {
+  await page.goto("/?debugTva=memory&debugTvaRelics=5");
+  await expect(page.locator("#tva-dossier-modal")).toBeVisible();
+  await expect(page.locator("#tva-dossier-content")).toContainText("Máy tái dựng ký ức");
+  await expect(page.locator("#tva-dossier-content")).toContainText("La Bàn Đỏ");
+
+  await page.goto("/?debugTva=causality&debugTvaRelics=5&debugTvaReset=zone1");
+  await expect(page.locator("#tva-dossier-modal")).toBeVisible();
+  await expect(page.locator(".tva-causality-node.has-reset")).toContainText("Đường lối");
 });
 
 test("constructive achievements persist as TVA memory records without revealing endings", async ({ page }, testInfo) => {
