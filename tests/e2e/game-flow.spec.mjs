@@ -679,6 +679,17 @@ for (const [endingId, expectedCue, expectsFracture] of [
   });
 }
 
+test("secret convergence tears open quickly and holds its separated map", async ({ page }, testInfo) => {
+  for (const [label, elapsed] of [["start", 10000], ["release", 10300], ["settled", 10850]]) {
+    await page.goto(`/?debugTools=1&debugConvergence=secret-corruption&debugConvergenceFreezeElapsed=${elapsed}&debugConvergenceHold=1`);
+    await page.waitForFunction(() => Boolean(window.__CROSSROADS_DEBUG__));
+    await expect(page.locator("#relic-convergence-overlay")).toBeVisible();
+    await page.waitForFunction(() => (document.querySelector("#relic-convergence-caption")?.textContent?.length ?? 0) > 20);
+    await page.waitForTimeout(100);
+    await page.screenshot({ path: testInfo.outputPath(`relic-fracture-${label}.png`), fullPage: true });
+  }
+});
+
 test("the TVA memory archive opens only earned history", async ({ page }, testInfo) => {
   await openDebugSession(page);
   await page.evaluate(() => window.__CROSSROADS_DEBUG__.completeTvaRoute("village"));

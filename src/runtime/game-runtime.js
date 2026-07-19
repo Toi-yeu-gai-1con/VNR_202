@@ -9467,15 +9467,15 @@ function drawFracturedConvergenceMap(context, image, x, y, width, height, split)
   const pieces = [
     {
       points: [[0, 0], ...faultPath, [0, 1]],
-      offsetX: -.007,
+      offsetX: -.022,
       offsetY: 0,
-      rotation: -.003,
+      rotation: -.012,
     },
     {
       points: [[.5, 0], [1, 0], [1, 1], [.5, 1], ...[...faultPath].reverse()],
-      offsetX: .007,
+      offsetX: .022,
       offsetY: 0,
-      rotation: .003,
+      rotation: .012,
     },
   ];
 
@@ -9528,7 +9528,7 @@ function renderRelicConvergence() {
   const fusion = easeInOutCubic(clamp((elapsed - 3400) / 2200, 0, 1));
   const reveal = easeInOutCubic(clamp((elapsed - 6000) / 3200, 0, 1));
   const corruptionBloom = fractured ? easeInOutCubic(clamp((elapsed - 8000) / 1500, 0, 1)) : 0;
-  const fractureSplit = fractured ? easeInOutCubic(clamp((elapsed - 10000) / 3000, 0, 1)) : 0;
+  const fractureSplit = fractured ? easeOutQuad(clamp((elapsed - 10000) / 850, 0, 1)) : 0;
   if (fractured && elapsed >= 10000 && !sequence.fractureSoundPlayed) {
     sequence.fractureSoundPlayed = true;
     playCinematicSfx("relicFracture", { volume: 0.78, retryOnUserGesture: true });

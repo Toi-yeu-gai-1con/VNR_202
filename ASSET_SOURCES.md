@@ -10,11 +10,15 @@
   - Original pixel-art archival artifact generated for this project with OpenAI image generation on 2026-07-18. It uses the same paper, bronze, red-thread, and gear visual language as the five relics.
   - Used only in the five-relic convergence cinematic. Hoàng Sa and Trường Sa are represented directly within the central map; the cinematic deliberately has no external callout labels.
   - Geographic presentation follows the official requirement that a Vietnamese administrative map show land, sea, islands and archipelagos; it is a symbolic educational composition rather than a navigational chart. Reference: Cổng Thông tin điện tử Chính phủ, https://chinhphu.vn/dia-ly-68387 (accessed 2026-07-18).
-- `assets/audio/sfx/relic-convergence.wav`, `relic-convergence-neutral.wav`, `relic-convergence-fractured.wav`, and `relic-fracture.wav`
-  - Original convergence audio generated deterministically by `scripts/generate-skill-sfx.py` on 2026-07-18. No third-party music or SFX was imported.
+- `assets/audio/sfx/relic-convergence.wav`, `relic-convergence-neutral.wav`, and `relic-convergence-fractured.wav`
+  - Original convergence music generated deterministically by `scripts/generate-skill-sfx.py` on 2026-07-18. No third-party music was imported.
   - Good uses warm wood strikes, soft chimes and a resolved pad; Neutral reuses the five-note identity in a restrained register and closes on a suspended harmony without horror noise; Secret/Bad uses descending low metal, restrained gear rhythm, low drum and increasing dissonance.
-  - `relic-fracture.wav` is a separate one-shot layered from dry wood, torn masonry/paper noise, a metallic snap and a short low tail. It plays once at the Secret/Bad map split rather than being baked into the score.
-  - All four files follow the SFX volume/mute setting and are never keyboard, menu or dialogue input sounds.
+  - All three files follow the SFX volume/mute setting and are never keyboard, menu or dialogue input sounds.
+- `assets/audio/sfx/relic-fracture.wav`
+  - A 1.6-second stereo one-shot mixed on 2026-07-19 from Mixkit recordings "Wood hard hit" (SFX 2182), "Twig breaking" (SFX 2945), "Paper quick slice" (SFX 2384), "Small wood plank pile drop" (SFX 3141), and "Big cinematic impact" (SFX 788).
+  - Source: https://mixkit.co/free-sound-effects/ under the Mixkit Sound Effects Free License, https://mixkit.co/license/#sfxFree (accessed 2026-07-19).
+  - Modified by trimming, filtering, time-offsetting, gain balancing, mixing, limiting and fading; exported as stereo 48 kHz 16-bit PCM.
+  - Plays once at the Secret/Bad split. Its dry fracture transient supports the fast 850 ms separation while the debris and low-frequency tail continue after the map pieces settle.
 
 This project uses a small subset of free game assets:
 

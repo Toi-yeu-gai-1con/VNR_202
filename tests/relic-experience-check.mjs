@@ -116,11 +116,20 @@ assert.match(runtimeSource, /relicFracture:\s*loadSound\("assets\/audio\/sfx\/re
 assert.match(beginConvergenceSource, /fractureSoundPlayed:\s*false/, "Every convergence starts with a fresh one-shot fracture guard.");
 assert.match(runtimeSource, /fractured\s*&&\s*elapsed\s*>=\s*10000\s*&&\s*!sequence\.fractureSoundPlayed/, "Only fractured endings schedule the split sound at ten seconds.");
 assert.match(runtimeSource, /sequence\.fractureSoundPlayed\s*=\s*true;[\s\S]*playCinematicSfx\("relicFracture"/, "The fracture guard is set before the one-shot plays.");
+assert.match(
+  runtimeSource,
+  /const fractureSplit = fractured \? easeOutQuad\(clamp\(\(elapsed - 10000\) \/ 850, 0, 1\)\) : 0;/,
+  "The fractured map tears open quickly over 850 ms with a strong initial release.",
+);
 const fractureRendererSource = runtimeSource.slice(
   runtimeSource.indexOf("function drawFracturedConvergenceMap"),
   runtimeSource.indexOf("function renderRelicConvergence"),
 );
 assert.match(fractureRendererSource, /const faultPath = \[/, "The Secret split follows one continuous jagged fault instead of polygon cutout artifacts.");
+assert.match(fractureRendererSource, /offsetX:\s*-\.022/, "The left map piece separates far enough for the central tear to read.");
+assert.match(fractureRendererSource, /offsetX:\s*\.022/, "The right map piece mirrors the readable separation distance.");
+assert.match(fractureRendererSource, /rotation:\s*-\.012/, "The left map piece rotates subtly as the tear releases.");
+assert.match(fractureRendererSource, /rotation:\s*\.012/, "The right map piece mirrors the subtle tear rotation.");
 assert.doesNotMatch(fractureRendererSource, /const fragments = \[/, "The Secret split no longer uses three screen-space polygon fragments.");
 
 console.log("PASS: TVA relic sheets, memory records, causal map and unified-territory cinematic are complete.");

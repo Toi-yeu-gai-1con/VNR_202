@@ -26,16 +26,13 @@ function parsePcmWav(buffer) {
     offset = chunkStart + chunkSize + (chunkSize % 2);
   }
   assert.ok(format && data, "WAV must include fmt and data chunks.");
-  assert.deepEqual(
-    { encoding: format.encoding, channels: format.channels, bitsPerSample: format.bitsPerSample },
-    { encoding: 1, channels: 1, bitsPerSample: 16 },
-    "Convergence audio must remain mono 16-bit PCM.",
-  );
+  assert.equal(format.encoding, 1, "Convergence audio must remain PCM.");
+  assert.equal(format.bitsPerSample, 16, "Convergence audio must remain 16-bit PCM.");
   const samples = new Int16Array(data.buffer, data.byteOffset, Math.floor(data.byteLength / 2));
   return {
     ...format,
     samples,
-    duration: samples.length / format.sampleRate,
+    duration: samples.length / format.sampleRate / format.channels,
   };
 }
 
@@ -65,6 +62,7 @@ const hashes = new Set();
 for (const filename of cueFiles) {
   const buffer = await readFile(fileURLToPath(new URL(`../assets/audio/sfx/${filename}`, import.meta.url)));
   const audio = parsePcmWav(buffer);
+  assert.equal(audio.channels, 1, `${filename} must remain mono to avoid unnecessary browser payload.`);
   assert.ok(Math.abs(audio.duration - 13.2) <= 0.1, `${filename} must cover the complete cinematic cue.`);
   assert.ok(rmsInWindow(audio, 0.3, 4.5) > 0.025, `${filename} must audibly score the five relic arrivals.`);
   assert.ok(rmsInWindow(audio, 4.5, 6.2) > 0.025, `${filename} must audibly score the fusion core.`);
@@ -82,7 +80,16 @@ try {
 }
 assert.equal(fractureExists, true, "Secret/Bad requires a dedicated relic-fracture.wav one-shot.");
 const fracture = parsePcmWav(await readFile(fileURLToPath(fractureUrl)));
-assert.ok(fracture.duration >= 0.7 && fracture.duration <= 1.8, "The fracture one-shot must remain short and synchronized.");
+assert.equal(fracture.channels, 2, "The new fracture one-shot uses stereo separation for the two map pieces.");
+assert.equal(fracture.sampleRate, 48000, "The new fracture one-shot uses a 48 kHz cinematic master.");
+assert.ok(fracture.duration >= 1.5 && fracture.duration <= 1.7, "The fracture one-shot must remain synchronized with the 850 ms tear and debris tail.");
 assert.ok(peak(fracture) > 0.25, "The fracture transient must be clearly audible at the split moment.");
+
+const generatorSource = await readFile(fileURLToPath(new URL("../scripts/generate-skill-sfx.py", import.meta.url)), "utf8");
+assert.doesNotMatch(
+  generatorSource,
+  /"relic-fracture\.wav"\s*:/,
+  "The deterministic cue generator must not overwrite the licensed recorded fracture master.",
+);
 
 console.log("PASS: convergence cues cover their timeline and the fracture one-shot is production-ready.");

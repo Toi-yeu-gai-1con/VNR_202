@@ -235,7 +235,6 @@ def main() -> None:
     relic_good = convergence_score("good")
     relic_neutral = convergence_score("neutral")
     relic_fractured = convergence_score("fractured")
-    relic_fracture = fracture_sound()
     sounds = {
         "player-dash.wav": mix(tone(0.22, 620, 190, 0.3), noise(0.2, 0.18, 12)),
         "player-heal.wav": mix(tone(0.18, 520, 780, 0.26), [0.0] * round(0.08 * SAMPLE_RATE) + tone(0.22, 780, 1_120, 0.25)),
@@ -247,7 +246,6 @@ def main() -> None:
         "relic-convergence.wav": relic_good,
         "relic-convergence-neutral.wav": relic_neutral,
         "relic-convergence-fractured.wav": relic_fractured,
-        "relic-fracture.wav": relic_fracture,
     }
     for filename, samples in sounds.items():
         write_wav(OUT_DIR / filename, samples)
