@@ -1481,29 +1481,6 @@ html[data-reduced-motion="true"] *::after {
   pointer-events: none;
 }
 
-.tva-causality-links {
-  position: absolute;
-  z-index: 3;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  overflow: visible;
-  pointer-events: none;
-}
-
-.tva-causality-link {
-  fill: none;
-  stroke-width: 1.45;
-  vector-effect: non-scaling-stroke;
-  filter: drop-shadow(0 0 0.22rem currentColor);
-}
-
-.tva-memory-current.is-locked { stroke: rgba(115, 115, 92, 0.34); stroke-dasharray: 2 3; }
-.tva-memory-current.is-collected { stroke: #e8bd64; stroke-dasharray: 1.1 1.25; animation: tva-memory-current 2.5s linear infinite; }
-.tva-memory-current.is-reconstructed { stroke: #88d7b6; stroke-dasharray: 1.2 1; animation: tva-memory-current 1.8s linear infinite; }
-.tva-memory-current.is-fractured { stroke: #e16d61; stroke-dasharray: 4 3; }
-.tva-memory-current.is-reset { stroke: #e0b760; stroke-dasharray: 2.5 2; }
-
 .tva-causality-node {
   position: absolute;
   z-index: 5;
@@ -1611,6 +1588,12 @@ html[data-reduced-motion="true"] *::after {
   transform: translate(-50%, -100%);
 }
 
+.tva-memory-reset-ripple.is-star-top .tva-memory-reset-label {
+  top: 50%;
+  left: calc(100% + 0.2rem);
+  transform: translateY(-50%);
+}
+
 .tva-memory-reset-ripple::before {
   position: absolute;
   inset: 0;
@@ -1641,10 +1624,6 @@ html[data-reduced-motion="true"] *::after {
 .tva-causality-detail {
   margin-top: 0.85rem;
   border-color: rgba(215, 183, 99, 0.78);
-}
-
-@keyframes tva-memory-current {
-  to { stroke-dashoffset: -4.4; }
 }
 
 @keyframes tva-memory-breathe {

@@ -39,7 +39,7 @@ import { GAMEPLAY_BALANCE, getDifficultySettings } from "../data/gameplay-balanc
 import { AUDIO_TRACKS, COMBAT_SFX, getAudioSourceCandidates, resolveAudioSource } from "../data/media-sources.js";
 import { ENDING_AUDIO_KEYS, getEndingAudioKey } from "../data/ending-audio-definitions.js";
 import { AFTER_CREDITS, supportsAfterCredits } from "../data/after-credits.js";
-import { CAUSALITY_MAP_LINKS, CAUSALITY_MAP_NODES, MEMORY_RECONSTRUCTIONS, RELIC_CONVERGENCE, RELIC_VISUALS } from "../data/relic-experience.js";
+import { CAUSALITY_MAP_NODES, MEMORY_RECONSTRUCTIONS, RELIC_CONVERGENCE, RELIC_VISUALS } from "../data/relic-experience.js";
 import { BUILD_VERSION, withAssetVersion } from "../data/build-info.js";
 import { PLAYER_FOOTPRINT, PLAYER_SPRITE, PLAYER_ANIMATIONS, NPC_SPRITE, TVA_EMPLOYEE_SPRITE, M90_RESET_ANIMATION, ENVIRONMENT_SPRITES, TILECRAFT_TERRAIN, PIXEL_CRAWLER_TERRAIN, VILLAGE_SKYLINE_Y, VILLAGE_PROP_SPRITES, PIXEL_CRAWLER_BUILDING_SPRITES, HUB_PORTAL_SPRITE, SWORD_SLASH_SPRITE, SMALL_GAME_ASSET_ANIMATIONS, PIXEL_CRAWLER_TREE_SPRITE, KENNEY_ROGUELIKE_TILE, KENNEY_ROGUELIKE_SPRITES, PIXEL_CRAWLER_VEGETATION_SPRITES, PIXEL_CRAWLER_TOOL_CLUSTER_SPRITES, CAINOS_PROP_SPRITES, LIMEZU_INTERIOR_SPRITES, HOUSE_INTERIOR_A_SPRITES, MONSTER_SPRITE_CONFIG, getTvaActorScale } from "../data/render-config.js";
 
@@ -5232,27 +5232,6 @@ function getCausalityChoiceLabels(relicId) {
     .filter(Boolean);
 }
 
-function getCausalityLinkStatus(link, resetZones) {
-  const fromStatus = getCausalityNodeStatus(link.from);
-  const toStatus = getCausalityNodeStatus(link.to);
-  if (resetZones.has(getCausalityZoneId(link.from)) || resetZones.has(getCausalityZoneId(link.to))) return "reset";
-  if (fromStatus === "fractured" || toStatus === "fractured") return "fractured";
-  if (fromStatus === "reconstructed" && toStatus === "reconstructed") return "reconstructed";
-  if (fromStatus !== "locked" || toStatus !== "locked") return "collected";
-  return "locked";
-}
-
-function createCausalityLinkElement(link, nodeByRelic, resetZones) {
-  const from = nodeByRelic.get(link.from);
-  const to = nodeByRelic.get(link.to);
-  if (!from || !to) return null;
-  const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-  const controlY = Math.round((from.memoryY + to.memoryY) / 2);
-  path.setAttribute("d", `M ${from.memoryX} ${from.memoryY} C ${from.memoryX} ${controlY}, ${to.memoryX} ${controlY}, ${to.memoryX} ${to.memoryY}`);
-  path.setAttribute("class", `tva-causality-link tva-memory-current is-${getCausalityLinkStatus(link, resetZones)}`);
-  return path;
-}
-
 function renderTvaCausalityMap() {
   state.quests.tvaCausalityViewed = true;
   const map = document.createElement("div");
@@ -5280,16 +5259,6 @@ function renderTvaCausalityMap() {
   spotlight.setAttribute("aria-hidden", "true");
   map.append(spotlight);
 
-  const links = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-  links.classList.add("tva-causality-links");
-  links.setAttribute("viewBox", "0 0 100 100");
-  links.setAttribute("preserveAspectRatio", "none");
-  links.setAttribute("aria-hidden", "true");
-  for (const link of CAUSALITY_MAP_LINKS) {
-    const path = createCausalityLinkElement(link, nodeByRelic, resetZones);
-    if (path) links.append(path);
-  }
-  map.append(links);
   for (const node of CAUSALITY_MAP_NODES) {
     const status = getCausalityNodeStatus(node.relicId);
     const button = document.createElement("button");
@@ -5319,7 +5288,7 @@ function renderTvaCausalityMap() {
   for (const node of CAUSALITY_MAP_NODES) {
     if (!resetZones.has(getCausalityZoneId(node.relicId))) continue;
     const reset = document.createElement("span");
-    reset.className = "tva-memory-reset-ripple";
+    reset.className = `tva-memory-reset-ripple is-${node.memoryMapSlot}`;
     reset.style.setProperty("--node-x", `${node.memoryX}%`);
     reset.style.setProperty("--node-y", `${node.memoryY}%`);
     reset.setAttribute("aria-hidden", "true");

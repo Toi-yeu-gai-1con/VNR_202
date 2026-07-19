@@ -72,27 +72,27 @@ export const MEMORY_RECONSTRUCTIONS = Object.freeze({
 export const CAUSALITY_MAP_NODES = Object.freeze([
   Object.freeze({
     relicId: "red-compass", title: "Đường lối", subtitle: "Khu 1", x: 10, y: 54,
-    memoryMapSlot: "northwest", memoryX: 24, memoryY: 32, memoryYear: "1922–1929",
+    memoryMapSlot: "star-top", memoryX: 50, memoryY: 15, memoryYear: "1922–1929",
     gameplay: "Giữ được La Bàn Đỏ sẽ xác nhận hồ sơ Khu 1 và mở lối tới Khu 2; nhánh đứt ghi lại reset wave.",
   }),
   Object.freeze({
     relicId: "unified-emblem", title: "Thống nhất", subtitle: "Khu 2", x: 29, y: 25,
-    memoryMapSlot: "north", memoryX: 47, memoryY: 17, memoryYear: "1930",
+    memoryMapSlot: "star-upper-right", memoryX: 78, memoryY: 37, memoryYear: "1930",
     gameplay: "Huy hiệu Thống nhất xác nhận tiến độ Khu 2; một nhánh chia rẽ có thể khép lại thành Bad Ending khu trước khi reset.",
   }),
   Object.freeze({
     relicId: "vietminh-thread", title: "Đại đoàn kết", subtitle: "Khu 3A", x: 50, y: 49,
-    memoryMapSlot: "northeast", memoryX: 76, memoryY: 32, memoryYear: "1941–1945",
+    memoryMapSlot: "star-lower-right", memoryX: 68, memoryY: 75, memoryYear: "1941–1945",
     gameplay: "Sợi Chỉ Đỏ mở mạch nhiệm vụ tiếp theo tại Khu 3, nhưng không thay thế các mục tiêu phá ấp và đối đầu boss.",
   }),
   Object.freeze({
     relicId: "healed-map", title: "Non sông", subtitle: "Khu 3B", x: 69, y: 25,
-    memoryMapSlot: "southeast", memoryX: 74, memoryY: 68, memoryYear: "1954–1975",
+    memoryMapSlot: "star-lower-left", memoryX: 32, memoryY: 75, memoryYear: "1954–1975",
     gameplay: "Bản đồ hàn gắn chỉ được niêm phong sau các nhiệm vụ Khu 3B; nhánh tách rời dẫn tới Bad Ending riêng của khu.",
   }),
   Object.freeze({
     relicId: "doi-moi-gear", title: "Đổi mới", subtitle: "Khu 4", x: 89, y: 54,
-    memoryMapSlot: "south", memoryX: 50, memoryY: 79, memoryYear: "1986",
+    memoryMapSlot: "star-upper-left", memoryX: 22, memoryY: 37, memoryYear: "1986",
     gameplay: "Bánh răng Đổi Mới hoàn tất tín vật thứ năm và cho phép cổng kết thúc kích hoạt cinematic hội tụ.",
   }),
 ]);

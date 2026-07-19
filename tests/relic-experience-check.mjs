@@ -32,8 +32,13 @@ assert.ok(
 );
 assert.deepEqual(
   CAUSALITY_MAP_NODES.map((node) => node.memoryMapSlot),
-  ["northwest", "north", "northeast", "southeast", "south"],
-  "The five relics follow one clockwise historical orbit without a diagonal jump across Vietnam.",
+  ["star-top", "star-upper-right", "star-lower-right", "star-lower-left", "star-upper-left"],
+  "The five relics occupy the five points of one invisible star in clockwise historical order.",
+);
+assert.deepEqual(
+  CAUSALITY_MAP_NODES.map((node) => [node.memoryX, node.memoryY]),
+  [[50, 15], [78, 37], [68, 75], [32, 75], [22, 37]],
+  "The invisible five-point star remains symmetrical around the Vietnam map.",
 );
 assert.deepEqual(
   CAUSALITY_MAP_NODES.map((node) => node.memoryYear),

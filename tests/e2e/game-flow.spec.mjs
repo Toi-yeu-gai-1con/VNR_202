@@ -708,6 +708,7 @@ test("the TVA Vietnam memory map preserves a reset trace and explains the select
   await expect(page.locator(".tva-memory-map-art")).toHaveAttribute("src", /vietnam-unified-map-cinematic\.png/);
   await expect(page.locator(".tva-memory-seal")).toHaveCount(5);
   await expect(page.locator(".tva-memory-relic-art")).toHaveCount(5);
+  await expect(page.locator(".tva-memory-current")).toHaveCount(0);
   await expect(page.locator(".tva-memory-reset-ripple")).toHaveCount(1);
   await expect(page.locator(".tva-memory-seal-year")).toHaveText(["1922–1929", "1930", "1941–1945", "1954–1975", "1986"]);
   const resetLabelBox = await page.locator(".tva-memory-reset-label").boundingBox();
@@ -721,6 +722,8 @@ test("the TVA Vietnam memory map preserves a reset trace and explains the select
   expect(resetOverlapsYear).toBe(false);
   const dossierBox = await page.locator(".tva-dossier-card").boundingBox();
   const memoryMapBox = await page.locator(".tva-memory-map").boundingBox();
+  expect(resetLabelBox?.x ?? -1).toBeGreaterThanOrEqual(memoryMapBox?.x ?? 0);
+  expect(resetLabelBox?.y ?? -1).toBeGreaterThanOrEqual(memoryMapBox?.y ?? 0);
   expect(dossierBox?.width ?? 0).toBeGreaterThanOrEqual(1000);
   expect(memoryMapBox?.height ?? 0).toBeGreaterThanOrEqual(400);
   const overlayStack = await page.evaluate(() => ({
