@@ -10,3 +10,4 @@ output/
 tmp/
 debug.log
 .superpowers/
+.worktrees/
