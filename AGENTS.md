@@ -49,7 +49,6 @@ Third-party skills run with full agent permissions. Review their provenance and 
 - Agents are encouraged to research, source, draw, generate, edit, and animate new models, assets, sprites, tiles, effects, landmarks, NPCs, monsters, and interactable objects whenever doing so materially improves the requested work.
 - Do not wait for the user to request every individual asset when the need is obvious and remains within the approved task scope.
 - Reuse existing project art direction, palette, camera angle, pixel density, scale, and silhouette language. New art must look like it belongs in the same game.
-- Third-party assets must have clear, compatible usage rights. Record the source, author, license, modifications, and in-game use in `ASSET_SOURCES.md` or the nearest scoped source ledger.
 - Generated assets must be saved inside the repository before code references them. Preserve generation sources outside the repository when required by the generating tool.
 
 ## Vietnamese cultural and content standards
