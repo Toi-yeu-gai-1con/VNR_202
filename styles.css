@@ -1370,17 +1370,92 @@ html[data-reduced-motion="true"] *::after {
 
 .tva-causality-map {
   position: relative;
-  min-height: 17rem;
+  isolation: isolate;
+  min-height: 20rem;
   overflow: hidden;
-  border: 1px solid rgba(218, 180, 89, 0.62);
+  border: 1px solid rgba(218, 180, 89, 0.66);
+  border-radius: 0.5rem;
   background:
-    repeating-linear-gradient(90deg, rgba(223, 194, 110, 0.05) 0 1px, transparent 1px 26px),
-    repeating-linear-gradient(0deg, rgba(223, 194, 110, 0.04) 0 1px, transparent 1px 26px),
-    radial-gradient(circle at 50% 50%, rgba(61, 91, 87, 0.42), rgba(12, 22, 24, 0.93) 72%);
+    radial-gradient(ellipse at 50% 44%, rgba(66, 100, 76, 0.7), rgba(12, 29, 27, 0.94) 46%, rgba(5, 13, 15, 0.99) 82%);
+  box-shadow: inset 0 0 0 0.16rem rgba(220, 175, 79, 0.12), inset 0 0 3rem rgba(0, 0, 0, 0.72);
+}
+
+.tva-memory-map {
+  color: #f4dfa6;
+}
+
+.tva-memory-map::before,
+.tva-memory-map::after {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  content: "";
+  pointer-events: none;
+}
+
+.tva-memory-map::before {
+  background:
+    repeating-linear-gradient(90deg, transparent 0 2.45rem, rgba(227, 185, 91, 0.055) 2.45rem calc(2.45rem + 1px)),
+    repeating-linear-gradient(0deg, transparent 0 2.45rem, rgba(227, 185, 91, 0.045) 2.45rem calc(2.45rem + 1px));
+  mask-image: radial-gradient(ellipse at center, #000 24%, transparent 78%);
+}
+
+.tva-memory-map::after {
+  border: 0.28rem double rgba(179, 130, 54, 0.54);
+  border-radius: 0.44rem;
+  box-shadow: inset 0 0 1.8rem rgba(8, 17, 16, 0.8);
+}
+
+.tva-memory-map-kicker {
+  position: absolute;
+  z-index: 7;
+  top: 0.62rem;
+  left: 50%;
+  margin: 0;
+  padding: 0.22rem 0.58rem;
+  border: 1px solid rgba(231, 190, 96, 0.52);
+  background: rgba(7, 18, 17, 0.82);
+  color: #f0cf7c;
+  font-size: 0.58rem;
+  line-height: 1;
+  letter-spacing: 0.1em;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+.tva-memory-map-art {
+  position: absolute;
+  z-index: 1;
+  top: 51%;
+  left: 50%;
+  width: min(96%, 46rem);
+  height: 100%;
+  object-fit: contain;
+  image-rendering: pixelated;
+  filter: sepia(0.08) saturate(0.82) brightness(0.84) drop-shadow(0 0 0.5rem rgba(244, 201, 98, 0.26));
+  transform: translate(-50%, -50%) scale(1.22);
+  opacity: 0.84;
+  pointer-events: none;
+}
+
+.tva-memory-map-spotlight {
+  position: absolute;
+  z-index: 2;
+  left: var(--memory-x);
+  top: var(--memory-y);
+  width: 9rem;
+  height: 9rem;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 226, 129, 0.36), rgba(118, 214, 177, 0.12) 36%, transparent 70%);
+  filter: blur(0.12rem);
+  transform: translate(-50%, -50%);
+  animation: tva-memory-breathe 2.8s ease-in-out infinite;
+  pointer-events: none;
 }
 
 .tva-causality-links {
   position: absolute;
+  z-index: 3;
   inset: 0;
   width: 100%;
   height: 100%;
@@ -1388,53 +1463,194 @@ html[data-reduced-motion="true"] *::after {
   pointer-events: none;
 }
 
-.tva-causality-link,
-.tva-causality-reset-link {
+.tva-causality-link {
   fill: none;
-  stroke-width: 1.2;
+  stroke-width: 1.45;
   vector-effect: non-scaling-stroke;
+  filter: drop-shadow(0 0 0.22rem currentColor);
 }
 
-.tva-causality-link.is-locked { stroke: rgba(154, 156, 152, 0.3); }
-.tva-causality-link.is-collected { stroke: rgba(229, 188, 97, 0.82); }
-.tva-causality-link.is-reconstructed { stroke: rgba(111, 211, 166, 0.94); filter: drop-shadow(0 0 0.25rem rgba(111, 211, 166, 0.45)); }
-.tva-causality-link.is-fractured { stroke: rgba(217, 90, 83, 0.92); stroke-dasharray: 4 2; }
-.tva-causality-link.is-reset,
-.tva-causality-reset-link { stroke: rgba(213, 184, 110, 0.92); stroke-dasharray: 3 2; }
+.tva-memory-current.is-locked { stroke: rgba(115, 115, 92, 0.34); stroke-dasharray: 2 3; }
+.tva-memory-current.is-collected { stroke: #e8bd64; stroke-dasharray: 1.1 1.25; animation: tva-memory-current 2.5s linear infinite; }
+.tva-memory-current.is-reconstructed { stroke: #88d7b6; stroke-dasharray: 1.2 1; animation: tva-memory-current 1.8s linear infinite; }
+.tva-memory-current.is-fractured { stroke: #e16d61; stroke-dasharray: 4 3; }
+.tva-memory-current.is-reset { stroke: #e0b760; stroke-dasharray: 2.5 2; }
 
 .tva-causality-node {
   position: absolute;
+  z-index: 5;
   left: var(--node-x);
   top: var(--node-y);
   transform: translate(-50%, -50%);
-  max-width: 9rem;
-  padding: 0.45rem 0.6rem;
-  border: 1px solid #8a7c5e;
-  color: #e6dcc2;
-  background: rgba(19, 29, 30, 0.94);
+  width: 5.4rem;
+  min-height: 5.8rem;
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 0.08rem;
+  padding: 0.3rem 0.25rem 0.28rem;
+  border: 0;
+  color: #eee1bd;
+  background: transparent;
   font: inherit;
-  font-size: 0.7rem;
+  font-size: 0.6rem;
+  line-height: 1.05;
+  text-align: center;
   cursor: pointer;
 }
 
-.tva-causality-node.is-collected { border-color: #d6ad63; color: #ffd97e; }
-.tva-causality-node.is-reconstructed { border-color: #88cfb2; color: #d8ffe8; box-shadow: 0 0 0.8rem rgba(108, 211, 168, 0.25); }
-.tva-causality-node.is-fractured { border-color: #c56562; color: #ffc0b3; }
-.tva-causality-node.is-selected { outline: 2px solid rgba(255, 232, 150, 0.92); outline-offset: 0.18rem; }
-.tva-causality-node.has-reset::after {
-  content: "↶ reset";
+.tva-memory-seal::before,
+.tva-memory-seal::after {
   position: absolute;
-  top: calc(100% + 0.24rem);
+  z-index: -1;
+  top: 0.1rem;
   left: 50%;
+  width: 4.35rem;
+  height: 4.35rem;
+  border: 0.16rem solid rgba(219, 172, 80, 0.78);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(42, 65, 53, 0.96), rgba(10, 22, 22, 0.98) 70%);
+  box-shadow: 0 0 0 0.16rem rgba(8, 18, 17, 0.88), 0 0 0.75rem rgba(226, 179, 82, 0.2);
+  content: "";
   transform: translateX(-50%);
-  color: #f1d488;
-  font-size: 0.58rem;
+  pointer-events: none;
+}
+
+.tva-memory-seal::after {
+  top: 0.42rem;
+  width: 3.72rem;
+  height: 3.72rem;
+  border: 1px dashed rgba(247, 220, 143, 0.48);
+  background: transparent;
+  box-shadow: none;
+  animation: tva-memory-orbit 9s linear infinite;
+}
+
+.tva-memory-relic-art {
+  width: 3.9rem;
+  height: 3.9rem;
+  object-fit: cover;
+  object-position: left center;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 0 0.34rem var(--relic-color));
+}
+
+.tva-memory-seal-label,
+.tva-memory-seal-chapter {
+  max-width: 7.8rem;
+  padding: 0.08rem 0.24rem;
+  background: rgba(6, 16, 16, 0.82);
+  text-shadow: 0 1px #020808;
   white-space: nowrap;
+}
+
+.tva-memory-seal-label { color: #ffe6a2; }
+.tva-memory-seal-chapter { color: #91cdb6; font-size: 0.5rem; letter-spacing: 0.08em; }
+.tva-memory-seal.is-locked { filter: grayscale(0.9) saturate(0.2) brightness(0.55); opacity: 0.72; }
+.tva-memory-seal.is-collected::before { border-color: #e5b75d; box-shadow: 0 0 0 0.16rem rgba(8, 18, 17, 0.88), 0 0 1rem rgba(232, 183, 88, 0.36); }
+.tva-memory-seal.is-reconstructed::before { border-color: #80d1b0; box-shadow: 0 0 0 0.16rem rgba(8, 18, 17, 0.88), 0 0 1.15rem rgba(116, 217, 175, 0.5); }
+.tva-memory-seal.is-fractured::before { border-color: #d55e55; background: repeating-linear-gradient(127deg, rgba(117, 35, 32, 0.9) 0 0.2rem, rgba(17, 26, 25, 0.96) 0.2rem 0.48rem); box-shadow: 0 0 1rem rgba(214, 79, 69, 0.42); }
+.tva-memory-seal.is-fractured .tva-memory-seal-label { color: #ffb4a4; }
+.tva-memory-seal.is-selected { transform: translate(-50%, -50%) scale(1.08); }
+.tva-memory-seal.is-selected::before { outline: 0.18rem solid #fff0a8; outline-offset: 0.22rem; }
+.tva-memory-seal:focus-visible { outline: 0.18rem solid #fff0a8; outline-offset: 0.16rem; border-radius: 0.4rem; }
+
+.tva-memory-reset-ripple {
+  position: absolute;
+  z-index: 6;
+  left: var(--node-x);
+  top: var(--node-y);
+  width: 6.8rem;
+  height: 6.8rem;
+  display: grid;
+  place-items: end center;
+  padding-bottom: 0.18rem;
+  color: #ffe093;
+  font-size: 0.48rem;
+  letter-spacing: 0.06em;
+  text-shadow: 0 1px #07100f;
+  transform: translate(-50%, -50%);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.tva-memory-reset-ripple::before {
+  position: absolute;
+  inset: 0;
+  border: 1px dashed rgba(241, 197, 101, 0.92);
+  border-radius: 50%;
+  content: "";
+  animation: tva-memory-reset 2.6s ease-out infinite;
+}
+
+.tva-memory-map-plaque {
+  position: absolute;
+  z-index: 7;
+  right: 13%;
+  bottom: 0.55rem;
+  left: 13%;
+  margin: 0;
+  padding: 0.36rem 0.72rem;
+  border-top: 1px solid rgba(225, 181, 88, 0.62);
+  background: linear-gradient(90deg, transparent, rgba(6, 17, 16, 0.9) 12% 88%, transparent);
+  color: #e6d5a6;
+  font-size: 0.55rem;
+  line-height: 1.35;
+  text-align: center;
+  text-shadow: 0 1px #020707;
+  pointer-events: none;
 }
 
 .tva-causality-detail {
   margin-top: 0.85rem;
   border-color: rgba(215, 183, 99, 0.78);
+}
+
+@keyframes tva-memory-current {
+  to { stroke-dashoffset: -4.4; }
+}
+
+@keyframes tva-memory-breathe {
+  50% { opacity: 0.68; transform: translate(-50%, -50%) scale(1.12); }
+}
+
+@keyframes tva-memory-orbit {
+  to { transform: translateX(-50%) rotate(360deg); }
+}
+
+@keyframes tva-memory-reset {
+  0% { opacity: 0.18; transform: scale(0.76); }
+  55% { opacity: 0.92; }
+  100% { opacity: 0; transform: scale(1.18); }
+}
+
+:root[data-reduced-motion="true"] .tva-memory-map *,
+:root[data-reduced-motion="true"] .tva-memory-map *::before,
+:root[data-reduced-motion="true"] .tva-memory-map *::after {
+  animation: none !important;
+  transition: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tva-memory-map *,
+  .tva-memory-map *::before,
+  .tva-memory-map *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .tva-causality-map { min-height: 25rem; }
+  .tva-memory-map-art { width: 112%; height: 82%; }
+  .tva-causality-node { width: 4.3rem; min-height: 4.9rem; font-size: 0.5rem; }
+  .tva-memory-seal::before { width: 3.45rem; height: 3.45rem; }
+  .tva-memory-seal::after { width: 2.95rem; height: 2.95rem; }
+  .tva-memory-relic-art { width: 3.05rem; height: 3.05rem; }
+  .tva-memory-seal-label { max-width: 5.4rem; }
+  .tva-memory-reset-ripple { width: 5rem; height: 5rem; }
+  .tva-memory-map-plaque { right: 5%; left: 5%; font-size: 0.49rem; }
+  .tva-memory-map-kicker { max-width: 90%; overflow: hidden; text-overflow: ellipsis; }
 }
 
 .relic-convergence-overlay {

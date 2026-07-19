@@ -693,7 +693,7 @@ test("the TVA memory archive opens only earned history", async ({ page }, testIn
   await page.screenshot({ path: testInfo.outputPath("tva-memory-archive.png"), fullPage: true });
 });
 
-test("the TVA causality map preserves a reset trace and explains the selected historical node", async ({ page }, testInfo) => {
+test("the TVA Vietnam memory map preserves a reset trace and explains the selected historical node", async ({ page }, testInfo) => {
   await openDebugSession(page);
   await page.evaluate(() => {
     window.__CROSSROADS_DEBUG__.completeTvaRoute("village");
@@ -704,11 +704,40 @@ test("the TVA causality map preserves a reset trace and explains the selected hi
   });
   await expect(page.locator("#tva-dossier-modal")).toBeVisible();
   await page.locator('[data-tva-dossier-tab="causality"]').click();
-  await expect(page.locator(".tva-causality-node.has-reset")).toContainText("Đường lối");
+  await expect(page.locator(".tva-memory-map")).toBeVisible();
+  await expect(page.locator(".tva-memory-map-art")).toHaveAttribute("src", /vietnam-unified-map-cinematic\.png/);
+  await expect(page.locator(".tva-memory-seal")).toHaveCount(5);
+  await expect(page.locator(".tva-memory-relic-art")).toHaveCount(5);
+  await expect(page.locator(".tva-memory-reset-ripple")).toHaveCount(1);
   await expect(page.locator("#tva-dossier-content")).toContainText("Reset wave");
-  await page.getByRole("button", { name: /Đường lối/ }).click();
+  const compassSeal = page.getByRole("button", { name: /Đường lối/ });
+  await compassSeal.focus();
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("button", { name: /Đường lối/ })).toHaveAttribute("aria-pressed", "true");
   await expect(page.locator(".tva-causality-detail")).toContainText("Giữ được La Bàn Đỏ");
-  await page.screenshot({ path: testInfo.outputPath("tva-causality-reset-trace.png"), fullPage: true });
+  const mapBox = await page.locator(".tva-memory-map").boundingBox();
+  const sealBoxes = await page.locator(".tva-memory-seal").evaluateAll((elements) => elements.map((element) => {
+    const rect = element.getBoundingClientRect();
+    return { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom };
+  }));
+  expect(mapBox).not.toBeNull();
+  for (const box of sealBoxes) {
+    expect(box.left).toBeGreaterThanOrEqual(mapBox.x - 1);
+    expect(box.right).toBeLessThanOrEqual(mapBox.x + mapBox.width + 1);
+    expect(box.top).toBeGreaterThanOrEqual(mapBox.y - 1);
+    expect(box.bottom).toBeLessThanOrEqual(mapBox.y + mapBox.height + 1);
+  }
+  await page.screenshot({ path: testInfo.outputPath("tva-vietnam-memory-map-reset.png"), fullPage: true });
+});
+
+test("the TVA Vietnam memory map supports a quiet complete state and reduced motion", async ({ page }, testInfo) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/?debugTva=causality&debugTvaRelics=5");
+  await expect(page.locator("#tva-dossier-modal")).toBeVisible();
+  await expect(page.locator(".tva-memory-seal")).toHaveCount(5);
+  await expect(page.locator(".tva-memory-reset-ripple")).toHaveCount(0);
+  await expect(page.locator(".tva-memory-map-spotlight")).toHaveCSS("animation-name", "none");
+  await page.screenshot({ path: testInfo.outputPath("tva-vietnam-memory-map-complete.png"), fullPage: true });
 });
 
 test("TVA debug links open the requested completed archive without the tutorial", async ({ page }) => {
@@ -719,7 +748,7 @@ test("TVA debug links open the requested completed archive without the tutorial"
 
   await page.goto("/?debugTva=causality&debugTvaRelics=5&debugTvaReset=zone1");
   await expect(page.locator("#tva-dossier-modal")).toBeVisible();
-  await expect(page.locator(".tva-causality-node.has-reset")).toContainText("Đường lối");
+  await expect(page.locator(".tva-memory-reset-ripple")).toHaveCount(1);
 });
 
 test("constructive achievements persist as TVA memory records without revealing endings", async ({ page }, testInfo) => {
