@@ -9,6 +9,13 @@ function optimizedAudio(id) {
   ]);
 }
 
+function cinematicAudio(id) {
+  return freezeSources([
+    { src: `assets/audio/cinematics/${id}.ogg`, type: 'audio/ogg; codecs="opus"' },
+    { src: `assets/audio/cinematics/${id}.mp3`, type: "audio/mpeg" },
+  ]);
+}
+
 export const AUDIO_TRACKS = Object.freeze({
   fireplace: "fireplace",
   rain: "rain",
@@ -41,6 +48,12 @@ export const COMBAT_SFX = Object.freeze({
   parry: "combat-parry",
 });
 
+export const RELIC_CONVERGENCE_CUES = Object.freeze({
+  good: "relic-convergence-good",
+  neutral: "relic-convergence-neutral",
+  fractured: "relic-convergence-fractured",
+});
+
 export const AUDIO_SOURCE_CANDIDATES = Object.freeze({
   [AUDIO_TRACKS.fireplace]: optimizedAudio("fireplace-ambient"),
   [AUDIO_TRACKS.rain]: optimizedAudio("rain-ambient"),
@@ -58,6 +71,9 @@ export const AUDIO_SOURCE_CANDIDATES = Object.freeze({
   [AUDIO_TRACKS.zone3bDividedBorder]: optimizedAudio("zone3b-divided-border-ending"),
   [AUDIO_TRACKS.zone4StalledMachine]: optimizedAudio("zone4-stalled-machine-ending"),
   [AUDIO_TRACKS.secretCorruption]: optimizedAudio("secret-corruption-ending"),
+  [RELIC_CONVERGENCE_CUES.good]: cinematicAudio(RELIC_CONVERGENCE_CUES.good),
+  [RELIC_CONVERGENCE_CUES.neutral]: cinematicAudio(RELIC_CONVERGENCE_CUES.neutral),
+  [RELIC_CONVERGENCE_CUES.fractured]: cinematicAudio(RELIC_CONVERGENCE_CUES.fractured),
   [COMBAT_SFX.strikeSwing]: freezeSources([
     { src: "assets/audio/combat/strike-swing.ogg", type: 'audio/ogg; codecs="opus"' },
     { src: "assets/audio/combat/strike-swing.mp3", type: "audio/mpeg" },

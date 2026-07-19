@@ -8,6 +8,7 @@ output/
 .codex-run/
 .playwright-cli/
 tmp/
+incoming-audio/
 debug.log
 .superpowers/
 .worktrees/

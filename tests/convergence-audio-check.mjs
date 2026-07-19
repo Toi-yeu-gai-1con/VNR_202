@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
+import { spawnSync } from "node:child_process";
 import { access, readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
+import ffmpegPath from "ffmpeg-static";
 
 function parsePcmWav(buffer) {
   assert.equal(buffer.toString("ascii", 0, 4), "RIFF", "Audio asset must use a RIFF container.");
@@ -53,23 +55,29 @@ function peak(audio) {
   return result;
 }
 
+function probeDuration(path) {
+  const result = spawnSync(ffmpegPath, ["-hide_banner", "-i", path], { encoding: "utf8" });
+  const match = `${result.stdout}\n${result.stderr}`.match(/Duration:\s*(\d+):(\d+):([\d.]+)/);
+  assert.ok(match, `FFmpeg must read cinematic cue metadata for ${path}.`);
+  return Number(match[1]) * 3600 + Number(match[2]) * 60 + Number(match[3]);
+}
+
 const cueFiles = [
-  "relic-convergence.wav",
-  "relic-convergence-neutral.wav",
-  "relic-convergence-fractured.wav",
+  "relic-convergence-good",
+  "relic-convergence-neutral",
+  "relic-convergence-fractured",
 ];
 const hashes = new Set();
-for (const filename of cueFiles) {
-  const buffer = await readFile(fileURLToPath(new URL(`../assets/audio/sfx/${filename}`, import.meta.url)));
-  const audio = parsePcmWav(buffer);
-  assert.equal(audio.channels, 1, `${filename} must remain mono to avoid unnecessary browser payload.`);
-  assert.ok(Math.abs(audio.duration - 13.2) <= 0.1, `${filename} must cover the complete cinematic cue.`);
-  assert.ok(rmsInWindow(audio, 0.3, 4.5) > 0.025, `${filename} must audibly score the five relic arrivals.`);
-  assert.ok(rmsInWindow(audio, 4.5, 6.2) > 0.025, `${filename} must audibly score the fusion core.`);
-  assert.ok(rmsInWindow(audio, 6.2, 12.8) > 0.025, `${filename} must audibly score the map reveal.`);
-  hashes.add(createHash("sha256").update(buffer).digest("hex"));
+for (const basename of cueFiles) {
+  for (const extension of ["ogg", "mp3"]) {
+    const path = fileURLToPath(new URL(`../assets/audio/cinematics/${basename}.${extension}`, import.meta.url));
+    const buffer = await readFile(path);
+    assert.ok(buffer.length > 20_000, `${basename}.${extension} must contain a real cinematic excerpt.`);
+    assert.ok(Math.abs(probeDuration(path) - 13.2) <= 0.12, `${basename}.${extension} must cover the complete 13.2-second cinematic.`);
+    hashes.add(createHash("sha256").update(buffer).digest("hex"));
+  }
 }
-assert.equal(hashes.size, cueFiles.length, "Good, Neutral and Secret must use distinct authored cues.");
+assert.equal(hashes.size, cueFiles.length * 2, "Every ending and browser format must use a distinct encoded asset.");
 
 const fractureUrl = new URL("../assets/audio/sfx/relic-fracture.wav", import.meta.url);
 let fractureExists = true;
@@ -90,6 +98,11 @@ assert.doesNotMatch(
   generatorSource,
   /"relic-fracture\.wav"\s*:/,
   "The deterministic cue generator must not overwrite the licensed recorded fracture master.",
+);
+assert.doesNotMatch(
+  generatorSource,
+  /"relic-convergence(?:-neutral|-fractured)?\.wav"\s*:/,
+  "The deterministic SFX generator must not overwrite the selected cinematic music excerpts.",
 );
 
 console.log("PASS: convergence cues cover their timeline and the fracture one-shot is production-ready.");

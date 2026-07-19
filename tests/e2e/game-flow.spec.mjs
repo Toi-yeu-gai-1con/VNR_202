@@ -648,9 +648,9 @@ test("five relics activate the TVA convergence state without reopening the porta
 });
 
 for (const [endingId, expectedCue, expectsFracture] of [
-  ["good", "relic-convergence.wav", false],
-  ["neutral", "relic-convergence-neutral.wav", false],
-  ["secret-corruption", "relic-convergence-fractured.wav", true],
+  ["good", "relic-convergence-good.ogg", false],
+  ["neutral", "relic-convergence-neutral.ogg", false],
+  ["secret-corruption", "relic-convergence-fractured.ogg", true],
 ]) {
   test(`${endingId} convergence routes its authored cue and fracture policy`, async ({ page }) => {
     await page.addInitScript(() => {

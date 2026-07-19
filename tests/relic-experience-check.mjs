@@ -67,9 +67,12 @@ const mapMetadata = await sharp(mapPath).metadata();
 assert.ok(mapMetadata.width >= 1280 && mapMetadata.height >= 720, "The five-relic cinematic has a presentation-resolution map artifact.");
 
 for (const soundFile of [
-  "assets/audio/sfx/relic-convergence.wav",
-  "assets/audio/sfx/relic-convergence-neutral.wav",
-  "assets/audio/sfx/relic-convergence-fractured.wav",
+  "assets/audio/cinematics/relic-convergence-good.ogg",
+  "assets/audio/cinematics/relic-convergence-good.mp3",
+  "assets/audio/cinematics/relic-convergence-neutral.ogg",
+  "assets/audio/cinematics/relic-convergence-neutral.mp3",
+  "assets/audio/cinematics/relic-convergence-fractured.ogg",
+  "assets/audio/cinematics/relic-convergence-fractured.mp3",
 ]) {
   await access(fileURLToPath(new URL(`../${soundFile}`, import.meta.url)));
 }
@@ -82,6 +85,9 @@ assert.match(runtimeSource, /state\.relicReceipt = \{/, "Every collected relic s
 assert.match(runtimeSource, /function drawPendingRelicForInteractable\(/, "Each unfinished relic hand-off can render its own animated world sheet.");
 assert.match(runtimeSource, /interactionType === "doiMoiVerdict"\) return "doi-moi-gear"/, "The final Đổi Mới hand-off uses the gear sheet, not a generic relic image.");
 assert.match(runtimeSource, /getRelicConvergenceSoundKey\(/, "The convergence route picks an ending-specific transition cue.");
+assert.match(runtimeSource, /RELIC_CONVERGENCE_CUES\.good/, "Good convergence routes Victory through the compressed cinematic source map.");
+assert.match(runtimeSource, /RELIC_CONVERGENCE_CUES\.neutral/, "Neutral convergence routes An Instant Moment through the compressed cinematic source map.");
+assert.match(runtimeSource, /RELIC_CONVERGENCE_CUES\.fractured/, "Secret\/Bad convergence routes The Fountain of Consciousness through the compressed cinematic source map.");
 assert.match(runtimeSource, /playCinematicSfx\(/, "The convergence cue routes through the mute-aware SFX channel instead of dialogue blips.");
 assert.match(runtimeSource, /function drawFracturedConvergenceMap\(/, "The Secret convergence splits the map into irregular fragments instead of drawing UI-like bars over it.");
 assert.match(runtimeSource, /corruptionBloom/, "The Secret convergence has a distinct intact-to-corrupted red phase before fragmentation.");

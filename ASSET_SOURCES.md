@@ -10,10 +10,16 @@
   - Original pixel-art archival artifact generated for this project with OpenAI image generation on 2026-07-18. It uses the same paper, bronze, red-thread, and gear visual language as the five relics.
   - Used only in the five-relic convergence cinematic. Hoàng Sa and Trường Sa are represented directly within the central map; the cinematic deliberately has no external callout labels.
   - Geographic presentation follows the official requirement that a Vietnamese administrative map show land, sea, islands and archipelagos; it is a symbolic educational composition rather than a navigational chart. Reference: Cổng Thông tin điện tử Chính phủ, https://chinhphu.vn/dia-ly-68387 (accessed 2026-07-18).
-- `assets/audio/sfx/relic-convergence.wav`, `relic-convergence-neutral.wav`, and `relic-convergence-fractured.wav`
-  - Original convergence music generated deterministically by `scripts/generate-skill-sfx.py` on 2026-07-18. No third-party music was imported.
-  - Good uses warm wood strikes, soft chimes and a resolved pad; Neutral reuses the five-note identity in a restrained register and closes on a suspended harmony without horror noise; Secret/Bad uses descending low metal, restrained gear rhythm, low drum and increasing dissonance.
-  - All three files follow the SFX volume/mute setting and are never keyboard, menu or dialogue input sounds.
+- `assets/audio/cinematics/relic-convergence-good.{ogg,mp3}`
+  - A 13.2-second excerpt from "Victory" by Two Steps From Hell, supplied by the project owner and used for Good convergence.
+  - Source starts after 0.52 seconds of leading silence, is normalized to -18 LUFS / -1.5 dBTP, lightly faded, and encoded as Opus 112 kbps plus MP3 160 kbps.
+- `assets/audio/cinematics/relic-convergence-neutral.{ogg,mp3}`
+  - A 13.2-second excerpt from "An Instant Moment" by Mark Petrie, supplied by the project owner and used for Neutral convergence.
+  - Source starts after 0.43 seconds of leading silence, is normalized to -18 LUFS / -1.5 dBTP, lightly faded, and encoded as Opus 112 kbps plus MP3 160 kbps.
+- `assets/audio/cinematics/relic-convergence-fractured.{ogg,mp3}`
+  - A 13.2-second excerpt from "The Fountain of Consciousness" by Audiomachine, supplied by the project owner and used for Secret/Bad convergence.
+  - Normalized to -18 LUFS / -1.5 dBTP, ducked around the 10-second fracture transient, lightly faded, and encoded as Opus 112 kbps plus MP3 160 kbps.
+  - All three cue pairs follow the SFX volume/mute setting and are never keyboard, menu or dialogue input sounds.
 - `assets/audio/sfx/relic-fracture.wav`
   - A 1.6-second stereo one-shot mixed on 2026-07-19 from Mixkit recordings "Wood hard hit" (SFX 2182), "Twig breaking" (SFX 2945), "Paper quick slice" (SFX 2384), "Small wood plank pile drop" (SFX 3141), and "Big cinematic impact" (SFX 788).
   - Source: https://mixkit.co/free-sound-effects/ under the Mixkit Sound Effects Free License, https://mixkit.co/license/#sfxFree (accessed 2026-07-19).

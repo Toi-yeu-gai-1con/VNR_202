@@ -36,7 +36,7 @@ import { BOSS_DEFINITIONS, COMBAT_DENSITY, COMBAT_ROSTER } from "../data/combat-
 import { MONSTER_ART_DEFINITIONS, MONSTER_ART_KEY_BY_ID, getMonsterStripSource, isDedicatedMonsterArtKey } from "../data/monster-art-definitions.js";
 import { MONSTER_CODEX_DEFINITIONS, getMonsterCodexEntry } from "../data/monster-codex-definitions.js";
 import { GAMEPLAY_BALANCE, getDifficultySettings } from "../data/gameplay-balance.js";
-import { AUDIO_TRACKS, COMBAT_SFX, getAudioSourceCandidates, resolveAudioSource } from "../data/media-sources.js";
+import { AUDIO_TRACKS, COMBAT_SFX, RELIC_CONVERGENCE_CUES, getAudioSourceCandidates, resolveAudioSource } from "../data/media-sources.js";
 import { ENDING_AUDIO_KEYS, getEndingAudioKey } from "../data/ending-audio-definitions.js";
 import { AFTER_CREDITS, supportsAfterCredits } from "../data/after-credits.js";
 import { CAUSALITY_MAP_NODES, MEMORY_RECONSTRUCTIONS, RELIC_CONVERGENCE, RELIC_VISUALS } from "../data/relic-experience.js";
@@ -1973,9 +1973,9 @@ function loadCombatSfx() {
 
 function loadCinematicSfx() {
   return {
-    relicConvergenceGood: loadSound("assets/audio/sfx/relic-convergence.wav", 0.58),
-    relicConvergenceNeutral: loadSound("assets/audio/sfx/relic-convergence-neutral.wav", 0.52),
-    relicConvergenceFractured: loadSound("assets/audio/sfx/relic-convergence-fractured.wav", 0.5),
+    relicConvergenceGood: loadSound(RELIC_CONVERGENCE_CUES.good, 0.58),
+    relicConvergenceNeutral: loadSound(RELIC_CONVERGENCE_CUES.neutral, 0.52),
+    relicConvergenceFractured: loadSound(RELIC_CONVERGENCE_CUES.fractured, 0.5),
     relicFracture: loadSound("assets/audio/sfx/relic-fracture.wav", 0.72),
   };
 }
