@@ -5372,6 +5372,7 @@ function renderTvaCausalityMap() {
 function renderTvaDossier() {
   stopMonsterCodexPreview();
   const tab = state.activeDossierTab;
+  tvaDossierModal.classList.toggle("is-causality-view", tab === "causality");
   const entries = getTvaDossierEntries(tab);
   tvaDossierTabs.forEach((button) => {
     const selected = button.dataset.tvaDossierTab === tab;

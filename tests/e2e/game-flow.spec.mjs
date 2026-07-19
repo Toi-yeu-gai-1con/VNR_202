@@ -709,6 +709,15 @@ test("the TVA Vietnam memory map preserves a reset trace and explains the select
   await expect(page.locator(".tva-memory-seal")).toHaveCount(5);
   await expect(page.locator(".tva-memory-relic-art")).toHaveCount(5);
   await expect(page.locator(".tva-memory-reset-ripple")).toHaveCount(1);
+  const dossierBox = await page.locator(".tva-dossier-card").boundingBox();
+  const memoryMapBox = await page.locator(".tva-memory-map").boundingBox();
+  expect(dossierBox?.width ?? 0).toBeGreaterThanOrEqual(1000);
+  expect(memoryMapBox?.height ?? 0).toBeGreaterThanOrEqual(400);
+  const overlayStack = await page.evaluate(() => ({
+    dossier: Number.parseInt(getComputedStyle(document.querySelector("#tva-dossier-modal")).zIndex, 10),
+    sound: Number.parseInt(getComputedStyle(document.querySelector("#sound-button")).zIndex, 10),
+  }));
+  expect(overlayStack.dossier).toBeGreaterThan(overlayStack.sound);
   await expect(page.locator("#tva-dossier-content")).toContainText("Reset wave");
   const compassSeal = page.getByRole("button", { name: /Đường lối/ });
   await compassSeal.focus();
@@ -728,6 +737,8 @@ test("the TVA Vietnam memory map preserves a reset trace and explains the select
     expect(box.bottom).toBeLessThanOrEqual(mapBox.y + mapBox.height + 1);
   }
   await page.screenshot({ path: testInfo.outputPath("tva-vietnam-memory-map-reset.png"), fullPage: true });
+  await page.locator("#tva-dossier-close-button").click();
+  await expect(page.locator("#tva-dossier-modal")).toBeHidden();
 });
 
 test("the TVA Vietnam memory map supports a quiet complete state and reduced motion", async ({ page }, testInfo) => {

@@ -1065,7 +1065,7 @@ html[data-reduced-motion="true"] *::after {
 .tva-dossier-modal {
   position: absolute;
   inset: 0;
-  z-index: 5;
+  z-index: 8;
   display: grid;
   place-items: center;
   padding: clamp(12px, 2vh, 22px);
@@ -1086,6 +1086,34 @@ html[data-reduced-motion="true"] *::after {
     repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.025) 0 1px, transparent 1px 5px);
   box-shadow: 0 14px 0 rgba(6, 9, 10, 0.75), 0 30px 58px rgba(0, 0, 0, 0.52);
   color: #f8edd0;
+}
+
+@media (min-width: 900px) {
+  .tva-dossier-modal.is-causality-view .tva-dossier-card {
+    width: min(96vw, 1180px);
+    max-height: 94dvh;
+  }
+
+  .tva-dossier-modal.is-causality-view .tva-dossier-header {
+    padding-block: 14px 12px;
+  }
+
+  .tva-dossier-modal.is-causality-view .tva-dossier-tabs {
+    flex-wrap: nowrap;
+  }
+
+  .tva-dossier-modal.is-causality-view .tva-dossier-tab {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .tva-dossier-modal.is-causality-view .tva-dossier-content {
+    padding: 16px 20px 22px;
+  }
+
+  .tva-dossier-modal.is-causality-view .tva-causality-map {
+    min-height: clamp(26rem, 58dvh, 30rem);
+  }
 }
 
 .tva-dossier-header {
