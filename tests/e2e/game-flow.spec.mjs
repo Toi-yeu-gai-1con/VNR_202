@@ -693,7 +693,7 @@ test("the TVA memory archive opens only earned history", async ({ page }, testIn
   await page.screenshot({ path: testInfo.outputPath("tva-memory-archive.png"), fullPage: true });
 });
 
-test("the TVA causality map preserves a reset trace and explains the selected historical node", async ({ page }, testInfo) => {
+test("the TVA Vietnam memory map preserves a reset trace and explains the selected historical node", async ({ page }, testInfo) => {
   await openDebugSession(page);
   await page.evaluate(() => {
     window.__CROSSROADS_DEBUG__.completeTvaRoute("village");
@@ -704,11 +704,64 @@ test("the TVA causality map preserves a reset trace and explains the selected hi
   });
   await expect(page.locator("#tva-dossier-modal")).toBeVisible();
   await page.locator('[data-tva-dossier-tab="causality"]').click();
-  await expect(page.locator(".tva-causality-node.has-reset")).toContainText("Đường lối");
+  await expect(page.locator(".tva-memory-map")).toBeVisible();
+  await expect(page.locator(".tva-memory-map-art")).toHaveAttribute("src", /vietnam-unified-map-cinematic\.png/);
+  await expect(page.locator(".tva-memory-seal")).toHaveCount(5);
+  await expect(page.locator(".tva-memory-relic-art")).toHaveCount(5);
+  await expect(page.locator(".tva-memory-current")).toHaveCount(0);
+  await expect(page.locator(".tva-memory-reset-ripple")).toHaveCount(1);
+  await expect(page.locator(".tva-memory-seal-year")).toHaveText(["1922–1929", "1930", "1941–1945", "1954–1975", "1986"]);
+  const resetLabelBox = await page.locator(".tva-memory-reset-label").boundingBox();
+  const resetYearBox = await page.locator(".tva-memory-seal").first().locator(".tva-memory-seal-year").boundingBox();
+  const resetOverlapsYear = resetLabelBox && resetYearBox
+    ? resetLabelBox.x < resetYearBox.x + resetYearBox.width
+      && resetLabelBox.x + resetLabelBox.width > resetYearBox.x
+      && resetLabelBox.y < resetYearBox.y + resetYearBox.height
+      && resetLabelBox.y + resetLabelBox.height > resetYearBox.y
+    : true;
+  expect(resetOverlapsYear).toBe(false);
+  const dossierBox = await page.locator(".tva-dossier-card").boundingBox();
+  const memoryMapBox = await page.locator(".tva-memory-map").boundingBox();
+  expect(resetLabelBox?.x ?? -1).toBeGreaterThanOrEqual(memoryMapBox?.x ?? 0);
+  expect(resetLabelBox?.y ?? -1).toBeGreaterThanOrEqual(memoryMapBox?.y ?? 0);
+  expect(dossierBox?.width ?? 0).toBeGreaterThanOrEqual(1000);
+  expect(memoryMapBox?.height ?? 0).toBeGreaterThanOrEqual(400);
+  const overlayStack = await page.evaluate(() => ({
+    dossier: Number.parseInt(getComputedStyle(document.querySelector("#tva-dossier-modal")).zIndex, 10),
+    sound: Number.parseInt(getComputedStyle(document.querySelector("#sound-button")).zIndex, 10),
+  }));
+  expect(overlayStack.dossier).toBeGreaterThan(overlayStack.sound);
   await expect(page.locator("#tva-dossier-content")).toContainText("Reset wave");
-  await page.getByRole("button", { name: /Đường lối/ }).click();
+  const compassSeal = page.getByRole("button", { name: /Đường lối/ });
+  await compassSeal.focus();
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("button", { name: /Đường lối/ })).toHaveAttribute("aria-pressed", "true");
   await expect(page.locator(".tva-causality-detail")).toContainText("Giữ được La Bàn Đỏ");
-  await page.screenshot({ path: testInfo.outputPath("tva-causality-reset-trace.png"), fullPage: true });
+  const mapBox = await page.locator(".tva-memory-map").boundingBox();
+  const sealBoxes = await page.locator(".tva-memory-seal").evaluateAll((elements) => elements.map((element) => {
+    const rect = element.getBoundingClientRect();
+    return { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom };
+  }));
+  expect(mapBox).not.toBeNull();
+  for (const box of sealBoxes) {
+    expect(box.left).toBeGreaterThanOrEqual(mapBox.x - 1);
+    expect(box.right).toBeLessThanOrEqual(mapBox.x + mapBox.width + 1);
+    expect(box.top).toBeGreaterThanOrEqual(mapBox.y - 1);
+    expect(box.bottom).toBeLessThanOrEqual(mapBox.y + mapBox.height + 1);
+  }
+  await page.screenshot({ path: testInfo.outputPath("tva-vietnam-memory-map-reset.png"), fullPage: true });
+  await page.locator("#tva-dossier-close-button").click();
+  await expect(page.locator("#tva-dossier-modal")).toBeHidden();
+});
+
+test("the TVA Vietnam memory map supports a quiet complete state and reduced motion", async ({ page }, testInfo) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/?debugTva=causality&debugTvaRelics=5");
+  await expect(page.locator("#tva-dossier-modal")).toBeVisible();
+  await expect(page.locator(".tva-memory-seal")).toHaveCount(5);
+  await expect(page.locator(".tva-memory-reset-ripple")).toHaveCount(0);
+  await expect(page.locator(".tva-memory-map-spotlight")).toHaveCSS("animation-name", "none");
+  await page.screenshot({ path: testInfo.outputPath("tva-vietnam-memory-map-complete.png"), fullPage: true });
 });
 
 test("TVA debug links open the requested completed archive without the tutorial", async ({ page }) => {
@@ -719,7 +772,7 @@ test("TVA debug links open the requested completed archive without the tutorial"
 
   await page.goto("/?debugTva=causality&debugTvaRelics=5&debugTvaReset=zone1");
   await expect(page.locator("#tva-dossier-modal")).toBeVisible();
-  await expect(page.locator(".tva-causality-node.has-reset")).toContainText("Đường lối");
+  await expect(page.locator(".tva-memory-reset-ripple")).toHaveCount(1);
 });
 
 test("constructive achievements persist as TVA memory records without revealing endings", async ({ page }, testInfo) => {

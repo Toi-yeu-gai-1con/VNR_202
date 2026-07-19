@@ -39,7 +39,7 @@ import { GAMEPLAY_BALANCE, getDifficultySettings } from "../data/gameplay-balanc
 import { AUDIO_TRACKS, COMBAT_SFX, getAudioSourceCandidates, resolveAudioSource } from "../data/media-sources.js";
 import { ENDING_AUDIO_KEYS, getEndingAudioKey } from "../data/ending-audio-definitions.js";
 import { AFTER_CREDITS, supportsAfterCredits } from "../data/after-credits.js";
-import { CAUSALITY_MAP_LINKS, CAUSALITY_MAP_NODES, MEMORY_RECONSTRUCTIONS, RELIC_CONVERGENCE, RELIC_VISUALS } from "../data/relic-experience.js";
+import { CAUSALITY_MAP_NODES, MEMORY_RECONSTRUCTIONS, RELIC_CONVERGENCE, RELIC_VISUALS } from "../data/relic-experience.js";
 import { BUILD_VERSION, withAssetVersion } from "../data/build-info.js";
 import { PLAYER_FOOTPRINT, PLAYER_SPRITE, PLAYER_ANIMATIONS, NPC_SPRITE, TVA_EMPLOYEE_SPRITE, M90_RESET_ANIMATION, ENVIRONMENT_SPRITES, TILECRAFT_TERRAIN, PIXEL_CRAWLER_TERRAIN, VILLAGE_SKYLINE_Y, VILLAGE_PROP_SPRITES, PIXEL_CRAWLER_BUILDING_SPRITES, HUB_PORTAL_SPRITE, SWORD_SLASH_SPRITE, SMALL_GAME_ASSET_ANIMATIONS, PIXEL_CRAWLER_TREE_SPRITE, KENNEY_ROGUELIKE_TILE, KENNEY_ROGUELIKE_SPRITES, PIXEL_CRAWLER_VEGETATION_SPRITES, PIXEL_CRAWLER_TOOL_CLUSTER_SPRITES, CAINOS_PROP_SPRITES, LIMEZU_INTERIOR_SPRITES, HOUSE_INTERIOR_A_SPRITES, MONSTER_SPRITE_CONFIG, getTvaActorScale } from "../data/render-config.js";
 
@@ -5232,41 +5232,12 @@ function getCausalityChoiceLabels(relicId) {
     .filter(Boolean);
 }
 
-function getCausalityLinkStatus(link, resetZones) {
-  const fromStatus = getCausalityNodeStatus(link.from);
-  const toStatus = getCausalityNodeStatus(link.to);
-  if (resetZones.has(getCausalityZoneId(link.from)) || resetZones.has(getCausalityZoneId(link.to))) return "reset";
-  if (fromStatus === "fractured" || toStatus === "fractured") return "fractured";
-  if (fromStatus === "reconstructed" && toStatus === "reconstructed") return "reconstructed";
-  if (fromStatus !== "locked" || toStatus !== "locked") return "collected";
-  return "locked";
-}
-
-function createCausalityLinkElement(link, nodeByRelic, resetZones) {
-  const from = nodeByRelic.get(link.from);
-  const to = nodeByRelic.get(link.to);
-  if (!from || !to) return null;
-  const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-  const controlX = Math.round((from.x + to.x) / 2);
-  path.setAttribute("d", `M ${from.x} ${from.y} Q ${controlX} ${Math.min(from.y, to.y) - 13} ${to.x} ${to.y}`);
-  path.setAttribute("class", `tva-causality-link is-${getCausalityLinkStatus(link, resetZones)}`);
-  return path;
-}
-
-function createCausalityResetElement(node) {
-  const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-  const loop = 8;
-  path.setAttribute("d", `M ${node.x - 3} ${node.y + 5} C ${node.x - loop} ${node.y + 13}, ${node.x + loop} ${node.y + 13}, ${node.x + 3} ${node.y + 5}`);
-  path.setAttribute("class", "tva-causality-reset-link");
-  return path;
-}
-
 function renderTvaCausalityMap() {
   state.quests.tvaCausalityViewed = true;
-  tvaDossierContent.append(createTvaDossierText("h3", "tva-dossier-section-title", "Bản đồ Nhân quả"));
-  tvaDossierContent.append(createTvaDossierText("p", "tva-dossier-record-caption", "Đây là hồ sơ của vòng chơi hiện tại: đường sáng là mạch đã hiểu, đường đỏ là hệ quả cần nhìn lại, nét đứt là reset wave đưa bạn quay về điểm lựa chọn."));
   const map = document.createElement("div");
-  map.className = "tva-causality-map";
+  map.className = "tva-causality-map tva-memory-map";
+  map.setAttribute("aria-label", "Bản đồ Nhân quả — Việt Nam bằng ký ức");
+  map.append(createTvaDossierText("p", "tva-memory-map-kicker", "BẢN ĐỒ NHÂN QUẢ · VÒNG CHƠI HIỆN TẠI"));
   const nodeByRelic = new Map(CAUSALITY_MAP_NODES.map((node) => [node.relicId, node]));
   if (!nodeByRelic.has(state.activeCausalityRelicId)) {
     state.activeCausalityRelicId = CAUSALITY_MAP_NODES.find((node) => getCausalityNodeStatus(node.relicId) !== "locked")?.relicId
@@ -5274,36 +5245,62 @@ function renderTvaCausalityMap() {
       ?? null;
   }
   const resetZones = new Set((state.quests.tvaResetTraces ?? []).map((trace) => trace.zoneId));
-  const links = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-  links.classList.add("tva-causality-links");
-  links.setAttribute("viewBox", "0 0 100 100");
-  links.setAttribute("preserveAspectRatio", "none");
-  links.setAttribute("aria-hidden", "true");
-  for (const link of CAUSALITY_MAP_LINKS) {
-    const path = createCausalityLinkElement(link, nodeByRelic, resetZones);
-    if (path) links.append(path);
-  }
-  for (const node of CAUSALITY_MAP_NODES) {
-    if (resetZones.has(getCausalityZoneId(node.relicId))) {
-      links.append(createCausalityResetElement(node));
-    }
-  }
-  map.append(links);
+  const mapArt = document.createElement("img");
+  mapArt.className = "tva-memory-map-art";
+  mapArt.src = RELIC_CONVERGENCE.mapArt;
+  mapArt.alt = "";
+  map.append(mapArt);
+
+  const spotlightNode = nodeByRelic.get(state.activeCausalityRelicId) ?? CAUSALITY_MAP_NODES[0];
+  const spotlight = document.createElement("span");
+  spotlight.className = "tva-memory-map-spotlight";
+  spotlight.style.setProperty("--memory-x", `${spotlightNode?.memoryX ?? 50}%`);
+  spotlight.style.setProperty("--memory-y", `${spotlightNode?.memoryY ?? 50}%`);
+  spotlight.setAttribute("aria-hidden", "true");
+  map.append(spotlight);
+
   for (const node of CAUSALITY_MAP_NODES) {
     const status = getCausalityNodeStatus(node.relicId);
     const button = document.createElement("button");
-    button.className = `tva-causality-node is-${status}`;
-    button.style.setProperty("--node-x", `${node.x}%`);
-    button.style.setProperty("--node-y", `${node.y}%`);
-    button.textContent = `${node.title} · ${node.subtitle}`;
+    button.className = `tva-causality-node tva-memory-seal is-${status} is-${node.memoryMapSlot}`;
+    button.type = "button";
+    button.style.setProperty("--node-x", `${node.memoryX}%`);
+    button.style.setProperty("--node-y", `${node.memoryY}%`);
+    button.style.setProperty("--relic-color", RELIC_VISUALS[node.relicId].color);
+    button.setAttribute("aria-pressed", String(node.relicId === state.activeCausalityRelicId));
+    button.setAttribute("aria-label", `${node.title} — ${node.subtitle}`);
     button.classList.toggle("is-selected", node.relicId === state.activeCausalityRelicId);
-    button.classList.toggle("has-reset", resetZones.has(getCausalityZoneId(node.relicId)));
+    const image = document.createElement("img");
+    image.className = "tva-memory-relic-art";
+    image.src = RELIC_VISUALS[node.relicId].src;
+    image.alt = "";
+    const label = createTvaDossierText("span", "tva-memory-seal-label", node.title);
+    const chapter = createTvaDossierText("span", "tva-memory-seal-chapter", node.subtitle);
+    const year = createTvaDossierText("span", "tva-memory-seal-year", node.memoryYear);
+    button.append(image, label, chapter, year);
     button.addEventListener("click", withUiClickSound(() => {
       state.activeCausalityRelicId = node.relicId;
       renderTvaDossier();
     }));
     map.append(button);
   }
+
+  for (const node of CAUSALITY_MAP_NODES) {
+    if (!resetZones.has(getCausalityZoneId(node.relicId))) continue;
+    const reset = document.createElement("span");
+    reset.className = `tva-memory-reset-ripple is-${node.memoryMapSlot}`;
+    reset.style.setProperty("--node-x", `${node.memoryX}%`);
+    reset.style.setProperty("--node-y", `${node.memoryY}%`);
+    reset.setAttribute("aria-hidden", "true");
+    reset.append(createTvaDossierText("span", "tva-memory-reset-label", "↶ RESET WAVE"));
+    map.append(reset);
+  }
+
+  map.append(createTvaDossierText(
+    "p",
+    "tva-memory-map-plaque",
+    "Một Việt Nam không chỉ được vẽ bằng đường biên, mà bằng những lựa chọn đã nối con người và thời đại lại với nhau.",
+  ));
   tvaDossierContent.append(map);
 
   const selectedNode = nodeByRelic.get(state.activeCausalityRelicId);
@@ -5347,6 +5344,7 @@ function renderTvaCausalityMap() {
 function renderTvaDossier() {
   stopMonsterCodexPreview();
   const tab = state.activeDossierTab;
+  tvaDossierModal.classList.toggle("is-causality-view", tab === "causality");
   const entries = getTvaDossierEntries(tab);
   tvaDossierTabs.forEach((button) => {
     const selected = button.dataset.tvaDossierTab === tab;
