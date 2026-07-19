@@ -177,13 +177,13 @@ This project uses a small subset of free game assets:
   - License: CC0.
   - Used for the good ending.
 
-- Ending soundtrack pack — all source tracks are CC0, converted locally to `assets/audio/optimized/*.ogg` (Opus, 80 kbps) and `*.mp3` (128 kbps) for browser compatibility. The source download remains in `tmp/ending-audio-sources/` and is not shipped.
+- Ending soundtrack pack — all source tracks are CC0, converted locally to `assets/audio/optimized/*.ogg` (Opus, 80–112 kbps) and `*.mp3` (128 kbps) for browser compatibility. Replacement tracks use a -18 LUFS / -1.5 dBTP normalization target; source downloads are kept only during conversion and are not shipped.
   - Neutral ending: “Global Resonance” by Eponasoft, https://opengameart.org/content/global-resonance — used for “Dòng lịch sử còn vết nứt”.
   - Generic corruption ending: “Cold Silence” by Eponasoft, https://opengameart.org/content/cold-silence — used when Tha hóa reaches its terminal threshold outside a zone verdict.
   - Zone 1 Bad Ending: “Return to Nowhere” by yd, https://opengameart.org/content/return-to-nowhere — used for “Con tàu không la bàn”.
-  - Zone 2 Bad Ending: “Dark Cavern Ambient” (continuous loop) by Paul Wortmann, https://opengameart.org/content/dark-cavern-ambient — used for “Ba ngọn lửa lụi tàn”.
-  - Zone 3A Bad Ending: “Dream 2 Ambience” by TokyoGeisha, https://opengameart.org/content/dream-2-ambience — used for “Thời cơ Tháng Tám vụt qua”.
-  - Zone 3B Bad Ending: “EmptyCity: Background Music” by yd, https://opengameart.org/content/emptycity-background-music — used for “Vĩ tuyến thành biên giới”.
-  - Zone 4 Bad Ending: “Factory ambiance” by yd, https://opengameart.org/content/factory-ambiance — used for “Cỗ máy đứng im”.
+  - Zone 2 Bad Ending: “At the End of Hope” by Emma_MA, https://opengameart.org/content/at-the-end-of-hope — used for “Ba ngọn lửa lụi tàn”.
+  - Zone 3A Bad Ending: “Regret - Short Emotional Piano” by Wolfgang_, https://opengameart.org/content/regret-short-emotional-piano — used for “Thời cơ Tháng Tám vụt qua”.
+  - Zone 3B Bad Ending: “Chasing Despair” by Emma_MA, https://opengameart.org/content/chasing-despair — used for “Vĩ tuyến thành biên giới”.
+  - Zone 4 Bad Ending: “Searching” by yd, https://opengameart.org/content/searching — used for “Cỗ máy đứng im”.
   - Secret corruption ending: “Horror Atmosphere” by SubspaceAudio, https://opengameart.org/content/horror-atmosphere — used for “Có ngọn cờ nhưng mất lòng dân”.
 
