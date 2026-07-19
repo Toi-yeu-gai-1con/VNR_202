@@ -9,3 +9,4 @@ output/
 .playwright-cli/
 tmp/
 debug.log
+.superpowers/
