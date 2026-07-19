@@ -5307,7 +5307,8 @@ function renderTvaCausalityMap() {
     image.alt = "";
     const label = createTvaDossierText("span", "tva-memory-seal-label", node.title);
     const chapter = createTvaDossierText("span", "tva-memory-seal-chapter", node.subtitle);
-    button.append(image, label, chapter);
+    const year = createTvaDossierText("span", "tva-memory-seal-year", node.memoryYear);
+    button.append(image, label, chapter, year);
     button.addEventListener("click", withUiClickSound(() => {
       state.activeCausalityRelicId = node.relicId;
       renderTvaDossier();
@@ -5317,10 +5318,12 @@ function renderTvaCausalityMap() {
 
   for (const node of CAUSALITY_MAP_NODES) {
     if (!resetZones.has(getCausalityZoneId(node.relicId))) continue;
-    const reset = createTvaDossierText("span", "tva-memory-reset-ripple", "↶ RESET WAVE");
+    const reset = document.createElement("span");
+    reset.className = "tva-memory-reset-ripple";
     reset.style.setProperty("--node-x", `${node.memoryX}%`);
     reset.style.setProperty("--node-y", `${node.memoryY}%`);
     reset.setAttribute("aria-hidden", "true");
+    reset.append(createTvaDossierText("span", "tva-memory-reset-label", "↶ RESET WAVE"));
     map.append(reset);
   }
 

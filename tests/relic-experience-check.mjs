@@ -30,6 +30,16 @@ assert.ok(
   CAUSALITY_MAP_NODES.every((node) => Number.isFinite(node.memoryX) && Number.isFinite(node.memoryY)),
   "Every relic has deterministic memory-map coordinates.",
 );
+assert.deepEqual(
+  CAUSALITY_MAP_NODES.map((node) => node.memoryMapSlot),
+  ["northwest", "north", "northeast", "southeast", "south"],
+  "The five relics follow one clockwise historical orbit without a diagonal jump across Vietnam.",
+);
+assert.deepEqual(
+  CAUSALITY_MAP_NODES.map((node) => node.memoryYear),
+  ["1922–1929", "1930", "1941–1945", "1954–1975", "1986"],
+  "Every memory seal makes the historical chronology visible.",
+);
 assert.equal(
   "islandLabels" in RELIC_CONVERGENCE,
   false,

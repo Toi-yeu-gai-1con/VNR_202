@@ -709,6 +709,16 @@ test("the TVA Vietnam memory map preserves a reset trace and explains the select
   await expect(page.locator(".tva-memory-seal")).toHaveCount(5);
   await expect(page.locator(".tva-memory-relic-art")).toHaveCount(5);
   await expect(page.locator(".tva-memory-reset-ripple")).toHaveCount(1);
+  await expect(page.locator(".tva-memory-seal-year")).toHaveText(["1922–1929", "1930", "1941–1945", "1954–1975", "1986"]);
+  const resetLabelBox = await page.locator(".tva-memory-reset-label").boundingBox();
+  const resetYearBox = await page.locator(".tva-memory-seal").first().locator(".tva-memory-seal-year").boundingBox();
+  const resetOverlapsYear = resetLabelBox && resetYearBox
+    ? resetLabelBox.x < resetYearBox.x + resetYearBox.width
+      && resetLabelBox.x + resetLabelBox.width > resetYearBox.x
+      && resetLabelBox.y < resetYearBox.y + resetYearBox.height
+      && resetLabelBox.y + resetLabelBox.height > resetYearBox.y
+    : true;
+  expect(resetOverlapsYear).toBe(false);
   const dossierBox = await page.locator(".tva-dossier-card").boundingBox();
   const memoryMapBox = await page.locator(".tva-memory-map").boundingBox();
   expect(dossierBox?.width ?? 0).toBeGreaterThanOrEqual(1000);
